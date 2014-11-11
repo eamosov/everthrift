@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:int="http://www.springframework.org/schema/integration"
+	xmlns:int-ip="http://www.springframework.org/schema/integration/ip"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:cache="http://www.springframework.org/schema/cache" 
+	xmlns:task="http://www.springframework.org/schema/task"
+	xmlns:jgroups="http://www.springframework.org/schema/integration/jgroups"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
+		http://www.springframework.org/schema/integration/ip http://www.springframework.org/schema/integration/ip/spring-integration-ip.xsd
+		http://www.springframework.org/schema/integration/jgroups http://www.springframework.org/schema/integration/jgroups/spring-intergration-jgroups.xsd
+		http://www.springframework.org/schema/cache http://www.springframework.org/schema/cache/spring-cache.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task.xsd">
+
+  <context:property-placeholder />
+
+  <task:executor id="myExecutor" pool-size="4"/>  
+  <task:scheduler id="myScheduler" pool-size="10"/>
+  <task:annotation-driven executor="myExecutor" scheduler="myScheduler"/>
+
+
+  <int:poller id="defaultPoller" default="true" receive-timeout="5000" fixed-rate="1"/>
+	    
+  <bean id="tBinaryProtocol" class="org.apache.thrift.protocol.TBinaryProtocol.Factory"></bean>
+  
+  <bean id="tZlibTransport" class="org.apache.thrift.transport.TZlibTransport.Factory"></bean>  
+    
+  <bean id="ThriftServer" class="com.knockchat.appserver.transport.tcp.ThriftServer">
+  	<constructor-arg index="0" ref="tBinaryProtocol"/>
+  </bean>
+            
+
+  <!-- start tcp async configuration -->          
+  <bean id="tcpSerializer" class="org.springframework.integration.ip.tcp.serializer.ByteArrayLengthHeaderSerializer" />
+  <task:executor id="tcp-executor" queue-capacity="0"/>  
+  <int-ip:tcp-connection-factory id="server"
+  	task-executor="tcp-executor"
+    type="server"
+    local-address="${listen.host}"
+    port="${listen.port}"
+    using-nio="false"
+    apply-sequence="true"
+    single-use="false"
+    deserializer="tcpSerializer"
+    serializer="tcpSerializer"
+    lookup-host="false"
+    so-tcp-no-delay="true"
+  />
+          
+  <int:channel id="inChannel" >
+  </int:channel>
+  
+  <int:channel id="outChannel">
+  	<int:interceptors>
+        <ref bean="asyncTcpThriftAdapter" />
+    </int:interceptors>
+  </int:channel>
+  
+  <int-ip:tcp-inbound-channel-adapter id="inAdapter" channel="inChannel" connection-factory="server" />
+          
+  <bean id="asyncTcpThriftAdapter" class="com.knockchat.appserver.transport.asynctcp.AsyncTcpThriftAdapter">
+  	<constructor-arg index="0" ref="tBinaryProtocol"/>
+  </bean>  
+  <int:service-activator input-channel="inChannel" output-channel="outChannel" ref="asyncTcpThriftAdapter" method="handle"/>  	
+	
+  <int-ip:tcp-outbound-channel-adapter id="outAdapter" channel="outChannel" connection-factory="server"/>
+  
+  <!-- end tcp async configuration -->
+	
+  <context:mbean-server/>
+  <context:mbean-export registration="ignoreExisting" server="mbeanServer"/>
+
+    
+  <bean id="jmxServerConnector" class="org.springframework.jmx.support.ConnectorServerFactoryBean">
+   	<property name="threaded" value="true"/>
+   	<property name="daemon" value="true"/>
+   	<property name="server" ref="mbeanServer"/>
+   	<property name="serviceUrl" value="${jmx.serviceUrl}"/>
+  </bean>	
+
+  <bean class="org.springframework.jmx.support.MBeanServerFactoryBean">
+       <property name="locateExistingServerIfPossible" value="true" />
+  </bean>
+				    
+  <int:channel id="inJGroupsChannel" >
+  </int:channel>
+  
+  <int:channel id="outJGroupsChannel">
+  </int:channel>
+    
+  <int:service-activator input-channel="inJGroupsChannel" output-channel="outJGroupsChannel" ref="jGroupsThriftAdapter" method="handleIn"/>
+  <int:service-activator input-channel="outJGroupsChannel" ref="jGroupsThriftAdapter" method="handleOut"/>
+	
+</beans>

@@ -1,0 +1,10 @@
+common-cli/target
+jsvc/target
+migration-plugin/target
+cache.properties
+services/src/main/gen-javabean
+services/src/main/gen-php
+services/target
+tmc/target
+.project
+.settings
