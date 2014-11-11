@@ -8,3 +8,4 @@ services/target
 tmc/target
 .project
 .settings
+jsvc/bin
