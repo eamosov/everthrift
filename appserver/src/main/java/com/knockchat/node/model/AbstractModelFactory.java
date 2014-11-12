@@ -45,15 +45,29 @@ public abstract class AbstractModelFactory<PK extends Serializable, ENTITY exten
     @Override
     public void afterPropertiesSet() throws Exception {
         if (dao != null) {
+        	
+        	SessionFactory sf = null;
+        	
             for (SessionFactory factory : sessionFactories)
-                if (factory.getClassMetadata(this.entityClass) != null)
-                    dao.setSessionFactory(factory);
+                if (factory.getClassMetadata(this.entityClass) != null){
+                	sf = factory;
+                	break;
+                }
+
+            if (sf == null)
+            	throw new RuntimeException("Cound't find SessionFactory for class " + this.entityClass.getSimpleName());
+            	            
+            dao.setSessionFactory(sf);            
             dao.setListeningExecutorService(listeningExecutorService);
         }
     }
 
     public ENTITY update(ENTITY e) {
         return dao.saveOrUpdate(e);
+    }
+    
+    public AbstractDao<PK, ENTITY> getDao(){
+    	return dao;
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})

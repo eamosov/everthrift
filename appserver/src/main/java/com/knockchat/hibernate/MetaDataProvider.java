@@ -48,24 +48,30 @@ public class MetaDataProvider {
 
     private void readMetaData() {
         for (final String schemaTable : tableNames.stringPropertyNames()) {
-            try {
-                if (schemaTable.indexOf(".") < 0) {
-                    LOG.warn("Skip table {} due to can't find delimiter \".\" between schema.table", schemaTable);
-                    continue;
-                }
-                String schemaName = schemaTable.substring(0, schemaTable.indexOf("."));
-                String tableName = schemaTable.substring(schemaTable.indexOf(".") + 1);
-                Class clazz = Class.forName(tableNames.getProperty(schemaTable));
-                List<Column> tableColumns = readColumns(tableName, clazz);
-                PrimaryKey pk = readPK(tableName);
-                Table table = new Table(schemaName, tableName, clazz, tableColumns, pk, tableName.endsWith(VIEW_POSTFIX));
-                tableModels.add(table);
-            } catch (MetaDataAccessException e) {
-                LOG.error("Error get model metadata {}", schemaTable, e);
-            } catch (ClassNotFoundException e) {
-                LOG.error("Can't find class {}", tableNames.getProperty(schemaTable.toString()), e);
-            }
+        	for (String m : tableNames.getProperty(schemaTable).split(","))
+        		addTable(schemaTable, m);
         }
+    }
+    
+    private void addTable(final String schemaTable, final String modelName){
+        try {
+            if (schemaTable.indexOf(".") < 0) {
+                LOG.warn("Skip table {} due to can't find delimiter \".\" between schema.table", schemaTable);
+                return;
+            }
+            
+            final String schemaName = schemaTable.substring(0, schemaTable.indexOf("."));
+            final String tableName = schemaTable.substring(schemaTable.indexOf(".") + 1);
+            final Class clazz = Class.forName(modelName);
+            final List<Column> tableColumns = readColumns(tableName, clazz);
+            final PrimaryKey pk = readPK(tableName);
+            final Table table = new Table(schemaName, tableName, clazz, tableColumns, pk, tableName.endsWith(VIEW_POSTFIX));
+            tableModels.add(table);
+        } catch (MetaDataAccessException e) {
+            LOG.error("Error get model metadata {}", schemaTable, e);
+        } catch (ClassNotFoundException e) {
+            LOG.error("Can't find class {}", modelName, e);
+        }   	
     }
 
     private List<Column> readColumns(final String tableName, Class clazz) throws MetaDataAccessException {

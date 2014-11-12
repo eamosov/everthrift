@@ -204,7 +204,7 @@ public abstract class AbstractLoadableModelFactory<K, V, A, PK extends Serializa
         });
     }
 
-    public abstract V findById(K id);
+   public abstract V findById(K id);
 
     @Override
     public abstract Map<K, V> findByIds(Collection<K> ids);
