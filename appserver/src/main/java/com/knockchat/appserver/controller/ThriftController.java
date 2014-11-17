@@ -163,8 +163,9 @@ public abstract class ThriftController<ArgsType extends TBase, ResultType> {
 				
 		final GenericMessage<TMemoryBuffer> s = new GenericMessage<TMemoryBuffer>(payload, inHeaders);
 		outputChannel.send(s);
+		
+		ThriftProcessor.logEnd(LoggerFactory.getLogger(this.getClass()), this, this.getClass().getSimpleName(), (String)(inHeaders != null ? inHeaders.getCorrelationId() : null), answer);
 				
-		LoggerFactory.getLogger(this.getClass()).debug("Executing {} with args {} in {} mcs. Result:{}, correlationId:{}", new Object[]{ this.getClass().getSimpleName(), args, getExecutionMcs(), answer.toString(), inHeaders != null ? inHeaders.getCorrelationId() : null});
 		return true;
 	}
 	

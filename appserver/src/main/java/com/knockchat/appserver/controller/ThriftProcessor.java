@@ -101,7 +101,9 @@ public class ThriftProcessor implements TProcessor{
 			args.read(inp);
 			inp.readMessageEnd();
 			
-			LoggerFactory.getLogger(ctrl.controller).debug("START: method:{} args:{} correlationId:{}", msg.name, args, inMessage == null ? null: inMessage.getHeaders().getCorrelationId());			
+			final Logger log = LoggerFactory.getLogger(ctrl.controller);
+			
+			logStart(log, msg.name, (String)(inMessage == null ? null: inMessage.getHeaders().getCorrelationId()), args);
 						
 			final ThriftController c = ctrl.makeController(args, logEntry, msg.seqid, inMessage == null ? null : inMessage.getHeaders(), outputChannel, thriftClient, registry.getType(), this.protocolFactory);
 						
@@ -109,7 +111,7 @@ public class ThriftProcessor implements TProcessor{
 			final TMemoryBuffer outT = buildAnswer(c.seqId, c.info, ret, protocolFactory);
 			c.setEndNanos(System.nanoTime());
 			c.setResultSentFlag();
-			LoggerFactory.getLogger(ctrl.controller).debug("END: method:{} ctr:{} delay:{} mcs return: {} correlationId:{}", msg.name, c.ctrlLog(), c.getExecutionMcs(), ret==null ? null : ret.toString(), inMessage == null ? null: inMessage.getHeaders().getCorrelationId());
+			logEnd(log, c, msg.name, (String)(inMessage == null ? null: inMessage.getHeaders().getCorrelationId()), ret);
 			return outT;				
 
 		}catch (AsyncAnswer e){
@@ -222,7 +224,9 @@ public class ThriftProcessor implements TProcessor{
 			args.read(inp);
 			inp.readMessageEnd();
 			
-			LoggerFactory.getLogger(ctrl.controller).debug("START: method:{} args:{}", msg.name, args);
+			final Logger _log = LoggerFactory.getLogger(ctrl.controller);
+			
+			logStart(_log, msg.name, null, args);
 			
 			final LogEntry logEntry = new LogEntry(msg.name);
 			
@@ -263,7 +267,7 @@ public class ThriftProcessor implements TProcessor{
 			}finally{
 				c.setEndNanos(System.nanoTime());
 				c.setResultSentFlag();
-				LoggerFactory.getLogger(ctrl.controller).debug("END: method:{} ctrl:{} delay:{} mcs return: {}", msg.name, c.ctrlLog(), c.getExecutionMcs(), ret !=null ? ret.toString() : null);
+				logEnd(_log, c, msg.name, null, ret);
 			}			
 									
 		}catch (AsyncAnswer e){
@@ -274,6 +278,20 @@ public class ThriftProcessor implements TProcessor{
 		}
 		
 		return true;
+	}
+	
+	private void logStart(Logger l, String method, String correlationId, Object args){		
+		if(log.isDebugEnabled()){
+			final String data = args == null ? null : args.toString();
+			l.debug("START: method:{} args:{} correlationId:{}", method, data !=null ? ((data.length() > 200 && !log.isTraceEnabled()) ? data.substring(0, 199) + "..." : data) : null, correlationId);
+		}
+	}
+	
+	public static void logEnd(Logger l, ThriftController c, String method, String correlationId, Object ret){
+		if (l.isDebugEnabled()){
+			final String data = ret == null ? null : ret.toString();  
+			l.debug("END: method:{} ctrl:{} delay:{} mcs correlationId: {} return: {}", method, c.ctrlLog(), c.getExecutionMcs(), correlationId, data !=null ? ((data.length() > 200 && !log.isTraceEnabled()) ? data.substring(0, 199) + "..." : data) : null);
+		}		
 	}
 	
 }

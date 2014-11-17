@@ -9,7 +9,7 @@
 	<version>0.0.1</version>
 
 	<properties>
-		<thrift.version>30.10.14</thrift.version>
+		<thrift.version>17.11.14</thrift.version>
 		<spring.version>4.0.5.RELEASE</spring.version>
 		<spring-integration.version>2.2.4.RELEASE</spring-integration.version>
 		<github.global.server>github</github.global.server>
