@@ -22,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.integration.Message;
 import org.springframework.integration.MessageChannel;
+import org.springframework.integration.MessageDeliveryException;
 import org.springframework.integration.MessageHeaders;
 import org.springframework.integration.MessagingException;
 import org.springframework.integration.core.MessageHandler;
@@ -153,7 +154,13 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
 				processThriftReply(session, msg, copy);
 			}else{
 				final Message<TMemoryInputTransport> m = MessageBuilder.withPayload(copy).setHeader(MessageHeaders.CORRELATION_ID, sessionId).setHeader(MessageHeaders.CONTENT_TYPE, CONTENT_TYPE_BINARY).build();		
-				inWebsocketChannel.send(m);						
+				
+				try{
+					inWebsocketChannel.send(m);
+				}catch(MessageDeliveryException e){
+					log.warn("Reject websocket message, sessionId={}", this.getSessionId(session));
+					session.close(CloseStatus.SERVICE_OVERLOAD);
+				}				
 			}								
 		}
 	
@@ -185,8 +192,14 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
 		if (msg.type == TMessageType.EXCEPTION || msg.type == TMessageType.REPLY){
 			processThriftReply(session, msg, unwrapped);
 		}else{
-			final Message<TMemoryInputTransport> m = MessageBuilder.withPayload(unwrapped).setHeader(MessageHeaders.CORRELATION_ID, sessionId).setHeader(MessageHeaders.CONTENT_TYPE, CONTENT_TYPE_TEXT).build();		
-			inWebsocketChannel.send(m);						
+			final Message<TMemoryInputTransport> m = MessageBuilder.withPayload(unwrapped).setHeader(MessageHeaders.CORRELATION_ID, sessionId).setHeader(MessageHeaders.CONTENT_TYPE, CONTENT_TYPE_TEXT).build();
+			
+			try{
+				inWebsocketChannel.send(m);
+			}catch(MessageDeliveryException e){
+				log.warn("Reject websocket message, sessionId={}", this.getSessionId(session));
+				session.close(CloseStatus.SERVICE_OVERLOAD);
+			}
 		}						
 	}	
 	

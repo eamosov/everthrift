@@ -1,6 +1,7 @@
 package com.knockchat.utils.meta;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -10,9 +11,9 @@ import java.util.Map;
  */
 public abstract class PreparedMetaClass extends AbstractMetaClass {
 
-	protected final Map<String,MetaProperty> fieldProperties = new HashMap<String,MetaProperty>();
-	protected final Map<String,MetaProperty> beanProperties = new HashMap<String,MetaProperty>();
-	protected final Map<String,MetaMethod> methods = new HashMap<String,MetaMethod>();
+	protected final Map<String,MetaProperty> fieldProperties = new LinkedHashMap<String,MetaProperty>();
+	protected final Map<String,MetaProperty> beanProperties = new LinkedHashMap<String,MetaProperty>();
+	protected final Map<String,MetaMethod> methods = new LinkedHashMap<String,MetaMethod>();
 
 	public PreparedMetaClass( Class<?> objectClass ) {
 		super( objectClass );

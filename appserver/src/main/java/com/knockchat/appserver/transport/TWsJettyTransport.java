@@ -72,7 +72,24 @@ public class TWsJettyTransport extends TAsyncTransport {
     
     private Websocket websocket;
     
-    private final LinkedBlockingDeque<ByteBuffer> queue = new LinkedBlockingDeque<ByteBuffer>();
+    private static class QueueWrap{
+    	final ByteBuffer buf;
+    	final TTransportException e;
+    	
+		public QueueWrap(ByteBuffer buf) {
+			super();
+			this.buf = buf;
+			this.e = null;
+		}
+		
+		public QueueWrap(TTransportException e) {
+			super();
+			this.buf = null;
+			this.e = e;
+		}    	    			
+    }
+    
+    private final LinkedBlockingDeque<QueueWrap> queue = new LinkedBlockingDeque<QueueWrap>();
     private byte[] pendingBytes;
     private int pendingBytesPos;
 
@@ -191,11 +208,15 @@ public class TWsJettyTransport extends TAsyncTransport {
 		}    	
     }
     
+    @Override
+    public final void close() {
+    	close(new TTransportException(TTransportException.END_OF_FILE, "closed"));
+    }
+    
     /**
      * Нельзя вызывать из потоков websocket, т.к. тут закрывается client
      */
-    @Override
-    public final void close() {
+    public final void close(TTransportException e) {
     	
     	log.trace("close()");
     	
@@ -223,9 +244,9 @@ public class TWsJettyTransport extends TAsyncTransport {
         	}
         	
         	try {
-				queue.put(EOF);
-			} catch (InterruptedException e) {
-				log.error("InterruptedException", e);
+				queue.put(new QueueWrap(e));
+			} catch (InterruptedException e1) {
+				log.error("InterruptedException", e1);
 			}
         	            	    	
         	for (Integer i: pendingRequests){
@@ -323,16 +344,18 @@ public class TWsJettyTransport extends TAsyncTransport {
     	}
     	
     	while(read < len){
-    		
-    		ByteBuffer b;
-			try {
-				b = queue.poll(1000, TimeUnit.MILLISECONDS);
+    		    		
+    		QueueWrap w;
+			try {				
+				w = queue.poll(1000, TimeUnit.MILLISECONDS);
 			} catch (InterruptedException e) {
 				throw new TTransportException(e);
 			}
+			
+    		if (w!=null && w.e !=null)
+    			throw w.e;
     		
-    		if (b == EOF)
-    			throw new TTransportException("No more data available.");
+    		final ByteBuffer b = w==null ? null : w.buf;
     		
     		if (b == null){
     			synchronized(this){
@@ -407,7 +430,7 @@ public class TWsJettyTransport extends TAsyncTransport {
     	}
     	
     	if (async == null){
-    		queue.add(ByteBuffer.wrap(buf, offset, length));
+    		queue.add(new QueueWrap(ByteBuffer.wrap(buf, offset, length)));
     	}else{
     		final InvocationInfo<?> ii = async.pop(msg.seqid);
     		if (ii==null){
@@ -542,19 +565,19 @@ public class TWsJettyTransport extends TAsyncTransport {
     	}
 
     	@OnWebSocketError
-    	public void onError( Throwable ex ) {
+    	public void onError(final Throwable ex ) {
     		log.error("onError" , ex);
     		
     		executor.execute(new Runnable(){
 
 				@Override
 				public void run() {
-					TWsJettyTransport.this.close();
+					TWsJettyTransport.this.close(new TTransportException(ex));
 				}});    		    		
     	}
     	
     	@OnWebSocketClose
-    	public void onClose(int statusCode, String reason) {
+    	public void onClose(final int statusCode, final String reason) {
         	log.trace("onClose, code={}, reason={}", statusCode, reason);
         	
         	this.session.set(null);
@@ -564,7 +587,7 @@ public class TWsJettyTransport extends TAsyncTransport {
 
 				@Override
 				public void run() {
-					TWsJettyTransport.this.close();
+					TWsJettyTransport.this.close(new TTransportException(TTransportException.UNKNOWN, "status:" + statusCode + ", reason:'" + reason + "'"));
 				}});    		    		
     	}
     }

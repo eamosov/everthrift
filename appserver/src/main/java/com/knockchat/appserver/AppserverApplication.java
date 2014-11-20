@@ -220,7 +220,7 @@ public class AppserverApplication {
         log.info("Starting jetty server on {}:{}", host, port);
 
         final int capacity = Integer.parseInt(env.getProperty("jetty.capacity", "6000"));
-        final int maxThreads = Integer.parseInt(env.getProperty("jetty.maxThreads", "200"));
+        final int maxThreads = Integer.parseInt(env.getProperty("jetty.maxThreads", "10"));
         final int minThreads = Integer.parseInt(env.getProperty("jetty.minThreads", "10"));
         final int idleTimeout = Integer.parseInt(env.getProperty("jetty.idleTimeout", "60000"));
 

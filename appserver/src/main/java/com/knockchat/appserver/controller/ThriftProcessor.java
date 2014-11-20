@@ -281,7 +281,7 @@ public class ThriftProcessor implements TProcessor{
 	}
 	
 	private void logStart(Logger l, String method, String correlationId, Object args){		
-		if(log.isDebugEnabled()){
+		if(l.isDebugEnabled()){
 			final String data = args == null ? null : args.toString();
 			l.debug("START: method:{} args:{} correlationId:{}", method, data !=null ? ((data.length() > 200 && !log.isTraceEnabled()) ? data.substring(0, 199) + "..." : data) : null, correlationId);
 		}

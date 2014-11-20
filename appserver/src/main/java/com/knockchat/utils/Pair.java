@@ -14,6 +14,10 @@ public class Pair<T, V> implements Serializable {
 	private static final long serialVersionUID = 5839335947801602957L;
 	public T first;
 	public V second;
+	
+	public static <T,V> Pair<T, V> create(T first, V second){
+		return new Pair<T,V>(first, second);
+	}
 
 	public Pair( T first, V second ) {
 		this.first = first;

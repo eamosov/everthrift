@@ -57,12 +57,16 @@ public class BaseClient {
 
     protected void init() {
         initModules();
+        
         moduleGroup.setRequired(true);
         argumentGroup.setRequired(true);
         configGroup.setRequired(true);
+        
         for (BaseModule module : getModules().values()) {
+        	
             //добавление новых модулей (пока только cache и cluster)
             moduleGroup.addOption(module.getModule());
+            
             //аргументы для модулей (взаимоисключаемые)
             for (Option option : (List<Option>) module.getOptions()) {
                 argumentGroup.addOption(option);
@@ -76,8 +80,10 @@ public class BaseClient {
 
         moduleOptions.addOptionGroup(moduleGroup);
         moduleOptions4Help.addOptionGroup(moduleGroup);
+        
         moduleOptions.addOptionGroup(argumentGroup);
         argumentOptions4Help.addOptionGroup(argumentGroup);
+        
         moduleOptions.addOptionGroup(configGroup);
         argumentOptions4Help.addOptionGroup(configGroup);
 

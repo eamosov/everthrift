@@ -69,6 +69,7 @@ public class AsmMetaClass extends PreparedMetaClass {
 			this.classLoader = classLoader;
 	
 			for ( Field field : objectClass.getFields() ) {
+								
 				if ( ( field.getModifiers() & Modifier.STATIC) != 0 )
 					continue;
 
@@ -88,10 +89,10 @@ public class AsmMetaClass extends PreparedMetaClass {
 			throw new Error("Can't create AsmMetaClass for class " + objectClass.getName(), e );
 		}
 		
-		GetSetPropertySupport.get( this, beanProperties );
+		GetSetPropertySupport.get( this.getMethods(), beanProperties );
 	}
 
-	private MetaMethod buildMetaMethod( Method method ) {
+	protected MetaMethod buildMetaMethod( Method method ) {
 		String className = generateClassName( method );
 
 		ClassWriter cw = new ClassWriter( ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS );
@@ -112,7 +113,7 @@ public class AsmMetaClass extends PreparedMetaClass {
 		}
 	}
 
-	private MetaProperty buildMetaField( Field field ) {
+	protected MetaProperty buildMetaField( Field field ) {
 		String className = generateClassName( field );
 
 		ClassWriter cw = new ClassWriter( ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS );

@@ -18,6 +18,8 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import com.google.gson.reflect.TypeToken;
+import com.knockchat.utils.meta.MetaClass;
+import com.knockchat.utils.meta.MetaClasses;
 
 /**
  * @author efreet (Amosov Evgeniy)
@@ -52,15 +54,15 @@ public class GsonSerializer {
                 log.error("coudn't serialize class {}", src.getClass());
                 return new JsonObject();
             }
-
+            
             for (TFieldIdEnum f : map.keySet()) {
-
+            	
                 if (src.isSet(f)) {
 
                     final Object v = src.getFieldValue(f);
 
                     if (v instanceof TBase) {
-                        jo.add(f.getFieldName(), context.serialize(v, TBase.class));
+                        jo.add(f.getFieldName(), context.serialize(v/*, TBase.class*/));
                     } else if (v instanceof Collection && !((Collection) v).isEmpty() && ((Collection) v).iterator().next() instanceof TBase) {
                         jo.add(f.getFieldName(), context.serialize(v, tBaseCollection));
                     } else if (v instanceof String) {
@@ -68,10 +70,9 @@ public class GsonSerializer {
                     } else {
                         jo.add(f.getFieldName(), context.serialize(v));
                     }
-
                 }
             }
-
+            
             return jo;
         }
 

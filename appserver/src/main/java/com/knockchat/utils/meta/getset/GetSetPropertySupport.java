@@ -5,7 +5,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 
-import com.knockchat.utils.meta.MetaClass;
 import com.knockchat.utils.meta.MetaMethod;
 import com.knockchat.utils.meta.MetaProperty;
 
@@ -17,12 +16,12 @@ import com.knockchat.utils.meta.MetaProperty;
  */
 public class GetSetPropertySupport {
 
-	public static void get( MetaClass metaClass, Map<String,MetaProperty> properties ) {
+	public static void get(final MetaMethod[] methods, Map<String,MetaProperty> properties ) {
 
 		TreeMap<String, MetaMethod> getters = new TreeMap<String, MetaMethod>();
 		TreeMap<String, MetaMethod> setters = new TreeMap<String, MetaMethod>();
 
-		for ( MetaMethod method : metaClass.getMethods() ) {
+		for ( MetaMethod method : methods) {
 			String methodName = method.getName();
 
 			if ( methodName.startsWith( "get" ) ) {

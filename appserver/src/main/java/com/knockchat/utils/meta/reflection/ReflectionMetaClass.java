@@ -38,7 +38,7 @@ public class ReflectionMetaClass extends PreparedMetaClass{
 			methods.put( method.getName(), new ReflectionMetaMethod(method) );
 		}
 		
-		GetSetPropertySupport.get( this, beanProperties );
+		GetSetPropertySupport.get( this.getMethods(), beanProperties );
 	}
 
 }
