@@ -2,10 +2,10 @@ package com.knockchat.utils;
 
 import java.util.Arrays;
 
-import sun.org.mozilla.javascript.internal.NativeArray;
-import sun.org.mozilla.javascript.internal.NativeJavaObject;
-import sun.org.mozilla.javascript.internal.NativeObject;
-import sun.org.mozilla.javascript.internal.ScriptableObject;
+import org.mozilla.javascript.NativeArray;
+import org.mozilla.javascript.NativeJavaObject;
+import org.mozilla.javascript.NativeObject;
+import org.mozilla.javascript.ScriptableObject;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -14,7 +14,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 
-@SuppressWarnings("restriction")
 public class JSONUtil {
 	
 	final Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
