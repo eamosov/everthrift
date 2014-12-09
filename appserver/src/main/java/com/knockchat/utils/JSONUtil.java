@@ -50,7 +50,12 @@ public class JSONUtil {
             return arrayToJson((NativeArray) value);
         } else if (value instanceof NativeObject) {
             return simpleNativeObjectToJson((NativeObject) value);
-        } else {
+        } else if (value instanceof Double){
+        	if ((double)((Double)value).longValue() == ((Double)value).doubleValue()) 
+        		return gson.toJsonTree(((Double)value).longValue());
+        	else
+        		return gson.toJsonTree(value);
+        }else{
         	return gson.toJsonTree(value);
         }
     }
