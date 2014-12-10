@@ -9,7 +9,7 @@
 	<version>0.0.1</version>
 
 	<properties>
-		<thrift.version>17.11.14</thrift.version>
+		<thrift.version>10.12.14</thrift.version>
 		<spring.version>4.0.5.RELEASE</spring.version>
 		<spring-integration.version>2.2.4.RELEASE</spring-integration.version>
 		<github.global.server>github</github.global.server>
@@ -32,7 +32,7 @@
 			<dependency>
 				<groupId>com.knockchat</groupId>
 				<artifactId>knock4j-services</artifactId>
-				<version>0.0.1</version>
+				<version>0.0.2</version>
 			</dependency>
 
 			<dependency>

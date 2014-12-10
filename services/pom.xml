@@ -11,6 +11,7 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<artifactId>knock4j-services</artifactId>
+	<version>0.0.2</version>
 	
 	<packaging>jar</packaging>
 
