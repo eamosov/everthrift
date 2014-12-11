@@ -6,6 +6,7 @@ import java.sql.Types;
 import java.util.Map;
 import java.util.Properties;
 
+import org.apache.thrift.TEnum;
 import org.hibernate.SessionFactory;
 import org.hibernate.cache.spi.access.AccessType;
 import org.hibernate.cfg.Mappings;
@@ -39,6 +40,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.orm.hibernate4.LocalSessionFactoryBuilder;
 
 import com.google.common.collect.Maps;
+import com.knockchat.hibernate.model.types.DateTypeFactory;
+import com.knockchat.hibernate.model.types.TEnumTypeFactory;
 
 public class LocalSessionFactoryBean extends org.springframework.orm.hibernate4.LocalSessionFactoryBean {
 
@@ -485,8 +488,14 @@ public class LocalSessionFactoryBean extends org.springframework.orm.hibernate4.
         	} else {
         		typeName = null;
         	}
-        }else {
-            typeName = null;
+        }else if (TEnum.class.isAssignableFrom(javaType)){
+        	typeName = TEnumTypeFactory.create(javaType).getCanonicalName();
+        	
+        }else if (jdbcType == Types.DATE && com.knockchat.hibernate.model.types.DateType.isCompatible(javaType)) {
+        	typeName = DateTypeFactory.create(javaType).getCanonicalName();
+        	
+        }else{
+        	typeName = null;
         }
 
         if (typeName == null) {

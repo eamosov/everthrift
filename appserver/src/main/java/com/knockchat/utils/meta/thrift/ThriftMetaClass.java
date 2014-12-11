@@ -27,9 +27,9 @@ public class ThriftMetaClass<T extends TBase> extends AsmMetaClass {
 		Map<? extends TFieldIdEnum, FieldMetaData> map = null;
 		Class thriftClass = objectClass;
 		do{
+			map = FieldMetaData.getStructMetaDataMap(thriftClass);
 			thriftClass = thriftClass.getSuperclass();
-			map = FieldMetaData.getStructMetaDataMap(thriftClass);			 
-		}while(map == null);
+		}while(map == null && thriftClass !=null);
 				 
 		fieldProperties.clear();
 		
