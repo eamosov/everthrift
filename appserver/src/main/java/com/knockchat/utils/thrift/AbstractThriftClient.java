@@ -8,12 +8,10 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.knockchat.utils.thrift.ThriftInvocationHandler.InvocationInfo;
 
-public abstract class AbstractThriftClient<S> implements ThriftClient {
+public abstract class AbstractThriftClient<S> extends ThriftClient<S> {
 	
-	private final S sessionId;
-
 	public AbstractThriftClient(S sessionId) {
-		this.sessionId = sessionId;
+		super(sessionId);
 	}
 
 	@Override
@@ -41,4 +39,5 @@ public abstract class AbstractThriftClient<S> implements ThriftClient {
 			
 	@SuppressWarnings("rawtypes")
 	protected abstract <T> ListenableFuture<T> thriftCall(S sessionId, int timeout, InvocationInfo tInfo) throws TException;
+
 }

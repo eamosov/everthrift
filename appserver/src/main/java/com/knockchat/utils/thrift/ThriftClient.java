@@ -1,21 +1,36 @@
 package com.knockchat.utils.thrift;
 
-import org.apache.thrift.TException;
-
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.knockchat.utils.thrift.ThriftInvocationHandler.InvocationInfo;
-
-public interface ThriftClient {
-
-	<T> ListenableFuture<T> thriftCall(int timeout, T methodCall) throws TException;	
-	<T> ListenableFuture<T> thriftCall(int timeout, T methodCall, FutureCallback<T> callback) throws TException;		
-	@SuppressWarnings({ "rawtypes"})
-	<T> ListenableFuture<T> thriftCallByInfo(int timeout, InvocationInfo tInfo) throws TException;
-
-	void setSession(Object data);
-	Object getSession();
+public abstract class ThriftClient<S> implements ThriftClientIF{
 	
-	String getSessionId();
-	void addCloseCallback(FutureCallback<Void> callback);
+	protected final S sessionId;
+
+	public ThriftClient(S sessionId) {
+		this.sessionId = sessionId;
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result
+				+ ((sessionId == null) ? 0 : sessionId.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		ThriftClient other = (ThriftClient) obj;
+		if (sessionId == null) {
+			if (other.sessionId != null)
+				return false;
+		} else if (!sessionId.equals(other.sessionId))
+			return false;
+		return true;
+	}
 }
