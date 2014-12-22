@@ -6,6 +6,7 @@ import java.io.PrintWriter;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -69,12 +70,24 @@ public class BaseClient {
             
             //аргументы для модулей (взаимоисключаемые)
             for (Option option : (List<Option>) module.getOptions()) {
-                argumentGroup.addOption(option);
+            	
+            	boolean isReused = false;
+            	for (Option old: (Collection<Option>)argumentGroup.getOptions()){            	
+            		if (old.getOpt().equals(option.getOpt())){
+            			old.setDescription(old.getDescription() + "\n" + option.getDescription());
+            			isReused = true;
+            			break;
+            		}
+            	}
+            	
+            	if (!isReused)
+            		argumentGroup.addOption(option);
             }
+                        
         }
 
-        Option infonode = OptionBuilder.withLongOpt("infonode").isRequired().hasArgs(2).withArgName("host port").withDescription("infonode <host> <port>").create("i");
-        Option conf = OptionBuilder.withLongOpt("file").isRequired().hasArg().withArgName("conf.json").withDescription("cluster config location").create("f");
+        final Option infonode = OptionBuilder.withLongOpt("infonode").isRequired().hasArgs(2).withArgName("host port").withDescription("infonode <host> <port>").create("i");
+        final Option conf = OptionBuilder.withLongOpt("file").isRequired().hasArg().withArgName("conf.json").withDescription("cluster config location").create("f");
         configGroup.addOption(infonode);
         configGroup.addOption(conf);
 
@@ -158,9 +171,9 @@ public class BaseClient {
             }
         });
         PrintWriter pw = new PrintWriter(System.out);
-        formatter.printHelp(pw, 80, "cli <module> <method> (-i <host port> | -f <config.json>)", null, moduleOptions4Help, 2, 3, null);
+        formatter.printHelp(pw, 100, "cli <module> <method> (-i <host port> | -f <config.json>)", null, moduleOptions4Help, 2, 3, null);
         pw.println("args:");
-        formatter.printOptions(pw, 80, argumentOptions4Help, 2, 3);
+        formatter.printOptions(pw, 100, argumentOptions4Help, 2, 3);
         pw.close();
     }
 
