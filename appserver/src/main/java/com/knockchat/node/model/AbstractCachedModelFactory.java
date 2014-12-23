@@ -1,11 +1,7 @@
 package com.knockchat.node.model;
 
-import gnu.trove.map.hash.THashMap;
-import gnu.trove.procedure.TObjectProcedure;
-
 import java.io.Serializable;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 
 import net.sf.ehcache.Cache;
@@ -15,7 +11,6 @@ import net.sf.ehcache.loader.CacheLoader;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
-import com.google.common.base.Function;
 import com.knockchat.hibernate.dao.DaoEntityIF;
 
 public abstract class AbstractCachedModelFactory<K,V,A, PK extends Serializable,ENTITY extends DaoEntityIF<ENTITY>> extends AbstractLoadableModelFactory<K,V,A, PK, ENTITY> implements MultiLoader<K,V>, InvalidatedIF<K>{
@@ -37,58 +32,6 @@ public abstract class AbstractCachedModelFactory<K,V,A, PK extends Serializable,
 		super(entityClass);
 		this.cacheName = cacheName;
 	}
-
-	private class IndexInfo<V2>{
-
-		final String name;
-		final Cache cache;
-		final Function<V, List<Object>> itemToCache;
-		final Function<Object[], Object> argsToCache;
-		final Function<Object[], List<K>> loader;
-		final Function<Object[], List<V2>> loader2; 
-		
-		public IndexInfo(String name, Cache cache,
-				Function<V, List<Object>> itemToCache,
-				Function<Object[], Object> argsToCache, Function<Object[], List<K>> loader, Function<Object[], List<V2>> loader2) {
-			super();
-			this.name = name;
-			this.cache = cache;
-			this.itemToCache = itemToCache;
-			this.argsToCache = argsToCache;
-			this.loader = loader;
-			this.loader2 = loader2;
-		}				
-	}
-	
-	private THashMap<String, IndexInfo<?>> indexes = new THashMap<String, IndexInfo<?>>();
-	
-	private class IndexInvalidator implements TObjectProcedure<IndexInfo<?>>{
-		
-		private final V v;
-		
-		public IndexInvalidator(V v){
-			this.v = v;
-		}
-
-		@Override
-		public boolean execute(IndexInfo<?> object) {
-			for (Object i: object.itemToCache.apply(v)){
-				object.cache.remove(i);
-			}
-			return true;
-		}
-		
-	}
-	
-	private TObjectProcedure<IndexInfo> invalidateIndex = new TObjectProcedure<IndexInfo>(){
-
-		@Override
-		public boolean execute(IndexInfo object) {
-			// TODO Auto-generated method stub
-			return false;
-		}
-		
-	};
 	
 	protected abstract CacheLoader getCacheLoader();
 		
@@ -173,116 +116,10 @@ public abstract class AbstractCachedModelFactory<K,V,A, PK extends Serializable,
 		}
 	}
 	
-	public void onInsert(V v){
-		indexes.forEachValue(new IndexInvalidator(v));
-	}
-	
-	public void onDelete(V v){
-		indexes.forEachValue(new IndexInvalidator(v));
-	}
-
-	public void onUpdate(V v){
-		indexes.forEachValue(new IndexInvalidator(v));
-	}
-	
-	public void onInvalidate(K id){
-		if (indexes.size() !=0){
-			final V v = findByIdNoCache(id);
-			
-			if (v!=null){
-				indexes.forEachValue(new IndexInvalidator(v));
-			}
-		}		
-	}
-
     public void invalidate(Collection<K> ids) {
         if (cache!=null)
             cache.removeAll(ids);
     }
-
-    /**
-	 * Создает шаблон для выборки сущностей не по первичному ключу
-	 * @param name - название шаблона
-	 * @param cache - кэш
-	 * @param itemToCache - метод для конвертации сущности в ключи кэша. Используется для инвалидации кэша
-	 * @param argsToCache - метод для конвертации аргументов к ключ кэша. Используется для кеширования результатов loader
-	 * @param loader - загрузчик, возвращающий идешники сущностей
-	 */
-	public void addIndex(String name, Cache cache, Function<V, List<Object>> itemToCache, Function<Object[], Object> argsToCache, Function<Object[], List<K>> loader){
-		indexes.put(name, new IndexInfo(name, cache, itemToCache, argsToCache, loader, null));
-	}
-
-	/**
-	 * Отличается от предыдущего тем, что loader грузит сущности любого типа, которые сразу же кэшируются и возвращаются
-	 * 
-	 * @param name
-	 * @param cache
-	 * @param itemToCache
-	 * @param argsToCache
-	 * @param loader
-	 */
-	public <V2> void addIndex2(String name, Cache cache, Function<V, List<Object>> itemToCache, Function<Object[], Object> argsToCache, Function<Object[], List<V2>> loader){
-		indexes.put(name, new IndexInfo(name, cache, itemToCache, argsToCache, null, loader));
-	}
-	
-	public void invalidateByArgs(String indexName, Object[] args){
-		final IndexInfo ii = indexes.get(indexName);
-		if (ii==null)
-			throw new RuntimeException("Index '" + indexName + "' not found");
-
-		final Object cacheKey = ii.argsToCache.apply(args);
-		ii.cache.remove(cacheKey);
-	}
-	
-	/**
-	 * 
-	 * @param indexName
-	 * @param args
-	 * @return  Нельзя параметризовать, т.к. индекс, созданный через loader2 может вернуть сущность любого типа
-	 */
-	public List findByArgs(String indexName, Object[] args){
-		final IndexInfo ii = indexes.get(indexName);
-		if (ii==null)
-			throw new RuntimeException("Index '" + indexName + "' not found");
-
-		if (ii.loader2 !=null)
-			return findByArgs(ii, args);
-		else		
-			return this.findByIdsInOrder(findByArgs(ii, args));
-	}
-
-	private List findByArgs(IndexInfo<?> ii, Object[] args){
-				
-		final Object cacheKey = ii.argsToCache.apply(args);
-		
-		final Element e = ii.cache.get(cacheKey);
-		if (e!=null){
-			return (List)e.getObjectValue();
-		}else{
-			final List loaded = ii.loader2 !=null ? ii.loader2.apply(args) : ii.loader.apply(args);
-			ii.cache.put(new Element(cacheKey, loaded));
-			return loaded;
-		}
-	}
-
-	public List<K> findIdsByArgs(String indexName, Object[] args){
-		
-		final IndexInfo<?> ii = indexes.get(indexName);
-		if (ii==null)
-			throw new RuntimeException("Index '" + indexName + "' not found");
-		
-		final Object cacheKey = ii.argsToCache.apply(args);
-		
-		final Element e = ii.cache.get(cacheKey);
-		if (e!=null){
-			return (List)e.getObjectValue();
-		}else{
-			final List<K> loaded = ii.loader.apply(args);
-			ii.cache.put(new Element(cacheKey, loaded));
-			return loaded;
-		}
-	}
-
 	
 	public Cache getCache(){
 		return cache;

@@ -2,7 +2,6 @@ package com.knockchat.node.model;
 
 import java.io.Serializable;
 import java.util.Collection;
-import java.util.Map;
 
 import net.sf.ehcache.CacheException;
 
@@ -10,31 +9,39 @@ import com.google.common.base.Function;
 import com.knockchat.hibernate.dao.AbstractDao;
 import com.knockchat.hibernate.dao.DaoEntityIF;
 
-public class DaoCacheLoader extends AbstractCacheLoader {
+public class DaoCacheLoader<K, V extends DaoEntityIF<V>> extends AbstractCacheLoader<K,V> {
 	
-	private final AbstractDao dao;
-    private final Function keyExtractor;
+	private final AbstractDao<K,V> dao;
 
-	public DaoCacheLoader(String name, AbstractDao dao, Function keyExtractor) {
-		super(name);
+	public DaoCacheLoader(String name, AbstractDao<K,V> dao, Function<V,K> keyExtractor) {
+		super(name, keyExtractor);
 		this.dao = dao;
-        this.keyExtractor = keyExtractor;
+	}
+
+	public DaoCacheLoader(String name, AbstractDao<K,V> dao) {
+		super(name, DaoCacheLoader.<K,V>daoExtractor());
+		this.dao = dao;
 	}
 	
     @Override
-    protected Map loadAllImpl(Collection keys) {
-    	return dao.findByIdsAsMap(keys,keyExtractor);
+    protected Collection<V> loadImpl(Collection<K> keys) {
+    	return dao.findByIds(keys);
     }
 
-    public Object load(Object key) throws CacheException {
+    protected V loadImpl(K key) throws CacheException {
         return dao.findById(key);
     }
 
-    public static final Function<DaoEntityIF, Serializable> daoExtractor = new Function<DaoEntityIF, Serializable>() {
+    @SuppressWarnings("rawtypes")
+	public static final Function<DaoEntityIF, Serializable> daoExtractor = new Function<DaoEntityIF, Serializable>() {
         @Override
         public Serializable apply(DaoEntityIF input) {
             return input.getPk();
         }
     };
-
+    
+    @SuppressWarnings("unchecked")
+	public static <K, V extends DaoEntityIF<V>> Function<V,K> daoExtractor(){
+    	return (Function<V,K>)daoExtractor;
+    }
 }

@@ -2,7 +2,7 @@ package com.knockchat.node.model;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import net.sf.ehcache.CacheException;
@@ -11,14 +11,16 @@ import net.sf.ehcache.Status;
 import net.sf.ehcache.loader.CacheLoader;
 
 import com.google.common.base.Function;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 @SuppressWarnings("rawtypes")
-public abstract class AbstractCacheLoader<K,V> implements CacheLoader {
+public abstract class AbstractCacheListLoader<K,V> implements CacheLoader {
 	
 	private final String name;
 	private final Function<V, K> keyExtractor;
 
-	public AbstractCacheLoader(String name, Function<V, K> keyExtractor) {
+	public AbstractCacheListLoader(String name, Function<V, K> keyExtractor) {
 		super();
 		this.name = name;
 		this.keyExtractor = keyExtractor;
@@ -35,17 +37,24 @@ public abstract class AbstractCacheLoader<K,V> implements CacheLoader {
 	}
 		
 	protected abstract Collection<V> loadImpl(Collection<K> keys);
-	protected abstract V loadImpl(K key);
+	protected abstract List<V> loadImpl(K key);
 	
-    private final Map<K, V> loadAllImpl(Collection<K> keys) {
-        final Map<K, V> ret = new HashMap<K, V>();
+    private final Map<K, List<V>> loadAllImpl(Collection<K> keys) {
+        final Map<K, List<V>> ret = Maps.newHashMap();
         final Collection<V> rs = loadImpl(keys);
         for (V r : rs) {
-            ret.put(keyExtractor.apply(r), r);
+        	final K k = keyExtractor.apply(r);        	
+        	List<V> l = ret.get(k);
+        	if (l == null){
+        		l = Lists.newArrayList();
+        		ret.put(k, l);
+        	}
+        	l.add(r);
         }
         for (K k : keys)
             if (!ret.containsKey(k))
                 ret.put(k, null);
+        
         return ret;
     }
 	
