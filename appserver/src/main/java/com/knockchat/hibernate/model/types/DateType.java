@@ -104,7 +104,7 @@ public abstract class DateType implements UserType {
 		try {
 			ret = returnedClass().newInstance();
 		} catch (InstantiationException | IllegalAccessException e) {
-			return new SQLException(e);
+			throw new SQLException(e);
 		}
 		
 		final Calendar cld = GregorianCalendar.getInstance();
@@ -152,7 +152,7 @@ public abstract class DateType implements UserType {
 		try {
 			return copy.newInstance(value);
 		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-			return new HibernateException(e);
+			throw new HibernateException(e);
 		}
 	}
 

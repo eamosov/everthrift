@@ -211,7 +211,7 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF<V>> i
             if (pair.second != null)
                 pair.second.close();
         }
-    }
+    }    
 
     @Override
     public List<V> findByCriteria(Criterion criterion, LockMode lockMode, Order order, int limit, int offset) {

@@ -40,7 +40,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.orm.hibernate4.LocalSessionFactoryBuilder;
 
 import com.google.common.collect.Maps;
-import com.knockchat.hibernate.model.types.DateTypeFactory;
+import com.knockchat.hibernate.model.types.BoxType;
+import com.knockchat.hibernate.model.types.CustomTypeFactory;
+import com.knockchat.hibernate.model.types.PointType;
 import com.knockchat.hibernate.model.types.TEnumTypeFactory;
 
 public class LocalSessionFactoryBean extends org.springframework.orm.hibernate4.LocalSessionFactoryBean {
@@ -492,8 +494,17 @@ public class LocalSessionFactoryBean extends org.springframework.orm.hibernate4.
         	typeName = TEnumTypeFactory.create(javaType).getCanonicalName();
         	
         }else if (jdbcType == Types.DATE && com.knockchat.hibernate.model.types.DateType.isCompatible(javaType)) {
-        	typeName = DateTypeFactory.create(javaType).getCanonicalName();
+        	typeName = CustomTypeFactory.create(javaType, com.knockchat.hibernate.model.types.DateType.class).getCanonicalName();
         	
+        }else if (jdbcType == Types.OTHER && columnModel.getColumnType().contains("box2d") && BoxType.isCompatible(javaType)) {
+        	typeName = CustomTypeFactory.create(javaType, BoxType.class).getCanonicalName();
+        	
+        }else if (jdbcType == Types.OTHER && columnModel.getColumnType().contains("geometry") && PointType.isCompatible(javaType)) {
+        	typeName = CustomTypeFactory.create(javaType, PointType.class).getCanonicalName();
+        	
+    		col.setCustomRead("st_astext(" + col.getName()+")");
+    		col.setCustomWrite("?::geometry");
+
         }else{
         	typeName = null;
         }
