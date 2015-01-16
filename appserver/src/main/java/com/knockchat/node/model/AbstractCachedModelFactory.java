@@ -9,6 +9,7 @@ import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.Element;
 import net.sf.ehcache.loader.CacheLoader;
 
+import org.apache.commons.lang.NotImplementedException;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.knockchat.hibernate.dao.DaoEntityIF;
@@ -24,16 +25,24 @@ public abstract class AbstractCachedModelFactory<K,V,A, PK extends Serializable,
 	private CacheLoader cacheLoader;
 
 	public AbstractCachedModelFactory(String cacheName){
-		super(null);
+		super(null, null);
 		this.cacheName = cacheName;
 	}
 
-	public AbstractCachedModelFactory(String cacheName, Class<ENTITY> entityClass){
-		super(entityClass);
+	public AbstractCachedModelFactory(String cacheName, Class<ENTITY> entityClass, Storage storage){
+		super(entityClass, storage);
 		this.cacheName = cacheName;
 	}
 	
-	protected abstract CacheLoader getCacheLoader();
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	protected CacheLoader getCacheLoader(){
+		if (storage == Storage.PGSQL)
+			return new DaoCacheLoader(cacheName + "Loader", getDao());
+		else if (storage == Storage.MONGO)
+			return new MongoCacheLoader(cacheName + "Loader", getMongo(), entityClass);
+		else
+			throw new NotImplementedException();
+	}
 		
 	@Override
 	public void afterPropertiesSet() throws Exception {

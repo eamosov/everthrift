@@ -1,7 +1,6 @@
 package com.knockchat.node.model;
 
 import java.io.Serializable;
-import java.util.List;
 
 import org.apache.commons.lang.NotImplementedException;
 
@@ -14,23 +13,12 @@ public abstract class ReadonlyCachedModelFactory<K,V> extends AbstractCachedMode
 	}
 
 	@Override
-	protected final XAwareIF<K, V> getAwareAdapter(Void m) {
+	public final DummyEntity updateEntity(DummyEntity e) {
 		throw new NotImplementedException();
 	}
 
 	@Override
-	public final DummyEntity update(DummyEntity e) {
+	public final void deleteEntity(DummyEntity e){
 		throw new NotImplementedException();
 	}
-
-	@Override
-	public final void update(List<DummyEntity> l) {
-		throw new NotImplementedException();
-	}
-
-	@Override
-	public final void update(DummyEntity[] l) {
-		throw new NotImplementedException();
-	}
-
 }

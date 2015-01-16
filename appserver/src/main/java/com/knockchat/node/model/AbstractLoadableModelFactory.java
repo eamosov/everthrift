@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.lang.NotImplementedException;
 import org.apache.thrift.LoadException;
 import org.apache.thrift.TBase;
 import org.slf4j.Logger;
@@ -28,7 +29,12 @@ import com.knockchat.utils.Function2;
 public abstract class AbstractLoadableModelFactory<K, V, A, PK extends Serializable,ENTITY extends DaoEntityIF<ENTITY>> extends AbstractModelFactory<PK, ENTITY> implements MultiLoader<K, V> {
 
     private final Logger log = LoggerFactory.getLogger(this.getClass());
+    
+    public abstract V findById(K id);
 
+    @Override
+    public abstract Map<K, V> findByIds(Collection<K> ids);
+    
     protected final LazyLoaderHelper<XAwareIF<K, V>, V> lazyLoader = new LazyLoaderHelper<XAwareIF<K, V>, V>(){
 
 		@Override
@@ -71,11 +77,13 @@ public abstract class AbstractLoadableModelFactory<K, V, A, PK extends Serializa
 	    }
     };
     
-    public AbstractLoadableModelFactory(Class<ENTITY> entityClass) {
-    	super(entityClass);
+    public AbstractLoadableModelFactory(Class<ENTITY> entityClass, Storage storage) {
+    	super(entityClass, storage);
     }
 
-    protected abstract XAwareIF<K, V> getAwareAdapter(A m);
+    protected XAwareIF<K, V> getAwareAdapter(final A m) {
+        throw new NotImplementedException();
+    }
     
     public void lazyLoad(XAwareIF<K, V> m) {
         this._lazyLoad(m);
@@ -112,11 +120,6 @@ public abstract class AbstractLoadableModelFactory<K, V, A, PK extends Serializa
     public void lazyLoad(final TBase m, final String fieldName) {
        	this._lazyLoad(AwareAdapterFactory.<K, V>getAwareAdapter(m, fieldName));
     }
-    
-//    public V lazyLoad(final TBase m, final String... fieldName) {
-//        return fieldName.length > 0 ? this._lazyLoad(AwareAdapterFactory.<K, V>getAwareAdapter(m, fieldName[0]))
-//                : this._lazyLoad(AwareAdapterFactory.<K, V>getAwareAdapter(m));
-//    }
     
     private final Function<A, XAwareIF<K, V>> getAdapterFunction = new   Function<A, XAwareIF<K, V>>(){
 
@@ -203,11 +206,6 @@ public abstract class AbstractLoadableModelFactory<K, V, A, PK extends Serializa
             }
         });
     }
-
-   public abstract V findById(K id);
-
-    @Override
-    public abstract Map<K, V> findByIds(Collection<K> ids);
         
     public Map<List<K>, List<V>> findByCollectionIds(Collection<List<K>> listCollection) {
     	
