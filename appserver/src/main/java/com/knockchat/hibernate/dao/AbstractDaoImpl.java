@@ -35,7 +35,6 @@ import com.google.common.collect.Multimaps;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.knockchat.utils.Pair;
-import com.sun.istack.internal.Nullable;
 
 
 public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF<V>> implements AbstractDao<K, V> {
@@ -198,33 +197,26 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF<V>> i
 
     @Override
 	public List<V> findByCriteria(Criterion criterion, Order order) {
-        Pair<Criteria, StatelessSession> pair = createCriteria();
-        try {
-            final Criteria criteria = pair.first;
-            criteria.add(criterion);
-            if (order != null)
-                criteria.addOrder(order);
-
-            return Lists.newArrayList(criteria.list());
-        }
-        finally {
-            if (pair.second != null)
-                pair.second.close();
-        }
+    	return findByCriteria(criterion, null, order, null, null);
     }    
 
     @Override
-    public List<V> findByCriteria(Criterion criterion, LockMode lockMode, Order order, int limit, int offset) {
+    public List<V> findByCriteria(Criterion criterion, LockMode lockMode, Order order, Integer limit, Integer offset) {
         final Pair<Criteria, StatelessSession> pair = createCriteria();
         try {
             final Criteria criteria = pair.first;
             criteria.add(criterion);
             if (order != null)
                 criteria.addOrder(order);
+            
             if (lockMode != null)
                 criteria.setLockMode(lockMode);
-            criteria.setMaxResults(limit);
-            criteria.setFirstResult(offset);
+            
+            if (limit !=null)
+            	criteria.setMaxResults(limit);
+            
+            if (offset !=null)
+            	criteria.setFirstResult(offset);
             return Lists.newArrayList(criteria.list());
         }
         finally {
@@ -235,15 +227,15 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF<V>> i
 
     /**
      * @param query             sql query : "?" - param placeholder
-     * @param mapping           ResultSet mapping --> columnName -> columnType
-     * @param resultTransformer transformer for resultSet
+     * @param mapping           ResultSet mapping --> columnName -> columnType, may be null
+     * @param resultTransformer transformer for resultSet, may be null
      * @param params            query params
      * @return
      * @see org.hibernate.transform.Transformers
      * Если не передан параметр mapping то будет использоваться маппер и трансформер класса entityClass
      */
     @Override
-	public <X> List<X> findBySQLQuery(String query, @Nullable Map<String, Type> mapping, @Nullable ResultTransformer resultTransformer, Object... params) {
+	public <X> List<X> findBySQLQuery(String query,  Map<String, Type> mapping, ResultTransformer resultTransformer, Object... params) {
         StatelessSession ss = null;
 
         try {

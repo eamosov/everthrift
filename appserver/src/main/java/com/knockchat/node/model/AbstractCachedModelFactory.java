@@ -67,22 +67,31 @@ public abstract class AbstractCachedModelFactory<K,V,A, PK extends Serializable,
 		V v;
 		
 		if (cache == null){
-			v = (V)cacheLoader.load(id);
+			v = fetchById(id);
 		}else{
 			Element e  = cache.get(id);				
 			if (e!=null){
 				v = (V)e.getObjectValue();
 			}else{
-				v = (V)cacheLoader.load(id);
+				v = fetchById(id);
 			}
 		}
 		return v;
 	}
 
+	/**
+	 * Загрузить значение по ключю из базы
+	 * @param id
+	 * @return
+	 */
+	public V fetchById(K id){
+		return (V)cacheLoader.load(id);
+	}
+	
 	@Override
 	public V findById(K id){
 		if (cache == null)
-			return (V)cacheLoader.load(id);
+			return fetchById(id);
 		
 		final Element e = cache.getWithLoader(id, null, null);
 		if (e == null || e.getObjectValue() == null)
