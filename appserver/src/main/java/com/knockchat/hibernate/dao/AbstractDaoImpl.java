@@ -275,7 +275,7 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF<V>> i
     }
 
     @Override
-    public int executeCustomUpdate(String query, Object... params) {
+    public int executeCustomUpdate(K evictId, String query, Object... params) {
         StatelessSession ss = null;
         try {
             SQLQuery q;
@@ -297,7 +297,13 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF<V>> i
             }
             for (int i = 0; i < params.length; i++)
                 q.setParameter(i, params[i]);
-            return q.executeUpdate();
+            
+            try{
+            	return q.executeUpdate();
+            }finally{
+            	if (evictId !=null)
+            		sessionFactory.getCache().evictEntity(entityClass, evictId);
+            }
         } finally {
             if (ss != null)
                 ss.close();

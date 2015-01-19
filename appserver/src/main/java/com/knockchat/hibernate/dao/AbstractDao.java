@@ -43,7 +43,7 @@ public interface AbstractDao<K, V extends DaoEntityIF<V>> {
 
     public <X> List<X> findBySQLQuery(String query, Map<String, Type> mapping, ResultTransformer resultTransformer, Object... params);
 
-    public int executeCustomUpdate(String query, Object... params);
+    public int executeCustomUpdate(K evictId, String query, Object... params);
 
     public void setSessionFactory(SessionFactory sessionFactory);
 
