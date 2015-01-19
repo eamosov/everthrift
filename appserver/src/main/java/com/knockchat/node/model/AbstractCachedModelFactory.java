@@ -2,6 +2,7 @@ package com.knockchat.node.model;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 
 import net.sf.ehcache.Cache;
@@ -9,6 +10,7 @@ import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.Element;
 import net.sf.ehcache.loader.CacheLoader;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.NotImplementedException;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -102,6 +104,9 @@ public abstract class AbstractCachedModelFactory<K,V,A, PK extends Serializable,
 	
 	@Override
 	public Map<K, V> findByIds(Collection<K> ids){
+		
+		if (CollectionUtils.isEmpty(ids))
+			return Collections.emptyMap();
 		
 		if (cache == null)
 			return (Map<K, V>)cacheLoader.loadAll(ids);

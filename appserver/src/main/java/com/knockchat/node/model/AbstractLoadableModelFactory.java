@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.thrift.LoadException;
 import org.apache.thrift.TBase;
@@ -231,7 +232,7 @@ public abstract class AbstractLoadableModelFactory<K, V, A, PK extends Serializa
 
     public List<V> findByIdsInOrder(Collection<K> ids) {
     	
-    	if (ids.size() == 0)
+    	if (CollectionUtils.isEmpty(ids))
     		return Collections.emptyList();
     	
         final List<V> ret = new ArrayList<V>();
