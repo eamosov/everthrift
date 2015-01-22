@@ -46,8 +46,7 @@ public class JGroupsThriftAdapter implements InitializingBean{
 			log.warn("reply channel is null for message: {}", m);
 				
 		try {
-			final TMemoryBuffer out = tp.process(new TMemoryInputTransport((byte[])m.getPayload()), m, applicationContext.getBean((String)m.getHeaders().getReplyChannel(), MessageChannel.class), null);
-			return out == null ? null : out.toByteArray();
+			return tp.process(new TMemoryInputTransport((byte[])m.getPayload()), m, applicationContext.getBean((String)m.getHeaders().getReplyChannel(), MessageChannel.class), null);
 		} catch (Exception e) {
 			log.error("Exception while execution thrift processor:", e);
 			return null;
