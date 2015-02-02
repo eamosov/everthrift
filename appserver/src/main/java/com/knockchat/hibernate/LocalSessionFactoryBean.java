@@ -1,5 +1,7 @@
 package com.knockchat.hibernate;
 
+import gnu.trove.map.hash.TLongLongHashMap;
+
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Types;
@@ -42,6 +44,7 @@ import org.springframework.orm.hibernate4.LocalSessionFactoryBuilder;
 import com.google.common.collect.Maps;
 import com.knockchat.hibernate.model.types.BoxType;
 import com.knockchat.hibernate.model.types.CustomTypeFactory;
+import com.knockchat.hibernate.model.types.LongLongHstoreType;
 import com.knockchat.hibernate.model.types.PointType;
 import com.knockchat.hibernate.model.types.TEnumTypeFactory;
 
@@ -484,12 +487,20 @@ public class LocalSessionFactoryBean extends org.springframework.orm.hibernate4.
             }
         }else if (Map.class.equals(javaType)){
         	if (columnModel.getColumnType().contains("hstore")){
-        		typeName = "com.knockchat.hibernate.model.types.HstoreType";
+        		typeName = com.knockchat.hibernate.model.types.HstoreType.class.getCanonicalName();
                 col.setCustomRead(col.getName()+"::hstore");
                 col.setCustomWrite("?::hstore");
         	} else {
         		typeName = null;
         	}
+        }else if (TLongLongHashMap.class.equals(javaType)){
+        	if (columnModel.getColumnType().contains("hstore")){
+        		typeName = LongLongHstoreType.class.getCanonicalName();
+                col.setCustomRead(col.getName()+"::hstore");
+                col.setCustomWrite("?::hstore");
+        	} else {
+        		typeName = null;
+        	}        	
         }else if (TEnum.class.isAssignableFrom(javaType)){
         	typeName = TEnumTypeFactory.create(javaType).getCanonicalName();
         	
