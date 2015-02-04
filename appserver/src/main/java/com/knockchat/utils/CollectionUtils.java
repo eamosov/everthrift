@@ -3,6 +3,8 @@ package com.knockchat.utils;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.lang.StringUtils;
+
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Function;
 import com.google.common.base.Splitter;
@@ -144,4 +146,12 @@ public class CollectionUtils {
 		return c;
 	}
 	
+	public static List<String> lowerCase(List<String> input){
+		final List<String> ret = Lists.newArrayListWithExpectedSize(input.size());
+		
+		for (String i: input)
+			ret.add(StringUtils.lowerCase(i));
+		
+		return ret;
+	}
 }
