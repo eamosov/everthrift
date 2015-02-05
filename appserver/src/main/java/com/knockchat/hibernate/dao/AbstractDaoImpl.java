@@ -10,6 +10,7 @@ import java.util.concurrent.Callable;
 import org.hibernate.Criteria;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
+import org.hibernate.Query;
 import org.hibernate.SQLQuery;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -275,7 +276,22 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF<V>> i
     }
 
     @Override
-    public int executeCustomUpdate(K evictId, String query, Object... params) {
+    public int executeCustomUpdate(K evictId, String query, final Object... params) {
+    	
+    	return executeCustomUpdate(evictId, query, new Function<SQLQuery,Query>(){
+
+			@Override
+			public Query apply(SQLQuery q) {
+				
+	            for (int i = 0; i < params.length; i++)
+	                q.setParameter(i, params[i]);
+
+	            return q;
+			}});    	
+    }
+
+    @Override
+    public int executeCustomUpdate(K evictId, String query, Function<SQLQuery, Query> bindFunction) {
         StatelessSession ss = null;
         try {
             SQLQuery q;
@@ -295,8 +311,8 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF<V>> i
                 	log.debug("executeCustomUpdate stateless: {}#{}", entityClass.getSimpleName(), query);                                
                 
             }
-            for (int i = 0; i < params.length; i++)
-                q.setParameter(i, params[i]);
+            
+            bindFunction.apply(q);
             
             try{
             	return q.executeUpdate();

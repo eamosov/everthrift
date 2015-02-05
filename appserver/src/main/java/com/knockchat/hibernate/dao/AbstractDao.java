@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.hibernate.LockMode;
+import org.hibernate.Query;
+import org.hibernate.SQLQuery;
 import org.hibernate.SessionFactory;
 import org.hibernate.criterion.Criterion;
 import org.hibernate.criterion.Order;
@@ -44,6 +46,7 @@ public interface AbstractDao<K, V extends DaoEntityIF<V>> {
     public <X> List<X> findBySQLQuery(String query, Map<String, Type> mapping, ResultTransformer resultTransformer, Object... params);
 
     public int executeCustomUpdate(K evictId, String query, Object... params);
+    public int executeCustomUpdate(K evictId, String query, Function<SQLQuery, Query> bindFunction);
 
     public void setSessionFactory(SessionFactory sessionFactory);
 

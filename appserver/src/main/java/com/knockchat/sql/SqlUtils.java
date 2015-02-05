@@ -1,8 +1,12 @@
 package com.knockchat.sql;
 
+import gnu.trove.map.TLongLongMap;
+import gnu.trove.procedure.TLongLongProcedure;
+
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.thrift.TBase;
 import org.apache.thrift.protocol.TJSONProtocol;
@@ -54,6 +58,34 @@ public class SqlUtils {
 		}
 
 		return param;
+	}
+	
+	public static String toSqlParam( TLongLongMap hstore ) {
+		
+		if (hstore == null)
+			return null;
+
+		final StringBuilder buf = new StringBuilder();
+		final AtomicBoolean needComa = new AtomicBoolean(false);
+		
+		hstore.forEachEntry(new TLongLongProcedure(){
+
+			@Override
+			public boolean execute(long a, long b) {
+				
+				if (needComa.getAndSet(true))
+					buf.append(",");
+
+				buf.append("\"");
+				buf.append(a);
+				buf.append("\"=>\"");
+				buf.append(b);
+				buf.append("\"");
+				
+				return true;
+			}});
+
+		return buf.toString();
 	}
 	
 	public static Object toSqlParam( Map<?,?> hstore ) {

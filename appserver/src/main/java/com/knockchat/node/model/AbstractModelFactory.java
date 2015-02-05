@@ -8,7 +8,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.SortedSet;
+import java.util.concurrent.Callable;
 
 import org.apache.commons.lang.NotImplementedException;
 import org.hibernate.SessionFactory;
@@ -171,6 +173,26 @@ public abstract class AbstractModelFactory<PK extends Serializable, ENTITY exten
     
     public ENTITY update(ENTITY e){
     	throw new NotImplementedException("factory should implement update()");
+    }
+
+    protected boolean optimisticUpdate(Callable<Boolean> updateFunction) throws Exception{
+    	return optimisticUpdate(updateFunction, 5, 100);
+    }
+    
+    protected boolean optimisticUpdate(Callable<Boolean> updateFunction, int maxIteration, int maxTimeoutMillis) throws Exception{
+			int i=0;
+			boolean updated = false;
+			do{
+				updated = updateFunction.call();
+				i++;
+				if (!updated)
+					try {
+						Thread.sleep(new Random().nextInt(maxTimeoutMillis));
+					} catch (InterruptedException e) {
+					}					
+			}while(updated == false && i<maxIteration);
+			
+			return updated;
     }
 
 }
