@@ -3,6 +3,8 @@ package com.knockchat.hibernate.model;
 import java.util.List;
 import java.util.Map;
 
+import org.hibernate.annotations.OptimisticLocking;
+
 import com.google.common.base.Function;
 import com.google.common.collect.Maps;
 
@@ -15,7 +17,7 @@ public class Table {
     protected Class javaClass;
     protected boolean view = false;
 
-    public Table(String schema, String tableName, Class javaClass, List<Column> columns, PrimaryKey pk, boolean view) {
+    public Table(String schema, String tableName, Class<?> javaClass, List<Column> columns, PrimaryKey pk, boolean view) {
         this.view = view;
         this.schema = schema;
         this.tableName = tableName;
@@ -26,8 +28,7 @@ public class Table {
             public String apply(Column input) {
                 return input.getColumnName();
             }
-        });
-
+        });        
     }
 
     public PrimaryKey getPrimaryKey() {

@@ -11,7 +11,7 @@ import com.knockchat.hibernate.dao.DaoEntityIF;
 
 public class DaoCacheLoader<K, V extends DaoEntityIF<V>> extends AbstractCacheLoader<K,V> {
 	
-	private final AbstractDao<K,V> dao;
+	protected final AbstractDao<K,V> dao;
 
 	public DaoCacheLoader(String name, AbstractDao<K,V> dao, Function<V,K> keyExtractor) {
 		super(name, keyExtractor);
@@ -28,6 +28,7 @@ public class DaoCacheLoader<K, V extends DaoEntityIF<V>> extends AbstractCacheLo
     	return dao.findByIds(keys);
     }
 
+    @Override
     protected V loadImpl(K key) throws CacheException {
         return dao.findById(key);
     }

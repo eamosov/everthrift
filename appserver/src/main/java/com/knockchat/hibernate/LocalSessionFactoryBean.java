@@ -9,9 +9,13 @@ import java.util.Map;
 import java.util.Properties;
 
 import org.apache.thrift.TEnum;
+import org.hibernate.AssertionFailure;
 import org.hibernate.SessionFactory;
+import org.hibernate.annotations.OptimisticLockType;
+import org.hibernate.annotations.OptimisticLocking;
 import org.hibernate.cache.spi.access.AccessType;
 import org.hibernate.cfg.Mappings;
+import org.hibernate.engine.internal.Versioning;
 import org.hibernate.mapping.Column;
 import org.hibernate.mapping.Component;
 import org.hibernate.mapping.PrimaryKey;
@@ -82,6 +86,22 @@ public class LocalSessionFactoryBean extends org.springframework.orm.hibernate4.
 
         }
     }
+    
+	private int getVersioning(OptimisticLockType type) {
+		switch ( type ) {
+			case VERSION:
+				return Versioning.OPTIMISTIC_LOCK_VERSION;
+			case NONE:
+				return Versioning.OPTIMISTIC_LOCK_NONE;
+			case DIRTY:
+				return Versioning.OPTIMISTIC_LOCK_DIRTY;
+			case ALL:
+				return Versioning.OPTIMISTIC_LOCK_ALL;
+			default:
+				throw new AssertionFailure( "optimistic locking not supported: " + type );
+		}
+	}
+
 
     private RootClass createTableMapping(Mappings mappings, com.knockchat.hibernate.model.Table tableModel) {
         final Table tab = mappings.addTable(tableModel.getSchema(), null,tableModel.getTableName(), null, false);
@@ -119,6 +139,10 @@ public class LocalSessionFactoryBean extends org.springframework.orm.hibernate4.
                 clazz.addProperty(createProperty(columnModel, col.getValue(),true, true));
             }
         }
+        
+        if (tableModel.getJavaClass().isAnnotationPresent(OptimisticLocking.class))
+        	clazz.setOptimisticLockMode(getVersioning(((OptimisticLocking)tableModel.getJavaClass().getAnnotation(OptimisticLocking.class)).type()));
+        
         return clazz;
     }
 
@@ -363,6 +387,7 @@ public class LocalSessionFactoryBean extends org.springframework.orm.hibernate4.
             mappings.addColumnBinding(columnModel.getColumnName(), col, tab);
             classMappings.get(tableModel.getJavaClass()).put(columnModel.getColumnName(), value.getType());
         }
+        
         return col;
     }
 
@@ -374,6 +399,10 @@ public class LocalSessionFactoryBean extends org.springframework.orm.hibernate4.
         prop.setInsertable(insertable);
         prop.setUpdateable(updatable);
         prop.setPropertyAccessorName(DEFAULT_ACCESSOR);
+        
+        if (value.getType() == DoubleType.INSTANCE ||  value.getType() == FloatType.INSTANCE)
+        	prop.setOptimisticLocked(false);
+        
         return prop;
     }
 

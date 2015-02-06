@@ -115,9 +115,6 @@ public abstract class AbstractCachedModelFactory<K,V,A, PK extends Serializable,
 	}
 
 
-	/**
-	 * Инвалидация индексов будет успешна только в том случае, если индексируемые поля не изменялись
-	 */
 	@Override
 	public void invalidate(K id){
 		

@@ -60,7 +60,7 @@ public abstract class Trove4jHstoreType<T extends THash> implements UserType {
 
 	@Override
 	public void nullSafeSet(PreparedStatement st, Object value, int index, SessionImplementor session) throws HibernateException, SQLException {
-		st.setString(index, value==null?null:(String)SqlUtils.toSqlParam(transformReverse((T)value)));
+		st.setString(index, value==null ? null:(String)SqlUtils.toSqlParam(transformReverse((T)value)));
 	}
 
 //	@Override

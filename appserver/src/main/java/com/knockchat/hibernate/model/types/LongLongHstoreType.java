@@ -18,7 +18,7 @@ public class LongLongHstoreType extends Trove4jHstoreType<TLongLongHashMap> {
 
 	@Override
 	public Object deepCopy(Object value) throws HibernateException {
-		return value==null?new TLongLongHashMap():new TLongLongHashMap((TLongLongHashMap)value);
+		return value==null ? null:new TLongLongHashMap((TLongLongHashMap)value);
 	}
 
 	@Override

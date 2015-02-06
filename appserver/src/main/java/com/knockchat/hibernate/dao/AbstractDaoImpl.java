@@ -109,12 +109,19 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF<V>> i
 	public Collection<V> findByIds(Collection<K> ids) {
         return this.findByCriteria(Restrictions.in("id",ids), null);
     }
+    
+    @Transactional
+    @Override
+    public void persist(V e){
+    	final Session session =  getCurrentSession();    	
+    	session.persist(e);
+    }
 
     @Override
     @Transactional
 	public V saveOrUpdate(V e) {
         final Session session = getCurrentSession();
-        
+                
         if (log.isDebugEnabled())
         	log.debug("saveOrUpdate tx={}: {}", session.getTransaction().getLocalStatus(), e);
         
