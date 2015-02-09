@@ -17,21 +17,39 @@ public class LazyLoadManager {
 	
 	public static int MAX_LOAD_ITERATIONS = 5;
 	
+	private static final Function<Object, Void> loadAllWalker = new Function<Object, Void>(){
+
+		@Override
+		public Void apply(Object input) {
+			invokeLoadAll(input);
+			return null;
+		}
+		
+		private void invokeLoadAll(Object o){
+			try {
+				o.getClass().getMethod("loadAll").invoke(o);
+				return;
+			} catch (IllegalAccessException | IllegalArgumentException
+					| InvocationTargetException | NoSuchMethodException
+					| SecurityException e) {
+			}						
+			
+			if (o instanceof Iterable){
+				for (Object i: ((Iterable)o))
+					invokeLoadAll(i);
+			}else if (o instanceof Map){
+				for (Object i: ((Map)o).values()){
+					invokeLoadAll(i);
+				}
+			}
+		}
+	};
+
 	public static class LoadList{
 		final Multimap<Function<Iterable, Integer>, Object> loadList = HashMultimap.create();
 		boolean buildLoadList;
 		public boolean enabled=true;
-		
-		public Function<Object, Void> walker = new Function<Object, Void>(){
-
-			@Override
-			public Void apply(Object input) {
-				invokeLoadAll(input);
-				return null;
-			}
-			
-		};
-		
+				
 		public void reset(){
 			loadList.clear();
 			buildLoadList = false;
@@ -69,23 +87,13 @@ public class LazyLoadManager {
 		}
 
 		public int load(Object o){
-			return load(o, MAX_LOAD_ITERATIONS, walker);
+			return load(o, MAX_LOAD_ITERATIONS, loadAllWalker);
 		}
 		
 		public int load(Object o, int maxIterations){
-			return load(o, maxIterations, walker);
-		}		
-		
-		private void invokeLoadAll(Object o){
-			try {
-				o.getClass().getMethod("loadAll").invoke(o);
-			} catch (IllegalAccessException | IllegalArgumentException
-					| InvocationTargetException | NoSuchMethodException
-					| SecurityException e) {
-				log.error("Error while invoking loadAll():", e);
-			}						
+			return load(o, maxIterations, loadAllWalker);
 		}
-		
+				
 		public int load(Object o, int maxIterations, Function<Object, Void> walker){
 						
 			if (!enabled)
@@ -171,13 +179,22 @@ public class LazyLoadManager {
 		return false;
 	}
 	
-	public static int load(Object o){
-		return get().load(o);
+	public static void load(final Object o){
+		load(MAX_LOAD_ITERATIONS, o);
 	}
 	
-	public static int load(Object o, int maxIterations){
-		return get().load(o, maxIterations);
+	public static void load(int maxIterations, final Object o){
+		load(maxIterations, new Runnable(){
+
+			@Override
+			public void run() {
+				loadAllWalker.apply(o);
+			}});
 	}
+	
+//	public static int load(Object o, int maxIterations){
+//		return get().load(o, maxIterations);
+//	}
 
 	public static void load(int maxIterations, final Runnable walker){
 		boolean lazyLoaderStatus = LazyLoadManager.enable();

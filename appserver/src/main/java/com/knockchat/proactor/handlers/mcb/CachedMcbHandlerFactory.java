@@ -68,7 +68,7 @@ public class CachedMcbHandlerFactory implements HandlerFactory {
 				o = mc.getMethod( event );
 
 			if ( o == null )
-				throw new Error( "Unknown handler for event '" + event + "' in controller " + controller.getClass().getName() );
+				throw new Error( "Unknown handler for event '" + event + "' in controllerCls " + controller.getClass().getName() );
 				
 			eventMap.put( key, o );
 		}

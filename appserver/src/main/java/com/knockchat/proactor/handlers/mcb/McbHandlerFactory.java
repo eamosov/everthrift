@@ -52,6 +52,6 @@ public class McbHandlerFactory implements HandlerFactory {
 		if ( method != null ) // Событие - вызов метода
 			return new McbMethodWithArgsHandler( method, controller, writeLock, args );
 
-		throw new Error("Unknown handler for event '" + event + "' in controller " + mc.getName() );
+		throw new Error("Unknown handler for event '" + event + "' in controllerCls " + mc.getName() );
 	}
 }

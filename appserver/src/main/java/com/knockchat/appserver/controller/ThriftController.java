@@ -10,10 +10,15 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import javax.sql.DataSource;
 
+import org.apache.thrift.TApplicationException;
 import org.apache.thrift.TBase;
 import org.apache.thrift.TException;
+import org.apache.thrift.protocol.TMessage;
+import org.apache.thrift.protocol.TMessageType;
+import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.protocol.TProtocolFactory;
 import org.apache.thrift.transport.TMemoryBuffer;
+import org.apache.thrift.transport.TTransportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
@@ -29,6 +34,8 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.knockchat.appserver.AppserverApplication;
+import com.knockchat.appserver.model.LazyLoadManager;
+import com.knockchat.appserver.model.LazyLoadManager.LoadList;
 import com.knockchat.utils.ExecutionStats;
 import com.knockchat.utils.Pair;
 import com.knockchat.utils.thrift.ThriftClient;
@@ -98,6 +105,22 @@ public abstract class ThriftController<ArgsType extends TBase, ResultType> {
 	
 	protected abstract ResultType handle() throws TException;
 	
+	
+	/**
+	 * 
+	 * @param args
+	 * @return TApplicationException || TException || ResultType
+	 */
+	protected Object handle(ArgsType args){
+		try {
+			setup(args);
+			final ResultType result =  handle();			
+			return this.filterOutput(loadLazyRelations(result));
+		} catch (TException e) {
+			return e;
+		}		
+	}
+	
 	protected void setTransactionStatus(TransactionStatus transactionStatus){
 		this.transactionStatus = transactionStatus;
 	}
@@ -145,13 +168,16 @@ public abstract class ThriftController<ArgsType extends TBase, ResultType> {
 		
 		final TMemoryBuffer payload;
 		
+		if (!(answer instanceof Exception))
+			answer = this.filterOutput(this.loadLazyRelations((ResultType)answer));				
+		
 		try{
 			if (outputChannel == null || inHeaders == null)
 				throw new RuntimeException("Coudn't send async message: unknown channel");
 					
 			try {
-				payload = ThriftProcessor.buildAnswer(seqId, info, answer, protocolFactory);
-			} catch (Exception e) {
+				payload = serializeAnswer(answer);
+			} catch (TException e) {
 				log.error("Exception while sending answer:", e);
 				return false;
 			}			
@@ -234,5 +260,95 @@ public abstract class ThriftController<ArgsType extends TBase, ResultType> {
 		} );
 
 		return ExecutionStats.getLogString(list);
-	}	
+	}
+	
+	//Обработчик после lasyload и перед отправкой данных клиенту
+	protected ResultType filterOutput(ResultType result){
+		return result;
+	}
+	
+	protected boolean checkAnswerType(Object answer){
+		
+		if (answer == null)
+			return true;
+		else if (answer instanceof TApplicationException)
+			return true;
+		else if (answer instanceof TException)
+			return true;
+		else if (answer instanceof Exception)
+			return false;
+		else
+			return true;
+	}
+	
+	/**
+	 * 
+	 * @param answer TApplicationException || TException || ResultType
+	 * @param o
+	 * @throws TException
+	 */
+	protected void serializeAnswer(Object answer, TProtocol o) throws TException{
+		
+		if (!checkAnswerType(answer)){
+			log.error("Invalid answer: {}", answer);
+			throw new TApplicationException(TApplicationException.INTERNAL_ERROR, "bad answer");
+		}
+		
+		if (answer instanceof TApplicationException){
+			o.writeMessageBegin( new TMessage(info.getName(), TMessageType.EXCEPTION, seqId ) );
+			((TApplicationException)answer).write(o);
+		}else{				
+			o.writeMessageBegin( new TMessage( info.getName(), TMessageType.REPLY, seqId ) );				
+			final TBase result = info.makeResult(answer);										
+			result.write(o);
+		}
+
+		o.writeMessageEnd();
+		o.getTransport().flush(seqId);								
+	}
+	
+	/**
+	 * 
+	 * @param answer - TApplicationException или TException или ResultType 
+	 * @return
+	 * @throws TTransportException
+	 * @throws TException
+	 */
+	protected TMemoryBuffer serializeAnswer(Object answer) throws TException{
+		
+		
+		try{			
+			final TMemoryBuffer outT = new TMemoryBuffer(1024);
+			final TProtocol o = protocolFactory.getProtocol(outT);
+			
+			serializeAnswer(answer, o);
+			
+			return outT;		
+		}catch (Exception e){
+			final TMemoryBuffer outT = new TMemoryBuffer(1024);
+			final TProtocol o = protocolFactory.getProtocol(outT);
+				
+			log.error("Exception while serializeAnswer", e);
+			
+			final TApplicationException x = new TApplicationException( TApplicationException.INTERNAL_ERROR, e.getCause() !=null ?  e.getCause().getMessage() : e.getMessage());
+			o.writeMessageBegin( new TMessage( info.getName(), TMessageType.EXCEPTION, seqId ) );
+			x.write(o);
+			o.writeMessageEnd();
+			o.getTransport().flush(seqId);			
+			return outT;									
+		}		
+	}
+	
+	protected ResultType loadLazyRelations(ResultType result){
+		
+		if (result==null)
+			return null;
+		
+		final LoadList ll = LazyLoadManager.get();
+		ll.load(result);
+		ll.enable();
+		
+		return result;
+	}
+
 }

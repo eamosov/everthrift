@@ -27,8 +27,6 @@ import org.springframework.util.ClassUtils;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.AbstractFuture;
 import com.google.common.util.concurrent.SettableFuture;
-import com.knockchat.appserver.model.LazyLoadManager;
-import com.knockchat.appserver.model.LazyLoadManager.LoadList;
 
 public class ThriftInvocationHandler implements InvocationHandler{
 	
@@ -53,8 +51,6 @@ public class ThriftInvocationHandler implements InvocationHandler{
 			this.methodName = methodName;
 			this.args = args;
 			this.resultInit = resultInit;
-			
-			lazyLoadArgs();
 		}
 
 		public InvocationInfo(String serviceName, String methodName, TBase args, Constructor<? extends TBase> resultInit) {
@@ -62,15 +58,8 @@ public class ThriftInvocationHandler implements InvocationHandler{
 			this.methodName = serviceName + ":" + methodName;
 			this.args = args;
 			this.resultInit = resultInit;
-			
-			lazyLoadArgs();
 		}
 		
-		private void lazyLoadArgs(){
-			final LoadList ll = LazyLoadManager.get();
-			ll.load(this.args);
-		}
-
 		/**
 		 * 
 		 * @param seqId

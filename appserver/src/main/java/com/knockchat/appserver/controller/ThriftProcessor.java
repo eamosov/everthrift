@@ -21,7 +21,6 @@ import org.apache.thrift.protocol.TProtocolUtil;
 import org.apache.thrift.protocol.TType;
 import org.apache.thrift.transport.TMemoryBuffer;
 import org.apache.thrift.transport.TTransport;
-import org.apache.thrift.transport.TTransportException;
 import org.jgroups.Address;
 import org.jgroups.blocks.ResponseMode;
 import org.slf4j.Logger;
@@ -34,7 +33,6 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import com.knockchat.appserver.cluster.JgroupsMessageDispatcher;
 import com.knockchat.appserver.cluster.thrift.JGroupsThrift;
 import com.knockchat.appserver.model.LazyLoadManager;
-import com.knockchat.appserver.model.LazyLoadManager.LoadList;
 import com.knockchat.utils.thrift.ThriftClient;
 import com.knockchat.utils.thrift.ThriftInvocationHandler.InvocationInfo;
 
@@ -47,13 +45,6 @@ public class ThriftProcessor implements TProcessor{
 	
 	private final static Logger log = LoggerFactory.getLogger(ThriftProcessor.class);
 	
-	//private Message<byte[]> inMessage;
-	//private String outputChannel;
-		
-//	private AtomicInteger flushes = new AtomicInteger(0);
-//	private AtomicInteger reads = new AtomicInteger(0);
-	
-	//private final LinkedList<LogEntry> calls = new LinkedList<LogEntry>();
 	private final ThriftControllerRegistry registry;
 	
 	@Autowired
@@ -85,97 +76,45 @@ public class ThriftProcessor implements TProcessor{
 			final LogEntry logEntry = new LogEntry(msg.name);		
 			logEntry.seqId = msg.seqid;
 						
-			final ThriftControllerInfo ctrl = registry.getController(msg.name);
+			final ThriftControllerInfo controllerInfo = registry.getController(msg.name);
 			
-			if (ctrl == null){
+			if (controllerInfo == null){
 				TProtocolUtil.skip( inp, TType.STRUCT );
 				inp.readMessageEnd();
 				
-				final TMemoryBuffer outT = new TMemoryBuffer(1024);					
-				log.debug("No controller for method {}", msg.name);
-				writeApplicationException(protocolFactory.getProtocol(outT), msg.seqid, msg.name, TApplicationException.UNKNOWN_METHOD, "No controller for method " + msg.name);					
+
+				log.debug("No controllerCls for method {}", msg.name);
+				
+				final TMemoryBuffer outT = new TMemoryBuffer(1024);									
+				final TProtocol out = protocolFactory.getProtocol(outT);
+				final TApplicationException x = new TApplicationException( TApplicationException.UNKNOWN_METHOD, "No controllerCls for method " + msg.name);
+				out.writeMessageBegin( new TMessage( msg.name, TMessageType.EXCEPTION, msg.seqid));
+				x.write(out);
+				out.writeMessageEnd();
+				out.getTransport().flush(msg.seqid);											
 				return outT;
 			}
 			
-			final TBase args = ctrl.makeArgument();
+			final TBase args = controllerInfo.makeArgument();
 			args.read(inp);
 			inp.readMessageEnd();
 			
-			final Logger log = LoggerFactory.getLogger(ctrl.controller);
+			final Logger log = LoggerFactory.getLogger(controllerInfo.controllerCls);
 			
 			logStart(log, msg.name, (String)(inMessage == null ? null: inMessage.getHeaders().getCorrelationId()), args);
 						
-			final ThriftController c = ctrl.makeController(args, logEntry, msg.seqid, inMessage == null ? null : inMessage.getHeaders(), outputChannel, thriftClient, registry.getType(), this.protocolFactory);
+			final ThriftController controller = controllerInfo.makeController(args, logEntry, msg.seqid, inMessage == null ? null : inMessage.getHeaders(), outputChannel, thriftClient, registry.getType(), this.protocolFactory);
+			LazyLoadManager.enable();
+			final Object ret = controller.handle(args);			
+			final TMemoryBuffer outT = controller.serializeAnswer(ret);
 						
-			final Object ret = handle(c, args);			
-			final TMemoryBuffer outT = buildAnswer(c.seqId, c.info, ret, protocolFactory);
-			c.setEndNanos(System.nanoTime());
-			c.setResultSentFlag();
-			logEnd(log, c, msg.name, (String)(inMessage == null ? null: inMessage.getHeaders().getCorrelationId()), ret);
+			controller.setEndNanos(System.nanoTime());
+			controller.setResultSentFlag();
+			logEnd(log, controller, msg.name, (String)(inMessage == null ? null: inMessage.getHeaders().getCorrelationId()), ret);
 			return outT;				
-
 		}catch (AsyncAnswer e){
 			return null;
 		}		
-	}
-	
-	private Object handle(ThriftController c, TBase args){
-		try {
-			LazyLoadManager.enable();
-			c.setup(args);
-			return c.handle();
-		} catch (TException e) {
-			return e;
-		}		
-	}
-	
-	public static TMemoryBuffer buildAnswer(int seqId, final ThriftControllerInfo ctrl, Object ret, TProtocolFactory protocolFactory) throws TTransportException, TException{
-		
-	
-		try{			
-			final TMemoryBuffer outT = new TMemoryBuffer(1024);
-			final TProtocol o = protocolFactory.getProtocol(outT);
-
-			if (ret instanceof TApplicationException){
-				o.writeMessageBegin( new TMessage( ctrl.getName(), TMessageType.EXCEPTION, seqId ) );
-				((TApplicationException)ret).write(o);
-				o.writeMessageEnd();
-				o.getTransport().flush(seqId);
-			}else{
-				writeAnswer(o, seqId, ctrl, ret);
-			}
-			
-			return outT;		
-		}catch (Exception e){
-			final TMemoryBuffer outT = new TMemoryBuffer(1024);
-				
-			log.error("Exception", e);
-			writeApplicationException(protocolFactory.getProtocol(outT), seqId, ctrl.getName(), TApplicationException.INTERNAL_ERROR, e.getCause() !=null ?  e.getCause().getMessage() : e.getMessage());
-			return outT;									
-		}		
-	}
-
-	private static void writeApplicationException(TProtocol  outp, int seqId, String name, int type, String text ) throws TException, TTransportException {
-		TApplicationException x = new TApplicationException( type, text );
-		outp.writeMessageBegin( new TMessage( name, TMessageType.EXCEPTION, seqId ) );
-		x.write( outp );
-		outp.writeMessageEnd();
-		outp.getTransport().flush(seqId);
-		return;
-	}
-	
-	private static void writeAnswer(TProtocol  outp, int seqId, ThriftControllerInfo info, Object o) throws TException{
-		outp.writeMessageBegin( new TMessage( info.getName(), TMessageType.REPLY, seqId ) );
-		
-		final TBase result = info.makeResult(o);
-
-		final LoadList ll = LazyLoadManager.get();
-		ll.load(result);
-		ll.enable();
-		
-		result.write(outp);
-		outp.writeMessageEnd();
-		outp.getTransport().flush(seqId);		
 	}
 	
 	private Future<Map<Address, Object>> castThriftMessage(final RpcClustered ann, final ThriftControllerInfo ctrl, final TMessage msg, final TBase args){
@@ -207,30 +146,35 @@ public class ThriftProcessor implements TProcessor{
 	public boolean process(TProtocol inp, TProtocol out) throws TException {
 		final TMessage msg = inp.readMessageBegin();
 
-		final ThriftControllerInfo ctrl = registry.getController(msg.name);
+		final ThriftControllerInfo controllerInfo = registry.getController(msg.name);
 
 		try{
 			
-			if (ctrl == null){
+			if (controllerInfo == null){
 				TProtocolUtil.skip( inp, TType.STRUCT );
 				inp.readMessageEnd();
 				
-				log.debug("No controller for method {}", msg.name);
-				writeApplicationException(out, msg.seqid, msg.name, TApplicationException.UNKNOWN_METHOD, "No controller for method " + msg.name);
+				log.debug("No controllerCls for method {}", msg.name);
+								
+				final TApplicationException x = new TApplicationException( TApplicationException.UNKNOWN_METHOD, "No controllerCls for method " + msg.name);
+				out.writeMessageBegin( new TMessage( msg.name, TMessageType.EXCEPTION, msg.seqid));
+				x.write(out);
+				out.writeMessageEnd();
+				out.getTransport().flush(msg.seqid);							
 				return true;
 			}
 			
-			final TBase args = ctrl.makeArgument();
+			final TBase args = controllerInfo.makeArgument();
 			args.read(inp);
 			inp.readMessageEnd();
 			
-			final Logger _log = LoggerFactory.getLogger(ctrl.controller);
+			final Logger _log = LoggerFactory.getLogger(controllerInfo.controllerCls);
 			
 			logStart(_log, msg.name, null, args);
 			
 			final LogEntry logEntry = new LogEntry(msg.name);
 			
-			final ThriftController c = ctrl.makeController(args, logEntry, msg.seqid, null, null, null, registry.getType(), this.protocolFactory);			
+			final ThriftController controller = controllerInfo.makeController(args, logEntry, msg.seqid, null, null, null, registry.getType(), this.protocolFactory);			
 			
 			/*
 			 * TODO т.к. текущий метов обрабатывает только @RpcSyncTcp контроллеры, то циклический вызовов не получится,
@@ -240,38 +184,26 @@ public class ThriftProcessor implements TProcessor{
 			 * 
 			 *  public byte[] process(byte[] inputData, Message inMessage, String outputChannel)
 			 */
-			final RpcClustered ann = c.getClass().getAnnotation(RpcClustered.class);
+			final RpcClustered ann = controller.getClass().getAnnotation(RpcClustered.class);
 			if (ann !=null){				
-				castThriftMessage(ann, ctrl, msg, args);								
+				castThriftMessage(ann, controllerInfo, msg, args);								
 			}			
 
 			Object ret = null;
 			try{
-				try{
-					ret = handle(c, args);				
-				}catch (Exception e){
-					writeApplicationException(out, msg.seqid, ctrl.getName(), TApplicationException.INTERNAL_ERROR, e.getCause() !=null ?  e.getCause().getMessage() : e.getMessage());
-					throw e;
-				}
 				
-				if (ret instanceof TApplicationException){
-					out.writeMessageBegin( new TMessage( ctrl.getName(), TMessageType.EXCEPTION, msg.seqid ) );
-					((TApplicationException)ret).write(out);
-					out.writeMessageEnd();
-					out.getTransport().flush(msg.seqid);
-				}else{
-					writeAnswer(out, msg.seqid, ctrl, ret);
-				}
+				LazyLoadManager.enable();
+				ret = controller.handle(args);				
+				controller.serializeAnswer(ret, out);
 				
-				//out.getTransport().flush();
 			}finally{
-				c.setEndNanos(System.nanoTime());
-				c.setResultSentFlag();
-				logEnd(_log, c, msg.name, null, ret);
+				controller.setEndNanos(System.nanoTime());
+				controller.setResultSentFlag();
+				logEnd(_log, controller, msg.name, null, ret);
 			}			
 									
 		}catch (AsyncAnswer e){
-			log.error("Processor interface not support AsyncAnswer, controller");
+			log.error("Processor interface not support AsyncAnswer, controllerCls");
 			throw new RuntimeException("Processor interface not support AsyncAnswer", e);
 		}catch (Exception e){
 			log.error("Exception while serving thrift request", e);

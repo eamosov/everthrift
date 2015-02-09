@@ -16,7 +16,7 @@ import org.springframework.util.StringUtils;
 import com.knockchat.utils.thrift.ThriftClient;
 
 public class ThriftControllerInfo {
-	final Class<? extends ThriftController> controller;
+	final Class<? extends ThriftController> controllerCls;
 	final String serviceName;
 	final String methodName;
 	final Class<? extends TBase> argCls;
@@ -24,11 +24,11 @@ public class ThriftControllerInfo {
 	final Method findResultFieldByName;
 	final private ApplicationContext context;
 
-	public ThriftControllerInfo(ApplicationContext context, Class<? extends ThriftController> controller,
+	public ThriftControllerInfo(ApplicationContext context, Class<? extends ThriftController> controllerCls,
 			String serviceName, String methodName,
 			Class<? extends TBase> argCls, Class<? extends TBase> resultCls, Method findResultFieldByName) {
 		super();
-		this.controller = controller;
+		this.controllerCls = controllerCls;
 		this.serviceName = serviceName;
 		this.methodName = methodName;
 		this.argCls = argCls;
@@ -43,7 +43,7 @@ public class ThriftControllerInfo {
 
 	@Override
 	public String toString() {
-		return "ThriftControllerInfo [controller=" + controller
+		return "ThriftControllerInfo [controllerCls=" + controllerCls
 				+ ", serviceName=" + serviceName + ", methodName=" + methodName
 				+ ", argCls=" + argCls + ", resultCls=" + resultCls + "]";
 	}
@@ -93,7 +93,7 @@ public class ThriftControllerInfo {
 	
 	public ThriftController makeController(TBase args, LogEntry logEntry, int seqId, MessageHeaders inHeaders, MessageChannel outputChannel, ThriftClient thriftClient, Class<? extends Annotation> registryAnn, TProtocolFactory protocolFactory) throws TException{
 		
-		final ThriftController ctrl = context.getBean(controller);
+		final ThriftController ctrl = context.getBean(controllerCls);
 		ctrl.setup(args, this, logEntry, seqId, inHeaders, outputChannel, thriftClient, registryAnn, protocolFactory);
 		return ctrl;
 	}

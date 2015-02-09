@@ -39,7 +39,7 @@ public class Handlers {
 			if ( factory.accepts( controllerClass ) )
 				return factory; // Если нашли фабрику, отдаем ее
 
-		log.warn( "No handler factory found for controller class {}", controllerClass );
+		log.warn( "No handler factory found for controllerCls class {}", controllerClass );
 
 		return null; // Ничего не нашли
 	}

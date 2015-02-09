@@ -13,7 +13,7 @@ public interface HandlerFactory {
 	 * образом, обработчик идентифицируется парой контроллер-событие, что может
 	 * быть использовано для оптимизациии внутри фабрики.
 	 *
-	 * @param controller
+	 * @param controllerCls
 	 *            контроллер
 	 * @param event
 	 *            событие
@@ -30,7 +30,7 @@ public interface HandlerFactory {
 	 * контроллер-событие, что может быть использовано для оптимизациии внутри
 	 * фабрики.
 	 *
-	 * @param controller
+	 * @param controllerCls
 	 *            контроллер
 	 * @param event
 	 *            событие
