@@ -7,18 +7,17 @@ import java.util.Map;
 import org.hibernate.LockMode;
 import org.hibernate.Query;
 import org.hibernate.SQLQuery;
-import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.criterion.Criterion;
 import org.hibernate.criterion.Order;
 import org.hibernate.criterion.Projection;
 import org.hibernate.transform.ResultTransformer;
 import org.hibernate.type.Type;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.google.common.base.Function;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
+import com.knockchat.utils.Pair;
 
 
 public interface AbstractDao<K, V extends DaoEntityIF<V>> {
@@ -30,7 +29,7 @@ public interface AbstractDao<K, V extends DaoEntityIF<V>> {
     public Map<K, V> findByIdsAsMap(Collection<K> id, Function<V, K> keyExtractor);
 
     public void persist(V e);
-    public V saveOrUpdate(V e);
+    public Pair<V, Boolean> saveOrUpdate(V e);
 
     public void delete(V e);
 

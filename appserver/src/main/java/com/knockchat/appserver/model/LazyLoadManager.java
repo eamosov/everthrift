@@ -44,6 +44,43 @@ public class LazyLoadManager {
 			}
 		}
 	};
+	
+	private static final Function<Object, Void> loadExtraWalker = new Function<Object, Void>(){
+
+		@Override
+		public Void apply(Object input) {
+			invokeLoadExtra(input);
+			return null;
+		}
+		
+		private void invokeLoadExtra(Object o){
+			try {
+				o.getClass().getMethod("loadExtra").invoke(o);
+				return;
+			} catch (IllegalAccessException | IllegalArgumentException
+					| InvocationTargetException | NoSuchMethodException
+					| SecurityException e) {
+				
+				try {
+					o.getClass().getMethod("loadAll").invoke(o);
+					return;
+				} catch (IllegalAccessException | IllegalArgumentException
+						| InvocationTargetException | NoSuchMethodException
+						| SecurityException e1) {
+				}										
+			}						
+			
+			if (o instanceof Iterable){
+				for (Object i: ((Iterable)o))
+					invokeLoadExtra(i);
+			}else if (o instanceof Map){
+				for (Object i: ((Map)o).values()){
+					invokeLoadExtra(i);
+				}
+			}
+		}
+	};
+
 
 	public static class LoadList{
 		final Multimap<Function<Iterable, Integer>, Object> loadList = HashMultimap.create();
@@ -184,6 +221,10 @@ public class LazyLoadManager {
 	}
 	
 	public static void load(int maxIterations, final Object o){
+		
+		if (o == null)
+			return;
+		
 		load(maxIterations, new Runnable(){
 
 			@Override
@@ -191,6 +232,20 @@ public class LazyLoadManager {
 				loadAllWalker.apply(o);
 			}});
 	}
+	
+	public static void loadExtra(int maxIterations, final Object o){
+		
+		if (o == null)
+			return;
+		
+		load(maxIterations, new Runnable(){
+
+			@Override
+			public void run() {
+				loadExtraWalker.apply(o);
+			}});
+	}
+	
 	
 //	public static int load(Object o, int maxIterations){
 //		return get().load(o, maxIterations);

@@ -69,7 +69,7 @@ public class HstoreType implements UserType {
 
 	@Override
 	public Object deepCopy(Object value) throws HibernateException {
-		return value==null?new HashMap<>():new HashMap((Map)value);
+		return value==null ? null :new HashMap((Map)value);
 	}
 
 	@Override

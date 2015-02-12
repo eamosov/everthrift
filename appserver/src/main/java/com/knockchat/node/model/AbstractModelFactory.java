@@ -21,10 +21,13 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ListeningExecutorService;
+import com.knockchat.appserver.model.CreatedAtIF;
+import com.knockchat.appserver.model.UpdatedAtIF;
 import com.knockchat.hibernate.dao.AbstractDao;
 import com.knockchat.hibernate.dao.AbstractDaoImpl;
 import com.knockchat.hibernate.dao.DaoEntityIF;
 import com.knockchat.sql.objects.ObjectStatements;
+import com.knockchat.utils.Pair;
 
 public abstract class AbstractModelFactory<PK extends Serializable, ENTITY extends DaoEntityIF<ENTITY>> implements InitializingBean {
 	
@@ -50,6 +53,13 @@ public abstract class AbstractModelFactory<PK extends Serializable, ENTITY exten
 
     @Autowired
     protected ListeningExecutorService listeningExecutorService;
+    
+    private ThreadLocal<Boolean> isUpdated = new ThreadLocal<Boolean>(){
+    	@Override
+        protected Boolean initialValue() {
+            return false;
+        }
+    }; 
 
     protected AbstractModelFactory() {
         this(null, null);
@@ -86,11 +96,27 @@ public abstract class AbstractModelFactory<PK extends Serializable, ENTITY exten
         }
     }
     
+    public boolean isUpdated(){
+    	return isUpdated.get();
+    }
+    
     public ENTITY updateEntity(ENTITY e) {
+    	
+    	final long now = System.currentTimeMillis() / 1000;
+    	
+        if (e instanceof UpdatedAtIF)
+            ((UpdatedAtIF) e).setUpdatedAt(now);
+        
+        if (e instanceof CreatedAtIF && e.getPk() == null)
+        	((CreatedAtIF)e).setCreatedAt(now);
+
     	if (storage == Storage.PGSQL){
-    		return dao.saveOrUpdate(e);
+    		final Pair<ENTITY, Boolean> ret = dao.saveOrUpdate(e);
+    		isUpdated.set(ret.second);
+    		return ret.first;
     	}else if (storage == Storage.MONGO){
         	mongo.save(e);
+        	isUpdated.set(true);
         	final ENTITY ret = mongo.findById(e.getPk(), entityClass);
         	
         	if (ret == null)
