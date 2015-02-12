@@ -101,9 +101,14 @@ public class SqlUtils {
 			b.append(toSqlParam(e.getKey()).toString().replaceAll("\"", "\\\\\""));
 			b.append("\"");
 			b.append("=>");
-			b.append("\"");
-			b.append(toSqlParam(e.getValue()).toString().replaceAll("\"", "\\\\\""));
-			b.append("\"");
+			
+			if (e.getValue() !=null){
+				b.append("\"");
+				b.append(toSqlParam(e.getValue()).toString().replaceAll("\"", "\\\\\""));
+				b.append("\"");				
+			}else{
+				b.append("NULL");
+			}
 			needComa = true;
 		}
 		return b.toString();
