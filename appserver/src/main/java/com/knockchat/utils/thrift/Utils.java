@@ -17,7 +17,11 @@ public class Utils {
 		Class<? extends TBase> thriftClass;
 		do{
 			thriftClass = nextThriftClass;
-			map = FieldMetaData.getStructMetaDataMap(thriftClass);
+			try{
+				map = FieldMetaData.getStructMetaDataMap(thriftClass);
+			}catch(Exception e){
+				map = null;
+			}
 			nextThriftClass = (Class<? extends TBase>)thriftClass.getSuperclass();
 		}while(map == null && nextThriftClass !=null);
 		
