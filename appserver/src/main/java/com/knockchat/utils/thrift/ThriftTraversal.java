@@ -4,10 +4,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.thrift.TBase;
 import org.apache.thrift.TFieldIdEnum;
 import org.apache.thrift.meta_data.FieldMetaData;
@@ -16,240 +13,140 @@ import org.apache.thrift.meta_data.ListMetaData;
 import org.apache.thrift.meta_data.MapMetaData;
 import org.apache.thrift.meta_data.SetMetaData;
 import org.apache.thrift.meta_data.StructMetaData;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.knockchat.utils.Pair;
 
 @SuppressWarnings({ "unchecked", "rawtypes" })
 public class ThriftTraversal {
 	
-	enum EDGE_TYPE{
-		OBJECT,
-		COLLECTION,
-		MAP_VALUES
-	}
+	private static final Logger log = LoggerFactory.getLogger(ThriftTraversal.class);
 	
 	private static Map<Class<? extends TBase>, ThriftTraversal> nodes = Maps.newIdentityHashMap(); 
 	
-	private final Class<? extends TBase> cls;
-	private Map<TFieldIdEnum, Pair<EDGE_TYPE,ThriftTraversal>> edges = Maps.newHashMap();
-	private Map<Class<? extends TBase>, List<TFieldIdEnum>> routing = Maps.newIdentityHashMap();
-	private boolean scanned;
-	
-	private static final ReadWriteLock lock = new ReentrantReadWriteLock();
-	
+	private final Class<? extends TBase> cls;	
+	private final Map<TFieldIdEnum, FieldMetaData> fields;
+	private final Map<Class<? extends TBase>, List<TFieldIdEnum>> routing = Maps.newIdentityHashMap();
+		
 	private ThriftTraversal(Class<? extends TBase> cls) {
-		this.cls = cls;				
-	}
-	
-	private ThriftTraversal addEdge(TFieldIdEnum id, EDGE_TYPE type, Class<? extends TBase> cls){
-		final ThriftTraversal t = getNode(cls);
-		edges.put(id, Pair.create(type, t));
-		return t;
-	}
-	
-	private static  ThriftTraversal getNode(Class<? extends TBase> cls){
-		ThriftTraversal n = nodes.get(cls);
-		if (n == null){
-			n = new ThriftTraversal(cls);
-			nodes.put(cls, n);
-		}
-		return n;
+		this.fields = (Map)FieldMetaData.getStructMetaDataMap(cls);
+		this.cls = cls;
+		
+		if (fields == null)
+			throw new RuntimeException("invalid argument");
 	}
 		
-	public static <T extends TBase> void visitChildsOfType(final Object obj, final Class<T> type, Function<T, Void> visitHandler){
+	private static  ThriftTraversal getNode(Class<? extends TBase> cls){
+		synchronized(nodes){
+			ThriftTraversal n = nodes.get(cls);
+			if (n == null){
+				n = new ThriftTraversal(cls);
+				nodes.put(cls, n);
+			}
+			return n;			
+		}
+	}
+	
+	public static <T extends TBase> void visitChildsOfType(final Object obj, final Class<T> type, final Function<T, Void> visitHandler){
+		visitChildsOfType(obj, type, Utils.getRootThriftClass(type).first, visitHandler);
+	}
+			
+	private static <T extends TBase> void visitChildsOfType(final Object obj, final Class<T> type, final Class<? extends TBase> thriftBaseType, final Function<T, Void> visitHandler){
+		
+		if (log.isDebugEnabled())
+			log.debug("visit: objClass={}, type={},  thriftBaseType={}, obj={}", obj==null ? null : obj.getClass(), type.getSimpleName(), thriftBaseType.getSimpleName(), obj);
 		
 		if (obj == null)
 			return;
 		
-		final EDGE_TYPE edgeType;
-		final Class<TBase> objClass;
+		if (type.isInstance(obj)){
+			visitHandler.apply((T)obj);
+			return;
+		}
+		
 		
 		if (obj instanceof TBase){
-			objClass = (Class<TBase>)obj.getClass();
-			edgeType = EDGE_TYPE.OBJECT;
+			
+			final ThriftTraversal node = getNode(Utils.getRootThriftClass((Class)obj.getClass()).first);
+			
+			for (TFieldIdEnum f: node.getChildsOfType(thriftBaseType)){
+				
+				if (log.isDebugEnabled())
+					log.debug("visit field {} of class {}", f, obj.getClass());
+				
+				visitChildsOfType(((TBase)obj).getFieldValue(f), type, thriftBaseType, visitHandler);
+			}
+			
+			return;
+			
 		}else if (obj instanceof Collection){
+			
 			if (((Collection)obj).isEmpty())
 				return;
-				
-			edgeType = EDGE_TYPE.COLLECTION;
-			objClass = (Class<TBase>)((Collection)obj).iterator().next().getClass();
+			
+			for (Object i: ((Collection)obj))
+				visitChildsOfType(i, type, thriftBaseType, visitHandler);
+			
+			return;				
 		}else if (obj instanceof Map){
 			if (((Map)obj).isEmpty())
 				return;
+			
+			for (Map.Entry e: ((Map<?,?>)obj).entrySet()){
+				visitChildsOfType(e.getKey(), type, thriftBaseType, visitHandler);
+				visitChildsOfType(e.getValue(), type, thriftBaseType, visitHandler);
+			}
 
-			edgeType = EDGE_TYPE.MAP_VALUES;
-			objClass = (Class<TBase>)((Map)obj).values().iterator().next().getClass();
+			return;
 		}else{
 			return;
-		}
-		
-		final Pair<Class<? extends TBase>, Map<? extends TFieldIdEnum, FieldMetaData>> root = Utils.getRootThriftClass(objClass);
-
-		
-		final ThriftTraversal node;
-		lock.writeLock().lock();
-		try{
-			node = scanOneClass(root.first, root.second);			
-			node.analizeChildsOfType(type);			
-		}finally{
-			lock.writeLock().unlock();
 		}		
-		
-		lock.readLock().lock();
-		try{			
-			node.visitChildsOfType(edgeType, obj, type, visitHandler);
-		}finally{			
-			lock.readLock().unlock();
+	}
+	
+	private static boolean hasChildsOfType(FieldValueMetaData valueMetaData, Class type){
+
+		if (valueMetaData instanceof StructMetaData){
+			
+			if ( ((StructMetaData)valueMetaData).structClass == type)
+				return true;
+			
+			final Map<TFieldIdEnum, FieldMetaData> map = (Map)FieldMetaData.getStructMetaDataMap(((StructMetaData)valueMetaData).structClass);
+			for (Entry<TFieldIdEnum, FieldMetaData> e :map.entrySet()){
+				if (hasChildsOfType(e.getValue().valueMetaData, type))
+					return true;
+			}
+			
+			return false;						
+		}else if (valueMetaData instanceof ListMetaData){
+			return hasChildsOfType(((ListMetaData)valueMetaData).elemMetaData, type); 
+		}else if (valueMetaData instanceof SetMetaData){
+			return hasChildsOfType(((SetMetaData)valueMetaData).elemMetaData, type);
+		}else if (valueMetaData instanceof MapMetaData){
+			return hasChildsOfType(((MapMetaData)valueMetaData).valueMetaData, type) || hasChildsOfType(((MapMetaData)valueMetaData).keyMetaData, type);
+		}else{
+			return false;
 		}
 	}
 	
-	private <T extends TBase> void invokeHandler(EDGE_TYPE objType, Object obj, Class<T> type, Function<T, Void> visitHandler){
+	private synchronized List<TFieldIdEnum> getChildsOfType(Class type){
 		
-		switch(objType){
-		case OBJECT:
-			if (type.isInstance(obj))
-				visitHandler.apply((T)obj);
-			break;
-		case COLLECTION:
-			for (Object i : ((Collection)obj))
-				if (type.isInstance(i))
-					visitHandler.apply((T)i);
-			break;
-		case MAP_VALUES:
-			for (Object i : ((Map)obj).values())
-				if (type.isInstance(i))
-					visitHandler.apply((T)i);
-			break;			
-		}
-	}
-			
-	private <T extends TBase> void visitChildsOfType(EDGE_TYPE objType, Object obj, Class<T> type, Function<T, Void> visitHandler){
-		
-		if (obj == null)
-			return;
-						
-		if (cls.isAssignableFrom(type)){
-			invokeHandler(objType, obj, type, (Function)visitHandler);
-			return;
-		}
-
-		final List<TFieldIdEnum> typeRouting = this.routing.get(type);
-		if (CollectionUtils.isEmpty(typeRouting))
-			return;
-		
-		if (objType == EDGE_TYPE.COLLECTION){
-			
-			for (Object i : (Collection)obj)
-				visitChildsOfType(EDGE_TYPE.OBJECT, i, type, visitHandler);
-
-			return;
-		}else if (objType == EDGE_TYPE.MAP_VALUES){
-			
-			for (Object i : ((Map)obj).values())
-				visitChildsOfType(EDGE_TYPE.OBJECT, i, type, visitHandler);
-
-			return;			
-		}
-		
-		for (TFieldIdEnum id: typeRouting){			
-			final Pair<EDGE_TYPE, ThriftTraversal> v = edges.get(id);
-			final EDGE_TYPE edgeType = v.first;
-			final ThriftTraversal childNode = v.second;
-
-			final Object fieldValue =  ((TBase)obj).getFieldValue(id);
-			if (fieldValue !=null){
-				childNode.visitChildsOfType(edgeType, fieldValue, type, visitHandler);
-			}
-		}
-						
-		return;
-	}
-
-	private boolean analizeChildsOfType(Class type){
-		
-		if (cls.isAssignableFrom(type))
-			return true;
-		
-		List<TFieldIdEnum> r = routing.get(type);
-		
-		if (r!=null)
-			return !r.isEmpty();
-						
-		r = Lists.newArrayList();
 				
-		for (Entry<TFieldIdEnum, Pair<EDGE_TYPE, ThriftTraversal>> e: edges.entrySet()){
-			final TFieldIdEnum id = e.getKey();
-			final ThriftTraversal childNode = e.getValue().second;
-			
-			final boolean tmp  = childNode.analizeChildsOfType(type);
-			if (tmp)
-				r.add(id);
-			
-		}
-		
-		routing.put(type, r);		
-		return !r.isEmpty();		
-	}
-
-	private boolean isScanned() {
-		return scanned;
-	}
-
-	private void setScanned(boolean scanned) {
-		this.scanned = scanned;
-	}
-	
-	private static ThriftTraversal scanOneClass(final Class<? extends TBase> cls, Map<? extends TFieldIdEnum, FieldMetaData> map){
-		
-		ThriftTraversal node = getNode(cls);
-		if (node.isScanned())
-			return node;
-						
-		node.scanOneClass(map);
-		return node;
-	}
-	
-	private void scanOneClass(Map<? extends TFieldIdEnum, FieldMetaData> structMap){
-		
-		setScanned(true);
-		
-		for (Entry<? extends TFieldIdEnum, FieldMetaData> e: structMap.entrySet()){
-			for (Class<? extends TBase> cls :scanOneField(e.getKey(), e.getValue())){
-				scanOneClass(cls, FieldMetaData.getStructMetaDataMap(cls));
+		List<TFieldIdEnum> childFields = routing.get(type);
+		if (childFields == null){
+			childFields = Lists.newArrayList();
+			for (Entry<TFieldIdEnum, FieldMetaData> e: fields.entrySet()){
+				if (hasChildsOfType(e.getValue().valueMetaData, type)){
+					childFields.add(e.getKey());
+				}					
 			}
-		}		
-	}
-	
-	private List<Class<? extends TBase>> scanOneField(TFieldIdEnum id, FieldMetaData fmd){
-		
-		final List<Class<? extends TBase>> ret = Lists.newArrayList();
-					
-		if (fmd.valueMetaData instanceof StructMetaData){
-			ret.add(addEdge(id, EDGE_TYPE.OBJECT, ((StructMetaData)fmd.valueMetaData).structClass).cls);
-		}else if (fmd.valueMetaData instanceof ListMetaData){
-			
-			final FieldValueMetaData elemMetaData = ((ListMetaData)fmd.valueMetaData).elemMetaData;
-			
-			if (elemMetaData instanceof StructMetaData)					
-				ret.add(addEdge(id, EDGE_TYPE.COLLECTION, ((StructMetaData) elemMetaData).structClass).cls);
-			
-		}else if (fmd.valueMetaData instanceof SetMetaData){
-			final FieldValueMetaData elemMetaData = ((SetMetaData)fmd.valueMetaData).elemMetaData;
-			
-			if (elemMetaData instanceof StructMetaData)					
-				ret.add(addEdge(id, EDGE_TYPE.COLLECTION, ((StructMetaData) elemMetaData).structClass).cls);
-			
-		}else if (fmd.valueMetaData instanceof MapMetaData){
-			final FieldValueMetaData valueMetaData = ((MapMetaData)fmd.valueMetaData).valueMetaData;
-						
-			if (valueMetaData instanceof StructMetaData)
-				ret.add(addEdge(id, EDGE_TYPE.MAP_VALUES, ((StructMetaData) valueMetaData).structClass).cls);
+			log.debug("root class={}, type={}, fields={}", cls, type, childFields);
+			routing.put(type, childFields);
 		}
 		
-		return ret;
+		return childFields;		
 	}
 
 }
