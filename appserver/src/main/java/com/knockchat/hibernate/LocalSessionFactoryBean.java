@@ -48,6 +48,7 @@ import org.springframework.orm.hibernate4.LocalSessionFactoryBuilder;
 import com.google.common.collect.Maps;
 import com.knockchat.hibernate.model.types.BoxType;
 import com.knockchat.hibernate.model.types.CustomTypeFactory;
+import com.knockchat.hibernate.model.types.JsonType;
 import com.knockchat.hibernate.model.types.LongLongHstoreType;
 import com.knockchat.hibernate.model.types.PointType;
 import com.knockchat.hibernate.model.types.TEnumTypeFactory;
@@ -544,7 +545,8 @@ public class LocalSessionFactoryBean extends org.springframework.orm.hibernate4.
         	
     		col.setCustomRead("st_astext(" + col.getName()+")");
     		col.setCustomWrite("?::geometry");
-
+        }else if (jdbcType == Types.OTHER && columnModel.getColumnType().contains("jsonb")){
+        	typeName = CustomTypeFactory.create(javaType, JsonType.class).getCanonicalName();        	
         }else{
         	typeName = null;
         }
