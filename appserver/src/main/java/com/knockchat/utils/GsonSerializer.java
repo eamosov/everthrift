@@ -18,12 +18,11 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import com.google.gson.reflect.TypeToken;
-import com.knockchat.utils.meta.MetaClass;
-import com.knockchat.utils.meta.MetaClasses;
 
 /**
  * @author efreet (Amosov Evgeniy)
  */
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class GsonSerializer {
 
     public static class TBaseSerializer<T extends TBase> implements JsonSerializer<T> {
@@ -33,7 +32,7 @@ public class GsonSerializer {
 
         private final static Logger log = LoggerFactory.getLogger(TBaseSerializer.class);
 
-        @Override
+		@Override
         public JsonElement serialize(T src, Type typeOfSrc, JsonSerializationContext context) {
 
             if (!(src instanceof TBase)) {
@@ -45,7 +44,7 @@ public class GsonSerializer {
             
     		Map<? extends TFieldIdEnum, FieldMetaData> map = null;
     		Class thriftClass = src.getClass();
-    		while(map == null){
+    		while(map == null && thriftClass !=null){
     			map = FieldMetaData.getStructMetaDataMap(thriftClass);
     			thriftClass = thriftClass.getSuperclass(); 
     		}            
@@ -78,18 +77,13 @@ public class GsonSerializer {
 
     }
 
-
-    public static final ThreadLocal<Gson> gson = new ThreadLocal<Gson>() {
-        protected Gson initialValue() {
-            return new GsonBuilder().setPrettyPrinting().registerTypeHierarchyAdapter(TBase.class, new TBaseSerializer()).create();
-        }
-    };
+    private static final Gson gson = new GsonBuilder().setPrettyPrinting().registerTypeHierarchyAdapter(TBase.class, new TBaseSerializer()).create();
 
     public static Gson get() {
-        return gson.get();
+        return gson;
     }
-
-    public static String toJson(TBase src) {
+    
+	public static String toJson(TBase src) {
         return get().toJson(src, TBase.class);
     }
 
@@ -100,30 +94,4 @@ public class GsonSerializer {
     public static JsonElement toJsonTree(TBase src) {
         return get().toJsonTree(src, TBase.class);
     }
-
-//	private static void toJsonBuilder(JsonBuilder jb, String field, JsonElement je){
-//
-//		if (je.isJsonPrimitive()){
-//			jb.addPair(field, je.toString());
-//		}else if (je.isJsonArray()){
-//			final JsonArray arr = je.getAsJsonArray();
-//			final List<JsonBuilder> jba = new ArrayList<JsonBuilder>(arr.size());
-//			for (int i=0; i<arr.size(); i++){
-//				final JsonElement ae = arr.get(i);
-//				final JsonBuilder jbae = new JsonBuilder();
-//				toJsonBuilder(jbae, )
-//			}
-//		}
-//	}
-//
-//	public static JsonBuilder toJsonBuilder(TBase src){
-//		final JsonObject jo = get().toJsonTree(src, TBase.class).getAsJsonObject();
-//		final JsonBuilder jb = new JsonBuilder();
-//
-//		for (Entry<String, JsonElement> e : jo.entrySet()){
-//			jb.a
-//		}
-//
-//		return jb;
-//	}
 }

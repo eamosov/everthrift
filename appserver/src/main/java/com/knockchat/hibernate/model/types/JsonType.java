@@ -8,6 +8,7 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.util.Objects;
 
+import org.apache.thrift.TBase;
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.usertype.UserType;
@@ -15,11 +16,12 @@ import org.postgresql.util.PGobject;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.knockchat.utils.GsonSerializer.TBaseSerializer;
 
 @SuppressWarnings({"unchecked"})
 public abstract class JsonType implements UserType {
-	
-	private final Gson gson = new GsonBuilder().create();
+		
+	private final Gson gson = new GsonBuilder().registerTypeHierarchyAdapter(TBase.class, new TBaseSerializer()).create();
 
 	@Override
 	public int[] sqlTypes() {		

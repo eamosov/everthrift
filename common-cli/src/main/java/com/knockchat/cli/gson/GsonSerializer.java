@@ -21,6 +21,7 @@ import com.google.gson.reflect.TypeToken;
 /**
  * @author efreet (Amosov Evgeniy)
  */
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class GsonSerializer {
 
     public static class TBaseSerializer<T extends TBase> implements JsonSerializer<T> {
@@ -42,7 +43,7 @@ public class GsonSerializer {
 
             Map<? extends TFieldIdEnum, FieldMetaData> map = null;
             Class thriftClass = src.getClass();
-            while(map == null){
+            while(map == null && thriftClass !=null){
                 map = FieldMetaData.getStructMetaDataMap(thriftClass);
                 thriftClass = thriftClass.getSuperclass();
             }
@@ -76,15 +77,10 @@ public class GsonSerializer {
 
     }
 
-
-    public static final ThreadLocal<Gson> gson = new ThreadLocal<Gson>() {
-        protected Gson initialValue() {
-            return new GsonBuilder().setPrettyPrinting().registerTypeHierarchyAdapter(TBase.class, new TBaseSerializer()).create();
-        }
-    };
+    private static Gson gson = new GsonBuilder().setPrettyPrinting().registerTypeHierarchyAdapter(TBase.class, new TBaseSerializer()).create(); 
 
     public static Gson get() {
-        return gson.get();
+        return gson;
     }
 
     public static String toJson(TBase src) {
