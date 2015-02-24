@@ -147,6 +147,8 @@ public class AppserverApplication {
         }
 
         log.info("Try listen {}:{}", env.getProperty("listen.host"), env.getProperty("listen.port"));
+        
+        System.setProperty("multicast.bind_addr", env.getProperty("multicast.bind_addr"));
 
         context.register(Config.class);
         context.registerShutdownHook();

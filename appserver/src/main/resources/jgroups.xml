@@ -4,6 +4,7 @@
     <UDP
     	 singleton_name="tp_jgroups"
          mcast_port="${jgroups.udp.mcast_port:45588}"
+         bind_addr="${multicast.bind_addr:0.0.0.0}"
          tos="8"
          ucast_recv_buf_size="5M"
          ucast_send_buf_size="640K"
