@@ -25,7 +25,11 @@ public class LazyLoadManager {
 			return null;
 		}
 		
-		private void invokeLoadAll(Object o){
+		private void invokeLoadAll(final Object o){
+			
+			if (o == null)
+				return;
+
 			try {
 				o.getClass().getMethod("loadAll").invoke(o);
 				return;
@@ -53,7 +57,11 @@ public class LazyLoadManager {
 			return null;
 		}
 		
-		private void invokeLoadExtra(Object o){
+		private void invokeLoadExtra(final Object o){
+			
+			if (o == null)
+				return;
+			
 			try {
 				o.getClass().getMethod("loadExtra").invoke(o);
 				return;
