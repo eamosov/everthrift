@@ -56,6 +56,7 @@ import org.springframework.web.context.support.XmlWebApplicationContext;
 import org.springframework.web.servlet.DispatcherServlet;
 
 import com.knockchat.appserver.thrift.cluster.NodeAddress;
+import com.knockchat.appserver.transport.http.BinaryThriftServlet;
 import com.knockchat.appserver.transport.http.JsonThriftServlet;
 import com.knockchat.appserver.transport.tcp.ThriftServer;
 import com.knockchat.proactor.handlers.Handlers;
@@ -293,8 +294,11 @@ public class AppserverApplication {
             jettyContext.addServlet(new ServletHolder(jminix), "/jmx/*");
         }
         
-        final JsonThriftServlet thriftServlet = context.getBean(JsonThriftServlet.class);
-        jettyContext.addServlet(new ServletHolder(thriftServlet), "/TJSON");
+        final JsonThriftServlet jsonThriftServlet = context.getBean(JsonThriftServlet.class);
+        jettyContext.addServlet(new ServletHolder(jsonThriftServlet), "/TJSON");
+
+        final BinaryThriftServlet binaryThriftServlet = context.getBean(BinaryThriftServlet.class);
+        jettyContext.addServlet(new ServletHolder(binaryThriftServlet), "/TBINARY");
 
         //final AnnotationConfigWebApplicationContext springWebApplicationContext = new AnnotationConfigWebApplicationContext();
         final XmlWebApplicationContext springWebApplicationContext = new XmlWebApplicationContext();
