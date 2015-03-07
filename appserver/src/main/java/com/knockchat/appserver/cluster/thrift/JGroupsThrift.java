@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.knockchat.appserver.cluster.JgroupsMessageDispatcher;
+import com.knockchat.appserver.controller.MessageWrapper;
 import com.knockchat.utils.thrift.InvocationInfoThreadHolder;
 import com.knockchat.utils.thrift.ThriftInvocationHandler.InvocationInfo;
 
@@ -46,16 +47,15 @@ public class JGroupsThrift {
 		
 				
 		final Message msg = new Message();
-		final TMemoryBuffer payload = tInfo.buildCall(seqId, binaryProtocolFactory);
-		msg.setBuffer(payload.getArray(), 0, payload.length());
-		
+		msg.setObject(new MessageWrapper(tInfo.buildCall(seqId, binaryProtocolFactory)));
+				
 		final RequestOptions options = new RequestOptions(responseMode, timeout);
 		
 		if (exclusionList!=null){
 			options.setExclusionList(exclusionList.toArray(new Address[exclusionList.size()]));
 		}
 		
-		RspList<byte[]> resp;
+		RspList<MessageWrapper> resp;
 		try {
 			resp = jgroupsMessageDispatcher.getMessageDispatcher().castMessage(dest, msg, options);
 		} catch (Exception e) {
@@ -71,12 +71,12 @@ public class JGroupsThrift {
 		
 		final Map<Address, T> ret = new HashMap<Address, T>();		
 		
-		for (Rsp<byte[]>responce: resp){
+		for (Rsp<MessageWrapper>responce: resp){
 			if (responce.getValue() !=null){
 				
 				try{
 					
-					final T success = (T)tInfo.setReply(responce.getValue(), binaryProtocolFactory);					
+					final T success = (T)tInfo.setReply(responce.getValue().getTTransport(), binaryProtocolFactory);					
 					ret.put(responce.getSender(), success);
 					
 				} catch (TApplicationException e) {

@@ -52,12 +52,11 @@ public abstract class ThriftController<ArgsType extends TBase, ResultType> {
 	protected DataSource ds;
 	protected TransactionStatus transactionStatus;
 	protected ThriftClient thriftClient;
+	protected MessageWrapper attributes;
 	
 	@Autowired
 	private ApplicationContext applicationContext;
 
-	protected MessageHeaders inHeaders;
-	protected MessageChannel outputChannel;
 	private long startNanos;
 	private long endNanos;
 	
@@ -80,18 +79,16 @@ public abstract class ThriftController<ArgsType extends TBase, ResultType> {
 		return "";
 	}
 		
-	public void setup (ArgsType args, ThriftControllerInfo info, LogEntry logEntry, int seqId, MessageHeaders inHeaders,MessageChannel outputChannel, ThriftClient thriftClient, Class<? extends Annotation> registryAnn, TProtocolFactory protocolFactory){
+	public void setup (ArgsType args, ThriftControllerInfo info, MessageWrapper attributes, LogEntry logEntry, int seqId, ThriftClient thriftClient, Class<? extends Annotation> registryAnn, TProtocolFactory protocolFactory){
 		this.args = args;
 		this.info = info;
 		this.logEntry = logEntry;
 		this.seqId = seqId;
 		this.context = AppserverApplication.INSTANCE.context;
-		this.inHeaders = inHeaders;
-		this.outputChannel = outputChannel;
 		this.thriftClient = thriftClient;
 		this.registryAnn = registryAnn;
 		this.protocolFactory = protocolFactory;
-		
+		this.attributes = attributes;		
 		this.startNanos = System.nanoTime();
 		
 		try{
@@ -112,6 +109,9 @@ public abstract class ThriftController<ArgsType extends TBase, ResultType> {
 	 * @return TApplicationException || TException || ResultType
 	 */
 	protected Object handle(ArgsType args){
+		
+		log.debug("args:{}, attributes:{}", args, attributes);
+		
 		try {
 			setup(args);
 			final ResultType result =  handle();			
@@ -169,10 +169,13 @@ public abstract class ThriftController<ArgsType extends TBase, ResultType> {
 		final TMemoryBuffer payload;
 		
 		if (!(answer instanceof Exception))
-			answer = this.filterOutput(this.loadLazyRelations((ResultType)answer));				
+			answer = this.filterOutput(this.loadLazyRelations((ResultType)answer));
+		
+		final MessageChannel outChannel = attributes.getOutChannel();
+		final MessageHeaders inHeaders = attributes.getMessageHeaders();
 		
 		try{
-			if (outputChannel == null || inHeaders == null)
+			if (outChannel == null || inHeaders == null)
 				throw new RuntimeException("Coudn't send async message: unknown channel");
 					
 			try {
@@ -187,10 +190,10 @@ public abstract class ThriftController<ArgsType extends TBase, ResultType> {
 		
 		setResultSentFlag();
 				
-		final GenericMessage<TMemoryBuffer> s = new GenericMessage<TMemoryBuffer>(payload, inHeaders);
-		outputChannel.send(s);
+		final GenericMessage<MessageWrapper> s = new GenericMessage<MessageWrapper>(new MessageWrapper(payload).copySerializeableAttributes(attributes), inHeaders);
+		outChannel.send(s);
 		
-		ThriftProcessor.logEnd(LoggerFactory.getLogger(this.getClass()), this, this.getClass().getSimpleName(), (String)(inHeaders != null ? inHeaders.getCorrelationId() : null), answer);
+		ThriftProcessor.logEnd(LoggerFactory.getLogger(this.getClass()), this, this.getClass().getSimpleName(), attributes.getSessionId(), answer);
 				
 		return true;
 	}

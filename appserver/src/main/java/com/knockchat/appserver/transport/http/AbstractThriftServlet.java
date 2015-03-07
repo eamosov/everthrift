@@ -18,6 +18,7 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.terracotta.license.util.IOUtils;
 
+import com.knockchat.appserver.controller.MessageWrapper;
 import com.knockchat.appserver.controller.ThriftProcessor;
 import com.knockchat.appserver.controller.ThriftProcessorFactory;
 
@@ -51,9 +52,9 @@ public abstract class AbstractThriftServlet extends HttpServlet implements Initi
 		
 		final TProtocol in = getProtocolFactory().getProtocol(it);
 		final TProtocol out = getProtocolFactory().getProtocol(ot);
-
+		
 		try {
-			tp.process(in, out);
+			tp.process(in, out, new MessageWrapper(null).setHttpRequestParams(request.getParameterMap()));
 			
 			response.setContentType(getContentType());
 			response.setContentLength(ot.getPos());

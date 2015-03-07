@@ -9,8 +9,6 @@ import org.apache.thrift.TException;
 import org.apache.thrift.TFieldIdEnum;
 import org.apache.thrift.protocol.TProtocolFactory;
 import org.springframework.context.ApplicationContext;
-import org.springframework.integration.MessageChannel;
-import org.springframework.integration.MessageHeaders;
 import org.springframework.util.StringUtils;
 
 import com.knockchat.utils.thrift.ThriftClient;
@@ -91,10 +89,10 @@ public class ThriftControllerInfo {
 		}		
 	}
 	
-	public ThriftController makeController(TBase args, LogEntry logEntry, int seqId, MessageHeaders inHeaders, MessageChannel outputChannel, ThriftClient thriftClient, Class<? extends Annotation> registryAnn, TProtocolFactory protocolFactory) throws TException{
+	public ThriftController makeController(TBase args, MessageWrapper attributes, LogEntry logEntry, int seqId, ThriftClient thriftClient, Class<? extends Annotation> registryAnn, TProtocolFactory protocolFactory) throws TException{
 		
 		final ThriftController ctrl = context.getBean(controllerCls);
-		ctrl.setup(args, this, logEntry, seqId, inHeaders, outputChannel, thriftClient, registryAnn, protocolFactory);
+		ctrl.setup(args, this, attributes, logEntry, seqId, thriftClient, registryAnn, protocolFactory);
 		return ctrl;
 	}
 }

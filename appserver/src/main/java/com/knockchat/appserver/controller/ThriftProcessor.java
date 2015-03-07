@@ -20,14 +20,11 @@ import org.apache.thrift.protocol.TProtocolFactory;
 import org.apache.thrift.protocol.TProtocolUtil;
 import org.apache.thrift.protocol.TType;
 import org.apache.thrift.transport.TMemoryBuffer;
-import org.apache.thrift.transport.TTransport;
 import org.jgroups.Address;
 import org.jgroups.blocks.ResponseMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.integration.Message;
-import org.springframework.integration.MessageChannel;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import com.knockchat.appserver.cluster.JgroupsMessageDispatcher;
@@ -63,14 +60,10 @@ public class ThriftProcessor implements TProcessor{
 		this.protocolFactory = protocolFactory;
 	}
 	
-	public TMemoryBuffer process(TTransport inT) throws Exception{
-		return process(inT, null, null, null);
-	}
-	
-	public TMemoryBuffer process(TTransport inT, Message inMessage, MessageChannel outputChannel, ThriftClient thriftClient) throws Exception{
+	public MessageWrapper process(MessageWrapper in, ThriftClient thriftClient) throws Exception{
 
 		try{		
-			final TProtocol inp = protocolFactory.getProtocol(inT);
+			final TProtocol inp = protocolFactory.getProtocol(in.getTTransport());
 			final TMessage msg = inp.readMessageBegin();
 		
 			final LogEntry logEntry = new LogEntry(msg.name);		
@@ -92,7 +85,7 @@ public class ThriftProcessor implements TProcessor{
 				x.write(out);
 				out.writeMessageEnd();
 				out.getTransport().flush(msg.seqid);											
-				return outT;
+				return new MessageWrapper(outT);
 			}
 			
 			final TBase args = controllerInfo.makeArgument();
@@ -101,17 +94,17 @@ public class ThriftProcessor implements TProcessor{
 			
 			final Logger log = LoggerFactory.getLogger(controllerInfo.controllerCls);
 			
-			logStart(log, msg.name, (String)(inMessage == null ? null: inMessage.getHeaders().getCorrelationId()), args);
+			logStart(log, msg.name, in.getSessionId(), args);
 						
-			final ThriftController controller = controllerInfo.makeController(args, logEntry, msg.seqid, inMessage == null ? null : inMessage.getHeaders(), outputChannel, thriftClient, registry.getType(), this.protocolFactory);
+			final ThriftController controller = controllerInfo.makeController(args, new MessageWrapper(null).copyAttributes(in), logEntry, msg.seqid, thriftClient, registry.getType(), this.protocolFactory);
 			LazyLoadManager.enable();
 			final Object ret = controller.handle(args);			
 			final TMemoryBuffer outT = controller.serializeAnswer(ret);
 						
 			controller.setEndNanos(System.nanoTime());
 			controller.setResultSentFlag();
-			logEnd(log, controller, msg.name, (String)(inMessage == null ? null: inMessage.getHeaders().getCorrelationId()), ret);
-			return outT;				
+			logEnd(log, controller, msg.name, in.getSessionId(), ret);
+			return new MessageWrapper(outT).copyAttributes(in);				
 		}catch (AsyncAnswer e){
 			return null;
 		}		
@@ -144,6 +137,10 @@ public class ThriftProcessor implements TProcessor{
 
 	@Override
 	public boolean process(TProtocol inp, TProtocol out) throws TException {
+		return process(inp, out, null);
+	}
+	
+	public boolean process(TProtocol inp, TProtocol out, MessageWrapper attributes) throws TException {
 		final TMessage msg = inp.readMessageBegin();
 
 		final ThriftControllerInfo controllerInfo = registry.getController(msg.name);
@@ -174,7 +171,7 @@ public class ThriftProcessor implements TProcessor{
 			
 			final LogEntry logEntry = new LogEntry(msg.name);
 			
-			final ThriftController controller = controllerInfo.makeController(args, logEntry, msg.seqid, null, null, null, registry.getType(), this.protocolFactory);			
+			final ThriftController controller = controllerInfo.makeController(args, attributes, logEntry, msg.seqid, null, registry.getType(), this.protocolFactory);			
 			
 			/*
 			 * TODO т.к. текущий метов обрабатывает только @RpcSyncTcp контроллеры, то циклический вызовов не получится,

@@ -13,6 +13,7 @@ import org.springframework.integration.MessageChannel;
 import org.springframework.integration.channel.ChannelInterceptor;
 import org.springframework.integration.support.MessageBuilder;
 
+import com.knockchat.appserver.controller.MessageWrapper;
 import com.knockchat.appserver.controller.ThriftProcessor;
 import com.knockchat.appserver.controller.ThriftProcessorFactory;
 
@@ -40,9 +41,8 @@ public class AsyncTcpThriftAdapter implements InitializingBean, ChannelIntercept
 						
 		log.debug("{}, adapter={}, processor={}", new Object[]{m, this, tp});
 		
-		
 		try{
-			return tp.process(new TMemoryInputTransport((byte[])m.getPayload()), m, applicationContext.getBean("outChannel", MessageChannel.class), null);
+			return tp.process(new MessageWrapper(new TMemoryInputTransport((byte[])m.getPayload())).setMessageHeaders(m.getHeaders()).setOutChannel(applicationContext.getBean("outChannel", MessageChannel.class)), null);
 		} catch (Exception e) {
 			log.error("Exception while execution thrift processor:", e);
 			return null;
@@ -56,7 +56,7 @@ public class AsyncTcpThriftAdapter implements InitializingBean, ChannelIntercept
 
 	@Override
 	public Message<?> preSend(Message<?> message, MessageChannel channel) {
-		return MessageBuilder.withPayload(((TMemoryBuffer)message.getPayload()).toByteArray()).copyHeaders(message.getHeaders()).build();
+		return MessageBuilder.withPayload(((TMemoryBuffer)((MessageWrapper)message.getPayload()).getTTransport()).toByteArray()).copyHeaders(message.getHeaders()).build();
 	}
 
 	@Override

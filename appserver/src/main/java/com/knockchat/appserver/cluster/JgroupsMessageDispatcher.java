@@ -25,6 +25,7 @@ import org.springframework.integration.support.MessageBuilder;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import com.knockchat.appserver.controller.MessageWrapper;
 import com.knockchat.appserver.transport.jgroups.JGroupsThriftAdapter;
 
 
@@ -57,7 +58,7 @@ public class JgroupsMessageDispatcher implements AsyncRequestHandler, Initializi
 	public void handle(Message request, Response response) throws Exception {
 		log.debug("handle message: {}, {}", request, response);
 				
-		org.springframework.integration.Message<byte[]> m = MessageBuilder.withPayload(request.getRawBuffer()).setHeader(JGroupsThriftAdapter.HEADER_JRESPONSE, response).setHeader(MessageHeaders.REPLY_CHANNEL, "outJGroupsChannel").build();		
+		org.springframework.integration.Message<MessageWrapper> m = MessageBuilder.<MessageWrapper>withPayload((MessageWrapper)request.getObject()).setHeader(JGroupsThriftAdapter.HEADER_JRESPONSE, response).setHeader(MessageHeaders.REPLY_CHANNEL, "outJGroupsChannel").build();		
 		inJGroupsChannel.send(m);		
 	}
 	
