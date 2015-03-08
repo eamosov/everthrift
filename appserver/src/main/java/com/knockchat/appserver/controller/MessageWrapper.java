@@ -134,4 +134,13 @@ public class MessageWrapper implements Serializable{
 		
 		attributes = (Map)ois.readObject();
 	}
+	
+	public Object getAttribute(String name){
+		return attributes.get(name);
+	}
+	
+	public MessageWrapper setAttribute(String name, Object value){
+		attributes.put(name, value);
+		return this;
+	}
 }

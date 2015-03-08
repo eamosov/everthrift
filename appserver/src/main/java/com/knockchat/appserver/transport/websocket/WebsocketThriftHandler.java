@@ -1,5 +1,6 @@
 package com.knockchat.appserver.transport.websocket;
 
+import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Map;
@@ -233,6 +234,15 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
 		log.debug("Establish websocket connection: {}, attributes: {}", sessionId, session.getAttributes());
 	
 		sessionRegistry.put(sessionId, new SessionData(session));
+		
+		final Message<MessageWrapper> m = MessageBuilder.withPayload(new MessageWrapper(null).setAttribute("onOpen", true).setSessionId(sessionId).setHttpRequestParams((Map)session.getAttributes().get(MessageWrapper.HTTP_REQUEST_PARAMS))).build();
+		
+		try{
+			inWebsocketChannel.send(m);
+		}catch(MessageDeliveryException e){
+			log.warn("Reject websocket message, sessionId={}", this.getSessionId(session));
+			session.close(CloseStatus.SERVICE_OVERLOAD);
+		}		
 	}
 	
 	public String getSessionId(WebSocketSession session){
@@ -314,19 +324,37 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
 		
 	private MessageWrapper handleIn(Message<MessageWrapper> m, MessageChannel outChannel){
 
-		final String sessionId = m.getPayload().getSessionId();
+		final MessageWrapper w = m.getPayload().setMessageHeaders(m.getHeaders()).setOutChannel(outChannel);
+		
+		final String sessionId = w.getSessionId();
 
 		log.debug("handleIn: {}, adapter={}, processor={}, sessionId={}", new Object[]{m, this, tp, sessionId});
 				
-		if (sessionId == null)
-			log.warn("websocket sessionId is null for message: {}", m);
-		
-		try {
-			return tp.process(m.getPayload().setMessageHeaders(m.getHeaders()).setOutChannel(outChannel), sessionId !=null ? getThriftClient(sessionId) : null);
-		} catch (Exception e) {
-			log.error("Exception while execution thrift processor:", e);
+		if (sessionId == null){
+			log.error("websocket sessionId is null for message: {}", m);
 			return null;
 		}
+		
+		final ThriftClient tc = getThriftClient(sessionId);
+
+		if (w.getAttribute("onOpen") !=null){
+			if (tp.processOnOpen(w, tc) == false){
+				final SessionData sd = sessionRegistry.get(sessionId);
+				if (sd !=null)
+					try {
+						sd.session.close(CloseStatus.POLICY_VIOLATION);
+					} catch (IOException e) {
+					}
+			}
+			return null;
+		}else{
+			try {
+				return tp.process(w, tc);
+			} catch (Exception e) {
+				log.error("Exception while execution thrift processor:", e);
+				return null;
+			}			
+		}		
 	}
 	
 	private void write(SessionData sd, WebsocketContentType contentType, TMemoryBuffer payload) throws TTransportException{

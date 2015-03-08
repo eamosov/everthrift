@@ -105,7 +105,7 @@ public class BaseThriftClient implements AutoCloseable{
 			}			
 		}else if (proto.equals(Transports.WEBSOCKET_ZLIB)){
 			try {
-				transport = new TWsTransport(new URI("ws://" + hostPort.addr + ":" + hostPort.port + "/thrift_zlib?auth=123123"), 5000, processor, new  TBinaryProtocol.Factory(), new TZlibTransport.Factory(), null, executor);
+				transport = new TWsTransport(new URI("ws://" + hostPort.addr + ":" + hostPort.port + "/thrift_zlib"), 5000, processor, new  TBinaryProtocol.Factory(), new TZlibTransport.Factory(), null, executor);
 				protocol = new TBinaryProtocol(new TZlibTransport(transport));
 			} catch (URISyntaxException e) {
 				throw new RuntimeException(e);

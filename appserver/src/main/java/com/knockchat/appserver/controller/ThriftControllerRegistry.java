@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -30,8 +31,8 @@ public abstract class ThriftControllerRegistry implements InitializingBean{
 	@Autowired
 	protected ApplicationContext applicationContext;
 	
-	//public static ThriftControllerRegistry INSTANCE = new ThriftControllerRegistry();
 	private Map<String, ThriftControllerInfo> map = Collections.synchronizedMap(new HashMap<String, ThriftControllerInfo>());
+	private List<Class<ConnectionStateHandler>> stateHandlers =  new CopyOnWriteArrayList<Class<ConnectionStateHandler>>();
 	
 	private final Class<? extends Annotation> annotationType;
 	
@@ -64,23 +65,23 @@ public abstract class ThriftControllerRegistry implements InitializingBean{
 		for (BeanDefinition b : scanner.findCandidateComponents(basePath)){
 			final Class cls = ClassUtils.resolveClassName(b.getBeanClassName(), ClassUtils.getDefaultClassLoader());
 			
-			//log.info("Find Controller candidate:{}", cls.getSimpleName());
-			
-			for (Method m: cls.getMethods()){
-				//log.info("method: {}", m.toString());
-				if (m.getName().equals("setup")/* && m.getParameterTypes().length==1*/){
-					
-					try{
-						final ThriftControllerInfo i = tryRegisterController(cls, m.getParameterTypes()[0]);
-						log.debug("Find ThriftController: {}", i);
-						map.put(i.getName(), i);
-					}catch(IllegalArgumentException e){
-						
-					}
-				}
+			if (ConnectionStateHandler.class.isAssignableFrom(cls)){
 				
-			}
-
+				stateHandlers.add((Class<ConnectionStateHandler>)cls);
+				
+			}else if (ThriftController.class.isAssignableFrom(cls)){
+				for (Method m: cls.getMethods()){
+					if (m.getName().equals("setup")){					
+						try{
+							final ThriftControllerInfo i = tryRegisterController(cls, m.getParameterTypes()[0]);
+							log.debug("Find ThriftController: {}", i);
+							map.put(i.getName(), i);
+							break;
+						}catch(IllegalArgumentException e){						
+						}
+					}				
+				}											
+			}			
 		}
 	}
 	
@@ -141,4 +142,9 @@ public abstract class ThriftControllerRegistry implements InitializingBean{
 	public void afterPropertiesSet() throws Exception {
 		scanThriftControllers(annotationType);		
 	}
+
+	public List<Class<ConnectionStateHandler>> getStateHandlers() {
+		return stateHandlers;
+	}
+	
 }

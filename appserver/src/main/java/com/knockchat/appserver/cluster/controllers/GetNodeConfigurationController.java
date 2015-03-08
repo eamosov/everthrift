@@ -45,7 +45,7 @@ public class GetNodeConfigurationController extends ThriftController<ClusterServ
 		
 		LazyLoadManager.disable();
 		
-		final ConnectorServerFactoryBean cs = AppserverApplication.INSTANCE.context.getBean(ConnectorServerFactoryBean.class);
+		final ConnectorServerFactoryBean cs = context.getBean(ConnectorServerFactoryBean.class);
 		
 		return new Node(nc,
 				AppserverApplication.INSTANCE.env.getProperty("node.name"), 				

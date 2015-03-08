@@ -24,7 +24,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.integration.MessageChannel;
 import org.springframework.integration.MessageHeaders;
 import org.springframework.integration.message.GenericMessage;
@@ -33,7 +32,6 @@ import org.springframework.transaction.TransactionStatus;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.knockchat.appserver.AppserverApplication;
 import com.knockchat.appserver.model.LazyLoadManager;
 import com.knockchat.appserver.model.LazyLoadManager.LoadList;
 import com.knockchat.utils.ExecutionStats;
@@ -48,14 +46,13 @@ public abstract class ThriftController<ArgsType extends TBase, ResultType> {
 	protected ThriftControllerInfo info;
 	protected LogEntry logEntry;
 	protected int seqId;
-	protected AbstractApplicationContext context;
 	protected DataSource ds;
 	protected TransactionStatus transactionStatus;
 	protected ThriftClient thriftClient;
 	protected MessageWrapper attributes;
 	
 	@Autowired
-	private ApplicationContext applicationContext;
+	protected ApplicationContext context;
 
 	private long startNanos;
 	private long endNanos;
@@ -84,7 +81,6 @@ public abstract class ThriftController<ArgsType extends TBase, ResultType> {
 		this.info = info;
 		this.logEntry = logEntry;
 		this.seqId = seqId;
-		this.context = AppserverApplication.INSTANCE.context;
 		this.thriftClient = thriftClient;
 		this.registryAnn = registryAnn;
 		this.protocolFactory = protocolFactory;

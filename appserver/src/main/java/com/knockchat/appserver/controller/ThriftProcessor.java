@@ -25,6 +25,7 @@ import org.jgroups.blocks.ResponseMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import com.knockchat.appserver.cluster.JgroupsMessageDispatcher;
@@ -53,6 +54,9 @@ public class ThriftProcessor implements TProcessor{
 	@Autowired
 	private JgroupsMessageDispatcher jgroupsMessageDispatcher;
 	
+	@Autowired
+	protected ApplicationContext applicationContext;
+	
 	private final TProtocolFactory protocolFactory;
 	
 	public ThriftProcessor(ThriftControllerRegistry registry, TProtocolFactory protocolFactory){
@@ -60,6 +64,16 @@ public class ThriftProcessor implements TProcessor{
 		this.protocolFactory = protocolFactory;
 	}
 	
+	public boolean processOnOpen(MessageWrapper in, ThriftClient thriftClient){	
+		for (Class<ConnectionStateHandler> cls: registry.getStateHandlers()){
+			final ConnectionStateHandler h = applicationContext.getBean(cls);
+			h.setup(in, thriftClient, registry.getType(), protocolFactory);
+			if (!h.onOpen())
+				return false;
+		}
+		return true;
+	}
+				
 	public MessageWrapper process(MessageWrapper in, ThriftClient thriftClient) throws Exception{
 
 		try{		
