@@ -42,6 +42,12 @@
 			</dependency>
 
 			<dependency>
+				<groupId>com.knockchat</groupId>
+				<artifactId>knock4j-thrift</artifactId>
+				<version>0.0.1</version>
+			</dependency>
+
+			<dependency>
 				<groupId>org.springframework</groupId>
 				<artifactId>spring-core</artifactId>
 				<version>${spring.version}</version>
@@ -311,12 +317,13 @@
 
 	<modules>
 		<module>services</module>
+		<module>thrift</module>
 		<module>appserver</module>
 		<module>infonode</module>
 		<module>migrator</module>
 		<module>migration-plugin</module>
 		<module>jsvc</module>
 		<module>tmc</module>
-        <module>common-cli</module>
+		<module>common-cli</module>		
     </modules>
 </project>

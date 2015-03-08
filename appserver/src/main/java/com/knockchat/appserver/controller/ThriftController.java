@@ -7,6 +7,7 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 
 import javax.sql.DataSource;
 
@@ -34,6 +35,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.knockchat.appserver.model.LazyLoadManager;
 import com.knockchat.appserver.model.LazyLoadManager.LoadList;
+import com.knockchat.appserver.transport.http.RpcHttp;
 import com.knockchat.utils.ExecutionStats;
 import com.knockchat.utils.Pair;
 import com.knockchat.utils.thrift.ThriftClient;
@@ -129,27 +131,38 @@ public abstract class ThriftController<ArgsType extends TBase, ResultType> {
 		
 	}
 	
-	protected ResultType waitForAnswer(ListenableFuture<ResultType> lf){
-				
-		Futures.addCallback(lf, new FutureCallback<ResultType>(){
-
-			@Override
-			public void onSuccess(ResultType result) {
-				waitForAnswerSuccess(result);
-				ThriftController.this.sendAnswer(result);				
-			}
-
-			@Override
-			public void onFailure(Throwable t) {
-				
-				if (t instanceof TException)
-					sendException((TException)t);
-				else
-					log.error("FutureCallback.onFailure", t);
-					
-			}});
+	protected ResultType waitForAnswer(ListenableFuture<ResultType> lf) throws TApplicationException{
 		
-		throw new AsyncAnswer();		
+		if (this.registryAnn == RpcHttp.class){
+			ResultType result;
+			try {
+				result = lf.get();
+			} catch (InterruptedException | ExecutionException e) {
+				throw new TApplicationException(e.getMessage());
+			}
+			waitForAnswerSuccess(result);
+			return result;
+		}else{
+			Futures.addCallback(lf, new FutureCallback<ResultType>(){
+
+				@Override
+				public void onSuccess(ResultType result) {
+					waitForAnswerSuccess(result);
+					ThriftController.this.sendAnswer(result);				
+				}
+
+				@Override
+				public void onFailure(Throwable t) {
+					
+					if (t instanceof TException)
+						sendException((TException)t);
+					else
+						log.error("FutureCallback.onFailure", t);
+						
+				}});
+			
+			throw new AsyncAnswer();
+		}										
 	}
 	
 	protected synchronized boolean sendException(TException answer){

@@ -1,6 +1,6 @@
 package com.knockchat.node;
 
-import static com.knockchat.utils.thrift.ThriftProxyFactory.service;
+import static com.knockchat.utils.thrift.ThriftProxyFactory.asyncService;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -102,7 +102,7 @@ public class ScanConfigurationTask implements InitializingBean, DisposableBean, 
 
     public Pair<List<NodeControllersModel>, List<Node>> clusterServiceGetConfiguration() throws TException {
 
-        final Map<Address, Node> clusterAnswer = jGroupsThrift.thriftCall(null, 500, 0, service(ClusterService.Iface.class).getNodeConfiguration());
+        final Map<Address, Node> clusterAnswer = jGroupsThrift.thriftCall(null, 500, 0, asyncService(ClusterService.Iface.class).getNodeConfiguration());
 
         final List<NodeControllersModel> ret = new ArrayList<NodeControllersModel>();
         final List<Node> nodes = Lists.newArrayList();

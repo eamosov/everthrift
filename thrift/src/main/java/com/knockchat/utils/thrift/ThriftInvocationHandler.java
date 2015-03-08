@@ -12,7 +12,6 @@ import org.apache.thrift.TApplicationException;
 import org.apache.thrift.TBase;
 import org.apache.thrift.TException;
 import org.apache.thrift.TFieldIdEnum;
-import org.apache.thrift.TServiceClient;
 import org.apache.thrift.protocol.TMessage;
 import org.apache.thrift.protocol.TMessageType;
 import org.apache.thrift.protocol.TProtocol;
@@ -22,20 +21,27 @@ import org.apache.thrift.transport.TMemoryInputTransport;
 import org.apache.thrift.transport.TTransport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.util.ClassUtils;
 
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.AbstractFuture;
-import com.google.common.util.concurrent.SettableFuture;
 
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class ThriftInvocationHandler implements InvocationHandler{
+	
+	public static class NullResult extends Exception{
+		private static final long serialVersionUID = 1L;		
+	}
+	
+	public static interface InvocationCallback{
+		Object call(InvocationInfo ii) throws NullResult, TException;
+	};
 	
 	private static final Logger log = LoggerFactory.getLogger(ThriftInvocationHandler.class);
 
 	final static Pattern ifacePattern = Pattern.compile("^([^\\.]+\\.)+([^\\.]+)\\.Iface$");
 	final String serviceIfaceName;
 	final String serviceName;
-	final SettableFuture<InvocationInfo> callback;
+	final InvocationCallback callback;
 	
 	final Map<String, ThriftMeta> methods = Maps.newHashMap();
 	
@@ -182,12 +188,10 @@ public class ThriftInvocationHandler implements InvocationHandler{
 		}								
 	}
 	
-	@SuppressWarnings("rawtypes")
 	private static class ThriftMeta{		
 		final Constructor<? extends TBase> args;
 		final Constructor<? extends TBase> result;
 		
-		@SuppressWarnings("rawtypes")
 		public ThriftMeta(Constructor<? extends TBase> args, Constructor<? extends TBase> result) {
 			super();
 			this.args = args;
@@ -200,7 +204,7 @@ public class ThriftInvocationHandler implements InvocationHandler{
 	 * @param serviceIface   thrift интерфейс
 	 * @param callback 		после вызова любого метода сервиса будет вызван callback.set  	
 	 */
-	public ThriftInvocationHandler(Class serviceIface, SettableFuture<InvocationInfo> callback){
+	public ThriftInvocationHandler(Class serviceIface, InvocationCallback callback){
 					
 		serviceIfaceName =  serviceIface.getCanonicalName();
 		
@@ -222,33 +226,34 @@ public class ThriftInvocationHandler implements InvocationHandler{
 		final TBase _args = args_result.args.newInstance(args);
 		
 		//log.info("service={}, method={}, _args={}, _result={}", new Object[]{serviceName, method.getName(), _args, _result});
-		
-		callback.set(new InvocationInfo(serviceName, method.getName(), _args, args_result.result));
 				
-		final Class rt = method.getReturnType();
-		if (rt == Boolean.TYPE){
-			return false;
-		}else if (rt == Character.TYPE){
-			return ' ';
-		}else if (rt == Byte.TYPE){
-			return (byte)0;
-		}else if (rt == Short.TYPE){
-			return (short)0;
-		}else if (rt == Integer.TYPE){
-			return 0;
-		}else if (rt == Long.TYPE){
-			return (long)0;
-		}else if (rt == Float.TYPE){
-			return 0f;
-		}else if (rt == Double.TYPE){
-			return (double)0;
-		}else {
-			return null;
-		}
-
+		try{
+			return callback.call(new InvocationInfo(serviceName, method.getName(), _args, args_result.result));
+		}catch (NullResult e){
+			final Class rt = method.getReturnType();
+			if (rt == Boolean.TYPE){
+				return false;
+			}else if (rt == Character.TYPE){
+				return ' ';
+			}else if (rt == Byte.TYPE){
+				return (byte)0;
+			}else if (rt == Short.TYPE){
+				return (short)0;
+			}else if (rt == Integer.TYPE){
+				return 0;
+			}else if (rt == Long.TYPE){
+				return (long)0;
+			}else if (rt == Float.TYPE){
+				return 0f;
+			}else if (rt == Double.TYPE){
+				return (double)0;
+			}else {
+				return null;
+			}			
+		}				
 	}
 		
-	private synchronized ThriftMeta getArgsResult(Method method) throws NoSuchMethodException, SecurityException{
+	private synchronized ThriftMeta getArgsResult(Method method) throws NoSuchMethodException, SecurityException, ClassNotFoundException{
 		
 		ThriftMeta args_result = methods.get(method.getName());
 		
@@ -260,22 +265,18 @@ public class ThriftInvocationHandler implements InvocationHandler{
 		return args_result;
 	}
 	
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	private ThriftMeta buildArgsResult(Method method) throws NoSuchMethodException, SecurityException{
+	private ThriftMeta buildArgsResult(Method method) throws NoSuchMethodException, SecurityException, ClassNotFoundException{
 		
 		final String methodName = method.getName();
 		
-		final String argsClassName = serviceIfaceName.replace(".Iface", "." + methodName + "_args");
-		final Class<? extends TBase> argsClass = (Class)ClassUtils.resolveClassName(argsClassName, ClassUtils.getDefaultClassLoader());
+		final String argsClassName = serviceIfaceName.replace(".Iface", "$" + methodName + "_args");
+		final Class<? extends TBase> argsClass = (Class)Class.forName(argsClassName);
 		
-		final String resultClassName = serviceIfaceName.replace(".Iface", "." + methodName + "_result");
-		final Class<? extends TBase> resultClass = (Class)ClassUtils.resolveClassName(resultClassName, ClassUtils.getDefaultClassLoader());
+		final String resultClassName = serviceIfaceName.replace(".Iface", "$" + methodName + "_result");
+		final Class<? extends TBase> resultClass = (Class)Class.forName(resultClassName);
 					
 		final Constructor<? extends TBase> argsConstructor =  argsClass.getConstructor(method.getParameterTypes());
-		
-		final String clientClassName = serviceIfaceName.replace(".Iface", ".Client");
-		final Class<? extends TServiceClient> clientClass = (Class)ClassUtils.resolveClassName(clientClassName, ClassUtils.getDefaultClassLoader());
-		
+			
 		return new ThriftMeta(argsConstructor, resultClass.getConstructor());
 	}
 

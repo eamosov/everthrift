@@ -24,7 +24,8 @@ public class TPersistWsTransport extends TTransport {
 	final TProtocolFactory protocolFactory;
 	final TTransportFactory transportFactory;
 	final AsyncRegister async;
-	final int timeout;
+	final long reconnectTimeoutMs;
+	final long connectTimeoutMs;
 	
 	boolean opened = false; 
 	
@@ -55,7 +56,7 @@ public class TPersistWsTransport extends TTransport {
 		
 	};
 
-	public TPersistWsTransport(URI uri, TProcessor processor, TProtocolFactory protocolFactory, TTransportFactory transportFactory, AsyncRegister async, ScheduledExecutorService scheduller, ExecutorService executor, int timeout) {
+	public TPersistWsTransport(URI uri, TProcessor processor, TProtocolFactory protocolFactory, TTransportFactory transportFactory, AsyncRegister async, ScheduledExecutorService scheduller, ExecutorService executor, long reconnectTimeoutMs, long connectTimeoutMs) {
 		this.uri = uri;
 		this.processor = processor;
 		this.protocolFactory = protocolFactory;
@@ -63,7 +64,8 @@ public class TPersistWsTransport extends TTransport {
 		this.async = async;
 		this.scheduller = scheduller;
 		this.executor = executor;
-		this.timeout = timeout;
+		this.reconnectTimeoutMs = reconnectTimeoutMs;
+		this.connectTimeoutMs = connectTimeoutMs;
 	}
 
 	@Override
@@ -100,9 +102,9 @@ public class TPersistWsTransport extends TTransport {
 		future = scheduleConnect(0);
 	}
 	
-	private synchronized Future<?> scheduleConnect(final int seconds){
+	private synchronized Future<?> scheduleConnect(final long reconnectTimeoutMs){
 		
-		log.debug("schedulling connect in {} seconds", seconds);
+		log.debug("schedulling connect in {} ms", reconnectTimeoutMs);
 		
 		final Runnable run = new Runnable(){
 
@@ -111,10 +113,10 @@ public class TPersistWsTransport extends TTransport {
 				doConnect();				
 			}};
 			
-		if (seconds == 0)
+		if (reconnectTimeoutMs == 0)
 			return executor.submit(run);
 		else
-			return scheduller.schedule(run, seconds, TimeUnit.SECONDS);
+			return scheduller.schedule(run, reconnectTimeoutMs, TimeUnit.MILLISECONDS);
 		
 	}
 	
@@ -144,7 +146,7 @@ public class TPersistWsTransport extends TTransport {
 			setWs(null);
 			
 			if (future == null || future.isDone())
-				future = scheduleConnect(timeout);			
+				future = scheduleConnect(reconnectTimeoutMs);			
 		}
 		
 	}
@@ -164,7 +166,7 @@ public class TPersistWsTransport extends TTransport {
 			setWs(null);
 			
 			if (future == null || future.isDone())
-				future = scheduleConnect(timeout);
+				future = scheduleConnect(reconnectTimeoutMs);
 			
 			log.info("onClose");			
 		}
@@ -174,7 +176,7 @@ public class TPersistWsTransport extends TTransport {
 	
 	private synchronized boolean doConnect(){
 		
-		setWs(new TWsTransport(uri, processor, protocolFactory, transportFactory, async, executor));
+		setWs(new TWsTransport(uri, connectTimeoutMs, processor, protocolFactory, transportFactory, async, executor));
 		
 		try {
 			ws.openAsync();

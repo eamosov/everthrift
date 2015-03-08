@@ -39,6 +39,11 @@
             <groupId>com.knockchat</groupId>
             <artifactId>knock4j-services</artifactId>
         </dependency>
+        
+		<dependency>
+			<groupId>com.knockchat</groupId>
+			<artifactId>knock4j-thrift</artifactId>
+		</dependency>
 
         <dependency>
             <groupId>ch.qos.logback</groupId>

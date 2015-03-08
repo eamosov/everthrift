@@ -6,12 +6,18 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.NotYetConnectedException;
 import java.nio.charset.Charset;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
 
 import org.apache.thrift.TException;
 import org.apache.thrift.TProcessor;
@@ -41,7 +47,7 @@ public class TWsTransport extends TAsyncTransport {
 	private static final Logger log = LoggerFactory.getLogger(TWsTransport.class);
 
     private URI uri;
-    private long timeout;
+    private long connectTimeout;
     
     private static final ByteBuffer EOF = ByteBuffer.wrap(new byte[1]);
     
@@ -77,14 +83,10 @@ public class TWsTransport extends TAsyncTransport {
      */
     private Set<Integer> pendingRequests = Sets.newHashSet();
 
-    public TWsTransport(URI uri, TProcessor processor, TProtocolFactory protocolFactory, TTransportFactory transportFactory, AsyncRegister async, ExecutorService executor) {
-        this(uri, 3000, processor, protocolFactory, transportFactory, async, executor);
-    }
-
     /**
      * 
      * @param uri
-     * @param timeout  -  milliseconds
+     * @param connectTimeout  -  milliseconds
      * @param processor
      * @param protocolFactory
      * @param transportFactory
@@ -96,7 +98,7 @@ public class TWsTransport extends TAsyncTransport {
     	//WebSocketImpl.DEBUG = true;
     	
         this.uri = uri;
-        this.timeout = timeout;
+        this.connectTimeout = timeout;
         this.processor = processor;
         this.protocolFactory = protocolFactory;
         this.transportFactory = transportFactory;
@@ -128,8 +130,31 @@ public class TWsTransport extends TAsyncTransport {
 		isOpened = true;
 		
 		connectFuture = SettableFuture.create();
-
-		websocket = new Websocket(uri);		            
+		
+		websocket = new Websocket(uri);
+		
+		if (uri.getScheme() == "wss"){
+			final SSLContext sslContext;		
+			try {
+				sslContext = SSLContext.getInstance( "TLS" );
+			} catch (NoSuchAlgorithmException e1) {
+				throw new TTransportException(e1);
+			}
+			
+			try {
+				sslContext.init( null, null, null );
+			} catch (KeyManagementException e1) {
+				throw new TTransportException(e1);
+			}
+			
+			final SSLSocketFactory factory = sslContext.getSocketFactory();
+			try {
+				websocket.setSocket( factory.createSocket() );
+			} catch (IOException e1) {
+				throw new TTransportException(e1);
+			}			
+		}
+				
 		websocket.connect();				
         
         executor.submit(new Runnable(){
@@ -137,7 +162,7 @@ public class TWsTransport extends TAsyncTransport {
 			@Override
 			public void run() {
 		        try{
-		        	final Websocket s = connectFuture.get(timeout, TimeUnit.MILLISECONDS);
+		        	final Websocket s = connectFuture.get(connectTimeout, TimeUnit.MILLISECONDS);
 		        	log.trace("Handshake completed, sessionId={}", s.toString());
 		        } catch (TimeoutException | InterruptedException | ExecutionException e){
 		        	log.debug("Wait for connect: {}", e.toString());
@@ -150,7 +175,7 @@ public class TWsTransport extends TAsyncTransport {
     
     public void waitForConnect() throws TTransportException{
         try{
-        	final Websocket s = connectFuture.get(timeout, TimeUnit.MILLISECONDS);
+        	final Websocket s = connectFuture.get(connectTimeout, TimeUnit.MILLISECONDS);
         	log.trace("Handshake completed, websocket={}", s.toString());
         } catch (TimeoutException e){
         	log.debug("TimeoutException");
@@ -437,7 +462,7 @@ public class TWsTransport extends TAsyncTransport {
     }
     
 
-    public class Websocket  extends WebSocketClient{
+    private class Websocket  extends WebSocketClient{
     	
     	public Websocket(URI uri) {
 			super(uri,  new Draft_17());
@@ -448,13 +473,17 @@ public class TWsTransport extends TAsyncTransport {
     		
     		log.trace("onOpen: {}", handshakedata);
     		
-    		executor.submit(new Runnable(){
+    		try{
+        		executor.submit(new Runnable(){
 
-				@Override
-				public void run() {
-					TWsTransport.this.fireOnConnect();				
-				}});
-			
+    				@Override
+    				public void run() {
+    					TWsTransport.this.fireOnConnect();				
+    				}});
+    			
+    		}catch(RejectedExecutionException e){
+    			
+    		}			
     	}
     	
     	@Override
