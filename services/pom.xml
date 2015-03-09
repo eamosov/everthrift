@@ -50,6 +50,7 @@
 								<artifactItem>
 									<groupId>org.apache</groupId>
 									<artifactId>thrift</artifactId>
+									<classifier>compiller</classifier>
 									<version>${thrift.version}</version>
 								</artifactItem>
 							</artifactItems>
