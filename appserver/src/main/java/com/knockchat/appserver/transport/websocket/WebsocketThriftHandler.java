@@ -50,9 +50,9 @@ import com.knockchat.appserver.controller.ThriftProcessor;
 import com.knockchat.appserver.controller.ThriftProcessorFactory;
 import com.knockchat.appserver.transport.AsyncRegister;
 import com.knockchat.utils.thrift.AbstractThriftClient;
+import com.knockchat.utils.thrift.InvocationInfo;
 import com.knockchat.utils.thrift.ThriftClient;
 import com.knockchat.utils.thrift.ThriftClientFactory;
-import com.knockchat.utils.thrift.ThriftInvocationHandler.InvocationInfo;
 
 public class WebsocketThriftHandler extends AbstractWebSocketHandler implements WebSocketHandler, ThriftClientFactory, InitializingBean {
 	

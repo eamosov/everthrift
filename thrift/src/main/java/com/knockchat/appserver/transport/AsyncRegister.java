@@ -12,7 +12,7 @@ import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.ListenableScheduledFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.knockchat.utils.Pair;
-import com.knockchat.utils.thrift.ThriftInvocationHandler.InvocationInfo;
+import com.knockchat.utils.thrift.InvocationInfo;
 
 public class AsyncRegister {
 	

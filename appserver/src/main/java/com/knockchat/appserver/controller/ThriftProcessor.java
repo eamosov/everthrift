@@ -31,8 +31,8 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import com.knockchat.appserver.cluster.JgroupsMessageDispatcher;
 import com.knockchat.appserver.cluster.thrift.JGroupsThrift;
 import com.knockchat.appserver.model.LazyLoadManager;
+import com.knockchat.utils.thrift.InvocationInfo;
 import com.knockchat.utils.thrift.ThriftClient;
-import com.knockchat.utils.thrift.ThriftInvocationHandler.InvocationInfo;
 
 /**
  * На каждый registry по экземпляру ThriftProcessor

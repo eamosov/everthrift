@@ -1,6 +1,5 @@
 package com.knockchat.utils.thrift;
 
-import com.knockchat.utils.thrift.ThriftInvocationHandler.InvocationInfo;
 
 public class InvocationInfoThreadHolder {
 

@@ -29,16 +29,19 @@ import org.apache.thrift.transport.TZlibTransport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.knockchat.appserver.transport.AsyncRegister;
 import com.knockchat.appserver.transport.TPersistWsTransport;
 import com.knockchat.appserver.transport.TransportEventsIF;
-import com.knockchat.utils.thrift.ThriftInvocationHandler;
-import com.knockchat.utils.thrift.ThriftInvocationHandler.InvocationCallback;
-import com.knockchat.utils.thrift.ThriftInvocationHandler.InvocationInfo;
-import com.knockchat.utils.thrift.ThriftInvocationHandler.NullResult;
+import com.knockchat.utils.thrift.InvocationCallback;
+import com.knockchat.utils.thrift.InvocationInfo;
+import com.knockchat.utils.thrift.NullResult;
+import com.knockchat.utils.thrift.ServiceAsyncIfaceProxy;
+import com.knockchat.utils.thrift.ServiceIfaceProxy;
 
 public class ThriftContext {
 	
@@ -248,19 +251,19 @@ public class ThriftContext {
 		return ii;					
 	}
 	
-	public <T> T service(Class<T> cls){
-		return service(cls, Transport.ANY);
+	public <T> T onIface(Class<T> cls){
+		return onIface(cls, Transport.ANY);
 	}
 	
 	/**
 	 * Подучение ссылку на сервис для синхронного вызова
-	 * @param cls интерфейс сервиса
+	 * @param cls интерфейс сервиса XXXX.Iface
 	 * @param use каким транспортом можно пользоваться
 	 * @return сервис
 	 */
 	@SuppressWarnings("unchecked")
-	public <T> T service(Class<T> cls, final Transport use){
-		return (T)Proxy.newProxyInstance(ThriftContext.class.getClassLoader(), new Class[]{cls}, new ThriftInvocationHandler(cls, new InvocationCallback(){
+	public <T> T onIface(Class<T> cls, final Transport use){
+		return (T)Proxy.newProxyInstance(ThriftContext.class.getClassLoader(), new Class[]{cls}, new ServiceIfaceProxy(cls, new InvocationCallback(){
 
 			@SuppressWarnings("rawtypes")
 			@Override
@@ -286,6 +289,62 @@ public class ThriftContext {
 	}
 	
 	/**
+	 * Подучение ссылку на сервис для aсинхронного вызова
+	 * @param cls интерфейс сервиса XXXX.AsyncIface
+	 * @param tmMs таймаут
+	 * @param use каким транспортом можно пользоваться
+	 * @return сервис
+	 */	
+	@SuppressWarnings("unchecked")
+	public <T> T onAsyncIface(Class<T> cls, final long tmMs, final Transport use){
+		return (T)Proxy.newProxyInstance(ThriftContext.class.getClassLoader(), new Class[]{cls}, new ServiceAsyncIfaceProxy(cls, new InvocationCallback(){
+
+			@SuppressWarnings("rawtypes")
+			@Override
+			public Object call(final InvocationInfo ii) throws NullResult, TException {
+				
+				if (!opened)
+					throw new TTransportException(TTransportException.NOT_OPEN);
+				
+				final int seqId = async.nextSeqId();
+				
+				final ListenableFuture<T> future;
+				
+				if ((use == Transport.WEBSOCKET || use == Transport.ANY) && tPersistWsTransport !=null && tPersistWsTransport.isConnected()){
+					future =  websocketCall(ii, seqId, tmMs);
+					
+				}else if ((use == Transport.HTTP || use == Transport.ANY) && tHttpTransport !=null){
+					
+					future = executor.submit(new Callable<T>(){
+
+						@Override
+						public T call() throws Exception {
+							return (T)httpClientCall(ii, seqId);
+						}});						
+				}else{
+					throw new TTransportException(TTransportException.NOT_OPEN);
+				}
+				
+				if (ii.asyncMethodCallback !=null)
+					Futures.addCallback(future, new FutureCallback<T>(){
+
+						@Override
+						public void onSuccess(T result) {
+							ii.asyncMethodCallback.onComplete(result);								
+						}
+
+						@Override
+						public void onFailure(Throwable t) {
+							ii.asyncMethodCallback.onError(t instanceof Exception ? (Exception)t : new Exception(t));
+						}}, executor);				
+				
+				throw new NullResult();
+
+			}}));		
+		
+	}
+	
+	/**
 	 * Получение ссылку на сервис для асинхронных вызовов.
 	 * Вызом любого метода такого сервиса регистрирует вызов и аргументы.
 	 * Непосредственно для асинхронной отправки данных и получение ответа нужно вызвать метод result
@@ -297,9 +356,9 @@ public class ThriftContext {
 	 * @return сервис
 	 */
 	@SuppressWarnings("unchecked")
-	public <T> T asyncService(Class<T> cls){
+	public <T> T onIfaceAsAsync(Class<T> cls){
 		
-		return (T)Proxy.newProxyInstance(ThriftContext.class.getClassLoader(), new Class[]{cls}, new ThriftInvocationHandler(cls, new InvocationCallback(){
+		return (T)Proxy.newProxyInstance(ThriftContext.class.getClassLoader(), new Class[]{cls}, new ServiceIfaceProxy(cls, new InvocationCallback(){
 
 			@SuppressWarnings("rawtypes")
 			@Override

@@ -22,8 +22,8 @@ import org.springframework.stereotype.Component;
 
 import com.knockchat.appserver.cluster.JgroupsMessageDispatcher;
 import com.knockchat.appserver.controller.MessageWrapper;
+import com.knockchat.utils.thrift.InvocationInfo;
 import com.knockchat.utils.thrift.InvocationInfoThreadHolder;
-import com.knockchat.utils.thrift.ThriftInvocationHandler.InvocationInfo;
 
 @Component
 public class JGroupsThrift {

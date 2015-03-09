@@ -8,7 +8,7 @@ import org.apache.thrift.transport.TTransport;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.knockchat.utils.thrift.AbstractThriftClient;
-import com.knockchat.utils.thrift.ThriftInvocationHandler.InvocationInfo;
+import com.knockchat.utils.thrift.InvocationInfo;
 
 public class AsyncThriftClient extends AbstractThriftClient<Void> {
 	

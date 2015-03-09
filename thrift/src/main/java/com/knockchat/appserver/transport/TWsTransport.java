@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.SettableFuture;
-import com.knockchat.utils.thrift.ThriftInvocationHandler.InvocationInfo;
+import com.knockchat.utils.thrift.InvocationInfo;
 
 public class TWsTransport extends TAsyncTransport {
 	
