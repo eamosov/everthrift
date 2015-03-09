@@ -118,7 +118,7 @@ public class ThriftProcessor implements TProcessor{
 			controller.setEndNanos(System.nanoTime());
 			controller.setResultSentFlag();
 			logEnd(log, controller, msg.name, in.getSessionId(), ret);
-			return new MessageWrapper(outT).copyAttributes(in);				
+			return  new MessageWrapper(outT).copyAttributes(in).removeCorrelationHeaders();
 		}catch (AsyncAnswer e){
 			return null;
 		}		

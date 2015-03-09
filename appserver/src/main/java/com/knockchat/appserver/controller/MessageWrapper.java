@@ -92,7 +92,13 @@ public class MessageWrapper implements Serializable{
 	}
 	
 	public MessageHeaders getMessageHeaders(){
-		return (MessageHeaders)attributes.get(MESSAGE_HEADERS);
+		return (MessageHeaders)attributes.remove(MESSAGE_HEADERS);
+	}
+	
+	public MessageWrapper removeCorrelationHeaders(){
+		attributes.remove(MESSAGE_HEADERS);
+		attributes.remove(OUT_CHANNEL);
+		return this;
 	}
 	
 	public MessageWrapper toSerializable(){
@@ -138,7 +144,11 @@ public class MessageWrapper implements Serializable{
 	public Object getAttribute(String name){
 		return attributes.get(name);
 	}
-	
+
+	public Object removeAttribute(String name){
+		return attributes.remove(name);
+	}
+
 	public MessageWrapper setAttribute(String name, Object value){
 		attributes.put(name, value);
 		return this;

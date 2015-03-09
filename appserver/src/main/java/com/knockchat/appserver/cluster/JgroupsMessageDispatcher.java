@@ -57,8 +57,11 @@ public class JgroupsMessageDispatcher implements AsyncRequestHandler, Initializi
 	@Override
 	public void handle(Message request, Response response) throws Exception {
 		log.debug("handle message: {}, {}", request, response);
+		
+		final MessageWrapper w = (MessageWrapper)request.getObject();
+		w.setAttribute(JGroupsThriftAdapter.HEADER_JRESPONSE, response);
 				
-		org.springframework.integration.Message<MessageWrapper> m = MessageBuilder.<MessageWrapper>withPayload((MessageWrapper)request.getObject()).setHeader(JGroupsThriftAdapter.HEADER_JRESPONSE, response).setHeader(MessageHeaders.REPLY_CHANNEL, "outJGroupsChannel").build();		
+		org.springframework.integration.Message<MessageWrapper> m = MessageBuilder.<MessageWrapper>withPayload(w).setHeader(MessageHeaders.REPLY_CHANNEL, "outJGroupsChannel").build();		
 		inJGroupsChannel.send(m);		
 	}
 	

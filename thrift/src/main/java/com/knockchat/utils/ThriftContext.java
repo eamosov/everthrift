@@ -2,6 +2,8 @@ package com.knockchat.utils;
 
 import java.lang.reflect.Proxy;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -32,6 +34,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.knockchat.appserver.transport.AsyncRegister;
 import com.knockchat.appserver.transport.TPersistWsTransport;
+import com.knockchat.appserver.transport.TransportEventsIF;
 import com.knockchat.utils.thrift.ThriftInvocationHandler;
 import com.knockchat.utils.thrift.ThriftInvocationHandler.InvocationCallback;
 import com.knockchat.utils.thrift.ThriftInvocationHandler.InvocationInfo;
@@ -63,15 +66,36 @@ public class ThriftContext {
 	private long asyncCallTimeout = 5000;
 	
 	private boolean opened = false;
+	
+	private final Object wsIsConnectedLock = new Object();
+	private boolean wsIsConnected = false;
+	
+	public static interface ThriftContextCallback{
+		void call(ThriftContext tc) throws TException;
+		void error(Throwable e);
+	}
+	
+	private ThriftContextCallback onWsConnect;
+	private ThriftContextCallback onWsDisconnect;
+	
+	private List<ThriftContextCallback> onConnectList = new ArrayList<ThriftContextCallback>();
+	
+	public static enum Transport{
+		HTTP,
+		WEBSOCKET,
+		ANY
+	}
 		
-	public ThriftContext(URI httpUri, URI wsUri, TProcessor processor) {
+	public ThriftContext(URI httpUri, URI wsUri, TProcessor processor, ThriftContextCallback onWsConnect, ThriftContextCallback onWsDisconnect) {
 		this.httpUri = httpUri;
 		this.wsUri = wsUri;
 		this.processor = processor;
+		this.onWsConnect = onWsConnect;
+		this.onWsDisconnect = onWsDisconnect;
 	}
 	
 	public synchronized void start() throws TTransportException{
-		
+				
 		scheduller = Executors.newSingleThreadScheduledExecutor(new ThreadFactory(){
 
 			@Override
@@ -96,9 +120,9 @@ public class ThriftContext {
 			}}));
 				
 		async = new AsyncRegister(MoreExecutors.listeningDecorator(scheduller));
-
+		
 		if (wsUri !=null)
-			tPersistWsTransport =  new TPersistWsTransport(wsUri, processor, protocolFactory, transportFactory, async, scheduller, executor, wsReconnectTimeout, wsConnectTimeoutMs);
+			createTPersistWsTransport();
 		
 		if (httpUri !=null)
 			tHttpTransport = new THttpClient(httpUri.toString());
@@ -113,6 +137,56 @@ public class ThriftContext {
 		}		
 	}
 	
+	private void createTPersistWsTransport(){
+		tPersistWsTransport =  new TPersistWsTransport(wsUri, processor, protocolFactory, transportFactory, async, scheduller, executor, wsReconnectTimeout, wsConnectTimeoutMs);
+		tPersistWsTransport.setEventsHandler(new TransportEventsIF(){
+
+			@Override
+			public void onConnect() {
+				synchronized(wsIsConnectedLock){
+					wsIsConnected = true;
+					
+					if (onWsConnect !=null)
+						try {
+							onWsConnect.call(ThriftContext.this);
+						} catch (TException e) {
+							onWsConnect.error(e);
+						}
+					
+					for(final ThriftContextCallback c : onConnectList)
+						executor.submit(new Runnable(){
+							@Override
+							public void run() {
+								try {
+									c.call(ThriftContext.this);
+								} catch (TException e) {
+									c.error(e);
+								}							
+							}});										
+				}
+			}
+
+			@Override
+			public void onClose() {
+				synchronized(wsIsConnectedLock){
+					wsIsConnected = false;
+					
+					if (onWsDisconnect !=null)
+						try {
+							onWsDisconnect.call(ThriftContext.this);
+						} catch (TException e) {
+							onWsDisconnect.error(e);
+						}
+				}
+			}
+
+			@Override
+			public void onConnectError() {
+				// TODO Auto-generated method stub
+				
+			}});
+	}
+	
 	private void closeTPersistWsTransport(){
 		if (tPersistWsTransport !=null){
 			tPersistWsTransport.close();
@@ -121,7 +195,7 @@ public class ThriftContext {
 	}
 	
 	public synchronized void stop(){
-		
+				
 		closeTPersistWsTransport();
 		closeTHttpTransport();
 		
@@ -174,8 +248,18 @@ public class ThriftContext {
 		return ii;					
 	}
 	
-	@SuppressWarnings("unchecked")
 	public <T> T service(Class<T> cls){
+		return service(cls, Transport.ANY);
+	}
+	
+	/**
+	 * Подучение ссылку на сервис для синхронного вызова
+	 * @param cls интерфейс сервиса
+	 * @param use каким транспортом можно пользоваться
+	 * @return сервис
+	 */
+	@SuppressWarnings("unchecked")
+	public <T> T service(Class<T> cls, final Transport use){
 		return (T)Proxy.newProxyInstance(ThriftContext.class.getClassLoader(), new Class[]{cls}, new ThriftInvocationHandler(cls, new InvocationCallback(){
 
 			@SuppressWarnings("rawtypes")
@@ -187,13 +271,13 @@ public class ThriftContext {
 				
 				final int seqId = async.nextSeqId();
 
-				if (tPersistWsTransport !=null && tPersistWsTransport.isConnected()){
+				if ((use == Transport.WEBSOCKET || use == Transport.ANY) && tPersistWsTransport !=null && tPersistWsTransport.isConnected()){
 					try {
 						return websocketCall(ii, seqId, asyncCallTimeout).get();
 					} catch (InterruptedException | ExecutionException e) {
 						throw new TTransportException(e);
 					}
-				}else if (tHttpTransport !=null){					
+				}else if ((use == Transport.HTTP || use == Transport.ANY) && tHttpTransport !=null){					
 					return httpClientCall(ii, seqId);
 				}else{
 					throw new TTransportException(TTransportException.NOT_OPEN);
@@ -201,6 +285,17 @@ public class ThriftContext {
 			}}));		
 	}
 	
+	/**
+	 * Получение ссылку на сервис для асинхронных вызовов.
+	 * Вызом любого метода такого сервиса регистрирует вызов и аргументы.
+	 * Непосредственно для асинхронной отправки данных и получение ответа нужно вызвать метод result
+	 * Удобно комбинировать два этих метода в одной строке, н-р:
+	 * 
+	 *   tc.result(rc.asyncService(AccountService.IFace.class).getMe(), 1000, Transport.ANY);
+	 * 
+	 * @param cls интерфейс сервиса
+	 * @return сервис
+	 */
 	@SuppressWarnings("unchecked")
 	public <T> T asyncService(Class<T> cls){
 		
@@ -214,8 +309,22 @@ public class ThriftContext {
 			}}));
 	}
 	
+	public <R> ListenableFuture<R> result(R unused) throws TTransportException{
+		return result(unused, asyncCallTimeout, Transport.ANY);
+	}
+	
+	/**
+	 * Отправка на сервер данных и получение ответа (асинхронно) для асинхронного сервиса,
+	 * полученного ранее через метод asyncService(Class cls).
+	 * 
+	 * @param unused	не используется, служет для удобной записи в одну строчку result(asyncService(..), ...)
+	 * @param tmMs
+	 * @param use
+	 * @return
+	 * @throws TTransportException
+	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public <R> ListenableFuture<R> result(R unused, long tmMs) throws TTransportException{
+	public <R> ListenableFuture<R> result(R unused, long tmMs, Transport use) throws TTransportException{
 		
 		if (!opened)
 			throw new TTransportException(TTransportException.NOT_OPEN);
@@ -223,9 +332,9 @@ public class ThriftContext {
 		final InvocationInfo<R> ii = (InvocationInfo)invocationInfo.get();
 		final int seqId = async.nextSeqId();
 		
-		if (tPersistWsTransport !=null && tPersistWsTransport.isConnected()){
+		if ((use == Transport.WEBSOCKET || use == Transport.ANY) && tPersistWsTransport !=null && tPersistWsTransport.isConnected()){
 			return websocketCall(ii, seqId, tmMs);
-		}else if (tHttpTransport !=null){
+		}else if ((use == Transport.HTTP || use == Transport.ANY) && tHttpTransport !=null){
 			
 			return executor.submit(new Callable<R>(){
 
@@ -275,24 +384,64 @@ public class ThriftContext {
 			closeTPersistWsTransport();
 			this.wsUri = wsUri;
 			if (opened && wsUri !=null)
-				tPersistWsTransport =  new TPersistWsTransport(wsUri, processor, protocolFactory, transportFactory, async, scheduller, executor, wsReconnectTimeout, wsConnectTimeoutMs);			
+				createTPersistWsTransport();
 		}
 	}
 
-	public long getWsReconnectTimeout() {
+	public synchronized long getWsReconnectTimeout() {
 		return wsReconnectTimeout;
 	}
 
-	public void setWsReconnectTimeout(long wsReconnectTimeout) {
+	public synchronized void setWsReconnectTimeout(long wsReconnectTimeout) {
 		this.wsReconnectTimeout = wsReconnectTimeout;
 	}
 
-	public long getWsConnectTimeoutMs() {
+	public synchronized long getWsConnectTimeoutMs() {
 		return wsConnectTimeoutMs;
 	}
 
-	public void setWsConnectTimeoutMs(long wsConnectTimeoutMs) {
+	public synchronized void setWsConnectTimeoutMs(long wsConnectTimeoutMs) {
 		this.wsConnectTimeoutMs = wsConnectTimeoutMs;
+	}
+
+	public synchronized ThriftContextCallback getOnWsConnect() {
+		return onWsConnect;
+	}
+
+	public synchronized void setOnWsConnect(ThriftContextCallback onWsConnect) {
+		this.onWsConnect = onWsConnect;
+	}
+
+	public synchronized ThriftContextCallback getOnWsDisconnect() {
+		return onWsDisconnect;
+	}
+
+	public synchronized void setOnWsDisconnect(ThriftContextCallback onWsDisconnect) {
+		this.onWsDisconnect = onWsDisconnect;
+	}
+		
+	/**
+	 * Вызвать callback сразу после открытия websocket или немедленно, если webcoket уже открыт
+	 * callback всегда вызывается асинхронно вызвавшему потоку
+	 * @param callback
+	 */
+	public void onWsConnect(final ThriftContextCallback callback){
+		
+		synchronized(wsIsConnectedLock){
+			if (wsIsConnected)
+				executor.submit(new Runnable(){
+					@Override
+					public void run() {
+						try {
+							callback.call(ThriftContext.this);
+						} catch (TException e) {
+							callback.error(e);
+						}							
+					}});
+
+			onConnectList.add(callback);			
+		}
+		
 	}
 
 }

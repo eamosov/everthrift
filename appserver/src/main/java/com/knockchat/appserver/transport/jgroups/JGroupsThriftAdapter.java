@@ -34,15 +34,17 @@ public class JGroupsThriftAdapter implements InitializingBean{
 	
 	public Object handleIn(Message<MessageWrapper> m){
 
-		final Response jResponse = m.getHeaders().get(HEADER_JRESPONSE, Response.class);
-
-		log.debug("handleIn: {}, adapter={}, processor={}, jResponse={}", new Object[]{m, this, tp, jResponse});
+		log.debug("handleIn: {}, adapter={}, processor={}", new Object[]{m, this, tp});
 				
 		if (m.getHeaders().getReplyChannel() == null)
 			log.warn("reply channel is null for message: {}", m);
 		
 		try {
-			return tp.process(m.getPayload().setMessageHeaders(m.getHeaders()).setOutChannel(applicationContext.getBean((String)m.getHeaders().getReplyChannel(), MessageChannel.class)), null);
+			final MessageWrapper w = m.getPayload();
+			w.setMessageHeaders(m.getHeaders());
+			w.setOutChannel(applicationContext.getBean((String)m.getHeaders().getReplyChannel(), MessageChannel.class));
+			
+			return tp.process(w, null);
 		} catch (Exception e) {
 			log.error("Exception while execution thrift processor:", e);
 			return null;
@@ -53,10 +55,12 @@ public class JGroupsThriftAdapter implements InitializingBean{
 		
 		log.debug("handleOut: {}, adapter={}, processor={}", new Object[]{m, this, tp});
 		
-		final Response jResponse = m.getHeaders().get(HEADER_JRESPONSE, Response.class);
+		final MessageWrapper w = m.getPayload();
+		
+		final Response jResponse = (Response)w.removeAttribute(HEADER_JRESPONSE);
 		
 		if (jResponse!=null)
-			jResponse.send(m.getPayload(), false);
+			jResponse.send(w, false);
 		else
 			log.debug("jResponse IS NULL, no answer has been sended");
 			

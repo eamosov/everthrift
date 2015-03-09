@@ -117,7 +117,7 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
 				final MessageWrapper payload = handleIn((Message)message, outWebsocketChannel);
 				
 				if (payload !=null){
-					final GenericMessage<MessageWrapper> s = new GenericMessage<MessageWrapper>(payload.toSerializable(), message.getHeaders());
+					final GenericMessage<MessageWrapper> s = new GenericMessage<MessageWrapper>(payload.removeCorrelationHeaders(), message.getHeaders());
 					outWebsocketChannel.send(s);
 				}
 			}});

@@ -185,6 +185,11 @@ public class ThriftInvocationHandler implements InvocationHandler{
 				throw (TException)o;
 			
 			return o;											
+		}
+
+		@Override
+		public String toString() {
+			return "InvocationInfo [" + methodName + "(" + args + "), seqId=" + seqId + "]";
 		}								
 	}
 	
