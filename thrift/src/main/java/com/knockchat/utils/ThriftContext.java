@@ -85,9 +85,7 @@ public class ThriftContext implements Closeable{
 	
 	private List<ThriftContextCallback> onConnectList = new ArrayList<ThriftContextCallback>();
 	private List<SettableFuture<ThriftContext>> onConnectFutures = new ArrayList<SettableFuture<ThriftContext>>();
-	
-	private SettableFuture<ThriftContext> websocketConnectFuture;
-	
+		
 	public static enum Transport{
 		HTTP,
 		WEBSOCKET,
