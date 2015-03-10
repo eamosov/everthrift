@@ -1,5 +1,6 @@
 package com.knockchat.utils;
 
+import java.io.Closeable;
 import java.lang.reflect.Proxy;
 import java.net.URI;
 import java.util.ArrayList;
@@ -34,6 +35,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.SettableFuture;
 import com.knockchat.appserver.transport.AsyncRegister;
 import com.knockchat.appserver.transport.TPersistWsTransport;
 import com.knockchat.appserver.transport.TransportEventsIF;
@@ -43,7 +45,7 @@ import com.knockchat.utils.thrift.NullResult;
 import com.knockchat.utils.thrift.ServiceAsyncIfaceProxy;
 import com.knockchat.utils.thrift.ServiceIfaceProxy;
 
-public class ThriftContext {
+public class ThriftContext implements Closeable{
 	
 	private static final Logger log = LoggerFactory.getLogger(ThriftContext.class);
 	
@@ -82,11 +84,22 @@ public class ThriftContext {
 	private ThriftContextCallback onWsDisconnect;
 	
 	private List<ThriftContextCallback> onConnectList = new ArrayList<ThriftContextCallback>();
+	private List<SettableFuture<ThriftContext>> onConnectFutures = new ArrayList<SettableFuture<ThriftContext>>();
+	
+	private SettableFuture<ThriftContext> websocketConnectFuture;
 	
 	public static enum Transport{
 		HTTP,
 		WEBSOCKET,
 		ANY
+	}
+	
+	public ThriftContext(URI httpUri, URI wsUri) {
+		this(httpUri, wsUri, null);
+	}
+	
+	public ThriftContext(URI httpUri, URI wsUri, TProcessor processor) {
+		this(httpUri, wsUri, processor, null, null);
 	}
 		
 	public ThriftContext(URI httpUri, URI wsUri, TProcessor processor, ThriftContextCallback onWsConnect, ThriftContextCallback onWsDisconnect) {
@@ -97,7 +110,7 @@ public class ThriftContext {
 		this.onWsDisconnect = onWsDisconnect;
 	}
 	
-	public synchronized void start() throws TTransportException{
+	public synchronized ListenableFuture<ThriftContext> open() throws TTransportException{
 				
 		scheduller = Executors.newSingleThreadScheduledExecutor(new ThreadFactory(){
 
@@ -125,28 +138,34 @@ public class ThriftContext {
 		async = new AsyncRegister(MoreExecutors.listeningDecorator(scheduller));
 		
 		if (wsUri !=null)
-			createTPersistWsTransport();
+			createWebSocket();
 		
 		if (httpUri !=null)
 			tHttpTransport = new THttpClient(httpUri.toString());
 		
 		opened = true;
+		
+		return wsUri == null ? null : openWebSocket();
 	}
 	
-	private void closeTHttpTransport(){
+	private void destroyTHttp(){
 		if (tHttpTransport !=null){
 			tHttpTransport.close();
 			tHttpTransport = null;
 		}		
 	}
 	
-	private void createTPersistWsTransport(){
+	private void createWebSocket(){
 		tPersistWsTransport =  new TPersistWsTransport(wsUri, processor, protocolFactory, transportFactory, async, scheduller, executor, wsReconnectTimeout, wsConnectTimeoutMs);
 		tPersistWsTransport.setEventsHandler(new TransportEventsIF(){
 
 			@Override
 			public void onConnect() {
+				final List<SettableFuture<ThriftContext>> sf;
 				synchronized(wsIsConnectedLock){
+					
+					sf = new ArrayList<SettableFuture<ThriftContext>>(onConnectFutures.size());
+					 
 					wsIsConnected = true;
 					
 					if (onWsConnect !=null)
@@ -165,8 +184,15 @@ public class ThriftContext {
 								} catch (TException e) {
 									c.error(e);
 								}							
-							}});										
+							}});
+					
+					sf.addAll(onConnectFutures);
+					onConnectFutures.clear();
 				}
+				
+				for (SettableFuture<ThriftContext> f : sf){
+					f.set(ThriftContext.this);
+				}				
 			}
 
 			@Override
@@ -190,17 +216,16 @@ public class ThriftContext {
 			}});
 	}
 	
-	private void closeTPersistWsTransport(){
-		if (tPersistWsTransport !=null){
-			tPersistWsTransport.close();
-			tPersistWsTransport = null;
-		}		
+	private void destroyWebsocket(){
+		closeWebSocket();
+		tPersistWsTransport = null;
 	}
 	
-	public synchronized void stop(){
+	@Override
+	public synchronized void close(){
 				
-		closeTPersistWsTransport();
-		closeTHttpTransport();
+		destroyWebsocket();
+		destroyTHttp();
 		
 		for (InvocationInfo ii: async.popAll()){
 			ii.setException(new TTransportException(TTransportException.END_OF_FILE, "closed"));
@@ -406,12 +431,25 @@ public class ThriftContext {
 		}						
 	}
 	
-	public synchronized void connectWS() throws TTransportException{
-		if (tPersistWsTransport!=null)
-			tPersistWsTransport.open();
+	public ListenableFuture<ThriftContext> openWebSocket() throws TTransportException{
+		synchronized(this){
+			if (tPersistWsTransport!=null){
+				tPersistWsTransport.open();			
+			}			
+		}
+		
+		synchronized(wsIsConnectedLock){
+			if (wsIsConnected){
+				return Futures.immediateFuture(this);
+			}else{
+				final SettableFuture<ThriftContext> f = SettableFuture.create();
+				onConnectFutures.add(f);
+				return f;
+			}
+		}
 	}
 	
-	public synchronized void closeWS(){
+	public synchronized void closeWebSocket(){
 		if (tPersistWsTransport!=null)
 			tPersistWsTransport.close();
 	}
@@ -422,7 +460,7 @@ public class ThriftContext {
 
 	public synchronized void setHttpUri(URI httpUri) throws TTransportException {
 		if (!Objects.equals(this.httpUri, httpUri)){
-			closeTHttpTransport();		
+			destroyTHttp();		
 			this.httpUri = httpUri;		
 			if (opened && httpUri !=null)
 				tHttpTransport = new THttpClient(httpUri.toString());			
@@ -434,16 +472,21 @@ public class ThriftContext {
 	}
 
 	/**
-	 * websocket соединение после установки нового URI автоматически не открывается
-	 * нужно вызвать connectWs()
 	 * @param wsUri
+	 * @throws TTransportException 
 	 */
-	public synchronized void setWsUri(URI wsUri) {
+	public synchronized ListenableFuture<ThriftContext> setWsUri(URI wsUri) throws TTransportException {
 		if (!Objects.equals(this.wsUri, wsUri)){
-			closeTPersistWsTransport();
+			destroyWebsocket();
 			this.wsUri = wsUri;
-			if (opened && wsUri !=null)
-				createTPersistWsTransport();
+			if (opened && wsUri !=null){
+				createWebSocket();
+				return openWebSocket();
+			}else{
+				return null;
+			}
+		}else{
+			return wsUri == null ? null : Futures.<ThriftContext>immediateFuture(this);
 		}
 	}
 
