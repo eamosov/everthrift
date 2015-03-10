@@ -108,7 +108,7 @@ public class ThriftContext implements Closeable{
 		this.onWsDisconnect = onWsDisconnect;
 	}
 	
-	public synchronized ListenableFuture<ThriftContext> open() throws TTransportException{
+	public synchronized ListenableFuture<ThriftContext> open(boolean withWebsocket) throws TTransportException{
 				
 		scheduller = Executors.newSingleThreadScheduledExecutor(new ThreadFactory(){
 
@@ -143,7 +143,7 @@ public class ThriftContext implements Closeable{
 		
 		opened = true;
 		
-		return wsUri == null ? null : openWebSocket();
+		return (wsUri != null && withWebsocket) ? openWebSocket() : null ;
 	}
 	
 	private void destroyTHttp(){
@@ -470,22 +470,23 @@ public class ThriftContext implements Closeable{
 	}
 
 	/**
+	 * Метод устанавливает новый URI и закрывает текущее websocket соединение
+	 * Новое соединение открывается автоматически
 	 * @param wsUri
 	 * @throws TTransportException 
 	 */
-	public synchronized ListenableFuture<ThriftContext> setWsUri(URI wsUri) throws TTransportException {
-		if (!Objects.equals(this.wsUri, wsUri)){
-			destroyWebsocket();
-			this.wsUri = wsUri;
-			if (opened && wsUri !=null){
-				createWebSocket();
-				return openWebSocket();
-			}else{
-				return null;
-			}
-		}else{
-			return wsUri == null ? null : Futures.<ThriftContext>immediateFuture(this);
+	public ListenableFuture<ThriftContext> setWsUri(URI wsUri) throws TTransportException{
+		
+		synchronized (this){
+			if (!Objects.equals(this.wsUri, wsUri)){
+				destroyWebsocket();
+				this.wsUri = wsUri;
+				if (opened && wsUri !=null)
+					createWebSocket();
+			}			
 		}
+		
+		return this.openWebSocket();
 	}
 
 	public synchronized long getWsReconnectTimeout() {

@@ -119,7 +119,7 @@ public class TWsTransport extends TAsyncTransport {
     
     public synchronized void openAsync() throws TTransportException {
     	
-    	log.trace("openAsync()");
+    	log.debug("open websocket, URI:{}", uri.toString());
     	    		
 		if (closed)
 			throw new TTransportException(TTransportException.NOT_OPEN, "closed");
@@ -132,8 +132,9 @@ public class TWsTransport extends TAsyncTransport {
 		connectFuture = SettableFuture.create();
 		
 		websocket = new Websocket(uri);
-		
-		if (uri.getScheme() == "wss"){
+				
+		if (uri.getScheme().equalsIgnoreCase("wss")){
+					
 			final SSLContext sslContext;		
 			try {
 				sslContext = SSLContext.getInstance( "TLS" );

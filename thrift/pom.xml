@@ -16,31 +16,33 @@
 
     <build>
 	    <plugins>
-                        <plugin>
-                                <groupId>com.github.github</groupId>
-                                <artifactId>site-maven-plugin</artifactId>
-                                <version>0.11-SNAPSHOT</version>
-                                <configuration>
-                                        <message>Maven artifacts for ${project.version}</message>
-                                        <noJekyll>true</noJekyll>
-                                        <outputDirectory>${project.build.directory}/mvn-repo</outputDirectory>
-                                        <branch>refs/heads/mvn-repo</branch>
-                                        <merge>true</merge>
-                                        <includes>
-                                                <include>**/*</include>
-                                        </includes>
-                                        <repositoryName>thrift</repositoryName>
-                                        <repositoryOwner>eamosov</repositoryOwner>
-                                </configuration>
-                                <executions>
-                                        <execution>
-                                                <goals>
-                                                        <goal>site</goal>
-                                                </goals>
-                                                <phase>deploy</phase>
-                                        </execution>
-                                </executions>
-                        </plugin>
+			<plugin>
+				<groupId>com.github.github</groupId>
+				<artifactId>site-maven-plugin</artifactId>
+				<version>0.11-SNAPSHOT</version>
+				<inherited>false</inherited>
+				<configuration>
+					<message>Maven artifacts for ${project.version}</message>
+					<noJekyll>true</noJekyll>
+					<outputDirectory>${project.build.directory}/mvn-repo</outputDirectory>
+					<branch>refs/heads/mvn-repo</branch>
+					<merge>true</merge>
+					<includes>
+						<include>**/*</include>
+					</includes>
+					<repositoryName>thrift</repositoryName>
+					<repositoryOwner>eamosov</repositoryOwner>
+				</configuration>
+				<executions>
+					<execution>
+						<goals>
+							<goal>site</goal>
+						</goals>
+						<phase>deploy</phase>
+					</execution>
+				</executions>
+			</plugin>
+
 	   </plugins>
     </build>
 
