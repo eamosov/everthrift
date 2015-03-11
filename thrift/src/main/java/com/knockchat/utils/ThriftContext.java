@@ -16,6 +16,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.http.client.HttpClient;
 import org.apache.thrift.TException;
 import org.apache.thrift.TProcessor;
 import org.apache.thrift.protocol.TBinaryProtocol;
@@ -58,6 +59,8 @@ public class ThriftContext implements Closeable{
 	private final AtomicInteger nThread = new AtomicInteger(0);
 	
 	private URI httpUri;
+	private HttpClient httpClient;
+	
 	private URI wsUri;
 	private final TProcessor processor;
 	private final TProtocolFactory protocolFactory = new TBinaryProtocol.Factory();
@@ -92,16 +95,17 @@ public class ThriftContext implements Closeable{
 		ANY
 	}
 	
-	public ThriftContext(URI httpUri, URI wsUri) {
-		this(httpUri, wsUri, null);
+	public ThriftContext(URI httpUri, HttpClient httpClient, URI wsUri) {
+		this(httpUri, httpClient, wsUri, null);
 	}
 	
-	public ThriftContext(URI httpUri, URI wsUri, TProcessor processor) {
-		this(httpUri, wsUri, processor, null, null);
+	public ThriftContext(URI httpUri, HttpClient httpClient, URI wsUri, TProcessor processor) {
+		this(httpUri, httpClient, wsUri, processor, null, null);
 	}
 		
-	public ThriftContext(URI httpUri, URI wsUri, TProcessor processor, ThriftContextCallback onWsConnect, ThriftContextCallback onWsDisconnect) {
+	public ThriftContext(URI httpUri, HttpClient httpClient, URI wsUri, TProcessor processor, ThriftContextCallback onWsConnect, ThriftContextCallback onWsDisconnect) {
 		this.httpUri = httpUri;
+		this.httpClient = httpClient;
 		this.wsUri = wsUri;
 		this.processor = processor;
 		this.onWsConnect = onWsConnect;
@@ -139,7 +143,7 @@ public class ThriftContext implements Closeable{
 			createWebSocket();
 		
 		if (httpUri !=null)
-			tHttpTransport = new THttpClient(httpUri.toString());
+			openTHttpClient();
 		
 		opened = true;
 		
@@ -429,6 +433,10 @@ public class ThriftContext implements Closeable{
 		}						
 	}
 	
+	private void openTHttpClient() throws TTransportException{		
+		tHttpTransport = new THttpClient(httpUri.toString(), httpClient);		
+	}
+	
 	public ListenableFuture<ThriftContext> openWebSocket() throws TTransportException{
 		synchronized(this){
 			if (tPersistWsTransport!=null){
@@ -456,13 +464,12 @@ public class ThriftContext implements Closeable{
 		return httpUri;
 	}
 
-	public synchronized void setHttpUri(URI httpUri) throws TTransportException {
-		if (!Objects.equals(this.httpUri, httpUri)){
-			destroyTHttp();		
-			this.httpUri = httpUri;		
-			if (opened && httpUri !=null)
-				tHttpTransport = new THttpClient(httpUri.toString());			
-		}
+	public synchronized void setHttpUri(URI httpUri, HttpClient client) throws TTransportException {
+		destroyTHttp();		
+		this.httpUri = httpUri;
+		this.httpClient = client;
+		if (opened && httpUri !=null)
+			openTHttpClient();
 	}
 
 	public URI getWsUri() {

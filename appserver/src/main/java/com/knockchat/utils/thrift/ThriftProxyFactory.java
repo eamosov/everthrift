@@ -5,7 +5,7 @@ import java.lang.reflect.Proxy;
 public class ThriftProxyFactory {
 	
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public static <T> T asyncService(Class<T> cls){
+	public static <T> T onIfaceAsAsync(Class<T> cls){
 				
 		return (T)Proxy.newProxyInstance(ThriftProxyFactory.class.getClassLoader(), new Class[]{cls}, new ServiceIfaceProxy(cls, new InvocationCallback(){
 

@@ -66,6 +66,10 @@ public abstract class AbstractCachedModelFactory<K,V,A, PK extends Serializable,
 	 * @return
 	 */
 	public V findByIdNoCache(K id){
+		
+		if (id == null)
+			return null;
+
 		V v;
 		
 		if (cache == null){
@@ -87,11 +91,19 @@ public abstract class AbstractCachedModelFactory<K,V,A, PK extends Serializable,
 	 * @return
 	 */
 	public V fetchById(K id){
+		
+		if (id == null)
+			return null;
+		
 		return (V)cacheLoader.load(id);
 	}
 	
 	@Override
 	public V findById(K id){
+		
+		if (id == null)
+			return null;
+		
 		if (cache == null)
 			return fetchById(id);
 		

@@ -58,7 +58,7 @@ public abstract class AbstractThriftServlet extends HttpServlet implements Initi
 			
 			response.setContentType(getContentType());
 			response.setContentLength(ot.getPos());
-			response.getOutputStream().write(ot.getBuf().array());
+			response.getOutputStream().write(ot.getBuf().array(), 0, ot.getPos());
 			response.flushBuffer();			
 		} catch (TException e) {
 			

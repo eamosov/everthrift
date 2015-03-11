@@ -209,17 +209,21 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF<V>> i
 
     @Override
 	public List<V> findByCriteria(Criterion criterion, Order order) {
-    	return findByCriteria(criterion, null, order, null, null);
+    	return findByCriteria(criterion, null, null, order, null, null);
     }    
 
-    @Override
-    public List<V> findByCriteria(Criterion criterion, LockMode lockMode, Order order, Integer limit, Integer offset) {
+    @SuppressWarnings("unchecked")
+	@Override
+    public List<V> findByCriteria(Criterion criterion, Projection proj, LockMode lockMode, Order order, Integer limit, Integer offset) {
         final Pair<Criteria, StatelessSession> pair = createCriteria();
         try {
             final Criteria criteria = pair.first;
             criteria.add(criterion);
             if (order != null)
                 criteria.addOrder(order);
+            
+            if (proj !=null)
+            	criteria.setProjection(proj);
             
             if (lockMode != null)
                 criteria.setLockMode(lockMode);
