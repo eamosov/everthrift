@@ -5,7 +5,6 @@ import java.lang.reflect.Proxy;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
@@ -116,7 +115,6 @@ public class ThriftContext implements Closeable{
 				
 		scheduller = Executors.newSingleThreadScheduledExecutor(new ThreadFactory(){
 
-			@Override
 			public Thread newThread(Runnable r) {
 				final Thread t = new Thread(r);
 				t.setName("ThriftClientScheduller");
@@ -129,7 +127,6 @@ public class ThriftContext implements Closeable{
 	            new SynchronousQueue<Runnable>(),
 	            new ThreadFactory(){
 			
-			@Override
 			public Thread newThread(Runnable r) {
 				final Thread t = new Thread(r);
 				t.setName("ThriftClientExecutor-" + nThread.incrementAndGet());
@@ -161,7 +158,6 @@ public class ThriftContext implements Closeable{
 		tPersistWsTransport =  new TPersistWsTransport(wsUri, processor, protocolFactory, transportFactory, async, scheduller, executor, wsReconnectTimeout, wsConnectTimeoutMs);
 		tPersistWsTransport.setEventsHandler(new TransportEventsIF(){
 
-			@Override
 			public void onConnect() {
 				final List<SettableFuture<ThriftContext>> sf;
 				synchronized(wsIsConnectedLock){
@@ -179,7 +175,6 @@ public class ThriftContext implements Closeable{
 					
 					for(final ThriftContextCallback c : onConnectList)
 						executor.submit(new Runnable(){
-							@Override
 							public void run() {
 								try {
 									c.call(ThriftContext.this);
@@ -197,7 +192,6 @@ public class ThriftContext implements Closeable{
 				}				
 			}
 
-			@Override
 			public void onClose() {
 				synchronized(wsIsConnectedLock){
 					wsIsConnected = false;
@@ -211,7 +205,6 @@ public class ThriftContext implements Closeable{
 				}
 			}
 
-			@Override
 			public void onConnectError() {
 				// TODO Auto-generated method stub
 				
@@ -223,7 +216,6 @@ public class ThriftContext implements Closeable{
 		tPersistWsTransport = null;
 	}
 	
-	@Override
 	public synchronized void close(){
 				
 		destroyWebsocket();
@@ -293,7 +285,6 @@ public class ThriftContext implements Closeable{
 		return (T)Proxy.newProxyInstance(ThriftContext.class.getClassLoader(), new Class[]{cls}, new ServiceIfaceProxy(cls, new InvocationCallback(){
 
 			@SuppressWarnings("rawtypes")
-			@Override
 			public Object call(InvocationInfo ii) throws NullResult, TException {
 				
 				if (!opened)
@@ -304,7 +295,9 @@ public class ThriftContext implements Closeable{
 				if ((use == Transport.WEBSOCKET || use == Transport.ANY) && tPersistWsTransport !=null && tPersistWsTransport.isConnected()){
 					try {
 						return websocketCall(ii, seqId, asyncCallTimeout).get();
-					} catch (InterruptedException | ExecutionException e) {
+					} catch (InterruptedException e) {
+						throw new TTransportException(e);
+					} catch (ExecutionException e){
 						throw new TTransportException(e);
 					}
 				}else if ((use == Transport.HTTP || use == Transport.ANY) && tHttpTransport !=null){					
@@ -327,7 +320,6 @@ public class ThriftContext implements Closeable{
 		return (T)Proxy.newProxyInstance(ThriftContext.class.getClassLoader(), new Class[]{cls}, new ServiceAsyncIfaceProxy(cls, new InvocationCallback(){
 
 			@SuppressWarnings("rawtypes")
-			@Override
 			public Object call(final InvocationInfo ii) throws NullResult, TException {
 				
 				if (!opened)
@@ -344,7 +336,6 @@ public class ThriftContext implements Closeable{
 					
 					future = executor.submit(new Callable<T>(){
 
-						@Override
 						public T call() throws Exception {
 							return (T)httpClientCall(ii, seqId);
 						}});						
@@ -355,12 +346,10 @@ public class ThriftContext implements Closeable{
 				if (ii.asyncMethodCallback !=null)
 					Futures.addCallback(future, new FutureCallback<T>(){
 
-						@Override
 						public void onSuccess(T result) {
 							ii.asyncMethodCallback.onComplete(result);								
 						}
 
-						@Override
 						public void onFailure(Throwable t) {
 							ii.asyncMethodCallback.onError(t instanceof Exception ? (Exception)t : new Exception(t));
 						}}, executor);				
@@ -388,7 +377,6 @@ public class ThriftContext implements Closeable{
 		return (T)Proxy.newProxyInstance(ThriftContext.class.getClassLoader(), new Class[]{cls}, new ServiceIfaceProxy(cls, new InvocationCallback(){
 
 			@SuppressWarnings("rawtypes")
-			@Override
 			public Object call(InvocationInfo ii) throws NullResult {
 				invocationInfo.set(ii);
 				throw new NullResult();
@@ -424,7 +412,6 @@ public class ThriftContext implements Closeable{
 			
 			return executor.submit(new Callable<R>(){
 
-				@Override
 				public R call() throws Exception {
 					return httpClientCall(ii, seqId);
 				}});						
@@ -538,7 +525,6 @@ public class ThriftContext implements Closeable{
 		synchronized(wsIsConnectedLock){
 			if (wsIsConnected)
 				executor.submit(new Runnable(){
-					@Override
 					public void run() {
 						try {
 							callback.call(ThriftContext.this);

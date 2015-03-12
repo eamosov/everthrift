@@ -330,27 +330,22 @@ public class SSLSocketChannel2 implements ByteChannel, WrappedByteChannel {
 		return sslEngine.isInboundDone();
 	}
 
-	@Override
 	public boolean isOpen() {
 		return socketChannel.isOpen();
 	}
 
-	@Override
 	public boolean isNeedWrite() {
 		return outCrypt.hasRemaining() || !isHandShakeComplete(); // FIXME this condition can cause high cpu load during handshaking when network is slow
 	}
 
-	@Override
 	public void writeMore() throws IOException {
 		write( outCrypt );
 	}
 
-	@Override
 	public boolean isNeedRead() {
 		return inData.hasRemaining() || ( inCrypt.hasRemaining() && readEngineResult.getStatus() != Status.BUFFER_UNDERFLOW && readEngineResult.getStatus() != Status.CLOSED );
 	}
 
-	@Override
 	public int readMore( ByteBuffer dst ) throws SSLException {
 		return readRemaining( dst );
 	}
@@ -372,7 +367,6 @@ public class SSLSocketChannel2 implements ByteChannel, WrappedByteChannel {
 
 	}
 
-	@Override
 	public boolean isBlocking() {
 		return socketChannel.isBlocking();
 	}

@@ -55,7 +55,6 @@ public class ServiceIfaceProxy implements InvocationHandler{
 		this.callback = callback;
 	}
 
-	@Override
 	public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
 		
 		final ThriftMeta args_result = getThriftMeta(method);

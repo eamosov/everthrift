@@ -32,19 +32,16 @@ public class DefaultSSLWebSocketServerFactory implements WebSocketServer.WebSock
 		this.exec = exec;
 	}
 
-	@Override
 	public ByteChannel wrapChannel( SocketChannel channel, SelectionKey key ) throws IOException {
 		SSLEngine e = sslcontext.createSSLEngine();
 		e.setUseClientMode( false );
 		return new SSLSocketChannel2( channel, e, exec, key );
 	}
 
-	@Override
 	public WebSocketImpl createWebSocket( WebSocketAdapter a, Draft d, Socket c ) {
 		return new WebSocketImpl( a, d );
 	}
 
-	@Override
 	public WebSocketImpl createWebSocket( WebSocketAdapter a, List<Draft> d, Socket s ) {
 		return new WebSocketImpl( a, d );
 	}

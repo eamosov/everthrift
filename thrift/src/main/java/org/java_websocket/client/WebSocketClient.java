@@ -243,12 +243,10 @@ public abstract class WebSocketClient extends WebSocketAdapter implements Runnab
 	/**
 	 * Calls subclass' implementation of <var>onMessage</var>.
 	 */
-	@Override
 	public final void onWebsocketMessage( WebSocket conn, String message ) {
 		onMessage( message );
 	}
 
-	@Override
 	public final void onWebsocketMessage( WebSocket conn, ByteBuffer blob ) {
 		onMessage( blob );
 	}
@@ -261,7 +259,6 @@ public abstract class WebSocketClient extends WebSocketAdapter implements Runnab
 	/**
 	 * Calls subclass' implementation of <var>onOpen</var>.
 	 */
-	@Override
 	public final void onWebsocketOpen( WebSocket conn, Handshakedata handshake ) {
 		connectLatch.countDown();
 		onOpen( (ServerHandshake) handshake );
@@ -270,7 +267,6 @@ public abstract class WebSocketClient extends WebSocketAdapter implements Runnab
 	/**
 	 * Calls subclass' implementation of <var>onClose</var>.
 	 */
-	@Override
 	public final void onWebsocketClose( WebSocket conn, int code, String reason, boolean remote ) {
 		connectLatch.countDown();
 		closeLatch.countDown();
@@ -288,22 +284,18 @@ public abstract class WebSocketClient extends WebSocketAdapter implements Runnab
 	/**
 	 * Calls subclass' implementation of <var>onIOError</var>.
 	 */
-	@Override
 	public final void onWebsocketError( WebSocket conn, Exception ex ) {
 		onError( ex );
 	}
 
-	@Override
 	public final void onWriteDemand( WebSocket conn ) {
 		// nothing to do
 	}
 
-	@Override
 	public void onWebsocketCloseInitiated( WebSocket conn, int code, String reason ) {
 		onCloseInitiated( code, reason );
 	}
 
-	@Override
 	public void onWebsocketClosing( WebSocket conn, int code, String reason, boolean remote ) {
 		onClosing( code, reason, remote );
 	}
@@ -318,14 +310,12 @@ public abstract class WebSocketClient extends WebSocketAdapter implements Runnab
 		return engine;
 	}
 
-	@Override
 	public InetSocketAddress getLocalSocketAddress( WebSocket conn ) {
 		if( socket != null )
 			return (InetSocketAddress) socket.getLocalSocketAddress();
 		return null;
 	}
 
-	@Override
 	public InetSocketAddress getRemoteSocketAddress( WebSocket conn ) {
 		if( socket != null )
 			return (InetSocketAddress) socket.getRemoteSocketAddress();
@@ -343,7 +333,6 @@ public abstract class WebSocketClient extends WebSocketAdapter implements Runnab
 	}
 
 	private class WebsocketWriteThread implements Runnable {
-		@Override
 		public void run() {
 			Thread.currentThread().setName( "WebsocketWriteThread" );
 			try {
@@ -378,76 +367,61 @@ public abstract class WebSocketClient extends WebSocketAdapter implements Runnab
 		this.socket = socket;
 	}
 
-	@Override
 	public void sendFragmentedFrame( Opcode op, ByteBuffer buffer, boolean fin ) {
 		engine.sendFragmentedFrame( op, buffer, fin );
 	}
 
-	@Override
 	public boolean isOpen() {
 		return engine.isOpen();
 	}
 
-	@Override
 	public boolean isFlushAndClose() {
 		return engine.isFlushAndClose();
 	}
 
-	@Override
 	public boolean isClosed() {
 		return engine.isClosed();
 	}
 
-	@Override
 	public boolean isClosing() {
 		return engine.isClosing();
 	}
 
-	@Override
 	public boolean isConnecting() {
 		return engine.isConnecting();
 	}
 
-	@Override
 	public boolean hasBufferedData() {
 		return engine.hasBufferedData();
 	}
 
-	@Override
 	public void close( int code ) {
 		engine.close();
 	}
 
-	@Override
 	public void close( int code, String message ) {
 		engine.close( code, message );
 	}
 
-	@Override
 	public void closeConnection( int code, String message ) {
 		engine.closeConnection( code, message );
 	}
 
-	@Override
 	public void send( ByteBuffer bytes ) throws IllegalArgumentException , NotYetConnectedException {
 		engine.send( bytes );
 	}
 
-	@Override
 	public void sendFrame( Framedata framedata ) {
 		engine.sendFrame( framedata );
 	}
 
-	@Override
 	public InetSocketAddress getLocalSocketAddress() {
 		return engine.getLocalSocketAddress();
 	}
-	@Override
 	public InetSocketAddress getRemoteSocketAddress() {
 		return engine.getRemoteSocketAddress();
 	}
 	
-	@Override
 	public String getResourceDescriptor() {
 		return uri.getPath();
 	}

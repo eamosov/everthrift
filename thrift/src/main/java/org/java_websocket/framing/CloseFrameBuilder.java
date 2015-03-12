@@ -75,7 +75,6 @@ public class CloseFrameBuilder extends FramedataImpl1 implements CloseFrame {
 		payload.reset();
 	}
 
-	@Override
 	public int getCloseCode() {
 		return code;
 	}
@@ -97,7 +96,6 @@ public class CloseFrameBuilder extends FramedataImpl1 implements CloseFrame {
 		}
 	}
 
-	@Override
 	public String getMessage() {
 		return reason;
 	}

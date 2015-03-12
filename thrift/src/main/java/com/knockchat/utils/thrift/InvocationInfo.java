@@ -75,13 +75,8 @@ public class InvocationInfo<T> extends AbstractFuture<T>{
 		return setReply(data, 0, data.length, protocolFactory);
 	}
 	
-	public T setReply(byte[] data, int offset, int length, TProtocolFactory protocolFactory) throws TException{
-		
-		try(
-				TTransport inT = new TMemoryInputTransport(data, offset, length);
-			){
-			return setReply(inT, protocolFactory);
-		}
+	public T setReply(byte[] data, int offset, int length, TProtocolFactory protocolFactory) throws TException{		
+		return setReply(new TMemoryInputTransport(data, offset, length), protocolFactory);
 	}
 	
 	public T setReply(TTransport inT, TProtocolFactory protocolFactory) throws TException{
@@ -124,7 +119,13 @@ public class InvocationInfo<T> extends AbstractFuture<T>{
 		final TBase result;
 		try {
 			result = resultInit.newInstance();
-		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+		} catch (IllegalArgumentException e) {
+			throw new RuntimeException(e);
+		} catch (InstantiationException e) {
+			throw new RuntimeException(e);
+		} catch (IllegalAccessException e) {
+			throw new RuntimeException(e);
+		} catch (InvocationTargetException e) {
 			throw new RuntimeException(e);
 		}
 		

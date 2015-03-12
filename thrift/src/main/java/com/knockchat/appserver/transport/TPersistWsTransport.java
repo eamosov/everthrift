@@ -39,17 +39,14 @@ public class TPersistWsTransport extends TTransport {
 	
 	private TransportEventsIF thisHandler = new TransportEventsIF(){
 
-		@Override
 	    public void onConnect(){
 	    	TPersistWsTransport.this._onConnect();
 	    }
 
-	    @Override
 	    public void onClose(){
 	    	TPersistWsTransport.this._onClose();
 	    }
 	    
-	    @Override
 	    public void onConnectError(){
 	    	TPersistWsTransport.this._onConnectError();
 	    }
@@ -108,7 +105,6 @@ public class TPersistWsTransport extends TTransport {
 		
 		final Runnable run = new Runnable(){
 
-			@Override
 			public void run() {				
 				doConnect();				
 			}};

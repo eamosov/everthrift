@@ -160,13 +160,20 @@ public class TWsTransport extends TAsyncTransport {
         
         executor.submit(new Runnable(){
 
-			@Override
 			public void run() {
 		        try{
 		        	final Websocket s = connectFuture.get(connectTimeout, TimeUnit.MILLISECONDS);
 		        	log.trace("Handshake completed, sessionId={}", s.toString());
-		        } catch (TimeoutException | InterruptedException | ExecutionException e){
-		        	log.debug("Wait for connect: {}", e.toString());
+		        } catch (TimeoutException e){
+		        	log.debug("Wait for connect:", e);
+		        	fireOnConnectError();
+		        	close();		        	
+		        } catch (InterruptedException e){
+		        	log.debug("Wait for connect", e);
+		        	fireOnConnectError();
+		        	close();		        	
+		        } catch (ExecutionException e){
+		        	log.debug("Wait for connect", e);
 		        	fireOnConnectError();
 		        	close();
 		        }    	
@@ -425,10 +432,12 @@ public class TWsTransport extends TAsyncTransport {
 
     private synchronized void onReadRequest(TMessage msg, TTransport inWrapT) throws TException{
     	
-    	try(
-    	    	final TMemoryBuffer outT = new TMemoryBuffer(1024);
-    	    	final TTransport outWrapT = transportFactory.getTransport(outT);    			
-    		){
+    	TMemoryBuffer outT  = null;
+    	TTransport outWrapT = null;
+    	
+    	try{
+    	    outT = new TMemoryBuffer(1024);
+    	    outWrapT = transportFactory.getTransport(outT);    			
     	
         	final TProtocol inP = protocolFactory.getProtocol(inWrapT);		
     		final TProtocol outP = protocolFactory.getProtocol(outWrapT);
@@ -440,15 +449,21 @@ public class TWsTransport extends TAsyncTransport {
             } catch (Exception e) {
                 new TTransportException(e);
             }    			    	    		
-    	}    	    	
+    	}finally{
+    		
+    		if (outWrapT !=null)
+    			outWrapT.close();
+    		
+    		if (outT !=null)
+    			outT.close();
+    	}
     }
 
     private void onRead(byte buf[], int offset, int length) throws TException, IOException{
         final TMemoryInputTransport inT = new TMemoryInputTransport(buf, offset, length);
-
-    	try(
-    	        final TTransport inWrapT = transportFactory.getTransport(inT);    			
-    		){
+        TTransport inWrapT = null;
+    	try{
+    		inWrapT = transportFactory.getTransport(inT);    			
     		
             final TMessage msg = protocolFactory.getProtocol(inWrapT).readMessageBegin();
             
@@ -459,7 +474,12 @@ public class TWsTransport extends TAsyncTransport {
     		}else{
     			onReadRequest(msg, copy);
     		}    	    		
-    	}        
+    	}finally{
+    		if (inWrapT !=null)
+    			inWrapT.close();
+    		
+    		inT.close();
+    	}
     }
     
 
@@ -477,7 +497,6 @@ public class TWsTransport extends TAsyncTransport {
     		try{
         		executor.submit(new Runnable(){
 
-    				@Override
     				public void run() {
     					TWsTransport.this.fireOnConnect();				
     				}});
@@ -493,7 +512,6 @@ public class TWsTransport extends TAsyncTransport {
     		
     		executor.execute(new Runnable(){
 
-				@Override
 				public void run() {
 		    		try {
 						onRead(buf, 0, buf.length);
@@ -509,7 +527,6 @@ public class TWsTransport extends TAsyncTransport {
     		
     		executor.execute(new Runnable(){
 
-				@Override
 				public void run() {
 		    		try {
 						onRead(bytes.array(), 0, bytes.array().length);
@@ -526,7 +543,6 @@ public class TWsTransport extends TAsyncTransport {
     		
     		executor.execute(new Runnable(){
 
-				@Override
 				public void run() {
 					TWsTransport.this.close();
 				}});    		    		
@@ -538,7 +554,6 @@ public class TWsTransport extends TAsyncTransport {
         	
     		executor.execute(new Runnable(){
 
-				@Override
 				public void run() {
 					TWsTransport.this.close();
 				}});    		    		

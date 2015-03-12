@@ -24,12 +24,10 @@ public class HandshakedataImpl1 implements HandshakeBuilder {
 		}
 	}*/
 
-	@Override
 	public Iterator<String> iterateHttpFields() {
 		return Collections.unmodifiableSet( map.keySet() ).iterator();// Safety first
 	}
 
-	@Override
 	public String getFieldValue( String name ) {
 		String s = map.get( name );
 		if ( s == null ) {
@@ -38,22 +36,18 @@ public class HandshakedataImpl1 implements HandshakeBuilder {
 		return s;
 	}
 
-	@Override
 	public byte[] getContent() {
 		return content;
 	}
 
-	@Override
 	public void setContent( byte[] content ) {
 		this.content = content;
 	}
 
-	@Override
 	public void put( String name, String value ) {
 		map.put( name, value );
 	}
 
-	@Override
 	public boolean hasFieldValue( String name ) {
 		return map.containsKey( name );
 	}

@@ -432,7 +432,6 @@ public class WebSocketImpl implements WebSocket {
 		}
 	}
 
-	@Override
 	public void close( int code, String message ) {
 		close( code, message, false );
 	}
@@ -528,7 +527,6 @@ public class WebSocketImpl implements WebSocket {
 		}
 	}
 
-	@Override
 	public void close( int code ) {
 		close( code, "", false );
 	}
@@ -543,7 +541,6 @@ public class WebSocketImpl implements WebSocket {
 	 * @throws IllegalArgumentException
 	 * @throws NotYetConnectedException
 	 */
-	@Override
 	public void send( String text ) throws WebsocketNotConnectedException {
 		if( text == null )
 			throw new IllegalArgumentException( "Cannot send 'null' data to a WebSocketImpl." );
@@ -556,14 +553,12 @@ public class WebSocketImpl implements WebSocket {
 	 * @throws IllegalArgumentException
 	 * @throws NotYetConnectedException
 	 */
-	@Override
 	public void send( ByteBuffer bytes ) throws IllegalArgumentException , WebsocketNotConnectedException {
 		if( bytes == null )
 			throw new IllegalArgumentException( "Cannot send 'null' data to a WebSocketImpl." );
 		send( draft.createFrames( bytes, role == Role.CLIENT ) );
 	}
 
-	@Override
 	public void send( byte[] bytes ) throws IllegalArgumentException , WebsocketNotConnectedException {
 		send( ByteBuffer.wrap( bytes ) );
 	}
@@ -576,19 +571,16 @@ public class WebSocketImpl implements WebSocket {
 		}
 	}
 
-	@Override
 	public void sendFragmentedFrame( Opcode op, ByteBuffer buffer, boolean fin ) {
 		send( draft.continuousFrame( op, buffer, fin ) );
 	}
 
-	@Override
 	public void sendFrame( Framedata framedata ) {
 		if( DEBUG )
 			System.out.println( "send frame: " + framedata );
 		write( draft.createBinaryFrame( framedata ) );
 	}
 
-	@Override
 	public boolean hasBufferedData() {
 		return !this.outQueue.isEmpty();
 	}
@@ -667,34 +659,28 @@ public class WebSocketImpl implements WebSocket {
 		}
 	}
 
-	@Override
 	public boolean isConnecting() {
 		assert ( flushandclosestate ? readystate == READYSTATE.CONNECTING : true );
 		return readystate == READYSTATE.CONNECTING; // ifflushandclosestate
 	}
 
-	@Override
 	public boolean isOpen() {
 		assert ( readystate == READYSTATE.OPEN ? !flushandclosestate : true );
 		return readystate == READYSTATE.OPEN;
 	}
 
-	@Override
 	public boolean isClosing() {
 		return readystate == READYSTATE.CLOSING;
 	}
 
-	@Override
 	public boolean isFlushAndClose() {
 		return flushandclosestate;
 	}
 
-	@Override
 	public boolean isClosed() {
 		return readystate == READYSTATE.CLOSED;
 	}
 
-	@Override
 	public READYSTATE getReadyState() {
 		return readystate;
 	}
@@ -709,27 +695,22 @@ public class WebSocketImpl implements WebSocket {
 		return super.toString(); // its nice to be able to set breakpoints here
 	}
 
-	@Override
 	public InetSocketAddress getRemoteSocketAddress() {
 		return wsl.getRemoteSocketAddress( this );
 	}
 
-	@Override
 	public InetSocketAddress getLocalSocketAddress() {
 		return wsl.getLocalSocketAddress( this );
 	}
 
-	@Override
 	public Draft getDraft() {
 		return draft;
 	}
 
-	@Override
 	public void close() {
 		close( CloseFrame.NORMAL );
 	}
 
-	@Override
 	public String getResourceDescriptor() {
 		return resourceDescriptor;
 	}

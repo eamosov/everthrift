@@ -487,7 +487,6 @@ public abstract class WebSocketServer extends WebSocketAdapter implements Runnab
 		return "<cross-domain-policy><allow-access-from domain=\"*\" to-ports=\"" + getPort() + "\" /></cross-domain-policy>";
 	}
 
-	@Override
 	public final void onWebsocketMessage( WebSocket conn, String message ) {
 		onMessage( conn, message );
 	}
@@ -498,19 +497,16 @@ public abstract class WebSocketServer extends WebSocketAdapter implements Runnab
 		onFragment( conn, frame );
 	}
 
-	@Override
 	public final void onWebsocketMessage( WebSocket conn, ByteBuffer blob ) {
 		onMessage( conn, blob );
 	}
 
-	@Override
 	public final void onWebsocketOpen( WebSocket conn, Handshakedata handshake ) {
 		if( addConnection( conn ) ) {
 			onOpen( conn, (ClientHandshake) handshake );
 		}
 	}
 
-	@Override
 	public final void onWebsocketClose( WebSocket conn, int code, String reason, boolean remote ) {
 		selector.wakeup();
 		try {
@@ -567,12 +563,10 @@ public abstract class WebSocketServer extends WebSocketAdapter implements Runnab
 	 * @param conn
 	 *            may be null if the error does not belong to a single connection
 	 */
-	@Override
 	public final void onWebsocketError( WebSocket conn, Exception ex ) {
 		onError( conn, ex );
 	}
 
-	@Override
 	public final void onWriteDemand( WebSocket w ) {
 		WebSocketImpl conn = (WebSocketImpl) w;
 		try {
@@ -584,12 +578,10 @@ public abstract class WebSocketServer extends WebSocketAdapter implements Runnab
 		selector.wakeup();
 	}
 
-	@Override
 	public void onWebsocketCloseInitiated( WebSocket conn, int code, String reason ) {
 		onCloseInitiated( conn, code, reason );
 	}
 
-	@Override
 	public void onWebsocketClosing( WebSocket conn, int code, String reason, boolean remote ) {
 		onClosing( conn, code, reason, remote );
 
@@ -625,12 +617,10 @@ public abstract class WebSocketServer extends WebSocketAdapter implements Runnab
 		return ( (SocketChannel) impl.key.channel() ).socket();
 	}
 
-	@Override
 	public InetSocketAddress getLocalSocketAddress( WebSocket conn ) {
 		return (InetSocketAddress) getSocket( conn ).getLocalSocketAddress();
 	}
 
-	@Override
 	public InetSocketAddress getRemoteSocketAddress( WebSocket conn ) {
 		return (InetSocketAddress) getSocket( conn ).getRemoteSocketAddress();
 	}
@@ -685,7 +675,6 @@ public abstract class WebSocketServer extends WebSocketAdapter implements Runnab
 			iqueue = new LinkedBlockingQueue<WebSocketImpl>();
 			setName( "WebSocketWorker-" + getId() );
 			setUncaughtExceptionHandler( new UncaughtExceptionHandler() {
-				@Override
 				public void uncaughtException( Thread t, Throwable e ) {
 					getDefaultUncaughtExceptionHandler().uncaughtException( t, e );
 				}
@@ -719,7 +708,7 @@ public abstract class WebSocketServer extends WebSocketAdapter implements Runnab
 	}
 
 	public interface WebSocketServerFactory extends WebSocketFactory {
-		@Override
+		
 		public WebSocketImpl createWebSocket( WebSocketAdapter a, Draft d, Socket s );
 
 		public WebSocketImpl createWebSocket( WebSocketAdapter a, List<Draft> drafts, Socket s );

@@ -54,7 +54,6 @@ public class AsyncRegister {
 	public synchronized void put(final int seqId, InvocationInfo ii, final long tmMs){
 		callbacks.put(seqId, new Pair<InvocationInfo, ListenableScheduledFuture>(ii, scheduller.schedule(new Runnable(){
 
-			@Override
 			public void run() {
 				
 				final Pair<InvocationInfo, ListenableScheduledFuture> p;

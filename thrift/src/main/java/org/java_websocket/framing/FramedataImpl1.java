@@ -33,47 +33,38 @@ public class FramedataImpl1 implements FrameBuilder {
 		transferemasked = f.getTransfereMasked();
 	}
 
-	@Override
 	public boolean isFin() {
 		return fin;
 	}
 
-	@Override
 	public Opcode getOpcode() {
 		return optcode;
 	}
 
-	@Override
 	public boolean getTransfereMasked() {
 		return transferemasked;
 	}
 
-	@Override
 	public ByteBuffer getPayloadData() {
 		return unmaskedpayload;
 	}
 
-	@Override
 	public void setFin( boolean fin ) {
 		this.fin = fin;
 	}
 
-	@Override
 	public void setOptcode( Opcode optcode ) {
 		this.optcode = optcode;
 	}
 
-	@Override
 	public void setPayload( ByteBuffer payload ) throws InvalidDataException {
 		unmaskedpayload = payload;
 	}
 
-	@Override
 	public void setTransferemasked( boolean transferemasked ) {
 		this.transferemasked = transferemasked;
 	}
 
-	@Override
 	public void append( Framedata nextframe ) throws InvalidFrameException {
 		ByteBuffer b = nextframe.getPayloadData();
 		if( unmaskedpayload == null ) {
