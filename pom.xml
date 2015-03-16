@@ -13,6 +13,7 @@
 		<spring.version>4.0.5.RELEASE</spring.version>
 		<spring-integration.version>2.2.4.RELEASE</spring-integration.version>
 		<github.global.server>github</github.global.server>
+		<httpclient.version>4.3.5</httpclient.version>
 	</properties>
 
 	<dependencyManagement>
@@ -21,6 +22,12 @@
 				<groupId>org.apache</groupId>
 				<artifactId>thrift</artifactId>
 				<version>${thrift.version}</version>
+				<exclusions>
+					<exclusion>
+						<groupId>org.apache.httpcomponents</groupId>
+						<artifactId>httpclient</artifactId>
+					</exclusion>
+				</exclusions>
 			</dependency>
 
 			<dependency>
@@ -184,6 +191,12 @@
 				<groupId>org.aspectj</groupId>
 				<artifactId>aspectjrt</artifactId>
 				<version>1.7.4</version>
+			</dependency>
+			
+			<dependency>
+				<groupId>org.apache.httpcomponents</groupId>
+				<artifactId>httpclient</artifactId>
+				<version>${httpclient.version}</version>
 			</dependency>
 
 		</dependencies>

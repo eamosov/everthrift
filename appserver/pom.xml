@@ -166,12 +166,7 @@
             <groupId>org.springframework</groupId>
             <artifactId>spring-aspects</artifactId>
         </dependency>
-        
-        <dependency>
-            <groupId>org.aspectj</groupId>
-            <artifactId>aspectjrt</artifactId>
-        </dependency>
-        
+                
 		<dependency>
 			<groupId>org.springframework.data</groupId>
 			<artifactId>spring-data-jpa</artifactId>
@@ -287,6 +282,13 @@
 			<groupId>org.jminix</groupId>
 			<artifactId>jminix</artifactId>
 			<version>1.1.0</version>
+			
+			<exclusions>
+				<exclusion>
+            		<groupId>commons-beanutils</groupId>
+            		<artifactId>commons-beanutils</artifactId>
+        		</exclusion>			
+			</exclusions>        			
 		</dependency>
 
 		<dependency>
@@ -303,11 +305,6 @@
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>org.apache</groupId>
-			<artifactId>thrift</artifactId>
 		</dependency>
 
 		<dependency>
@@ -374,7 +371,7 @@
 		<dependency>
             <groupId>com.knockchat</groupId>
             <artifactId>knock4j-thrift</artifactId>
-        </dependency>
+        </dependency>                
 		 
 	</dependencies>
 

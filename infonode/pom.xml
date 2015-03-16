@@ -61,11 +61,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache</groupId>
-            <artifactId>thrift</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>commons-daemon</groupId>
             <artifactId>commons-daemon</artifactId>
         </dependency>
