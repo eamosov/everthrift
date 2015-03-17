@@ -19,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.data.mongodb.core.MongoTemplate;
 
+import com.google.common.base.Throwables;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.knockchat.appserver.model.CreatedAtIF;
@@ -111,9 +112,14 @@ public abstract class AbstractModelFactory<PK extends Serializable, ENTITY exten
         	((CreatedAtIF)e).setCreatedAt(now);
 
     	if (storage == Storage.PGSQL){
-    		final Pair<ENTITY, Boolean> ret = dao.saveOrUpdate(e);
-    		isUpdated.set(ret.second);
-    		return ret.first;
+    		try{
+    			final Pair<ENTITY, Boolean> ret = dao.saveOrUpdate(e);
+    			isUpdated.set(ret.second);
+    			return ret.first;
+    		}catch(RuntimeException e1){
+    			isUpdated.set(false);
+    			throw e1;
+    		}
     	}else if (storage == Storage.MONGO){
         	mongo.save(e);
         	isUpdated.set(true);
@@ -201,15 +207,20 @@ public abstract class AbstractModelFactory<PK extends Serializable, ENTITY exten
     	throw new NotImplementedException("factory should implement update()");
     }
 
-    protected boolean optimisticUpdate(Callable<Boolean> updateFunction) throws Exception{
+    protected boolean optimisticUpdate(Callable<Boolean> updateFunction){
     	return optimisticUpdate(updateFunction, 5, 100);
     }
     
-    protected boolean optimisticUpdate(Callable<Boolean> updateFunction, int maxIteration, int maxTimeoutMillis) throws Exception{
+    protected boolean optimisticUpdate(Callable<Boolean> updateFunction, int maxIteration, int maxTimeoutMillis){
 			int i=0;
 			boolean updated = false;
 			do{
-				updated = updateFunction.call();
+				try{
+					updated = updateFunction.call();
+				}catch (Throwable e){
+					Throwables.propagate(e);
+				}
+				
 				i++;
 				if (!updated)
 					try {
