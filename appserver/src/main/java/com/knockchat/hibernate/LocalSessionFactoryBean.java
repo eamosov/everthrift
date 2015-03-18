@@ -48,9 +48,14 @@ import org.springframework.orm.hibernate4.LocalSessionFactoryBuilder;
 import com.google.common.collect.Maps;
 import com.knockchat.hibernate.model.types.BoxType;
 import com.knockchat.hibernate.model.types.CustomTypeFactory;
+import com.knockchat.hibernate.model.types.DoubleListType;
+import com.knockchat.hibernate.model.types.IntegerListType;
 import com.knockchat.hibernate.model.types.JsonType;
+import com.knockchat.hibernate.model.types.LongListType;
 import com.knockchat.hibernate.model.types.LongLongHstoreType;
 import com.knockchat.hibernate.model.types.PointType;
+import com.knockchat.hibernate.model.types.ShortListType;
+import com.knockchat.hibernate.model.types.StringListType;
 import com.knockchat.hibernate.model.types.TEnumTypeFactory;
 
 public class LocalSessionFactoryBean extends org.springframework.orm.hibernate4.LocalSessionFactoryBean {
@@ -500,18 +505,26 @@ public class LocalSessionFactoryBean extends org.springframework.orm.hibernate4.
         } else if (javaType == byte[].class) {
             typeName = "com.knockchat.hibernate.model.types.BinaryType";
         }else if (java.util.List.class.equals(javaType)){
-            if (columnModel.getColumnType().contains("float")
-                    ||columnModel.getColumnType().contains("float8")) {
-                typeName = "com.knockchat.hibernate.model.types.DoubleListType";
-            }else if (columnModel.getColumnType().contains("integer") ||
-                    columnModel.getColumnType().contains("int") ){
-                typeName = "com.knockchat.hibernate.model.types.IntegerListType";
+            if (columnModel.getColumnType().contains("float") ||columnModel.getColumnType().contains("float8")) {
+            	
+                typeName = DoubleListType.class.getCanonicalName();
+                
+            }else if (columnModel.getColumnType().contains("_int8")) {
+            	
+                typeName = LongListType.class.getCanonicalName();
+                
+            }else if (columnModel.getColumnType().contains("_int4")){
+            	
+                typeName = IntegerListType.class.getCanonicalName();
+                
             }else if (columnModel.getColumnType().contains("short")){
-                typeName = "com.knockchat.hibernate.model.types.ShortListType";
-            }else if (columnModel.getColumnType().contains("long")) {
-                typeName = "com.knockchat.hibernate.model.types.LongListType";
+            	
+                typeName = ShortListType.class.getCanonicalName();
+                
             }else if (columnModel.getColumnType().contains("varchar") || columnModel.getColumnType().contains("text")) {
-            typeName = "com.knockchat.hibernate.model.types.StringListType";
+            	
+            	typeName = StringListType.class.getCanonicalName();
+            	
             }else {
                 typeName = null;
             }

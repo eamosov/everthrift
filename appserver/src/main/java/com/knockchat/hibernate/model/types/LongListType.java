@@ -9,7 +9,7 @@ public class LongListType extends HibernateListType<Long> {
 
     @Override
     public Array createArray(List<Long> object, Connection connection) throws SQLException {
-        Array array = connection.createArrayOf("long", object.toArray());
+        Array array = connection.createArrayOf("bigint", object.toArray());
         return array;
     }
 }

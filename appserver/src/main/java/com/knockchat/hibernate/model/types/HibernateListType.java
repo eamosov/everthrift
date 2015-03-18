@@ -7,17 +7,16 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
-import java.util.Arrays;
 import java.util.List;
 
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.usertype.UserType;
 
+import com.google.common.collect.Lists;
+
 
 public abstract class HibernateListType<T> implements UserType {
-
-    protected static final int SQLTYPE = Types.ARRAY;
 
     @Override
     public Class<List> returnedClass() {
@@ -32,7 +31,7 @@ public abstract class HibernateListType<T> implements UserType {
     @Override
     public Object nullSafeGet(ResultSet rs, String[] names, SessionImplementor session, Object owner) throws HibernateException, SQLException {
         Array sqlArr = rs.getArray(names[0]);
-        List result = sqlArr == null ? null : Arrays.asList((Object[]) sqlArr.getArray());
+        final List result = sqlArr == null ? null : Lists.newArrayList((Object[]) sqlArr.getArray());
         return result;
     }
 
@@ -54,29 +53,28 @@ public abstract class HibernateListType<T> implements UserType {
 
     @Override
     public int hashCode(final Object o) throws HibernateException {
-        return System.identityHashCode(o);
-
+    	return ((List)o).hashCode();
     }
 
     @Override
     public Object deepCopy(Object o) throws HibernateException {
-        return o == null ? null : o;
+        return o == null ? null : Lists.newArrayList((List)o);
     }
 
     @Override
     public boolean isMutable() {
-        return false;
+        return true;
     }
 
     @Override
     public Object replace(final Object original, final Object target, final Object owner) throws HibernateException {
-        return original;
+    	return original == null ? null: deepCopy(original);
     }
 
     public abstract Array createArray(final List<T> object, Connection connection) throws SQLException;
 
     @Override
     public int[] sqlTypes() {
-        return new int[]{SQLTYPE};
+        return new int[]{Types.ARRAY};
     }
 }
