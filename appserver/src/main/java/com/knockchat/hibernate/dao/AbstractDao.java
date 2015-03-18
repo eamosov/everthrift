@@ -34,6 +34,8 @@ public interface AbstractDao<K, V extends DaoEntityIF<V>> {
     public void delete(V e);
 
     public Object uniqueResult(Criterion criterion, Projection... projections);
+    
+    public List<K> findPkByCriteria(Criterion criterion, Order order);
 
     public List<V> findByCriteria(Criterion criterion, Order order);
 

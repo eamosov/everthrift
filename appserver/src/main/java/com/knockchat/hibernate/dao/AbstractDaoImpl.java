@@ -206,6 +206,11 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF<V>> i
         }
         return new Pair<Criteria, StatelessSession>(criteria, ss);
     }
+    
+	@Override
+	public List<K> findPkByCriteria(Criterion criterion, Order order) {
+		return (List)findByCriteria(criterion, Projections.property("id"), null, order, null, null);
+	}
 
     @Override
 	public List<V> findByCriteria(Criterion criterion, Order order) {
@@ -405,4 +410,5 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF<V>> i
     public AbstractDao<K,V> with(final SessionFactory sessionFactory){
         return new AbstractDaoImpl<>(sessionFactory, this.entityClass, this.listeningExecutorService);
     }
+
 }
