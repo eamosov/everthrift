@@ -12,6 +12,7 @@ import net.sf.ehcache.loader.CacheLoader;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.NotImplementedException;
+import org.hibernate.annotations.OptimisticLocking;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.knockchat.hibernate.dao.DaoEntityIF;
@@ -38,12 +39,17 @@ public abstract class AbstractCachedModelFactory<K,V,A, PK extends Serializable,
 	
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	protected CacheLoader getCacheLoader(){
-		if (storage == Storage.PGSQL)
-			return new DaoCacheLoader(cacheName + "Loader", getDao());
-		else if (storage == Storage.MONGO)
+		if (storage == Storage.PGSQL){
+			
+			if (entityClass.isAnnotationPresent(OptimisticLocking.class))
+				return new DaoCacheTxLoader(cacheName + "Loader", getDao());
+			else
+				return new DaoCacheLoader(cacheName + "Loader", getDao());
+		}else if (storage == Storage.MONGO){
 			return new MongoCacheLoader(cacheName + "Loader", getMongo(), entityClass);
-		else
+		}else{
 			throw new NotImplementedException();
+		}
 	}
 		
 	@Override

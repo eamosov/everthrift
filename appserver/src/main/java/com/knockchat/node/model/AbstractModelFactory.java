@@ -4,6 +4,7 @@ import static org.springframework.data.mongodb.core.query.Criteria.where;
 import static org.springframework.data.mongodb.core.query.Query.query;
 
 import java.io.Serializable;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -14,10 +15,12 @@ import java.util.concurrent.Callable;
 
 import org.apache.commons.lang.NotImplementedException;
 import org.hibernate.SessionFactory;
+import org.hibernate.StaleObjectStateException;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.Sets;
@@ -207,29 +210,144 @@ public abstract class AbstractModelFactory<PK extends Serializable, ENTITY exten
     	throw new NotImplementedException("factory should implement update()");
     }
 
-    protected boolean optimisticUpdate(Callable<Boolean> updateFunction){
+    protected <T> T optimisticUpdate(Callable<T> updateFunction) throws Exception{
     	return optimisticUpdate(updateFunction, 5, 100);
     }
     
-    protected boolean optimisticUpdate(Callable<Boolean> updateFunction, int maxIteration, int maxTimeoutMillis){
+    protected <T> T optimisticUpdate(Callable<T> updateFunction, int maxIteration, int maxTimeoutMillis) throws Exception{
 			int i=0;
-			boolean updated = false;
+			T updated = null;
 			do{
-				try{
-					updated = updateFunction.call();
-				}catch (Throwable e){
-					Throwables.propagate(e);
-				}
+				updated = updateFunction.call();
 				
 				i++;
-				if (!updated)
+				if (updated == null)
 					try {
 						Thread.sleep(new Random().nextInt(maxTimeoutMillis));
 					} catch (InterruptedException e) {
 					}					
-			}while(updated == false && i<maxIteration);
+			}while(updated == null && i<maxIteration);
 			
 			return updated;
     }
+    
+    public static class EntityNotFoundException extends Exception{
+    	
+		private static final long serialVersionUID = 1L;
+		
+		public final Object id;
+    
+    	public EntityNotFoundException(Object id){
+    		this.id = id;
+    	}
+    }
+    
+    public static interface Mutator<ENTITY>{
 
+    	/**
+    	 * Перед транзакцией
+    	 * @return true = обновить в базе, false - не обновлять в базе и успешно завершить обновление 
+    	 */
+    	boolean beforeUpdate() throws Exception;
+    	
+    	/**
+    	 *	Вызывается внутри транзакции 
+    	 * @param e
+    	 * @return  true = обновить в базе, false - не обновлять в базе и успешно завершить обновление
+    	 */
+    	boolean update(ENTITY e) throws Exception;
+
+    	/**
+    	 * После транзакции в finally блоке
+    	 */
+    	void afterUpdate();
+    }
+    
+    public static abstract class MutatorDecorator<ENTITY> implements Mutator<ENTITY>{
+    	
+    	protected final Mutator<ENTITY> delegate;
+    	
+    	public MutatorDecorator(Mutator<ENTITY> e){
+    		delegate = e;
+    	}    	
+    }
+    
+    public static interface Factory<PK, ENTITY>{
+    	ENTITY create(PK id);
+    }
+    
+	@Transactional(rollbackFor=Exception.class)
+	private Pair<ENTITY,ENTITY> tryOptimisticUpdate(PK id, Mutator<ENTITY> mutator, final Factory<PK, ENTITY> factory) throws Exception, EntityNotFoundException{
+		
+		ENTITY e;
+		ENTITY orig = null;
+		
+		e = findEntityById(id);
+		if (e == null){
+			if (factory == null)
+				throw new EntityNotFoundException(id);
+			
+			e = factory.create(id);
+			getDao().persist(e);
+		}
+		
+		try {
+			orig = this.entityClass.getConstructor(this.entityClass).newInstance(e);
+		} catch (InstantiationException | IllegalAccessException
+				| IllegalArgumentException | InvocationTargetException
+				| NoSuchMethodException | SecurityException e1) {
+			Throwables.propagate(e1);
+		}
+		
+		if (mutator.update(e))
+			e = updateEntity(e);
+				
+		return Pair.create(e, orig);
+	}
+	
+	public Pair<ENTITY,ENTITY> optimisticUpdate__(final PK id, final Mutator<ENTITY> mutator) throws EntityNotFoundException{
+		try {
+			return optimisticUpdate(id, mutator, null);
+		} catch (EntityNotFoundException e){
+			throw e;
+		} catch (Exception e) {
+			throw Throwables.propagate(e);
+		}
+	}
+
+	public Pair<ENTITY,ENTITY> optimisticUpdate__(final PK id, final Mutator<ENTITY> mutator, final Factory<PK, ENTITY> factory){
+		try {
+			return optimisticUpdate(id, mutator, factory);
+		} catch (Exception e) {
+			throw Throwables.propagate(e);
+		}
+	}
+	
+	/**
+	 * 
+	 * @param id
+	 * @param mutator
+	 * @param factory
+	 * @return <new, old>
+	 * @throws Exception
+	 */
+	public Pair<ENTITY,ENTITY> optimisticUpdate(final PK id, final Mutator<ENTITY> mutator, final Factory<PK, ENTITY> factory) throws Exception {
+		
+		return optimisticUpdate(new Callable<Pair<ENTITY,ENTITY>>(){
+
+			@Override
+			public Pair<ENTITY,ENTITY> call() throws Exception {
+				try{
+					if (mutator.beforeUpdate())
+						return tryOptimisticUpdate(id, mutator, factory);
+					else
+						return Pair.create(null,  null);
+				}catch(StaleObjectStateException e){
+					return null;
+				}finally{
+					mutator.afterUpdate();
+				}
+			}}, 10, 100);		
+	}
+    
 }
