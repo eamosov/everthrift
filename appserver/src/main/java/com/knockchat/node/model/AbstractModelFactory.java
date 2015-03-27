@@ -16,6 +16,9 @@ import java.util.concurrent.Callable;
 import org.apache.commons.lang.NotImplementedException;
 import org.hibernate.SessionFactory;
 import org.hibernate.StaleObjectStateException;
+import org.hibernate.exception.ConstraintViolationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
@@ -34,6 +37,8 @@ import com.knockchat.sql.objects.ObjectStatements;
 import com.knockchat.utils.Pair;
 
 public abstract class AbstractModelFactory<PK extends Serializable, ENTITY extends DaoEntityIF<ENTITY>> implements InitializingBean {
+	
+	public static final Logger log = LoggerFactory.getLogger(AbstractModelFactory.class);
 	
 	public static enum Storage{
 		PGSQL,
@@ -342,7 +347,8 @@ public abstract class AbstractModelFactory<PK extends Serializable, ENTITY exten
 						return tryOptimisticUpdate(id, mutator, factory);
 					else
 						return Pair.create(null,  null);
-				}catch(StaleObjectStateException e){
+				}catch(StaleObjectStateException | ConstraintViolationException e){
+					log.debug("update fails id= " + id + ", let's try one more time?", e);
 					return null;
 				}finally{
 					mutator.afterUpdate();
