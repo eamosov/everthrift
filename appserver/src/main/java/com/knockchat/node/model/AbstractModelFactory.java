@@ -14,6 +14,7 @@ import java.util.SortedSet;
 import java.util.concurrent.Callable;
 
 import org.apache.commons.lang.NotImplementedException;
+import org.apache.thrift.TException;
 import org.hibernate.SessionFactory;
 import org.hibernate.StaleObjectStateException;
 import org.hibernate.exception.ConstraintViolationException;
@@ -336,7 +337,7 @@ public abstract class AbstractModelFactory<PK extends Serializable, ENTITY exten
 	 * @return <new, old>
 	 * @throws Exception
 	 */
-	public Pair<ENTITY,ENTITY> optimisticUpdate(final PK id, final Mutator<ENTITY> mutator, final Factory<PK, ENTITY> factory) throws Exception {
+	public Pair<ENTITY,ENTITY> optimisticUpdate(final PK id, final Mutator<ENTITY> mutator, final Factory<PK, ENTITY> factory) throws TException, Exception {
 		
 		return optimisticUpdate(new Callable<Pair<ENTITY,ENTITY>>(){
 
