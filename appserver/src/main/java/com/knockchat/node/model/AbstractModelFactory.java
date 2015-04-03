@@ -269,6 +269,19 @@ public abstract class AbstractModelFactory<PK extends Serializable, ENTITY exten
     	void afterUpdate();
     }
     
+    public static abstract class BasicMutator<ENTITY> implements Mutator<ENTITY>{
+
+		@Override
+		public boolean beforeUpdate() throws Exception {
+			return true;
+		}
+
+		@Override
+		public void afterUpdate() {
+		}
+    	
+    }
+    
     public static abstract class MutatorDecorator<ENTITY> implements Mutator<ENTITY>{
     	
     	protected final Mutator<ENTITY> delegate;
