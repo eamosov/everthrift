@@ -36,6 +36,7 @@ import com.knockchat.hibernate.dao.AbstractDaoImpl;
 import com.knockchat.hibernate.dao.DaoEntityIF;
 import com.knockchat.sql.objects.ObjectStatements;
 import com.knockchat.utils.Pair;
+import com.knockchat.utils.Three;
 
 public abstract class AbstractModelFactory<PK extends Serializable, ENTITY extends DaoEntityIF<ENTITY>> implements InitializingBean {
 	
@@ -266,6 +267,11 @@ public abstract class AbstractModelFactory<PK extends Serializable, ENTITY exten
     	/**
     	 * После транзакции в finally блоке
     	 */
+    	void afterTransactionClosed();
+    	
+    	/**
+    	 * после завершения тразакции без исключений в случае, если  update() возвращает true
+    	 */
     	void afterUpdate();
     }
     
@@ -277,9 +283,13 @@ public abstract class AbstractModelFactory<PK extends Serializable, ENTITY exten
 		}
 
 		@Override
-		public void afterUpdate() {
+		public void afterTransactionClosed() {
 		}
     	
+		@Override
+		public void afterUpdate(){
+			
+		}
     }
     
     public static abstract class MutatorDecorator<ENTITY> implements Mutator<ENTITY>{
@@ -296,7 +306,7 @@ public abstract class AbstractModelFactory<PK extends Serializable, ENTITY exten
     }
     
 	@Transactional(rollbackFor=Exception.class)
-	private Pair<ENTITY,ENTITY> tryOptimisticUpdate(PK id, Mutator<ENTITY> mutator, final Factory<PK, ENTITY> factory) throws Exception, EntityNotFoundException{
+	private Three<ENTITY,ENTITY, Boolean> tryOptimisticUpdate(PK id, Mutator<ENTITY> mutator, final Factory<PK, ENTITY> factory) throws Exception, EntityNotFoundException{
 		
 		ENTITY e;
 		ENTITY orig = null;
@@ -318,13 +328,14 @@ public abstract class AbstractModelFactory<PK extends Serializable, ENTITY exten
 			Throwables.propagate(e1);
 		}
 		
-		if (mutator.update(e))
+		final boolean updated = mutator.update(e);
+		if (updated)
 			e = updateEntity(e);
 				
-		return Pair.create(e, orig);
+		return Three.create(e, orig, updated);
 	}
 	
-	public Pair<ENTITY,ENTITY> optimisticUpdate__(final PK id, final Mutator<ENTITY> mutator) throws EntityNotFoundException{
+	public Three<ENTITY,ENTITY, Boolean> optimisticUpdate__(final PK id, final Mutator<ENTITY> mutator) throws EntityNotFoundException{
 		try {
 			return optimisticUpdate(id, mutator, null);
 		} catch (EntityNotFoundException e){
@@ -334,7 +345,7 @@ public abstract class AbstractModelFactory<PK extends Serializable, ENTITY exten
 		}
 	}
 
-	public Pair<ENTITY,ENTITY> optimisticUpdate__(final PK id, final Mutator<ENTITY> mutator, final Factory<PK, ENTITY> factory){
+	public Three<ENTITY,ENTITY, Boolean> optimisticUpdate__(final PK id, final Mutator<ENTITY> mutator, final Factory<PK, ENTITY> factory){
 		try {
 			return optimisticUpdate(id, mutator, factory);
 		} catch (Exception e) {
@@ -350,22 +361,27 @@ public abstract class AbstractModelFactory<PK extends Serializable, ENTITY exten
 	 * @return <new, old>
 	 * @throws Exception
 	 */
-	public Pair<ENTITY,ENTITY> optimisticUpdate(final PK id, final Mutator<ENTITY> mutator, final Factory<PK, ENTITY> factory) throws TException, Exception {
+	public Three<ENTITY,ENTITY, Boolean> optimisticUpdate(final PK id, final Mutator<ENTITY> mutator, final Factory<PK, ENTITY> factory) throws TException, Exception {
 		
-		return optimisticUpdate(new Callable<Pair<ENTITY,ENTITY>>(){
+		return optimisticUpdate(new Callable<Three<ENTITY,ENTITY, Boolean>>(){
 
 			@Override
-			public Pair<ENTITY,ENTITY> call() throws Exception {
+			public Three<ENTITY,ENTITY,Boolean> call() throws Exception {
 				try{
-					if (mutator.beforeUpdate())
-						return tryOptimisticUpdate(id, mutator, factory);
-					else
-						return Pair.create(null,  null);
+					if (mutator.beforeUpdate()){
+						final Three<ENTITY,ENTITY,Boolean> ret = tryOptimisticUpdate(id, mutator, factory);
+						if (ret.third){
+							mutator.afterUpdate();
+						}
+						return ret;
+					}else{
+						return Three.create(null,  null, null);
+					}
 				}catch(StaleObjectStateException | ConstraintViolationException e){
 					log.debug("update fails id= " + id + ", let's try one more time?", e);
 					return null;
 				}finally{
-					mutator.afterUpdate();
+					mutator.afterTransactionClosed();
 				}
 			}}, 10, 100);		
 	}
