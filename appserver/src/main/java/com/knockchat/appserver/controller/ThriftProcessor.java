@@ -99,7 +99,7 @@ public class ThriftProcessor implements TProcessor{
 				x.write(out);
 				out.writeMessageEnd();
 				out.getTransport().flush(msg.seqid);											
-				return new MessageWrapper(outT);
+				return new MessageWrapper(outT).copyAttributes(in).removeCorrelationHeaders();
 			}
 			
 			final TBase args = controllerInfo.makeArgument();

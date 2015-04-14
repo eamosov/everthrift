@@ -397,6 +397,11 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
 		log.debug("handleOut: {}, adapter={}, processor={}", new Object[]{m, this, tp});
 		
 		final String sessionId = (String)m.getPayload().getSessionId();
+		
+		if (sessionId == null){
+			log.error("sessionId is NULL, message={}", m);
+			return;
+		}
 
 		final SessionData sd = sessionRegistry.get(sessionId);
 		if (sd == null){
