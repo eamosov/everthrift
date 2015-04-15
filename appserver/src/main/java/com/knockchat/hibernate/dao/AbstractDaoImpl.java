@@ -63,7 +63,8 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF<V>> i
         this.sessionFactory = sessionFactory;
     }
 
-    private Session getCurrentSession() {
+    @Override
+    public Session getCurrentSession() {
         return sessionFactory.getCurrentSession();
     }
 
@@ -132,7 +133,7 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF<V>> i
     	}else{
     		final V ret = (V) session.merge(e);
     		final boolean updated;
-    		if (session.isDirty()){
+    		if (session.isDirty()){    			    			
     			updated = true;
     			session.flush();
     			session.refresh(ret);

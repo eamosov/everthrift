@@ -36,7 +36,6 @@ import com.knockchat.hibernate.dao.AbstractDaoImpl;
 import com.knockchat.hibernate.dao.DaoEntityIF;
 import com.knockchat.sql.objects.ObjectStatements;
 import com.knockchat.utils.Pair;
-import com.knockchat.utils.Three;
 
 public abstract class AbstractModelFactory<PK extends Serializable, ENTITY extends DaoEntityIF<ENTITY>> implements InitializingBean {
 	
@@ -114,14 +113,21 @@ public abstract class AbstractModelFactory<PK extends Serializable, ENTITY exten
     public ENTITY updateEntity(ENTITY e) {
     	
     	final long now = System.currentTimeMillis() / 1000;
-    	
-        if (e instanceof UpdatedAtIF)
-            ((UpdatedAtIF) e).setUpdatedAt(now);
-        
-        if (e instanceof CreatedAtIF && e.getPk() == null)
-        	((CreatedAtIF)e).setCreatedAt(now);
+    	        
+    	if (e.getPk() == null){
+
+            if (e instanceof CreatedAtIF)
+            	((CreatedAtIF)e).setCreatedAt(now);
+            
+            if (e instanceof UpdatedAtIF)
+            	((UpdatedAtIF) e).setUpdatedAt(now);
+
+    	}
 
     	if (storage == Storage.PGSQL){
+    		
+    		//см UpdateEventListener
+    		
     		try{
     			final Pair<ENTITY, Boolean> ret = dao.saveOrUpdate(e);
     			isUpdated.set(ret.second);
@@ -131,6 +137,12 @@ public abstract class AbstractModelFactory<PK extends Serializable, ENTITY exten
     			throw e1;
     		}
     	}else if (storage == Storage.MONGO){
+
+    		if (e.getPk() !=null){
+        		if (e instanceof UpdatedAtIF)
+        			((UpdatedAtIF) e).setUpdatedAt(now);    			
+    		}
+
         	mongo.save(e);
         	isUpdated.set(true);
         	final ENTITY ret = mongo.findById(e.getPk(), entityClass);
@@ -217,15 +229,27 @@ public abstract class AbstractModelFactory<PK extends Serializable, ENTITY exten
     	throw new NotImplementedException("factory should implement update()");
     }
 
-    protected <T> T optimisticUpdate(Callable<T> updateFunction) throws Exception{
+    protected <T> T optimisticUpdate(Callable<T> updateFunction) throws OptimisticUpdateFailException, EntityNotFoundException, TException{
     	return optimisticUpdate(updateFunction, 5, 100);
     }
     
-    protected <T> T optimisticUpdate(Callable<T> updateFunction, int maxIteration, int maxTimeoutMillis) throws Exception{
+    public static class OptimisticUpdateFailException extends RuntimeException{
+
+		private static final long serialVersionUID = 1L;
+    	
+    }
+    
+    protected <T> T optimisticUpdate(Callable<T> updateFunction, int maxIteration, int maxTimeoutMillis) throws OptimisticUpdateFailException, EntityNotFoundException, TException{
 			int i=0;
 			T updated = null;
 			do{
-				updated = updateFunction.call();
+				try {
+					updated = updateFunction.call();
+				} catch (TException | EntityNotFoundException e1) {
+					throw e1;
+				} catch (Exception e1){
+					throw Throwables.propagate(e1);
+				}
 				
 				i++;
 				if (updated == null)
@@ -234,6 +258,9 @@ public abstract class AbstractModelFactory<PK extends Serializable, ENTITY exten
 					} catch (InterruptedException e) {
 					}					
 			}while(updated == null && i<maxIteration);
+			
+			if (updated == null)
+				throw new OptimisticUpdateFailException();
 			
 			return updated;
     }
@@ -255,14 +282,14 @@ public abstract class AbstractModelFactory<PK extends Serializable, ENTITY exten
     	 * Перед транзакцией
     	 * @return true = обновить в базе, false - не обновлять в базе и успешно завершить обновление 
     	 */
-    	boolean beforeUpdate() throws Exception;
+    	boolean beforeUpdate() throws TException;
     	
     	/**
     	 *	Вызывается внутри транзакции 
     	 * @param e
     	 * @return  true = обновить в базе, false - не обновлять в базе и успешно завершить обновление
     	 */
-    	boolean update(ENTITY e) throws Exception;
+    	boolean update(ENTITY e) throws TException;
 
     	/**
     	 * После транзакции в finally блоке
@@ -278,7 +305,7 @@ public abstract class AbstractModelFactory<PK extends Serializable, ENTITY exten
     public static abstract class BasicMutator<ENTITY> implements Mutator<ENTITY>{
 
 		@Override
-		public boolean beforeUpdate() throws Exception {
+		public boolean beforeUpdate() throws TException {
 			return true;
 		}
 
@@ -305,54 +332,67 @@ public abstract class AbstractModelFactory<PK extends Serializable, ENTITY exten
     	ENTITY create(PK id);
     }
     
+    public static class UpdateResult<ENTITY> {
+    	
+    	public static final UpdateResult CANCELED =  UpdateResult.create(null, null, false);
+    	
+    	public final ENTITY updated;
+    	public final ENTITY old;
+    	public final boolean isUpdated;
+    	
+		public UpdateResult(ENTITY updated, ENTITY old, boolean isUpdated) {
+			super();
+			this.updated = updated;
+			this.old = old;
+			this.isUpdated = isUpdated;
+		}
+		
+		public static <ENTITY> UpdateResult<ENTITY> create(ENTITY before, ENTITY after, boolean isUpdated){
+			return new UpdateResult<ENTITY>(before, after, isUpdated);
+		}
+		
+		public boolean isCanceled(){
+			return this == CANCELED;
+		}
+		
+		public boolean isInserted(){
+			return isUpdated && old ==null;
+		}
+    }
+    
 	@Transactional(rollbackFor=Exception.class)
-	private Three<ENTITY,ENTITY, Boolean> tryOptimisticUpdate(PK id, Mutator<ENTITY> mutator, final Factory<PK, ENTITY> factory) throws Exception, EntityNotFoundException{
+	private UpdateResult<ENTITY> tryOptimisticUpdate(PK id, Mutator<ENTITY> mutator, final Factory<PK, ENTITY> factory) throws TException, EntityNotFoundException{
 		
 		ENTITY e;
-		ENTITY orig = null;
+		final ENTITY orig;
 		
-		e = findEntityById(id);
+		e = this.findEntityById(id);
 		if (e == null){
 			if (factory == null)
 				throw new EntityNotFoundException(id);
-			
+		
+			orig = null;
 			e = factory.create(id);
 			getDao().persist(e);
+		}else{
+			try {
+				orig = this.entityClass.getConstructor(this.entityClass).newInstance(e);
+			} catch (InstantiationException | IllegalAccessException
+					| IllegalArgumentException | InvocationTargetException
+					| NoSuchMethodException | SecurityException e1) {
+				throw Throwables.propagate(e1);
+			}			
 		}
 		
-		try {
-			orig = this.entityClass.getConstructor(this.entityClass).newInstance(e);
-		} catch (InstantiationException | IllegalAccessException
-				| IllegalArgumentException | InvocationTargetException
-				| NoSuchMethodException | SecurityException e1) {
-			Throwables.propagate(e1);
-		}
 		
-		final boolean updated = mutator.update(e);
-		if (updated)
-			e = updateEntity(e);
+		if (mutator.update(e)){
+			return UpdateResult.create(updateEntity(e), orig, isUpdated());
+		}else{
+			return UpdateResult.create(e, e, false);
+		}
 				
-		return Three.create(e, orig, updated);
 	}
-	
-	public Three<ENTITY,ENTITY, Boolean> optimisticUpdate__(final PK id, final Mutator<ENTITY> mutator) throws EntityNotFoundException{
-		try {
-			return optimisticUpdate(id, mutator, null);
-		} catch (EntityNotFoundException e){
-			throw e;
-		} catch (Exception e) {
-			throw Throwables.propagate(e);
-		}
-	}
-
-	public Three<ENTITY,ENTITY, Boolean> optimisticUpdate__(final PK id, final Mutator<ENTITY> mutator, final Factory<PK, ENTITY> factory){
-		try {
-			return optimisticUpdate(id, mutator, factory);
-		} catch (Exception e) {
-			throw Throwables.propagate(e);
-		}
-	}
-	
+		
 	/**
 	 * 
 	 * @param id
@@ -361,29 +401,29 @@ public abstract class AbstractModelFactory<PK extends Serializable, ENTITY exten
 	 * @return <new, old>
 	 * @throws Exception
 	 */
-	public Three<ENTITY,ENTITY, Boolean> optimisticUpdate(final PK id, final Mutator<ENTITY> mutator, final Factory<PK, ENTITY> factory) throws TException, Exception {
+	public UpdateResult<ENTITY> optimisticUpdate(final PK id, final Mutator<ENTITY> mutator, final Factory<PK, ENTITY> factory) throws TException, EntityNotFoundException {
 		
-		return optimisticUpdate(new Callable<Three<ENTITY,ENTITY, Boolean>>(){
+			return optimisticUpdate(new Callable<UpdateResult<ENTITY>>(){
 
-			@Override
-			public Three<ENTITY,ENTITY,Boolean> call() throws Exception {
-				try{
-					if (mutator.beforeUpdate()){
-						final Three<ENTITY,ENTITY,Boolean> ret = tryOptimisticUpdate(id, mutator, factory);
-						if (ret.third){
-							mutator.afterUpdate();
+				@Override
+				public UpdateResult<ENTITY> call() throws Exception {
+					try{
+						if (mutator.beforeUpdate()){
+							final UpdateResult<ENTITY> ret = tryOptimisticUpdate(id, mutator, factory);
+							if (ret.isUpdated){
+								mutator.afterUpdate();
+							}
+							return ret;
+						}else{
+							return UpdateResult.CANCELED;
 						}
-						return ret;
-					}else{
-						return Three.create(null,  null, null);
+					}catch(StaleObjectStateException | ConstraintViolationException e){
+						log.debug("update fails id= " + id + ", let's try one more time?", e);
+						return null;
+					}finally{
+						mutator.afterTransactionClosed();
 					}
-				}catch(StaleObjectStateException | ConstraintViolationException e){
-					log.debug("update fails id= " + id + ", let's try one more time?", e);
-					return null;
-				}finally{
-					mutator.afterTransactionClosed();
-				}
-			}}, 10, 100);		
+				}}, 10, 100);
 	}
     
 }

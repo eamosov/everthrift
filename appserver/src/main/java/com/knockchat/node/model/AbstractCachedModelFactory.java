@@ -109,9 +109,10 @@ public abstract class AbstractCachedModelFactory<K,V,A, PK extends Serializable,
 		
 		if (id == null)
 			return null;
-		
-		if (cache == null)
+				
+		if (cache == null){
 			return fetchById(id);
+		}
 		
 		final Element e = cache.getWithLoader(id, null, null);
 		if (e == null || e.getObjectValue() == null)

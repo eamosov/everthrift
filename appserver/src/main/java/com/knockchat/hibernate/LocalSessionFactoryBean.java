@@ -46,6 +46,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.orm.hibernate4.LocalSessionFactoryBuilder;
 
 import com.google.common.collect.Maps;
+import com.knockchat.hibernate.dao.EntityInterceptor;
 import com.knockchat.hibernate.model.types.BoxType;
 import com.knockchat.hibernate.model.types.CustomTypeFactory;
 import com.knockchat.hibernate.model.types.DoubleListType;
@@ -73,7 +74,9 @@ public class LocalSessionFactoryBean extends org.springframework.orm.hibernate4.
     @Override
     protected SessionFactory buildSessionFactory(LocalSessionFactoryBuilder sfb) {
         addMappings(sfb);
-        return super.buildSessionFactory(sfb);
+        sfb.setInterceptor(new EntityInterceptor());
+        final SessionFactory ret =  super.buildSessionFactory(sfb);
+        return ret;
     }
 
     protected void addMappings(LocalSessionFactoryBuilder sfb){
@@ -110,7 +113,7 @@ public class LocalSessionFactoryBean extends org.springframework.orm.hibernate4.
 
 
     private RootClass createTableMapping(Mappings mappings, com.knockchat.hibernate.model.Table tableModel) {
-        final Table tab = mappings.addTable(tableModel.getSchema(), null,tableModel.getTableName(), null, false);
+        final Table hTable = mappings.addTable(tableModel.getSchema(), null,tableModel.getTableName(), null, false);
         mappings.addTableBinding(tableModel.getSchema(), null, tableModel.getTableName(), tableModel.getTableName(), null);
         final RootClass clazz = new RootClass();
         clazz.setDynamicUpdate(true);
@@ -130,24 +133,35 @@ public class LocalSessionFactoryBean extends org.springframework.orm.hibernate4.
             clazz.setProxyInterfaceName(tableModel.getJavaClass().getName());
         }
         clazz.setLazy(LAZY);
-        clazz.setTable(tab);
+        clazz.setTable(hTable);
 
         if ( tableModel.getPrimaryKey().getColumnNames().size() > 1 )
-            createPKCompositeWODedicatedPropery(mappings, tableModel, clazz, tab);
+            createPKCompositeWODedicatedPropery(mappings, tableModel, clazz, hTable);
         else
-            createPKSingle(mappings, tableModel, clazz, tab);
+            createPKSingle(mappings, tableModel, clazz, hTable);
+        
+        Property version = null;
 
         for(com.knockchat.hibernate.model.Column columnModel : tableModel.getColumnsByName().values()) {
+        	
             if (tableModel.getPrimaryKey().getColumnNames().contains(columnModel.getColumnName()))
                 continue; //skip already added PK column
-            Column col = createColumn(mappings, tab, columnModel, tableModel, true);
-            if(col != null) {
-                clazz.addProperty(createProperty(columnModel, col.getValue(),true, true));
+            
+            final Column hColumn = createColumn(mappings, hTable, columnModel, tableModel, true);
+            if(hColumn != null) {
+            	final Property columnProperty = createProperty(columnModel, hColumn.getValue(),true, true);
+                clazz.addProperty(columnProperty);
+                if (columnModel.getColumnName().equalsIgnoreCase("version"))
+                	version = columnProperty;
             }
         }
         
-        if (tableModel.getJavaClass().isAnnotationPresent(OptimisticLocking.class))
-        	clazz.setOptimisticLockMode(getVersioning(((OptimisticLocking)tableModel.getJavaClass().getAnnotation(OptimisticLocking.class)).type()));
+        if (tableModel.getJavaClass().isAnnotationPresent(OptimisticLocking.class)){
+        	final OptimisticLockType optLockType = ((OptimisticLocking)tableModel.getJavaClass().getAnnotation(OptimisticLocking.class)).type();
+        	clazz.setOptimisticLockMode(getVersioning(optLockType));
+        	if (optLockType == OptimisticLockType.VERSION)
+        		clazz.setVersion(version);
+        }
         
         return clazz;
     }
@@ -411,9 +425,6 @@ public class LocalSessionFactoryBean extends org.springframework.orm.hibernate4.
         
         return prop;
     }
-
-
-
 
     public boolean setHibernateType(SimpleValue value,
                                     com.knockchat.hibernate.model.Column columnModel,

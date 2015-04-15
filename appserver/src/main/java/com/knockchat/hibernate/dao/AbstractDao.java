@@ -7,6 +7,7 @@ import java.util.Map;
 import org.hibernate.LockMode;
 import org.hibernate.Query;
 import org.hibernate.SQLQuery;
+import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.criterion.Criterion;
 import org.hibernate.criterion.Order;
@@ -53,6 +54,7 @@ public interface AbstractDao<K, V extends DaoEntityIF<V>> {
     public int executeCustomUpdate(K evictId, String query, Function<SQLQuery, Query> bindFunction);
 
     public void setSessionFactory(SessionFactory sessionFactory);
+    public Session getCurrentSession();
 
     public void setListeningExecutorService(ListeningExecutorService listeningExecutorService);
 
