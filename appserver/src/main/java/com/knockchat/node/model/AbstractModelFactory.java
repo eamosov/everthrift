@@ -174,13 +174,13 @@ public abstract class AbstractModelFactory<PK extends Serializable, ENTITY exten
     		throw new NotImplementedException("no storage class");
     }
     
-    public Map<PK, ENTITY> findEntityByIdAsMap(Collection<PK> id) {
+    public Map<PK, ENTITY> findEntityByIdAsMap(Collection<PK> ids) {
         final Map<PK, ENTITY> ret = new HashMap<PK, ENTITY>();
-        final Collection<ENTITY> rs = findEntityById(id);
+        final Collection<ENTITY> rs = findEntityById(ids);
         for (ENTITY r : rs) {
             ret.put((PK)r.getPk(), r);
         }
-        for (PK k : id)
+        for (PK k : ids)
             if (!ret.containsKey(k))
                 ret.put(k, null);
         return ret;
