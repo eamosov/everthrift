@@ -3,11 +3,15 @@ package com.knockchat.node.model;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import net.sf.ehcache.Cache;
+import net.sf.ehcache.CacheException;
 import net.sf.ehcache.CacheManager;
+import net.sf.ehcache.Ehcache;
 import net.sf.ehcache.Element;
+import net.sf.ehcache.Status;
 import net.sf.ehcache.loader.CacheLoader;
 
 import org.apache.commons.collections.CollectionUtils;
@@ -26,6 +30,79 @@ public abstract class AbstractCachedModelFactory<K,V,A, PK extends Serializable,
 	protected final String cacheName;	
 	
 	private CacheLoader cacheLoader;
+	
+	private class CacheLoaderDecorator implements CacheLoader{
+		
+		private final CacheLoader orig;
+				
+		public CacheLoaderDecorator(CacheLoader orig) {
+			super();
+			this.orig = orig;
+		}
+
+		@Override
+		public CacheLoader clone(Ehcache arg0) throws CloneNotSupportedException {
+			throw new CloneNotSupportedException();
+		}
+
+		@Override
+		public void dispose() throws CacheException {			
+		}
+
+		@Override
+		public String getName() {
+			return cacheName + "Loader";
+		}
+
+		@Override
+		public Status getStatus() {
+			return Status.STATUS_ALIVE;
+		}
+
+		@Override
+		public void init() {
+		}
+
+		@Override
+		public Object load(Object arg0) throws CacheException {
+			if (orig == null)
+				throw new RuntimeException("must use load(Object arg0, Object arg1)");
+			else
+				return orig.load(arg0);
+		}
+
+		@Override
+		public Object load(Object arg0, Object arg1) {
+			return ((CacheLoader)arg1).load(arg0);
+		}
+
+		@Override
+		public Map loadAll(Collection arg0) {
+			if (orig == null)
+				throw new RuntimeException("must use loadAll(Object arg0, Object arg1)");
+			else
+				return orig.loadAll(arg0);
+		}
+
+		@Override
+		public Map loadAll(Collection arg0, Object arg1) {
+			return ((CacheLoader)arg1).loadAll(arg0);
+		}
+		
+	}
+	
+	/**
+	 * Конструктор создания фабрики не как Spring-bean 
+	 * */
+	public AbstractCachedModelFactory(Cache cache){
+		super(null, null);
+		this.cacheName = cache.getName();
+		this.cache = cache;
+		this.cacheLoader = getCacheLoader();
+		
+		final List<CacheLoader> origLoaders = cache.getRegisteredCacheLoaders();			
+		cache.registerCacheLoader(new CacheLoaderDecorator(CollectionUtils.isEmpty(origLoaders) ? null : origLoaders.get(0)));		
+	}
 
 	public AbstractCachedModelFactory(String cacheName){
 		super(null, null);
@@ -62,7 +139,8 @@ public abstract class AbstractCachedModelFactory<K,V,A, PK extends Serializable,
 			if (cache == null)
 				throw new RuntimeException("Cache with name '" + cacheName + "' not found");
 			
-			cache.registerCacheLoader(cacheLoader);
+			final List<CacheLoader> origLoaders = cache.getRegisteredCacheLoaders();			
+			cache.registerCacheLoader(new CacheLoaderDecorator(CollectionUtils.isEmpty(origLoaders) ? null : origLoaders.get(0)));
 		}		
 	}
 	
@@ -114,7 +192,7 @@ public abstract class AbstractCachedModelFactory<K,V,A, PK extends Serializable,
 			return fetchById(id);
 		}
 		
-		final Element e = cache.getWithLoader(id, null, null);
+		final Element e = cache.getWithLoader(id, null, cacheLoader);
 		if (e == null || e.getObjectValue() == null)
 			return null;
 		
@@ -130,7 +208,7 @@ public abstract class AbstractCachedModelFactory<K,V,A, PK extends Serializable,
 		if (cache == null)
 			return (Map<K, V>)cacheLoader.loadAll(ids);
 		
-		return cache.getAllWithLoader(ids, null);
+		return cache.getAllWithLoader(ids, cacheLoader);
 	}
 
 

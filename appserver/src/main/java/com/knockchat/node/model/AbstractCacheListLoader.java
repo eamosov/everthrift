@@ -5,25 +5,30 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.collections.CollectionUtils;
+
 import net.sf.ehcache.CacheException;
 import net.sf.ehcache.Ehcache;
 import net.sf.ehcache.Status;
 import net.sf.ehcache.loader.CacheLoader;
 
 import com.google.common.base.Function;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 @SuppressWarnings("rawtypes")
-public abstract class AbstractCacheListLoader<K,V> implements CacheLoader {
+public abstract class AbstractCacheListLoader<K,V,T> implements CacheLoader {
 	
 	private final String name;
-	private final Function<V, K> keyExtractor;
+	private final Function<T, K> keyExtractor;
+	private final Function<T, V> valueExtractor;
 
-	public AbstractCacheListLoader(String name, Function<V, K> keyExtractor) {
+	public AbstractCacheListLoader(String name, Function<T, K> keyExtractor, Function<T, V> valueExtractor) {
 		super();
 		this.name = name;
 		this.keyExtractor = keyExtractor;
+		this.valueExtractor = valueExtractor; 
 	}
 	
 	@Override
@@ -35,21 +40,28 @@ public abstract class AbstractCacheListLoader<K,V> implements CacheLoader {
 	public Map loadAll(Collection keys, Object argument) {		    	
 		return loadAll(keys);
 	}
+	
+	protected final List<V> loadImpl(K key){
+		final Collection<T> v = loadImpl(Collections.singleton(key));
+		if (CollectionUtils.isEmpty(v))
+			return Collections.emptyList();
+		else
+			return Lists.newArrayList(Iterables.transform(v, valueExtractor));
+	}
 		
-	protected abstract Collection<V> loadImpl(Collection<K> keys);
-	protected abstract List<V> loadImpl(K key);
+	protected abstract Collection<T> loadImpl(Collection<K> keys);	
 	
     private final Map<K, List<V>> loadAllImpl(Collection<K> keys) {
         final Map<K, List<V>> ret = Maps.newHashMap();
-        final Collection<V> rs = loadImpl(keys);
-        for (V r : rs) {
+        final Collection<T> rs = loadImpl(keys);
+        for (T r : rs) {
         	final K k = keyExtractor.apply(r);        	
         	List<V> l = ret.get(k);
         	if (l == null){
         		l = Lists.newArrayList();
         		ret.put(k, l);
         	}
-        	l.add(r);
+        	l.add(valueExtractor.apply(r));
         }
         for (K k : keys)
             if (!ret.containsKey(k))

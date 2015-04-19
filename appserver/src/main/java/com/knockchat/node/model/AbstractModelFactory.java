@@ -34,7 +34,6 @@ import com.knockchat.appserver.model.UpdatedAtIF;
 import com.knockchat.hibernate.dao.AbstractDao;
 import com.knockchat.hibernate.dao.AbstractDaoImpl;
 import com.knockchat.hibernate.dao.DaoEntityIF;
-import com.knockchat.sql.objects.ObjectStatements;
 import com.knockchat.utils.Pair;
 
 public abstract class AbstractModelFactory<PK extends Serializable, ENTITY extends DaoEntityIF<ENTITY>> implements InitializingBean {
@@ -45,9 +44,6 @@ public abstract class AbstractModelFactory<PK extends Serializable, ENTITY exten
 		PGSQL,
 		MONGO
 	}
-
-    @Autowired
-    protected ObjectStatements objectStatements;
 
     @Autowired
     protected List<SessionFactory> sessionFactories;
