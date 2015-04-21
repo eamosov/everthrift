@@ -334,7 +334,7 @@ public abstract class AbstractModelFactory<PK extends Serializable, ENTITY exten
     	
     	public final ENTITY updated;
     	public final ENTITY old;
-    	public final boolean isUpdated;
+    	public final boolean isUpdated; // true, если произошло изменение объекта в БД
     	
 		public UpdateResult(ENTITY updated, ENTITY old, boolean isUpdated) {
 			super();
