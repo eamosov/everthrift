@@ -1,6 +1,7 @@
 package com.knockchat.appserver.model;
 
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Map;
 
@@ -8,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Function;
+import com.google.common.base.Throwables;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 
@@ -17,78 +19,75 @@ public class LazyLoadManager {
 	
 	public static int MAX_LOAD_ITERATIONS = 5;
 	
-	private static final Function<Object, Void> loadAllWalker = new Function<Object, Void>(){
-
-		@Override
-		public Void apply(Object input) {
-			invokeLoadAll(input);
-			return null;
-		}
-		
-		private void invokeLoadAll(final Object o){
-			
-			if (o == null)
-				return;
-
-			try {
-				o.getClass().getMethod("loadAll").invoke(o);
-				return;
-			} catch (IllegalAccessException | IllegalArgumentException
-					| InvocationTargetException | NoSuchMethodException
-					| SecurityException e) {
-			}						
-			
-			if (o instanceof Iterable){
-				for (Object i: ((Iterable)o))
-					invokeLoadAll(i);
-			}else if (o instanceof Map){
-				for (Object i: ((Map)o).values()){
-					invokeLoadAll(i);
-				}
-			}
-		}
-	};
+	public static String LOAD_ALL = "loadAll";
+	public static String LOAD_JSON = "loadJson";
+	public static String LOAD_ADMIN = "loadAdmin";
 	
-	private static final Function<Object, Void> loadExtraWalker = new Function<Object, Void>(){
+	public static interface WalkerIF{
+		void apply(Object o);
+	}
+	
+	public static class RecursiveWalker implements WalkerIF{
+		
+		private final String[] methods;
+		
+		public RecursiveWalker(String method){
+			this.methods = new String[]{method};
+		}
+
+		public RecursiveWalker(String ... methods){
+			this.methods = methods;
+		}
 
 		@Override
-		public Void apply(Object input) {
-			invokeLoadExtra(input);
-			return null;
+		public void apply(Object o) {
+			recursive(o);			
 		}
 		
-		private void invokeLoadExtra(final Object o){
+		private static boolean invokeFirstMethod(final String[] methods, final Object o){
 			
-			if (o == null)
-				return;
-			
-			try {
-				o.getClass().getMethod("loadExtra").invoke(o);
-				return;
-			} catch (IllegalAccessException | IllegalArgumentException
-					| InvocationTargetException | NoSuchMethodException
-					| SecurityException e) {
+			for (int i=0; i<methods.length; i++){
+				final Method m;
+				try {
+					m = o.getClass().getMethod(methods[i]);
+				} catch (IllegalArgumentException | NoSuchMethodException | SecurityException e) {
+					continue;
+				}
 				
 				try {
-					o.getClass().getMethod("loadAll").invoke(o);
-					return;
-				} catch (IllegalAccessException | IllegalArgumentException
-						| InvocationTargetException | NoSuchMethodException
-						| SecurityException e1) {
-				}										
-			}						
+					m.invoke(o);
+				} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+					throw Throwables.propagate(e);
+				}
+				return true;
+			}
+			
+			return false;
+		}
+		
+		private void recursive(final Object o){
+			
+			if (o == null)
+				return;
+
+			if (invokeFirstMethod(methods, o))
+				return;
 			
 			if (o instanceof Iterable){
 				for (Object i: ((Iterable)o))
-					invokeLoadExtra(i);
+					if (i!=null)
+						invokeFirstMethod(methods, i);
 			}else if (o instanceof Map){
 				for (Object i: ((Map)o).values()){
-					invokeLoadExtra(i);
+					if (i!=null)
+						invokeFirstMethod(methods, i);
 				}
 			}
-		}
-	};
-
+		}		
+	}
+	
+	//private static final WalkerIF loadAllWalker = new RecursiveWalker("loadAll");
+	//private static final WalkerIF loadExtraWalker = new RecursiveWalker("loadExtra", "loadAll");
 
 	public static class LoadList{
 		final Multimap<Function<Iterable, Integer>, Object> loadList = HashMultimap.create();
@@ -127,19 +126,19 @@ public class LazyLoadManager {
 			enabled = false;
 		}		
 		
-		public int load(Object o, Function<Object, Void> walker){
+		public int load(Object o, WalkerIF walker){
 			return load(o, MAX_LOAD_ITERATIONS, walker);
 		}
 
-		public int load(Object o){
-			return load(o, MAX_LOAD_ITERATIONS, loadAllWalker);
+		public int load(final String[] methods, final Object o){
+			return load(o, MAX_LOAD_ITERATIONS, new RecursiveWalker(methods));
 		}
 		
-		public int load(Object o, int maxIterations){
-			return load(o, maxIterations, loadAllWalker);
+		public int load(final String[] methods, int maxIterations, final Object o){
+			return load(o, maxIterations, new RecursiveWalker(methods));
 		}
 				
-		public int load(Object o, int maxIterations, Function<Object, Void> walker){
+		public int load(Object o, int maxIterations, WalkerIF walker){
 						
 			if (!enabled)
 				return 0;
@@ -224,51 +223,18 @@ public class LazyLoadManager {
 		return false;
 	}
 	
-	public static void load(final Object o){
-		load(MAX_LOAD_ITERATIONS, o);
+	public static void load(final String[] methods, final Object o){
+		load(methods, MAX_LOAD_ITERATIONS, o);
 	}
 	
-	public static void load(int maxIterations, final Object o){
+	public static void load(final String[] methods, int maxIterations, final Object o){
 		
 		if (o == null)
 			return;
 		
-		load(maxIterations, new Runnable(){
-
-			@Override
-			public void run() {
-				loadAllWalker.apply(o);
-			}});
-	}
-	
-	public static void loadExtra(int maxIterations, final Object o){
-		
-		if (o == null)
-			return;
-		
-		load(maxIterations, new Runnable(){
-
-			@Override
-			public void run() {
-				loadExtraWalker.apply(o);
-			}});
-	}
-	
-	
-//	public static int load(Object o, int maxIterations){
-//		return get().load(o, maxIterations);
-//	}
-
-	public static void load(int maxIterations, final Runnable walker){
 		boolean lazyLoaderStatus = LazyLoadManager.enable();
 		final LoadList ll = LazyLoadManager.get();
-		ll.load(null, maxIterations, new Function<Object, Void>(){
-
-			@Override
-			public Void apply(Object input) {
-				walker.run();
-				return null;
-			}});		
+		ll.load(methods, maxIterations, o);		
 		LazyLoadManager.setEnabled(lazyLoaderStatus);		
-	}
+	}		
 }
