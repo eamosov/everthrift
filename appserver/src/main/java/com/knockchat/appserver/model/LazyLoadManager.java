@@ -1,17 +1,20 @@
 package com.knockchat.appserver.model;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Map;
 
+import org.apache.thrift.TBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Function;
-import com.google.common.base.Throwables;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
+import com.knockchat.utils.ClassUtils;
+import com.knockchat.utils.thrift.scanner.ScenarioAwareIF;
+import com.knockchat.utils.thrift.scanner.TBaseScanHandler;
+import com.knockchat.utils.thrift.scanner.TBaseScanner;
+import com.knockchat.utils.thrift.scanner.TBaseScannerFactory;
 
 public class LazyLoadManager {
 	
@@ -19,9 +22,17 @@ public class LazyLoadManager {
 	
 	public static int MAX_LOAD_ITERATIONS = 5;
 	
+	public static String SCENARIO_DEFAULT = "default";
+	public static String SCENARIO_ADMIN = "admin";
+	public static String SCENARIO_JSON = "json";
+	
+	private static final String defaultFields[] = new String[]{"*"};
+	
 	public static String LOAD_ALL = "loadAll";
 	public static String LOAD_JSON = "loadJson";
 	public static String LOAD_ADMIN = "loadAdmin";
+	
+	private final static TBaseScannerFactory scannerFactory = new TBaseScannerFactory();
 	
 	public static interface WalkerIF{
 		void apply(Object o);
@@ -30,12 +41,15 @@ public class LazyLoadManager {
 	public static class RecursiveWalker implements WalkerIF{
 		
 		private final String[] methods;
+		private final String scenario;
 		
-		public RecursiveWalker(String method){
+		public RecursiveWalker(String scenario, String method){
+			this.scenario = scenario;
 			this.methods = new String[]{method};
 		}
 
-		public RecursiveWalker(String ... methods){
+		public RecursiveWalker(String scenario, String ... methods){
+			this.scenario = scenario;
 			this.methods = methods;
 		}
 
@@ -44,44 +58,58 @@ public class LazyLoadManager {
 			recursive(o);			
 		}
 		
-		private static boolean invokeFirstMethod(final String[] methods, final Object o){
+		private String[] getScenario(Object o){
 			
-			for (int i=0; i<methods.length; i++){
-				final Method m;
-				try {
-					m = o.getClass().getMethod(methods[i]);
-				} catch (IllegalArgumentException | NoSuchMethodException | SecurityException e) {
-					continue;
-				}
-				
-				try {
-					m.invoke(o);
-				} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-					throw Throwables.propagate(e);
-				}
-				return true;
-			}
+			if (!(o instanceof ScenarioAwareIF))
+				return defaultFields;
+		
+			String s[] = ((ScenarioAwareIF)o).getScenario(scenario);
 			
-			return false;
+			if (s == null)
+				s = ((ScenarioAwareIF)o).getScenario(SCENARIO_DEFAULT);
+			
+			if (s == null)
+				s = defaultFields; 				
+			
+			return s;
 		}
 		
+		private void invoke(Object o){
+
+			
+			if (o instanceof TBase){
+				
+				final TBaseScanHandler h = new TBaseScanHandler(){
+
+					@Override
+					public void apply(TBase o) {
+						scannerFactory.create(o.getClass(), getScenario(o)).scan(o, this);
+						ClassUtils.invokeFirstMethod(methods, o);					
+					}			
+				};
+				
+				scannerFactory.create((Class)o.getClass(), getScenario(o)).scan((TBase)o, h);				
+			}
+			
+			ClassUtils.invokeFirstMethod(methods, o);
+		}
+				
 		private void recursive(final Object o){
 			
 			if (o == null)
 				return;
 
-			if (invokeFirstMethod(methods, o))
-				return;
-			
 			if (o instanceof Iterable){
 				for (Object i: ((Iterable)o))
 					if (i!=null)
-						invokeFirstMethod(methods, i);
+						invoke(i);
 			}else if (o instanceof Map){
 				for (Object i: ((Map)o).values()){
 					if (i!=null)
-						invokeFirstMethod(methods, i);
+						invoke(i);
 				}
+			}else{
+				invoke(o);
 			}
 		}		
 	}
@@ -130,12 +158,12 @@ public class LazyLoadManager {
 			return load(o, MAX_LOAD_ITERATIONS, walker);
 		}
 
-		public int load(final String[] methods, final Object o){
-			return load(o, MAX_LOAD_ITERATIONS, new RecursiveWalker(methods));
+		public int load(final String scenario, final String[] methods, final Object o){
+			return load(o, MAX_LOAD_ITERATIONS, new RecursiveWalker(scenario, methods));
 		}
 		
-		public int load(final String[] methods, int maxIterations, final Object o){
-			return load(o, maxIterations, new RecursiveWalker(methods));
+		public int load(final String scenario, final String[] methods, int maxIterations, final Object o){
+			return load(o, maxIterations, new RecursiveWalker(scenario, methods));
 		}
 				
 		public int load(Object o, int maxIterations, WalkerIF walker){
@@ -223,18 +251,22 @@ public class LazyLoadManager {
 		return false;
 	}
 	
-	public static void load(final String[] methods, final Object o){
-		load(methods, MAX_LOAD_ITERATIONS, o);
+	public static void load(final String scenario, final String[] methods, final Object o){
+		load(scenario, methods, MAX_LOAD_ITERATIONS, o);
 	}
 	
-	public static void load(final String[] methods, int maxIterations, final Object o){
+	public static void loadForJson(final Object o){
+		LazyLoadManager.load(LazyLoadManager.SCENARIO_JSON, new String[]{LazyLoadManager.LOAD_JSON, LazyLoadManager.LOAD_ALL}, LazyLoadManager.MAX_LOAD_ITERATIONS, o);
+	}
+	
+	public static void load(final String scenario, final String[] methods, int maxIterations, final Object o){
 		
 		if (o == null)
 			return;
 		
 		boolean lazyLoaderStatus = LazyLoadManager.enable();
 		final LoadList ll = LazyLoadManager.get();
-		ll.load(methods, maxIterations, o);		
+		ll.load(scenario, methods, maxIterations, o);		
 		LazyLoadManager.setEnabled(lazyLoaderStatus);		
 	}		
 }

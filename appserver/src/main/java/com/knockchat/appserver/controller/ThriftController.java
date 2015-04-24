@@ -357,7 +357,7 @@ public abstract class ThriftController<ArgsType extends TBase, ResultType> {
 			return null;
 				
 		final LoadList ll = LazyLoadManager.get();
-		ll.load(new String[]{LazyLoadManager.LOAD_ALL}, result);
+		ll.load(LazyLoadManager.SCENARIO_DEFAULT, new String[]{LazyLoadManager.LOAD_ALL}, result);
 		ll.disable();
 		
 		return result;

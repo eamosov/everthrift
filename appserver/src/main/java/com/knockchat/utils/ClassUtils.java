@@ -5,6 +5,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+
+import com.google.common.base.Throwables;
 
 
 /**
@@ -72,5 +76,27 @@ public class ClassUtils {
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}									
-	}	
+	}
+	
+	public static boolean invokeFirstMethod(final String[] methods, final Object o){
+		
+		for (int i=0; i<methods.length; i++){
+			final Method m;
+			try {
+				m = o.getClass().getMethod(methods[i]);
+			} catch (IllegalArgumentException | NoSuchMethodException | SecurityException e) {
+				continue;
+			}
+			
+			try {
+				m.invoke(o);
+			} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+				throw Throwables.propagate(e);
+			}
+			return true;
+		}
+		
+		return false;
+	}
+	
 }

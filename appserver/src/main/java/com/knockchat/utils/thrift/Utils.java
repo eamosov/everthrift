@@ -29,5 +29,5 @@ public class Utils {
 			return null;
 		
 		return Pair.<Class<? extends TBase>, Map<? extends TFieldIdEnum, FieldMetaData>>create(thriftClass, map);
-	}
+	}	
 }
