@@ -17,7 +17,7 @@
 
   <context:property-placeholder />
 
-  <task:executor id="myExecutor" pool-size="4"/>  
+  <task:executor id="myExecutor" pool-size="2-1048576" keep-alive="10" queue-capacity="0"/>  
   <task:scheduler id="myScheduler" pool-size="10"/>
   <task:annotation-driven executor="myExecutor" scheduler="myScheduler"/>
 
