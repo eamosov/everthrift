@@ -18,6 +18,7 @@ package com.knockchat.appserver;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.management.ManagementFactory;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -31,6 +32,7 @@ import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
@@ -38,6 +40,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -234,6 +237,13 @@ public class AppserverApplication {
         threadPool.setName("jetty");
 
         jettyServer = new Server(threadPool);
+        
+        final MBeanContainer mbContainer=new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
+        jettyServer.addEventListener(mbContainer);
+        jettyServer.addBean(mbContainer);
+        
+        // Register loggers as MBeans
+        jettyServer.addBean(Log.getLog());
 
         final HttpConfiguration http_config = new HttpConfiguration();
         http_config.setSecureScheme("https");

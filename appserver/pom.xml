@@ -11,7 +11,7 @@
 	</parent>
 
 	<properties>
-		<jetty.version>9.2.1.v20140609</jetty.version>
+		<jetty.version>9.2.10.v20150310</jetty.version>
 		<jackson.version>1.9.13</jackson.version>
 		<migration.target.package>com.knockchat.migration</migration.target.package>
 		<github.global.server>github</github.global.server>
@@ -269,6 +269,12 @@
 		<dependency>
 			<groupId>org.eclipse.jetty</groupId>
 			<artifactId>jetty-servlet</artifactId>
+			<version>${jetty.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.eclipse.jetty</groupId>
+			<artifactId>jetty-jmx</artifactId>
 			<version>${jetty.version}</version>
 		</dependency>
 
