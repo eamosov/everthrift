@@ -16,6 +16,7 @@ public class JsonThriftServlet extends AbstractThriftServlet{
 		return  "application/json";
 	}
 	
+	@Override
 	protected TProtocolFactory getProtocolFactory(){
 		return factory;
 	}

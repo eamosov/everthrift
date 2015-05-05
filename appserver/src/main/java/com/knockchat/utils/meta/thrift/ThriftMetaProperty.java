@@ -31,6 +31,7 @@ public class ThriftMetaProperty<F extends TFieldIdEnum> implements MetaProperty 
 		this.type = type;
 	}
 	
+	@Override
 	public Class<?> getType() {
 		return type !=null ? type : getThriftType();
 	}

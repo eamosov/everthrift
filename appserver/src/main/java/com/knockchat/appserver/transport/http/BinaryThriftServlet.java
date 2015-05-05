@@ -16,6 +16,7 @@ public class BinaryThriftServlet extends AbstractThriftServlet{
 		return  "application/x-thrift";
 	}
 	
+	@Override
 	protected TProtocolFactory getProtocolFactory(){
 		return factory;
 	}

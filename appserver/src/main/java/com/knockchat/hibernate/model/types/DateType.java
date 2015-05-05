@@ -21,6 +21,7 @@ import com.knockchat.utils.meta.MetaProperty;
 @SuppressWarnings("rawtypes")
 public abstract class DateType implements UserType {
 		
+	@Override
 	public abstract Class returnedClass();
 	
 	private final MetaProperty year; //the year
@@ -107,7 +108,7 @@ public abstract class DateType implements UserType {
 			throw new SQLException(e);
 		}
 		
-		final Calendar cld = GregorianCalendar.getInstance();
+		final Calendar cld = Calendar.getInstance();
 		cld.setTime(value);
 		
 		year.set(ret, cld.get(Calendar.YEAR));
@@ -125,7 +126,7 @@ public abstract class DateType implements UserType {
 			return;
 		}
 		
-		final Calendar cld = GregorianCalendar.getInstance();
+		final Calendar cld = Calendar.getInstance();
 		
 		final Number y =  (Number)year.get(value);
 		if (y!=null)

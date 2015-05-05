@@ -3,8 +3,6 @@ package com.knockchat.hibernate.model;
 import java.util.List;
 import java.util.Map;
 
-import org.hibernate.annotations.OptimisticLocking;
-
 import com.google.common.base.Function;
 import com.google.common.collect.Maps;
 

@@ -1,11 +1,8 @@
 package com.knockchat.utils;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-
 import org.apache.commons.lang.StringUtils;
 
 import com.google.common.base.CharMatcher;
@@ -156,5 +153,17 @@ public class CollectionUtils {
 			ret.add(StringUtils.lowerCase(i));
 		
 		return ret;
-	}	
+	}
+	
+	public static boolean contains(Collection<?> collection, Object element) {
+		if (collection != null) {
+			for (Object candidate : collection) {
+				if (Objects.equals(candidate,element)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	
 }

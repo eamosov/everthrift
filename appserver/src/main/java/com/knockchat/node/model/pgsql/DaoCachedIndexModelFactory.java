@@ -1,4 +1,4 @@
-package com.knockchat.node.model;
+package com.knockchat.node.model.pgsql;
 
 import java.util.Collection;
 
@@ -9,6 +9,7 @@ import org.hibernate.criterion.Order;
 import org.hibernate.criterion.Projections;
 
 import com.knockchat.hibernate.dao.AbstractDao;
+import com.knockchat.node.model.CachedIndexModelFactory;
 
 public abstract class DaoCachedIndexModelFactory<K, V> extends CachedIndexModelFactory<K, V> {
 	

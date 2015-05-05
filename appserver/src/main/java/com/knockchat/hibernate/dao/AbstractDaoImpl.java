@@ -29,10 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.google.common.base.Function;
 import com.google.common.base.Throwables;
-import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Multimaps;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.knockchat.utils.Pair;
@@ -89,7 +86,7 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF<V>> i
         	
         	if (log.isDebugEnabled())
         		log.debug("findById tx={}: {}#{}", session.getTransaction().getLocalStatus(), entityClass.getSimpleName(), id);
-        	
+        	        	
             return (V) session.get(entityClass, id);
         } catch (HibernateException he) {
             propogateIfAbsentMessage(he, NO_SESSION_FOR_THREAD);
@@ -131,12 +128,14 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF<V>> i
         	session.refresh(e);
         	return Pair.create((V)session.get(entityClass, e.getPk()), true);
     	}else{
-    		final V ret = (V) session.merge(e);
+    		V ret = (V) session.merge(e);
     		final boolean updated;
     		if (session.isDirty()){    			    			
     			updated = true;
     			session.flush();
-    			session.refresh(ret);
+//    			session.evict(ret);
+//    			ret = (V)session.load(entityClass, ret.getPk());
+    			//session.refresh(ret);
     		}else{
     			updated = false;
     		}
@@ -352,27 +351,12 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF<V>> i
             throw Throwables.propagate(e);
     }
     
-    public static <K,V> Map<K, List<V>> asMap(Collection<K> keys, List<V> values, Function<V, K> keyExtractor){
-    	
-        final ImmutableListMultimap<K, V> map  = Multimaps.index(values, keyExtractor);        
-        final Map<K, List<V>> result = Maps.newHashMap();        
-        
-        for (K k : keys){
-        	final List<V> v = map.get(k);
-        	if (v == null || v.isEmpty())
-        		result.put(k, null);
-        	else
-        		result.put(k,v);
-        }
-    	return result;
-    }
-
     @Override
-    public Map<K, V> findByIdsAsMap(Collection<K> id, Function<V, K> keyExtractor) {
+    public Map<K, V> findByIdsAsMap(Collection<K> id) {
         final Map<K, V> ret = new HashMap<K, V>();
         final Collection<V> rs = findByIds(id);
         for (V r : rs) {
-            ret.put(keyExtractor.apply(r), r);
+            ret.put((K)r.getPk(), r);
         }
         for (K k : id)
             if (!ret.containsKey(k))
@@ -408,7 +392,8 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF<V>> i
 			}});
 	}
 
-    public AbstractDao<K,V> with(final SessionFactory sessionFactory){
+    @Override
+	public AbstractDao<K,V> with(final SessionFactory sessionFactory){
         return new AbstractDaoImpl<>(sessionFactory, this.entityClass, this.listeningExecutorService);
     }
 

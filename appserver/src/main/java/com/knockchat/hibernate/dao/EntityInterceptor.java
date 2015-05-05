@@ -13,6 +13,7 @@ public class EntityInterceptor extends EmptyInterceptor {
 	private static final long serialVersionUID = 1L;
 	
 
+	@Override
 	public boolean onFlushDirty(
 			Object entity, 
 			Serializable id, 

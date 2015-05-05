@@ -13,7 +13,6 @@ import com.google.common.collect.Multimap;
 import com.knockchat.utils.ClassUtils;
 import com.knockchat.utils.thrift.scanner.ScenarioAwareIF;
 import com.knockchat.utils.thrift.scanner.TBaseScanHandler;
-import com.knockchat.utils.thrift.scanner.TBaseScanner;
 import com.knockchat.utils.thrift.scanner.TBaseScannerFactory;
 
 public class LazyLoadManager {
@@ -102,11 +101,11 @@ public class LazyLoadManager {
 			if (o instanceof Iterable){
 				for (Object i: ((Iterable)o))
 					if (i!=null)
-						invoke(i);
+						recursive(i);
 			}else if (o instanceof Map){
 				for (Object i: ((Map)o).values()){
 					if (i!=null)
-						invoke(i);
+						recursive(i);
 				}
 			}else{
 				invoke(o);

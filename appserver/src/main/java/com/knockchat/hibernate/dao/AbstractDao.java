@@ -27,7 +27,13 @@ public interface AbstractDao<K, V extends DaoEntityIF<V>> {
 
     public Collection<V> findByIds(Collection<K> id);
 
-    public Map<K, V> findByIdsAsMap(Collection<K> id, Function<V, K> keyExtractor);
+    /**
+     *  Если entity не найдено, то метод возвращает null для этого ключа 
+     * @param id
+     * @param keyExtractor
+     * @return
+     */
+    public Map<K, V> findByIdsAsMap(Collection<K> id);
 
     public void persist(V e);
     public Pair<V, Boolean> saveOrUpdate(V e);
