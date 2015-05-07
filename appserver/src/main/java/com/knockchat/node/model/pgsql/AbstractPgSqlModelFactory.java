@@ -108,7 +108,7 @@ public class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY extends D
 			
 			//TODO при внешней транзации удалять после завершения транзакции???
 			if (ret.second)
-				invalidate((PK)e.getPk());
+				_invalidate((PK)e.getPk());
 			
 			helper.setUpdated(ret.second);
 			return ret.first;
@@ -116,6 +116,16 @@ public class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY extends D
 			helper.setUpdated(false);
 			throw e1;
 		}				
+    }
+    
+    protected void _invalidate(PK id){
+    	super.invalidate(id);
+    }
+    
+    @Override
+    public void invalidate(PK id){
+    	_invalidate(id);
+    	getDao().evict(id);
     }
     
     @Override
@@ -131,7 +141,7 @@ public class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY extends D
     @Override
     public void deleteEntity(ENTITY e){
    		dao.delete(e);   		
-   		invalidate((PK)e.getPk());
+   		_invalidate((PK)e.getPk());
     }
         
     public AbstractDao<PK, ENTITY> getDao(){

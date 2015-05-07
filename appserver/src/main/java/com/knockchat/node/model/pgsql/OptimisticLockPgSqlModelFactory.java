@@ -82,7 +82,7 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
 				}}, 10, 100);
 			
 			if (ret.isUpdated)
-				invalidate(id);
+				_invalidate(id);
 
 			return ret;
 	}

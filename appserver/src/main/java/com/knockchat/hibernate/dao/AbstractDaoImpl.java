@@ -396,5 +396,10 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF<V>> i
 	public AbstractDao<K,V> with(final SessionFactory sessionFactory){
         return new AbstractDaoImpl<>(sessionFactory, this.entityClass, this.listeningExecutorService);
     }
+    
+    @Override
+    public void evict(K id){
+    	this.sessionFactory.getCache().evictEntity(entityClass, id);
+    }
 
 }

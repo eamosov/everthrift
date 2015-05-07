@@ -39,6 +39,8 @@ public interface AbstractDao<K, V extends DaoEntityIF<V>> {
     public Pair<V, Boolean> saveOrUpdate(V e);
 
     public void delete(V e);
+    
+    public void evict(K id);
 
     public Object uniqueResult(Criterion criterion, Projection... projections);
     
