@@ -445,6 +445,10 @@ public class LocalSessionFactoryBean extends org.springframework.orm.hibernate4.
             		col.setCustomRead(col.getName()+"::bigint");
             		col.setCustomWrite("?::timestamp with time zone");
             		break;
+            	case Types.DATE:
+            		col.setCustomRead(col.getName()+"::bigint");
+            		col.setCustomWrite("?::date");
+            		break;
             	default:
             }
             typeName = LongType.INSTANCE.getName();
