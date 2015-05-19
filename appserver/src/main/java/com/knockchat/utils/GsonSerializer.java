@@ -13,11 +13,17 @@ import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import com.google.gson.reflect.TypeToken;
+import com.knockchat.utils.meta.MetaClass;
+import com.knockchat.utils.meta.MetaClasses;
+import com.knockchat.utils.meta.MetaProperty;
 
 /**
  * @author efreet (Amosov Evgeniy)
@@ -25,7 +31,7 @@ import com.google.gson.reflect.TypeToken;
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class GsonSerializer {
 
-    public static class TBaseSerializer<T extends TBase> implements JsonSerializer<T> {
+    public static class TBaseSerializer<T extends TBase> implements JsonSerializer<T>, JsonDeserializer<T> {
 
         final public static Type tBaseCollection = new TypeToken<Collection<TBase>>() {
         }.getType();
@@ -74,6 +80,37 @@ public class GsonSerializer {
             
             return jo;
         }
+
+		@Override
+		public T deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+			
+			if (!TBase.class.isAssignableFrom((Class)typeOfT))
+				throw new JsonParseException("can not deserialize class " +  typeOfT.getClass().getSimpleName());
+			
+			final TBase o;
+			try {
+				o = (TBase)((Class)typeOfT).newInstance();
+			} catch (InstantiationException | IllegalAccessException e1) {
+				throw new JsonParseException(e1);
+			}
+						
+			final MetaClass mc = MetaClasses.get((Class)typeOfT);
+			if (mc == null)
+				throw new JsonParseException("can not create MetaClass for class " + typeOfT.getClass().getSimpleName());
+			
+			for (Map.Entry<String, JsonElement> e:json.getAsJsonObject().entrySet()){
+				final MetaProperty p = mc.getBeanProperty(e.getKey());
+				if (p == null){
+					log.error("coudn't find property {} for class {}", e.getKey(), mc.getName());
+					continue;
+				}
+								
+				final Object value = context.deserialize(e.getValue(), p.getType());
+				p.set(o, value);				
+			}
+						
+			return (T)o;
+		}
 
     }
 
