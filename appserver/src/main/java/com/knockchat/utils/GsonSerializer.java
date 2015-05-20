@@ -1,6 +1,7 @@
 package com.knockchat.utils;
 
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.Map;
@@ -104,9 +105,15 @@ public class GsonSerializer {
 					log.error("coudn't find property {} for class {}", e.getKey(), mc.getName());
 					continue;
 				}
+				
+				final Field f;
+				try {
+					f = ((Class)typeOfT).getDeclaredField(e.getKey());
+				} catch (SecurityException | NoSuchFieldException e1) {
+					throw new JsonParseException(e1);
+				}
 								
-				final Object value = context.deserialize(e.getValue(), p.getType());
-				p.set(o, value);				
+				p.set(o, context.deserialize(e.getValue(), f.getGenericType()));				
 			}
 						
 			return (T)o;
