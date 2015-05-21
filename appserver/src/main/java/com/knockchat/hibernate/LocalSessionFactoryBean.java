@@ -74,7 +74,7 @@ public class LocalSessionFactoryBean extends org.springframework.orm.hibernate4.
     @Override
     protected SessionFactory buildSessionFactory(LocalSessionFactoryBuilder sfb) {
         addMappings(sfb);
-        sfb.setInterceptor(new EntityInterceptor());
+        sfb.setInterceptor(EntityInterceptor.INSTANCE);
         final SessionFactory ret =  super.buildSessionFactory(sfb);
         return ret;
     }

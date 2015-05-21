@@ -118,6 +118,10 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF<V>> i
     @Override
     @Transactional
 	public Pair<V, Boolean> saveOrUpdate(V e) {
+    	
+    	if (log.isDebugEnabled())
+    		log.debug("saveOrUpdate, class={}, object={}, id={}", e.getClass().getSimpleName(), System.identityHashCode(e), e.getPk());
+    	
         final Session session = getCurrentSession();
                 
         if (log.isDebugEnabled())
@@ -129,17 +133,11 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF<V>> i
         	return Pair.create((V)session.get(entityClass, e.getPk()), true);
     	}else{
     		V ret = (V) session.merge(e);
-    		final boolean updated;
     		if (session.isDirty()){    			    			
-    			updated = true;
     			session.flush();
-//    			session.evict(ret);
-//    			ret = (V)session.load(entityClass, ret.getPk());
-    			//session.refresh(ret);
-    		}else{
-    			updated = false;
     		}
-            return Pair.create(ret, updated);
+    		
+            return Pair.create(ret, EntityInterceptor.INSTANCE.isDirty(e));
         }            
     }
 
