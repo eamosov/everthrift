@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Sets;
 import com.knockchat.appserver.model.UpdatedAtIF;
+import com.knockchat.utils.Pair;
 
 public class EntityInterceptor extends EmptyInterceptor {
 	
@@ -21,9 +22,9 @@ public class EntityInterceptor extends EmptyInterceptor {
 	
 	public static final EntityInterceptor INSTANCE = new EntityInterceptor();
 	
-	private final ThreadLocal<Set<Object>> dirty = new ThreadLocal<Set<Object>>(){
-		protected Set<Object> initialValue(){
-			return Sets.newIdentityHashSet();
+	private final ThreadLocal<Set<Pair<String, Serializable>>> dirty = new ThreadLocal<Set<Pair<String, Serializable>>>(){
+		protected Set<Pair<String, Serializable>> initialValue(){
+			return Sets.newHashSet();
 		}
 	};
 		
@@ -41,8 +42,8 @@ public class EntityInterceptor extends EmptyInterceptor {
 		dirty.get().clear();
 	}
 	
-	public boolean isDirty(Object e){
-		return dirty.get().contains(e);
+	public boolean isDirty(Object entity){
+		return dirty.get().contains(Pair.create(entity.getClass().getName(), ((DaoEntityIF)entity).getPk()));
 	}
 
 	@Override
@@ -57,7 +58,7 @@ public class EntityInterceptor extends EmptyInterceptor {
 		if (log.isDebugEnabled())
 			log.debug("onFlushDirty, class={}, object={}, id={}", entity.getClass().getSimpleName(), System.identityHashCode(entity), id);
 		
-		dirty.get().add(entity);
+		dirty.get().add(Pair.create(entity.getClass().getName(), ((DaoEntityIF)entity).getPk()));
 						
 		boolean updated = false;
 				
