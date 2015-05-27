@@ -2,7 +2,7 @@ package com.knockchat.hibernate.dao;
 
 import java.io.Serializable;
 
-public interface DaoEntityIF<V> extends Serializable  {
+public interface DaoEntityIF extends Serializable  {
 
     public Serializable getPk();
 

@@ -21,7 +21,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.knockchat.utils.Pair;
 
 
-public interface AbstractDao<K, V extends DaoEntityIF<V>> {
+public interface AbstractDao<K, V extends DaoEntityIF> {
 
     public V findById(K id);
 

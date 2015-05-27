@@ -20,7 +20,7 @@ import com.knockchat.node.model.OptimisticLockModelFactoryIF;
 import com.knockchat.node.model.OptimisticUpdateResult;
 import com.knockchat.node.model.RwModelFactoryHelper;
 
-public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,ENTITY extends DaoEntityIF<ENTITY>, A, E extends TException> extends AbstractPgSqlModelFactory<PK, ENTITY, A> implements OptimisticLockModelFactoryIF<PK, ENTITY, E>  {
+public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,ENTITY extends DaoEntityIF, A, E extends TException> extends AbstractPgSqlModelFactory<PK, ENTITY, A> implements OptimisticLockModelFactoryIF<PK, ENTITY, E>  {
 	
 	protected abstract E createNotFoundException(PK id);
 	

@@ -20,7 +20,7 @@ import com.knockchat.node.model.AbstractCachedModelFactory;
 import com.knockchat.node.model.ModelFactoryIF;
 import com.knockchat.node.model.RwModelFactoryHelper;
 
-public class AbstractMongoModelFactory<PK extends Serializable, ENTITY extends DaoEntityIF<ENTITY>, A> extends AbstractCachedModelFactory<PK, ENTITY, A> implements InitializingBean, ModelFactoryIF<PK, ENTITY> {
+public class AbstractMongoModelFactory<PK extends Serializable, ENTITY extends DaoEntityIF, A> extends AbstractCachedModelFactory<PK, ENTITY, A> implements InitializingBean, ModelFactoryIF<PK, ENTITY> {
 	    
     @Autowired
     private ApplicationContext ctx;

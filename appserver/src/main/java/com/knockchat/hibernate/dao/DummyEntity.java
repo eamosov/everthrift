@@ -2,7 +2,7 @@ package com.knockchat.hibernate.dao;
 
 import java.io.Serializable;
 
-public class DummyEntity implements DaoEntityIF<DummyEntity> {
+public class DummyEntity implements DaoEntityIF {
 
 	public DummyEntity() {
 	}

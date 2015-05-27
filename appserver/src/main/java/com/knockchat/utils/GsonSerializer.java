@@ -25,6 +25,7 @@ import com.google.gson.reflect.TypeToken;
 import com.knockchat.utils.meta.MetaClass;
 import com.knockchat.utils.meta.MetaClasses;
 import com.knockchat.utils.meta.MetaProperty;
+import com.knockchat.utils.thrift.Utils;
 
 /**
  * @author efreet (Amosov Evgeniy)
@@ -49,13 +50,8 @@ public class GsonSerializer {
 
             final JsonObject jo = new JsonObject();
             
-    		Map<? extends TFieldIdEnum, FieldMetaData> map = null;
-    		Class thriftClass = src.getClass();
-    		while(map == null && thriftClass !=null){
-    			map = FieldMetaData.getStructMetaDataMap(thriftClass);
-    			thriftClass = thriftClass.getSuperclass(); 
-    		}            
-
+            final Map<? extends TFieldIdEnum, FieldMetaData> map = Utils.getRootThriftClass(src.getClass()).second;
+            
             if (map == null) {
                 log.error("coudn't serialize class {}", src.getClass());
                 return new JsonObject();
@@ -100,7 +96,7 @@ public class GsonSerializer {
 				throw new JsonParseException("can not create MetaClass for class " + typeOfT.getClass().getSimpleName());
 			
 			for (Map.Entry<String, JsonElement> e:json.getAsJsonObject().entrySet()){
-				final MetaProperty p = mc.getBeanProperty(e.getKey());
+				final MetaProperty p = mc.getProperty(e.getKey());
 				if (p == null){
 					log.error("coudn't find property {} for class {}", e.getKey(), mc.getName());
 					continue;

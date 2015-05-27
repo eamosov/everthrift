@@ -11,7 +11,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.knockchat.hibernate.dao.DaoEntityIF;
 import com.knockchat.node.model.ModelFactoryIF;
 
-public class PgSqlModelFactory<PK extends Serializable, ENTITY extends DaoEntityIF<ENTITY>, A> extends AbstractPgSqlModelFactory<PK, ENTITY, A> implements ModelFactoryIF<PK, ENTITY>{
+public class PgSqlModelFactory<PK extends Serializable, ENTITY extends DaoEntityIF, A> extends AbstractPgSqlModelFactory<PK, ENTITY, A> implements ModelFactoryIF<PK, ENTITY>{
 
 	public PgSqlModelFactory(String cacheName, Class<ENTITY> entityClass) {
 		super(cacheName, entityClass);

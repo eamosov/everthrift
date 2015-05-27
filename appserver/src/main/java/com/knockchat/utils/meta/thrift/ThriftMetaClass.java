@@ -12,10 +12,12 @@ import org.apache.thrift.meta_data.FieldMetaData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.knockchat.utils.Pair;
 import com.knockchat.utils.meta.MetaProperty;
 import com.knockchat.utils.meta.asm.AsmMetaClass;
 import com.knockchat.utils.meta.asm.DefiningClassLoader;
 import com.knockchat.utils.meta.getset.GetSetPropertySupport;
+import com.knockchat.utils.thrift.Utils;
 
 public class ThriftMetaClass<T extends TBase> extends AsmMetaClass {
 	
@@ -24,12 +26,10 @@ public class ThriftMetaClass<T extends TBase> extends AsmMetaClass {
 	public ThriftMetaClass(Class<T> objectClass, DefiningClassLoader classLoader ) {
 		super(objectClass, classLoader);
 		
-		Map<? extends TFieldIdEnum, FieldMetaData> map = null;
-		Class thriftClass = objectClass;
-		do{
-			map = FieldMetaData.getStructMetaDataMap(thriftClass);
-			thriftClass = thriftClass.getSuperclass();
-		}while(map == null && thriftClass !=null);
+		final Pair<Class<? extends TBase>, Map<? extends TFieldIdEnum, FieldMetaData>> r = Utils.getRootThriftClass(objectClass);
+		
+		final Map<? extends TFieldIdEnum, FieldMetaData> map = r.second;
+		final Class thriftClass = r.first;
 				 
 		fieldProperties.clear();
 		

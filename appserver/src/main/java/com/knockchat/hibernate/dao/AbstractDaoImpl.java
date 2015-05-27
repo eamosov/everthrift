@@ -35,7 +35,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.knockchat.utils.Pair;
 
 
-public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF<V>> implements AbstractDao<K, V> {
+public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> implements AbstractDao<K, V> {
 	
 	private static final Logger log = LoggerFactory.getLogger(AbstractDaoImpl.class);
 
