@@ -147,6 +147,7 @@ public abstract class ThriftController<ArgsType extends TBase, ResultType> {
 
 				@Override
 				public void onSuccess(ResultType result) {
+					LazyLoadManager.enable();
 					waitForAnswerSuccess(result);
 					ThriftController.this.sendAnswer(result);				
 				}
@@ -358,7 +359,7 @@ public abstract class ThriftController<ArgsType extends TBase, ResultType> {
 				
 		final LoadList ll = LazyLoadManager.get();
 		ll.load(LazyLoadManager.SCENARIO_DEFAULT, new String[]{LazyLoadManager.LOAD_ALL}, result);
-		ll.disable();
+		ll.setEnabled(false);
 		
 		return result;
 	}

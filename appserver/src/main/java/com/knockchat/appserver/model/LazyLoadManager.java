@@ -119,7 +119,7 @@ public class LazyLoadManager {
 	public static class LoadList{
 		final Multimap<Function<Iterable, Integer>, Object> loadList = HashMultimap.create();
 		boolean buildLoadList;
-		public boolean enabled=true;
+		private boolean enabled=true;
 				
 		public void reset(){
 			loadList.clear();
@@ -145,17 +145,17 @@ public class LazyLoadManager {
 			buildLoadList = true;
 		}
 		
-		public void enable(){
-			enabled = true;
-		}
+//		public void enable(){
+//			enabled = true;
+//		}
+//		
+//		public void disable(){
+//			enabled = false;
+//		}		
 		
-		public void disable(){
-			enabled = false;
-		}		
-		
-		public int load(Object o, WalkerIF walker){
-			return load(o, MAX_LOAD_ITERATIONS, walker);
-		}
+//		public int load(Object o, WalkerIF walker){
+//			return load(o, MAX_LOAD_ITERATIONS, walker);
+//		}
 
 		public int load(final String scenario, final String[] methods, final Object o){
 			return load(o, MAX_LOAD_ITERATIONS, new RecursiveWalker(scenario, methods));
@@ -166,6 +166,8 @@ public class LazyLoadManager {
 		}
 				
 		public int load(Object o, int maxIterations, WalkerIF walker){
+			
+			log.debug("load, maxIterations={}, enabled={}, o.class={}", maxIterations, enabled, o.getClass().getSimpleName());
 						
 			if (!enabled)
 				return 0;
@@ -199,6 +201,20 @@ public class LazyLoadManager {
 			return nAllLoaded;
 		}
 		
+		public boolean setEnabled(boolean value){
+			log.debug("LazyLoadManager setEnabled({})", value);
+			final boolean old = enabled; 
+
+			if (value){
+				enabled = true;
+			}else{
+				reset();
+				enabled = false;
+			}
+			
+			return old;
+		}
+
 	}
 	
 	private static final ThreadLocal <LoadList> loadList =  new ThreadLocal <LoadList> (){ 
@@ -213,36 +229,15 @@ public class LazyLoadManager {
 	}
 	
 	public static boolean disable(){
-		final LoadList l = loadList.get();
-		final boolean old = l.enabled; 
-		l.reset();
-		l.disable();
-		return old;
+		return get().setEnabled(false);
 	}
 
 	public static boolean enable(){
-		final LoadList l = loadList.get();
-		final boolean old = l.enabled;
-		l.enable();
-		return old;
+		return get().setEnabled(true);
 	}
-	
-	public static boolean setEnabled(boolean value){
-		final LoadList l = loadList.get();
-		final boolean old = l.enabled; 
-
-		if (value){
-			l.enable();
-		}else{
-			l.reset();
-			l.disable();
-		}
 		
-		return old;
-	}
-	
 	public static boolean addToLoad(Function<Iterable, Integer> function, Object object){
-		final LoadList l = loadList.get();
+		final LoadList l = get();
 		if (l.buildLoadList){
 			l.loadList.put(function, object);
 			return true;
@@ -255,7 +250,7 @@ public class LazyLoadManager {
 	}
 	
 	public static void loadForJson(final Object o){
-		LazyLoadManager.load(LazyLoadManager.SCENARIO_JSON, new String[]{LazyLoadManager.LOAD_JSON, LazyLoadManager.LOAD_ALL}, LazyLoadManager.MAX_LOAD_ITERATIONS, o);
+		load(LazyLoadManager.SCENARIO_JSON, new String[]{LazyLoadManager.LOAD_JSON, LazyLoadManager.LOAD_ALL}, LazyLoadManager.MAX_LOAD_ITERATIONS, o);
 	}
 	
 	public static void load(final String scenario, final String[] methods, int maxIterations, final Object o){
@@ -263,9 +258,12 @@ public class LazyLoadManager {
 		if (o == null)
 			return;
 		
-		boolean lazyLoaderStatus = LazyLoadManager.enable();
-		final LoadList ll = LazyLoadManager.get();
-		ll.load(scenario, methods, maxIterations, o);		
-		LazyLoadManager.setEnabled(lazyLoaderStatus);		
+		final LoadList ll = get();
+		final boolean lazyLoaderStatus = ll.setEnabled(true);
+		try{
+			ll.load(scenario, methods, maxIterations, o);
+		}finally{
+			ll.setEnabled(lazyLoaderStatus);
+		}
 	}		
 }
