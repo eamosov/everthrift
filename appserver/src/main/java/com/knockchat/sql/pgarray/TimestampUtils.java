@@ -242,7 +242,7 @@ public class TimestampUtils {
                 throw new NumberFormatException("Trailing junk on timestamp: '" + new String(s, start, slen - start) + "'");
 
             if (!result.hasTime && !result.hasDate)
-                throw new NumberFormatException("Timestamp has neither date nor time");
+                throw new NumberFormatException("LongTimestamp has neither date nor time");
 
         } catch (NumberFormatException nfe) {
             throw new PSQLException(GT.tr("Bad value for type {0} : {1}", new Object[]{type,str}), PSQLState.BAD_DATETIME_FORMAT, nfe);

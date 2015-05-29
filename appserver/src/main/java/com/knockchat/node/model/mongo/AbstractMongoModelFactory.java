@@ -19,6 +19,7 @@ import com.knockchat.hibernate.dao.DaoEntityIF;
 import com.knockchat.node.model.AbstractCachedModelFactory;
 import com.knockchat.node.model.ModelFactoryIF;
 import com.knockchat.node.model.RwModelFactoryHelper;
+import com.knockchat.utils.LongTimestamp;
 
 public class AbstractMongoModelFactory<PK extends Serializable, ENTITY extends DaoEntityIF, A> extends AbstractCachedModelFactory<PK, ENTITY, A> implements InitializingBean, ModelFactoryIF<PK, ENTITY> {
 	    
@@ -57,7 +58,7 @@ public class AbstractMongoModelFactory<PK extends Serializable, ENTITY extends D
 		if (e.getPk() !=null){
 			//TODO надо обновлять UpdatedAtIF только если что-то реально изменилось
     		if (e instanceof UpdatedAtIF)
-    			((UpdatedAtIF) e).setUpdatedAt(System.currentTimeMillis()/1000);    			
+    			((UpdatedAtIF) e).setUpdatedAt(LongTimestamp.now());    			
 		}
 
     	mongo.save(e);

@@ -52,8 +52,10 @@ import com.knockchat.hibernate.model.types.CustomTypeFactory;
 import com.knockchat.hibernate.model.types.DoubleListType;
 import com.knockchat.hibernate.model.types.IntegerListType;
 import com.knockchat.hibernate.model.types.JsonType;
+import com.knockchat.hibernate.model.types.LongDateType;
 import com.knockchat.hibernate.model.types.LongListType;
 import com.knockchat.hibernate.model.types.LongLongHstoreType;
+import com.knockchat.hibernate.model.types.LongTimestampType;
 import com.knockchat.hibernate.model.types.PointType;
 import com.knockchat.hibernate.model.types.ShortListType;
 import com.knockchat.hibernate.model.types.StringListType;
@@ -442,16 +444,14 @@ public class LocalSessionFactoryBean extends org.springframework.orm.hibernate4.
         if (javaType == Long.class || javaType == long.class) {            
             switch(jdbcType){
             	case Types.TIMESTAMP:
-            		col.setCustomRead(col.getName()+"::bigint");
-            		col.setCustomWrite("?::timestamp with time zone");
+            		typeName = LongTimestampType.class.getCanonicalName();
             		break;
             	case Types.DATE:
-            		col.setCustomRead(col.getName()+"::bigint");
-            		col.setCustomWrite("?::date");
+            		typeName = LongDateType.class.getCanonicalName();
             		break;
             	default:
-            }
-            typeName = LongType.INSTANCE.getName();
+            		typeName = LongType.INSTANCE.getName();
+            }            
         } else if (javaType == Short.class || javaType == short.class) {
             typeName = ShortType.INSTANCE.getName();
         } else if (javaType == Integer.class || javaType == int.class ) {

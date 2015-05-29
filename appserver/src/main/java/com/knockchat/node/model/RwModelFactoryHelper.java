@@ -9,6 +9,7 @@ import com.google.common.base.Throwables;
 import com.knockchat.appserver.model.CreatedAtIF;
 import com.knockchat.appserver.model.UpdatedAtIF;
 import com.knockchat.node.model.pgsql.OptimisticUpdateFailException;
+import com.knockchat.utils.LongTimestamp;
 
 public abstract class RwModelFactoryHelper<PK, ENTITY> {
 	
@@ -36,7 +37,7 @@ public abstract class RwModelFactoryHelper<PK, ENTITY> {
     
     public ENTITY updateEntity(ENTITY e) {
     	
-    	final long now = System.currentTimeMillis() / 1000;
+    	final long now = LongTimestamp.now();
     	        
     	if (extractPk(e) == null){
 

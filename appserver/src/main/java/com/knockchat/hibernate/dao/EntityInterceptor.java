@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Sets;
 import com.knockchat.appserver.model.UpdatedAtIF;
+import com.knockchat.utils.LongTimestamp;
 import com.knockchat.utils.Pair;
 
 public class EntityInterceptor extends EmptyInterceptor {
@@ -66,7 +67,7 @@ public class EntityInterceptor extends EmptyInterceptor {
 			
 			final int idx = ArrayUtils.indexOf(propertyNames, "updatedAt");
 			if (idx>0){
-				final Long now = Long.valueOf(System.currentTimeMillis()/1000);
+				final Long now = Long.valueOf(LongTimestamp.now());
 				if (!now.equals(currentState[idx])){
 					currentState[idx] = now;
 					updated = true;

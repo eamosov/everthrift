@@ -9,7 +9,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.Calendar;
-import java.util.GregorianCalendar;
 
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SessionImplementor;
