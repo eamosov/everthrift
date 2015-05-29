@@ -13,6 +13,8 @@ import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.usertype.UserType;
 import org.postgresql.util.PGobject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -20,6 +22,8 @@ import com.knockchat.utils.GsonSerializer.TBaseSerializer;
 
 @SuppressWarnings({"unchecked"})
 public abstract class JsonType implements UserType {
+	
+	private static final Logger log = LoggerFactory.getLogger(JsonType.class);
 		
 	private final Gson gson = new GsonBuilder().registerTypeHierarchyAdapter(TBase.class, new TBaseSerializer()).create();
 
@@ -50,7 +54,12 @@ public abstract class JsonType implements UserType {
 		if (json == null)
 			return null;
 		
-		return gson.fromJson(json.getValue(), this.returnedClass());
+		try{
+			return gson.fromJson(json.getValue(), this.returnedClass());
+		}catch(JsonSyntaxException e){
+			log.error("Coudn't parse '{}' in {}", json.getValue(), this.returnedClass().getSimpleName());
+			throw new HibernateException(e);
+		}
 	}
 
 	@Override
