@@ -21,6 +21,7 @@ import org.hibernate.criterion.Projection;
 import org.hibernate.criterion.ProjectionList;
 import org.hibernate.criterion.Projections;
 import org.hibernate.criterion.Restrictions;
+import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.transform.ResultTransformer;
 import org.hibernate.type.Type;
 import org.slf4j.Logger;
@@ -162,6 +163,13 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
                 ss.close();
             }
         }
+    }
+    
+    @Override
+    @Transactional
+    public void deleteAll(){
+        final Session session = getCurrentSession();        
+    	session.createQuery("DELETE FROM " + ((AbstractEntityPersister)sessionFactory.getClassMetadata(entityClass)).getEntityName()).executeUpdate();    	
     }
 
     @Override

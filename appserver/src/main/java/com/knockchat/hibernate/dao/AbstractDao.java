@@ -40,6 +40,8 @@ public interface AbstractDao<K, V extends DaoEntityIF> {
 
     public void delete(V e);
     
+    public void deleteAll();
+    
     public void evict(K id);
 
     public Object uniqueResult(Criterion criterion, Projection... projections);
