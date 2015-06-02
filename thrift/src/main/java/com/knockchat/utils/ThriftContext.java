@@ -264,8 +264,9 @@ public class ThriftContext implements Closeable{
 		
 		final TTransport transportWrapper = transportFactory.getTransport(tPersistWsTransport);
 		
-		transportWrapper.write(payload.getArray(), 0, payload.length());		
 		async.put(seqId, ii, tmMs);
+		transportWrapper.write(payload.getArray(), 0, payload.length());		
+		
 		transportWrapper.flush();		
 		return ii;					
 	}
