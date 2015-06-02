@@ -278,7 +278,12 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
 			log.trace("thriftCall: tInfo={}, seqId={}", tInfo, seqId);
 		
 		sd.async.put(seqId, tInfo, timeout);
-		write(sd, sd.lastContentType, tInfo.buildCall(seqId, protocolFactory));	
+		try{
+			write(sd, sd.lastContentType, tInfo.buildCall(seqId, protocolFactory));
+		}catch(TException e){
+			sd.async.pop(seqId);
+			throw e;
+		}
 		
 		return tInfo;
 	}
