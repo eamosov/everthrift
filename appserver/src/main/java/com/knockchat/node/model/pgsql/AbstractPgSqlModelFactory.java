@@ -161,4 +161,11 @@ public class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY extends D
 	public ENTITY insert(ENTITY e) {
 		return helper.updateEntity(e);
 	}
+	
+	public void deleteAll(){
+		getDao().deleteAll();
+		
+		if (cache !=null)
+			cache.removeAll();
+	}
 }
