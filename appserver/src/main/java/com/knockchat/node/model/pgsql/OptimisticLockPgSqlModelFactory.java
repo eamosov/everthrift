@@ -73,7 +73,12 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
 						}else{
 							return OptimisticUpdateResult.CANCELED;
 						}
-					}catch(StaleObjectStateException | ConstraintViolationException e){						
+					}catch (ConstraintViolationException e){
+						if (e.getConstraintName().contains("pkey"))
+							return null;
+						else
+							throw Throwables.propagate(e);
+					}catch(StaleObjectStateException e){						
 						log.debug("update fails id= " + id + ", let's try one more time?", e);
 						return null;
 					}finally{
@@ -90,32 +95,37 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
 	@Transactional(rollbackFor=Exception.class)
 	private OptimisticUpdateResult<ENTITY> tryOptimisticUpdate(PK id, EntityMutator<ENTITY> mutator, final EntityFactory<PK, ENTITY> factory) throws TException, EntityNotFoundException{
 		
-		ENTITY e;
-		final ENTITY orig;
-		
-		e = this.fetchEntityById(id);
-		if (e == null){
-			if (factory == null)
-				throw new EntityNotFoundException(id);
-		
-			orig = null;
-			e = factory.create(id);
-			getDao().persist(e);
-		}else{
-			try {
-				orig = this.entityClass.getConstructor(this.entityClass).newInstance(e);
-			} catch (InstantiationException | IllegalAccessException
-					| IllegalArgumentException | InvocationTargetException
-					| NoSuchMethodException | SecurityException e1) {
-				throw Throwables.propagate(e1);
+		try{
+			ENTITY e;
+			final ENTITY orig;
+			
+			e = this.fetchEntityById(id);
+			if (e == null){
+				if (factory == null)
+					throw new EntityNotFoundException(id);
+			
+				orig = null;
+				e = factory.create(id);
+				getDao().persist(e);
+			}else{
+				try {
+					orig = this.entityClass.getConstructor(this.entityClass).newInstance(e);
+				} catch (InstantiationException | IllegalAccessException
+						| IllegalArgumentException | InvocationTargetException
+						| NoSuchMethodException | SecurityException e1) {
+					throw Throwables.propagate(e1);
+				}			
+			}
+			
+			
+			if (mutator.update(e)){
+				return OptimisticUpdateResult.create(helper.updateEntity(e), orig, helper.isUpdated());
+			}else{
+				return OptimisticUpdateResult.create(e, e, false);
 			}			
-		}
-		
-		
-		if (mutator.update(e)){
-			return OptimisticUpdateResult.create(helper.updateEntity(e), orig, helper.isUpdated());
-		}else{
-			return OptimisticUpdateResult.create(e, e, false);
+		}catch (Exception e){
+			log.warn("tryOptimisticUpdate ends with exception of type {}", e.getClass().getSimpleName());
+			throw Throwables.propagate(e);
 		}				
 	}
      

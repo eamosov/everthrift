@@ -13,6 +13,7 @@ import org.hibernate.criterion.Projections;
 import org.hibernate.criterion.Restrictions;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.knockchat.hibernate.dao.AbstractDao;
@@ -139,9 +140,15 @@ public class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY extends D
     }
     
     @Override
+    @Transactional
     public void deleteEntity(ENTITY e){
-   		dao.delete(e);   		
-   		_invalidate((PK)e.getPk());
+    	@SuppressWarnings("unchecked")
+		final PK pk = (PK)e.getPk();
+    	final ENTITY _e = dao.findById(pk);
+    	if (_e !=null){
+    		dao.delete(_e);
+    	}
+   		_invalidate(pk);
     }
         
     public AbstractDao<PK, ENTITY> getDao(){
