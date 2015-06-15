@@ -123,7 +123,10 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
 			}else{
 				return OptimisticUpdateResult.create(e, e, false);
 			}			
-		}catch (Exception e){
+		}catch(TException | EntityNotFoundException e){
+			log.warn("tryOptimisticUpdate ends with exception of type {}", e.getClass().getSimpleName());
+			throw e;
+		}catch (Exception e){		
 			log.warn("tryOptimisticUpdate ends with exception of type {}", e.getClass().getSimpleName());
 			throw Throwables.propagate(e);
 		}				
