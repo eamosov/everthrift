@@ -13,6 +13,9 @@ import com.knockchat.utils.LongTimestamp;
 
 public abstract class RwModelFactoryHelper<PK, ENTITY> {
 	
+	public static final int MAX_ITERATIONS = 20;
+	public static final int MAX_TIMEOUT = 100;
+	
     protected abstract ENTITY updateEntityImpl(ENTITY e);
     protected abstract PK extractPk(ENTITY e);
 	        
@@ -53,7 +56,7 @@ public abstract class RwModelFactoryHelper<PK, ENTITY> {
     }
     
     public static <T> T optimisticUpdate(Callable<T> updateFunction) throws OptimisticUpdateFailException, EntityNotFoundException, TException{
-    	return optimisticUpdate(updateFunction, 5, 100);
+    	return optimisticUpdate(updateFunction, MAX_ITERATIONS, MAX_TIMEOUT);
     }
     
     public static <T> T optimisticUpdate(Callable<T> updateFunction, int maxIteration, int maxTimeoutMillis) throws OptimisticUpdateFailException, EntityNotFoundException, TException{

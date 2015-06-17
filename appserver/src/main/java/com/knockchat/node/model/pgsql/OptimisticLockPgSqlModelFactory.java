@@ -10,6 +10,7 @@ import org.apache.thrift.TException;
 import org.hibernate.StaleObjectStateException;
 import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.google.common.base.Throwables;
 import com.knockchat.hibernate.dao.DaoEntityIF;
@@ -78,13 +79,16 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
 							return null;
 						else
 							throw Throwables.propagate(e);
-					}catch(StaleObjectStateException e){						
+					}catch(StaleObjectStateException e){
+						if (TransactionSynchronizationManager.isActualTransactionActive()) {
+							throw e;
+						}
 						log.debug("update fails id= " + id + ", let's try one more time?", e);
 						return null;
 					}finally{
 						mutator.afterTransactionClosed();
 					}
-				}}, 10, 100);
+				}}, RwModelFactoryHelper.MAX_ITERATIONS, RwModelFactoryHelper.MAX_TIMEOUT);
 			
 			if (ret.isUpdated)
 				_invalidate(id);
