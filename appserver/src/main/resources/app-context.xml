@@ -26,7 +26,7 @@
 	    
   <bean id="tBinaryProtocol" class="org.apache.thrift.protocol.TBinaryProtocol.Factory"></bean>
   
-  <bean id="tZlibTransport" class="org.apache.thrift.transport.TZlibTransport.Factory"></bean>  
+  <bean id="tZlibTransport" class="org.apache.thrift.transport.TKnockZlibTransport.Factory"></bean>  
     
   <bean id="ThriftServer" class="com.knockchat.appserver.transport.tcp.ThriftServer">
   	<constructor-arg index="0" ref="tBinaryProtocol"/>

@@ -44,7 +44,7 @@
 		</exec>
 		
 		<exec executable="${thrift.binary}" dir="src/main" failonerror="true">
-			<arg line="-nowarn --gen cocoa -I thrift-includes/META-INF/thrift/ -I thrift" />
+			<arg line="-nowarn --gen cocoa:knock_async -I thrift-includes/META-INF/thrift/ -I thrift" />
 			<arg line="-o ." />
 			<arg line="${file}" />
 		</exec>

@@ -16,11 +16,11 @@ import org.apache.thrift.protocol.TJSONProtocol;
 import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.transport.TFramedTransport;
 import org.apache.thrift.transport.THttpClient;
+import org.apache.thrift.transport.TKnockZlibTransport;
 import org.apache.thrift.transport.TSocket;
 import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportException;
 import org.apache.thrift.transport.TTransportFactory;
-import org.apache.thrift.transport.TZlibTransport;
 
 import com.knockchat.appserver.transport.TWsTransport;
 
@@ -105,8 +105,8 @@ public class BaseThriftClient implements AutoCloseable{
 			}			
 		}else if (proto.equals(Transports.WEBSOCKET_ZLIB)){
 			try {
-				transport = new TWsTransport(new URI("ws://" + hostPort.addr + ":" + hostPort.port + "/thrift_zlib"), 5000, processor, new  TBinaryProtocol.Factory(), new TZlibTransport.Factory(), null, executor);
-				protocol = new TBinaryProtocol(new TZlibTransport(transport));
+				transport = new TWsTransport(new URI("ws://" + hostPort.addr + ":" + hostPort.port + "/thrift_zlib"), 5000, processor, new  TBinaryProtocol.Factory(), new TKnockZlibTransport.Factory(), null, executor);
+				protocol = new TBinaryProtocol(new TKnockZlibTransport(transport));
 			} catch (URISyntaxException e) {
 				throw new RuntimeException(e);
 			}

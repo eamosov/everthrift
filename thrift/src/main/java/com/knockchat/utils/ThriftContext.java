@@ -26,7 +26,7 @@ import org.apache.thrift.transport.TMemoryBuffer;
 import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportException;
 import org.apache.thrift.transport.TTransportFactory;
-import org.apache.thrift.transport.TZlibTransport;
+import org.apache.thrift.transport.TKnockZlibTransport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,7 +63,7 @@ public class ThriftContext implements Closeable{
 	private URI wsUri;
 	private final TProcessor processor;
 	private final TProtocolFactory protocolFactory = new TBinaryProtocol.Factory();
-	private final TTransportFactory transportFactory = new TZlibTransport.Factory();
+	private final TTransportFactory transportFactory = new TKnockZlibTransport.Factory();
 	
 	private final ThreadLocal<InvocationInfo<?>> invocationInfo = new ThreadLocal<InvocationInfo<?>>();
 		
