@@ -155,8 +155,12 @@ public class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY extends D
    		return dao;
     }
        
-	public List<Long> findAllIds(int limit, int offset){
+	public List<PK> findAllIds(int limit, int offset){
 		return (List)getDao().findByCriteria(Restrictions.and(), Projections.property("id"), null, Order.asc("id"), limit, offset);
+	}
+
+	public List<PK> findAllIds(){
+		return (List)getDao().findByCriteria(Restrictions.and(), Projections.property("id"), null, Order.asc("id"), null, null);
 	}
 
 	@Override
