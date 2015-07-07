@@ -2,11 +2,13 @@ package com.knockchat.hibernate.dao;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.hibernate.Criteria;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
@@ -215,23 +217,26 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
     
 	@Override
 	public List<K> findPkByCriteria(Criterion criterion, Order order) {
-		return (List)findByCriteria(criterion, Projections.property("id"), null, order, null, null);
+		return (List)findByCriteria(criterion, Projections.property("id"), null, order !=null ? Collections.singletonList(order): null, null, null);
 	}
 
     @Override
 	public List<V> findByCriteria(Criterion criterion, Order order) {
-    	return findByCriteria(criterion, null, null, order, null, null);
+    	return findByCriteria(criterion, null, null, order !=null ? Collections.singletonList(order): null, null, null);
     }    
 
     @SuppressWarnings("unchecked")
 	@Override
-    public List<V> findByCriteria(Criterion criterion, Projection proj, LockMode lockMode, Order order, Integer limit, Integer offset) {
+    public List<V> findByCriteria(Criterion criterion, Projection proj, LockMode lockMode, List<Order> order, Integer limit, Integer offset) {
         final Pair<Criteria, StatelessSession> pair = createCriteria();
         try {
             final Criteria criteria = pair.first;
             criteria.add(criterion);
-            if (order != null)
-                criteria.addOrder(order);
+            
+            if (!CollectionUtils.isEmpty(order))
+            	for (Order o: order)
+            		if (o!=null)
+            			criteria.addOrder(o);
             
             if (proj !=null)
             	criteria.setProjection(proj);

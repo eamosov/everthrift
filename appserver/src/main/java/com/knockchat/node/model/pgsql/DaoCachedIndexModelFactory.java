@@ -1,6 +1,7 @@
 package com.knockchat.node.model.pgsql;
 
 import java.util.Collection;
+import java.util.Collections;
 
 import net.sf.ehcache.Cache;
 
@@ -27,7 +28,7 @@ public abstract class DaoCachedIndexModelFactory<K, V> extends CachedIndexModelF
 
 	@Override
 	protected Collection<Object[]> loadImpl(Collection<K> keys) {		
-		return dao.findByCriteria(getCriterion(keys), Projections.projectionList().add(Projections.property(getPkProperty())).add(Projections.property(getIndexedProperty())), null, getOrder(), null, null);
+		return dao.findByCriteria(getCriterion(keys), Projections.projectionList().add(Projections.property(getPkProperty())).add(Projections.property(getIndexedProperty())), null, Collections.singletonList(getOrder()), null, null);
 	}
 	
 	protected abstract Criterion getCriterion(Collection<K> keys);

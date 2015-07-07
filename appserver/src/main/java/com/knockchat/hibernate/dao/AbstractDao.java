@@ -50,7 +50,7 @@ public interface AbstractDao<K, V extends DaoEntityIF> {
 
     public List<V> findByCriteria(Criterion criterion, Order order);
 
-    public List<V> findByCriteria(Criterion criterion, Projection proj, LockMode lockMode, Order order, Integer limit, Integer offset);
+    public List<V> findByCriteria(Criterion criterion, Projection proj, LockMode lockMode, List<Order> order, Integer limit, Integer offset);
 
     public ListenableFuture<List<V>> findByCriteriaAsync(Criterion criterion, Order order);
 
