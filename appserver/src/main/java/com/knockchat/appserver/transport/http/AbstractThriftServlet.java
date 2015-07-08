@@ -54,7 +54,14 @@ public abstract class AbstractThriftServlet extends HttpServlet implements Initi
 		final TProtocol out = getProtocolFactory().getProtocol(ot);
 		
 		try {
-			tp.process(in, out, new MessageWrapper(null).setHttpRequestParams(request.getParameterMap()));
+			final MessageWrapper mw = new MessageWrapper(null).setHttpRequestParams(request.getParameterMap());
+			final String xRealIp = request.getHeader(MessageWrapper.HTTP_X_REAL_IP);
+			if (xRealIp != null)
+				mw.setAttribute(MessageWrapper.HTTP_X_REAL_IP, xRealIp);
+			else
+				mw.setAttribute(MessageWrapper.HTTP_X_REAL_IP, request.getRemoteHost() + ":" + request.getRemotePort());
+			
+			tp.process(in, out, mw);
 			
 			response.setContentType(getContentType());
 			response.setContentLength(ot.getPos());

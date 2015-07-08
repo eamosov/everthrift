@@ -51,6 +51,7 @@ import com.knockchat.appserver.controller.ThriftProcessorFactory;
 import com.knockchat.appserver.transport.AsyncRegister;
 import com.knockchat.utils.thrift.AbstractThriftClient;
 import com.knockchat.utils.thrift.InvocationInfo;
+import com.knockchat.utils.thrift.SessionIF;
 import com.knockchat.utils.thrift.ThriftClient;
 import com.knockchat.utils.thrift.ThriftClientFactory;
 
@@ -61,13 +62,14 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
 	private static final Charset UTF_8 = Charset.forName("UTF-8");
 	
 	public static final String UUID = "UUID";
+	public static final String HTTP_X_REAL_IP="HTTP_X_REAL_IP";
 	
 	private class SessionData{
 		final WebSocketSession session;
 		final AsyncRegister async = new AsyncRegister(listeningScheduledExecutorService);
 		final SettableFuture<Void> closeFuture = SettableFuture.create();
 		
-		private AtomicReference<Object> userSessionObject = new AtomicReference<Object>();
+		private AtomicReference<SessionIF> userSessionObject = new AtomicReference<SessionIF>();
 				
 		private WebsocketContentType lastContentType = WebsocketContentType.BINARY;
 		
@@ -305,12 +307,12 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
 			}
 
 			@Override
-			public void setSession(Object data) {				
+			public void setSession(SessionIF data) {				
 				sd.userSessionObject.set(data);				
 			}
 
 			@Override
-			public Object getSession() {
+			public SessionIF getSession() {
 				return sd.userSessionObject.get();				
 			}
 
@@ -322,6 +324,12 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
 			@Override
 			public void addCloseCallback(FutureCallback<Void> callback) {
 				Futures.addCallback(sd.closeFuture, callback);
+			}
+
+			@Override
+			public String getClientIp() {
+				final String xRealIp =  (String)sd.session.getAttributes().get(HTTP_X_REAL_IP);
+				return xRealIp != null ? xRealIp : sd.session.getRemoteAddress().toString();
 			}
 		};
 	}

@@ -1,5 +1,6 @@
 package com.knockchat.appserver.controller;
 
+import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
@@ -9,6 +10,7 @@ import java.util.concurrent.FutureTask;
 
 import javax.annotation.Resource;
 
+import org.apache.commons.lang.NotImplementedException;
 import org.apache.thrift.TApplicationException;
 import org.apache.thrift.TBase;
 import org.apache.thrift.TException;
@@ -19,7 +21,10 @@ import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.protocol.TProtocolFactory;
 import org.apache.thrift.protocol.TProtocolUtil;
 import org.apache.thrift.protocol.TType;
+import org.apache.thrift.transport.TFramedTransport;
 import org.apache.thrift.transport.TMemoryBuffer;
+import org.apache.thrift.transport.TSocket;
+import org.apache.thrift.transport.TTransport;
 import org.jgroups.Address;
 import org.jgroups.blocks.ResponseMode;
 import org.slf4j.Logger;
@@ -28,10 +33,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.knockchat.appserver.cluster.JgroupsMessageDispatcher;
 import com.knockchat.appserver.cluster.thrift.JGroupsThrift;
 import com.knockchat.appserver.model.LazyLoadManager;
+import com.knockchat.utils.thrift.AbstractThriftClient;
 import com.knockchat.utils.thrift.InvocationInfo;
+import com.knockchat.utils.thrift.SessionIF;
 import com.knockchat.utils.thrift.ThriftClient;
 
 /**
@@ -89,8 +98,8 @@ public class ThriftProcessor implements TProcessor{
 				TProtocolUtil.skip( inp, TType.STRUCT );
 				inp.readMessageEnd();
 				
-
-				log.debug("No controllerCls for method {}", msg.name);
+				final SessionIF session = thriftClient.getSession();
+				log.warn("user:{} ip:{} No controllerCls for method {}", session != null ? session.getCredentials() : null, thriftClient.getClientIp(), msg.name);
 				
 				final TMemoryBuffer outT = new TMemoryBuffer(1024);									
 				final TProtocol out = protocolFactory.getProtocol(outT);
@@ -107,9 +116,7 @@ public class ThriftProcessor implements TProcessor{
 			inp.readMessageEnd();
 			
 			final Logger log = LoggerFactory.getLogger(controllerInfo.controllerCls);
-			
-			logStart(log, msg.name, in.getSessionId(), args);
-						
+			logStart(log, thriftClient, msg.name, in.getSessionId(), args);									
 			final ThriftController controller = controllerInfo.makeController(args, new MessageWrapper(null).copyAttributes(in), logEntry, msg.seqid, thriftClient, registry.getType(), this.protocolFactory);
 			LazyLoadManager.enable();
 			final Object ret = controller.handle(args);			
@@ -154,10 +161,60 @@ public class ThriftProcessor implements TProcessor{
 		return process(inp, out, null);
 	}
 	
-	public boolean process(TProtocol inp, TProtocol out, MessageWrapper attributes) throws TException {
+	public boolean process(final TProtocol inp, TProtocol out, final MessageWrapper attributes) throws TException {
 		final TMessage msg = inp.readMessageBegin();
 
 		final ThriftControllerInfo controllerInfo = registry.getController(msg.name);
+		
+		final ThriftClient<Object> thriftClient = new AbstractThriftClient<Object>(null){
+			
+			private SessionIF session;
+
+			@Override
+			public void setSession(SessionIF data) {
+				session = data;
+			}
+
+			@Override
+			public SessionIF getSession() {
+				return session;
+			}
+
+			@Override
+			public String getSessionId() {
+				return null;
+			}
+
+			@Override
+			public String getClientIp() {
+				
+				if (attributes !=null)
+					return (String)attributes.getAttribute(MessageWrapper.HTTP_X_REAL_IP);
+				
+				TTransport inT = inp.getTransport();
+				if (inT instanceof TFramedTransport){
+					try {
+						Field f = TFramedTransport.class.getDeclaredField("transport_");
+						f.setAccessible(true);
+						inT = (TTransport)f.get(inT);
+						if (inT instanceof TSocket){
+							return ((TSocket) inT).getSocket().getRemoteSocketAddress().toString();
+						}						
+					} catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
+						log.warn("cound't get remote address for transport of type {}", inT.getClass().getSimpleName());
+					}
+				}
+				return null;
+			}
+
+			@Override
+			public void addCloseCallback(FutureCallback<Void> callback) {				
+			}
+
+			@Override
+			protected ListenableFuture thriftCall(Object sessionId,int timeout, InvocationInfo tInfo) throws TException {
+				throw new NotImplementedException();
+			}};
 
 		try{
 			
@@ -165,7 +222,9 @@ public class ThriftProcessor implements TProcessor{
 				TProtocolUtil.skip( inp, TType.STRUCT );
 				inp.readMessageEnd();
 				
-				log.debug("No controllerCls for method {}", msg.name);
+				final SessionIF session = thriftClient.getSession();
+				log.warn("user:{} ip:{} No controllerCls for method {}", session != null ? session.getCredentials() : null, thriftClient.getClientIp(), msg.name);
+
 								
 				final TApplicationException x = new TApplicationException( TApplicationException.UNKNOWN_METHOD, "No controllerCls for method " + msg.name);
 				out.writeMessageBegin( new TMessage( msg.name, TMessageType.EXCEPTION, msg.seqid));
@@ -181,11 +240,11 @@ public class ThriftProcessor implements TProcessor{
 			
 			final Logger _log = LoggerFactory.getLogger(controllerInfo.controllerCls);
 			
-			logStart(_log, msg.name, null, args);
+			logStart(_log, thriftClient, msg.name, null, args);
 			
 			final LogEntry logEntry = new LogEntry(msg.name);
 			
-			final ThriftController controller = controllerInfo.makeController(args, attributes, logEntry, msg.seqid, null, registry.getType(), this.protocolFactory);			
+			final ThriftController controller = controllerInfo.makeController(args, attributes, logEntry, msg.seqid, thriftClient, registry.getType(), this.protocolFactory);			
 			
 			/*
 			 * TODO т.к. текущий метов обрабатывает только @RpcSyncTcp контроллеры, то циклический вызовов не получится,
@@ -223,17 +282,19 @@ public class ThriftProcessor implements TProcessor{
 		return true;
 	}
 	
-	private void logStart(Logger l, String method, String correlationId, Object args){		
+	private void logStart(Logger l, ThriftClient thriftClient, String method, String correlationId, Object args){		
 		if(l.isDebugEnabled()){
 			final String data = args == null ? null : args.toString();
-			l.debug("START: method:{} args:{} correlationId:{}", method, data !=null ? ((data.length() > 200 && !log.isTraceEnabled()) ? data.substring(0, 199) + "..." : data) : null, correlationId);
+			final SessionIF session = thriftClient !=null ? thriftClient.getSession() : null;
+			l.debug("user:{} ip:{} START method:{} args:{} correlationId:{}", session !=null ? session.getCredentials() : null, thriftClient !=null ? thriftClient.getClientIp() : null, method, data !=null ? ((data.length() > 200 && !log.isTraceEnabled()) ? data.substring(0, 199) + "..." : data) : null, correlationId);
 		}
 	}
 	
 	public static void logEnd(Logger l, ThriftController c, String method, String correlationId, Object ret){
 		if (l.isDebugEnabled()){
-			final String data = ret == null ? null : ret.toString();  
-			l.debug("END: method:{} ctrl:{} delay:{} mcs correlationId: {} return: {}", method, c.ctrlLog(), c.getExecutionMcs(), correlationId, data !=null ? ((data.length() > 200 && !log.isTraceEnabled()) ? data.substring(0, 199) + "..." : data) : null);
+			final String data = ret == null ? null : ret.toString();
+			final SessionIF session = c.thriftClient !=null ? c.thriftClient.getSession() : null;
+			l.debug("user:{} ip:{} END method:{} ctrl:{} delay:{} mcs correlationId: {} return: {}", session !=null ? session.getCredentials() : null, c.thriftClient !=null ? c.thriftClient.getClientIp() : null, method, c.ctrlLog(), c.getExecutionMcs(), correlationId, data !=null ? ((data.length() > 200 && !log.isTraceEnabled()) ? data.substring(0, 199) + "..." : data) : null);
 		}		
 	}
 	

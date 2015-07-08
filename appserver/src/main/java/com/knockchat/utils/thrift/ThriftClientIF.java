@@ -12,9 +12,10 @@ public interface ThriftClientIF {
 	@SuppressWarnings({ "rawtypes"})
 	<T> ListenableFuture<T> thriftCallByInfo(int timeout, InvocationInfo tInfo) throws TException;
 
-	void setSession(Object data);
-	Object getSession();
+	void setSession(SessionIF data);
+	SessionIF getSession();
 	
 	String getSessionId();
+	String getClientIp();
 	void addCloseCallback(FutureCallback<Void> callback);
 }
