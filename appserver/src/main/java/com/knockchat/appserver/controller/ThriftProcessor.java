@@ -52,6 +52,9 @@ public class ThriftProcessor implements TProcessor{
 	
 	private final static Logger log = LoggerFactory.getLogger(ThriftProcessor.class);
 	
+	private final static Logger logControllerStart = LoggerFactory.getLogger("controller.start");
+	private final static Logger logControllerEnd = LoggerFactory.getLogger("controller.end");
+	
 	private final ThriftControllerRegistry registry;
 	
 	@Autowired
@@ -283,18 +286,20 @@ public class ThriftProcessor implements TProcessor{
 	}
 	
 	private void logStart(Logger l, ThriftClient thriftClient, String method, String correlationId, Object args){		
-		if(l.isDebugEnabled()){
+		if(l.isDebugEnabled() || logControllerStart.isDebugEnabled()){
+			final Logger _l = l.isDebugEnabled() ? l : logControllerStart;
 			final String data = args == null ? null : args.toString();
 			final SessionIF session = thriftClient !=null ? thriftClient.getSession() : null;
-			l.debug("user:{} ip:{} START method:{} args:{} correlationId:{}", session !=null ? session.getCredentials() : null, thriftClient !=null ? thriftClient.getClientIp() : null, method, data !=null ? ((data.length() > 200 && !log.isTraceEnabled()) ? data.substring(0, 199) + "..." : data) : null, correlationId);
+			_l.debug("user:{} ip:{} START method:{} args:{} correlationId:{}", session !=null ? session.getCredentials() : null, thriftClient !=null ? thriftClient.getClientIp() : null, method, data !=null ? ((data.length() > 200 && !(l.isTraceEnabled() || logControllerEnd.isTraceEnabled())) ? data.substring(0, 199) + "..." : data) : null, correlationId);
 		}
 	}
 	
 	public static void logEnd(Logger l, ThriftController c, String method, String correlationId, Object ret){
-		if (l.isDebugEnabled()){
+		if (l.isDebugEnabled() || logControllerEnd.isDebugEnabled()){
+			final Logger _l = l.isDebugEnabled() ? l : logControllerEnd;
 			final String data = ret == null ? null : ret.toString();
 			final SessionIF session = c.thriftClient !=null ? c.thriftClient.getSession() : null;
-			l.debug("user:{} ip:{} END method:{} ctrl:{} delay:{} mcs correlationId: {} return: {}", session !=null ? session.getCredentials() : null, c.thriftClient !=null ? c.thriftClient.getClientIp() : null, method, c.ctrlLog(), c.getExecutionMcs(), correlationId, data !=null ? ((data.length() > 200 && !log.isTraceEnabled()) ? data.substring(0, 199) + "..." : data) : null);
+			_l.debug("user:{} ip:{} END method:{} ctrl:{} delay:{} mcs correlationId: {} return: {}", session !=null ? session.getCredentials() : null, c.thriftClient !=null ? c.thriftClient.getClientIp() : null, method, c.ctrlLog(), c.getExecutionMcs(), correlationId, data !=null ? ((data.length() > 200 && !(l.isTraceEnabled() || logControllerEnd.isTraceEnabled())) ? data.substring(0, 199) + "..." : data) : null);
 		}		
 	}
 	
