@@ -26,7 +26,7 @@ public class MessageWrapper implements Serializable{
 	public static String OUT_CHANNEL = "OUT_CHANNEL";
 	public static String MESSAGE_HEADERS = "MESSAGE_HEADERS";
 	public static String HTTP_REQUEST_PARAMS = "HTTP_REQUEST_PARAMS";
-	public static String HTTP_X_REAL_IP = "HTTP_X_REAL_IP";
+	public static String HTTP_X_REAL_IP = "X-Real-IP";
 			
 	private TTransport tTransport;
 	private Map<String, Object> attributes;

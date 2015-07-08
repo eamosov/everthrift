@@ -62,7 +62,7 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
 	private static final Charset UTF_8 = Charset.forName("UTF-8");
 	
 	public static final String UUID = "UUID";
-	public static final String HTTP_X_REAL_IP="HTTP_X_REAL_IP";
+	public static final String HTTP_X_REAL_IP="X-Real-IP";
 	
 	private class SessionData{
 		final WebSocketSession session;

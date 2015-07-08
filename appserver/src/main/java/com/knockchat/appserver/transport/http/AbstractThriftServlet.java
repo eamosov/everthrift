@@ -43,7 +43,7 @@ public abstract class AbstractThriftServlet extends HttpServlet implements Initi
 	@Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
 				
-		log.debug("Handle /thrift request");
+		log.debug("Handle thrift request on THttpTransport");
 		
 		final byte[] packet = IOUtils.readBytes(request.getInputStream());
 		
