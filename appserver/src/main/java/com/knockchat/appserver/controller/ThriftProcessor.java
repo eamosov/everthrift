@@ -101,8 +101,7 @@ public class ThriftProcessor implements TProcessor{
 				TProtocolUtil.skip( inp, TType.STRUCT );
 				inp.readMessageEnd();
 				
-				final SessionIF session = thriftClient.getSession();
-				log.warn("user:{} ip:{} No controllerCls for method {}", session != null ? session.getCredentials() : null, thriftClient.getClientIp(), msg.name);
+				logNoController(thriftClient, msg.name, in.getSessionId());
 				
 				final TMemoryBuffer outT = new TMemoryBuffer(1024);									
 				final TProtocol out = protocolFactory.getProtocol(outT);
@@ -225,9 +224,7 @@ public class ThriftProcessor implements TProcessor{
 				TProtocolUtil.skip( inp, TType.STRUCT );
 				inp.readMessageEnd();
 				
-				final SessionIF session = thriftClient.getSession();
-				log.warn("user:{} ip:{} No controllerCls for method {}", session != null ? session.getCredentials() : null, thriftClient.getClientIp(), msg.name);
-
+				logNoController(thriftClient, msg.name, null);
 								
 				final TApplicationException x = new TApplicationException( TApplicationException.UNKNOWN_METHOD, "No controllerCls for method " + msg.name);
 				out.writeMessageBegin( new TMessage( msg.name, TMessageType.EXCEPTION, msg.seqid));
@@ -285,13 +282,21 @@ public class ThriftProcessor implements TProcessor{
 		return true;
 	}
 	
-	private void logStart(Logger l, ThriftClient thriftClient, String method, String correlationId, Object args){		
+	private static void logStart(Logger l, ThriftClient thriftClient, String method, String correlationId, Object args){		
 		if(l.isDebugEnabled() || logControllerStart.isDebugEnabled()){
 			final Logger _l = l.isDebugEnabled() ? l : logControllerStart;
 			final String data = args == null ? null : args.toString();
 			final SessionIF session = thriftClient !=null ? thriftClient.getSession() : null;
 			_l.debug("user:{} ip:{} START method:{} args:{} correlationId:{}", session !=null ? session.getCredentials() : null, thriftClient !=null ? thriftClient.getClientIp() : null, method, data !=null ? ((data.length() > 200 && !(l.isTraceEnabled() || logControllerEnd.isTraceEnabled())) ? data.substring(0, 199) + "..." : data) : null, correlationId);
 		}
+	}
+	
+	private static void logNoController(ThriftClient thriftClient, String method, String correlationId){
+		if(log.isWarnEnabled() || logControllerStart.isWarnEnabled()){
+			final Logger _l = log.isWarnEnabled() ? log : logControllerStart;
+			final SessionIF session = thriftClient !=null ? thriftClient.getSession() : null;
+			_l.warn("user:{} ip:{} No controllerCls for method:{} correlationId:{}", session != null ? session.getCredentials() : null, thriftClient.getClientIp(), method, correlationId);
+		}		
 	}
 	
 	public static void logEnd(Logger l, ThriftController c, String method, String correlationId, Object ret){
