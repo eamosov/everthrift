@@ -244,6 +244,10 @@ public abstract class ThriftController<ArgsType extends TBase, ResultType> {
 	public long getExecutionMcs(){
 		return (endNanos-startNanos)/1000;
 	}
+	
+	public long getWarnExecutionMcsLimit(){
+		return 100000;
+	}
 		
 	public static void resetExecutionLog(){
 		rpcControllesStats.clear();

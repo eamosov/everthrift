@@ -300,11 +300,23 @@ public class ThriftProcessor implements TProcessor{
 	}
 	
 	public static void logEnd(Logger l, ThriftController c, String method, String correlationId, Object ret){
-		if (l.isDebugEnabled() || logControllerEnd.isDebugEnabled()){
-			final Logger _l = l.isDebugEnabled() ? l : logControllerEnd;
+		
+		if (l.isDebugEnabled() || logControllerEnd.isDebugEnabled() ||
+				(c.getExecutionMcs() > c.getWarnExecutionMcsLimit() && (l.isWarnEnabled() || logControllerEnd.isWarnEnabled()))){
+						
 			final String data = ret == null ? null : ret.toString();
 			final SessionIF session = c.thriftClient !=null ? c.thriftClient.getSession() : null;
-			_l.debug("user:{} ip:{} END method:{} ctrl:{} delay:{} mcs correlationId: {} return: {}", session !=null ? session.getCredentials() : null, c.thriftClient !=null ? c.thriftClient.getClientIp() : null, method, c.ctrlLog(), c.getExecutionMcs(), correlationId, data !=null ? ((data.length() > 200 && !(l.isTraceEnabled() || logControllerEnd.isTraceEnabled())) ? data.substring(0, 199) + "..." : data) : null);
+			final String format = "user:{} ip:{} END method:{} ctrl:{} delay:{} mcs correlationId: {} return: {}";
+			final Object args[] = new Object[]{session !=null ? session.getCredentials() : null, c.thriftClient !=null ? c.thriftClient.getClientIp() : null, method, c.ctrlLog(), c.getExecutionMcs(), correlationId, data !=null ? ((data.length() > 200 && !(l.isTraceEnabled() || logControllerEnd.isTraceEnabled())) ? data.substring(0, 199) + "..." : data) : null};
+			
+			final Logger _l;
+			if (c.getExecutionMcs() > c.getWarnExecutionMcsLimit()){
+				_l = l.isWarnEnabled() ? l : logControllerEnd;
+				_l.warn(format, args);
+			}else{
+				_l = l.isDebugEnabled() ? l : logControllerEnd;
+				_l.debug(format, args);
+			}						
 		}		
 	}
 	
