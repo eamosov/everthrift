@@ -3,6 +3,9 @@ package com.knockchat.utils;
 import java.util.Date;
 
 public class LongTimestamp {
+	
+	public final static long DAY = 3600L * 24L * 1000L;
+	public final static long MONTH = DAY * 30L;
 
 	public static long now(){
 		return System.currentTimeMillis();
