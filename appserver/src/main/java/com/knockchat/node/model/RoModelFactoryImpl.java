@@ -39,6 +39,10 @@ public abstract class RoModelFactoryImpl<PK, ENTITY, A>  implements RoModelFacto
     
     @Override
     final public Collection<ENTITY> findEntityById(Collection<PK> ids){
+    	
+    	if (CollectionUtils.isEmpty(ids))
+    		return Collections.emptyList();
+    	
     	return Collections2.filter(findEntityByIdAsMap(ids).values(), Predicates.notNull());
     }        
 	
@@ -61,7 +65,7 @@ public abstract class RoModelFactoryImpl<PK, ENTITY, A>  implements RoModelFacto
     @Override
 	public Map<List<PK>, List<ENTITY>> findEntityByCollectionIds(Collection<List<PK>> listCollection) {
     	
-    	if (listCollection.size() == 0)
+    	if (CollectionUtils.isEmpty(listCollection))
     		return Collections.emptyMap();
     	
         final List<PK> totalIds = new ArrayList<>();

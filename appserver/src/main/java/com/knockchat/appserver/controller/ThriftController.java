@@ -203,7 +203,7 @@ public abstract class ThriftController<ArgsType extends TBase, ResultType> {
 		final GenericMessage<MessageWrapper> s = new GenericMessage<MessageWrapper>(new MessageWrapper(payload).copyAttributes(attributes).removeCorrelationHeaders(), inHeaders);
 		outChannel.send(s);
 		
-		ThriftProcessor.logEnd(LoggerFactory.getLogger(this.getClass()), this, this.getClass().getSimpleName(), attributes.getSessionId(), answer);
+		ThriftProcessor.logEnd(log, this, this.getClass().getSimpleName(), attributes.getSessionId(), answer);
 				
 		return true;
 	}

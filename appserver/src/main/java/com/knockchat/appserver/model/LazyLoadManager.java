@@ -255,7 +255,9 @@ public class LazyLoadManager {
 	
 	public static void load(final String scenario, final String[] methods, int maxIterations, final Object o){
 		
-		if (o == null)
+		if (o == null ||
+			(o instanceof Collection && ((Collection)o).isEmpty()) ||
+			(o instanceof Map && ((Map)o).isEmpty()))
 			return;
 		
 		final LoadList ll = get();
