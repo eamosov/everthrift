@@ -5,6 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
@@ -98,5 +99,19 @@ public class ClassUtils {
 		
 		return false;
 	}
+	
+	@SuppressWarnings("rawtypes")
+	public static Field getDeclaredField(Class cls, String fieldName) throws NoSuchFieldException, SecurityException{		
+		try{
+			return cls.getDeclaredField(fieldName);
+		}catch(NoSuchFieldException e){
+			final Class sc = cls.getSuperclass();
+			if (sc != Object.class && sc !=null)
+				return getDeclaredField(sc, fieldName);
+			else
+				throw e;			
+		}
+	}
+	
 	
 }

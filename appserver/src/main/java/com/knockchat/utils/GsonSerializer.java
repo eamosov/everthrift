@@ -104,9 +104,9 @@ public class GsonSerializer {
 				
 				final Field f;
 				try {
-					f = ((Class)typeOfT).getDeclaredField(e.getKey());
+					f = ClassUtils.getDeclaredField((Class)typeOfT, e.getKey());
 				} catch (SecurityException | NoSuchFieldException e1) {
-					throw new JsonParseException(e1);
+					throw new JsonParseException("class " + ((Class)typeOfT).getSimpleName(), e1);
 				}
 								
 				p.set(o, context.deserialize(e.getValue(), f.getGenericType()));				
