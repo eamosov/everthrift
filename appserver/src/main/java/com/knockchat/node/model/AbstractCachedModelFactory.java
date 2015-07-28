@@ -179,15 +179,20 @@ public abstract class AbstractCachedModelFactory<PK,ENTITY, A> extends RoModelFa
 			
 			cache = cm.getCache(cacheName);
 			if (cache == null)
-				throw new RuntimeException("Cache with name '" + cacheName + "' not found");
-			
-			final List<CacheLoader> origLoaders = cache.getRegisteredCacheLoaders();			
-			cache.registerCacheLoader(new CacheLoaderDecorator(CollectionUtils.isEmpty(origLoaders) ? null : origLoaders.get(0)));
+				throw new RuntimeException("Cache with name '" + cacheName + "' not found");			
 		}
 		
 		if (cache !=null){
-			final List<CacheLoader> origLoaders = cache.getRegisteredCacheLoaders();			
-			cache.registerCacheLoader(new CacheLoaderDecorator(CollectionUtils.isEmpty(origLoaders) ? null : origLoaders.get(0)));			
+			final List<CacheLoader> origLoaders = cache.getRegisteredCacheLoaders();
+			if (CollectionUtils.isEmpty(origLoaders)){
+				cache.registerCacheLoader(new CacheLoaderDecorator(null));
+			}else if (origLoaders.size() == 1 && origLoaders.get(0).getClass().equals(CacheLoaderDecorator.class)){
+				log.debug("CacheLoaderDecorator has been allready set");
+			}else{
+				log.error("origLoaders:{}", origLoaders);
+				throw new RuntimeException("unexpected cache loader");
+			}
+			//cache.registerCacheLoader(new CacheLoaderDecorator(CollectionUtils.isEmpty(origLoaders) ? null : origLoaders.get(0)));			
 		}else{
 			log.info("cache is disabled");
 		}		
