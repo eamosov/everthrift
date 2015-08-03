@@ -66,6 +66,7 @@ import com.knockchat.proactor.handlers.Handlers;
 import com.knockchat.proactor.handlers.mcb.CachedMcbHandlerFactory;
 import com.knockchat.sql.migration.MigrationProcessor;
 import com.knockchat.utils.NetUtils;
+import com.knockchat.utils.PosAppInitializingBean;
 import com.knockchat.utils.SocketUtils;
 import com.knockchat.utils.meta.MetaClasses;
 import com.knockchat.utils.meta.asm.AsmMetaClassFactory;
@@ -175,6 +176,13 @@ public class AppserverApplication {
         if (env.getProperty("jetty") != null) {
             initJetty();
         }
+        
+        for (PosAppInitializingBean bean :context.getBeansOfType(PosAppInitializingBean.class).values())
+			try {
+				bean.afterAppInitizlized();
+			} catch (Exception e) {
+				throw new RuntimeException(e);
+			}
     }
 
     private void runMigrator(String rootPackage) {
