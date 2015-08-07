@@ -93,6 +93,10 @@ public abstract class ThriftControllerRegistry implements InitializingBean{
 		return map.keySet();
 	}
 	
+	public Map<String, ThriftControllerInfo> getControllers(){
+		return map;
+	}
+	
 	private ThriftControllerInfo tryRegisterController(final Class cls, Class argument){
 		
 		if (!TBase.class.isAssignableFrom(argument)){

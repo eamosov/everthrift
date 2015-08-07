@@ -14,13 +14,13 @@ import org.springframework.util.StringUtils;
 import com.knockchat.utils.thrift.ThriftClient;
 
 public class ThriftControllerInfo {
-	final Class<? extends ThriftController> controllerCls;
-	final String serviceName;
-	final String methodName;
-	final Class<? extends TBase> argCls;
-	public final Class<? extends TBase> resultCls;
-	final Method findResultFieldByName;
-	final private ApplicationContext context;
+	private final Class<? extends ThriftController> controllerCls;
+	private final String serviceName;
+	private final String methodName;
+	private Class<? extends TBase> argCls;
+	private final Class<? extends TBase> resultCls;
+	private final Method findResultFieldByName;
+	private final ApplicationContext context;
 
 	public ThriftControllerInfo(ApplicationContext context, Class<? extends ThriftController> controllerCls,
 			String serviceName, String methodName,
@@ -94,5 +94,17 @@ public class ThriftControllerInfo {
 		final ThriftController ctrl = context.getBean(controllerCls);
 		ctrl.setup(args, this, attributes, logEntry, seqId, thriftClient, registryAnn, protocolFactory);
 		return ctrl;
+	}
+
+	public String getServiceName() {
+		return serviceName;
+	}
+
+	public String getMethodName() {
+		return methodName;
+	}
+
+	public Class<? extends ThriftController> getControllerCls() {
+		return controllerCls;
 	}
 }

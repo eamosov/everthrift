@@ -26,15 +26,15 @@ public class JGroupsThriftAdapter implements InitializingBean{
 	private ApplicationContext applicationContext;
 	
 	@Autowired
-	private RpcJGroupsRegistry intRegistry;
+	private RpcJGroupsRegistry rpcJGroupsRegistry;
 	
 	@Autowired
-	private ThriftProcessorFactory tpf;
-	private ThriftProcessor tp;
+	private ThriftProcessorFactory thriftProcessorFactory;
+	private ThriftProcessor thriftProcessor;
 	
 	public Object handleIn(Message<MessageWrapper> m){
 
-		log.debug("handleIn: {}, adapter={}, processor={}", new Object[]{m, this, tp});
+		log.debug("handleIn: {}, adapter={}, processor={}", new Object[]{m, this, thriftProcessor});
 				
 		if (m.getHeaders().getReplyChannel() == null)
 			log.warn("reply channel is null for message: {}", m);
@@ -44,7 +44,7 @@ public class JGroupsThriftAdapter implements InitializingBean{
 			w.setMessageHeaders(m.getHeaders());
 			w.setOutChannel(applicationContext.getBean((String)m.getHeaders().getReplyChannel(), MessageChannel.class));
 			
-			return tp.process(w, null);
+			return thriftProcessor.process(w, null);
 		} catch (Exception e) {
 			log.error("Exception while execution thrift processor:", e);
 			return null;
@@ -53,7 +53,7 @@ public class JGroupsThriftAdapter implements InitializingBean{
 	
 	public Object handleOut(Message<MessageWrapper> m) throws Exception{
 		
-		log.debug("handleOut: {}, adapter={}, processor={}", new Object[]{m, this, tp});
+		log.debug("handleOut: {}, adapter={}, processor={}", new Object[]{m, this, thriftProcessor});
 		
 		final MessageWrapper w = m.getPayload();
 		
@@ -70,7 +70,7 @@ public class JGroupsThriftAdapter implements InitializingBean{
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
-		tp = tpf.getThriftProcessor(intRegistry, new TBinaryProtocol.Factory());		
+		thriftProcessor = thriftProcessorFactory.getThriftProcessor(rpcJGroupsRegistry, new TBinaryProtocol.Factory());		
 	}
 
 }

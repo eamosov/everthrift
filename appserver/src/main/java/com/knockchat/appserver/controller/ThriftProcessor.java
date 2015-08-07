@@ -117,7 +117,7 @@ public class ThriftProcessor implements TProcessor{
 			args.read(inp);
 			inp.readMessageEnd();
 			
-			final Logger log = LoggerFactory.getLogger(controllerInfo.controllerCls);
+			final Logger log = LoggerFactory.getLogger(controllerInfo.getControllerCls());
 			logStart(log, thriftClient, msg.name, in.getSessionId(), args);									
 			final ThriftController controller = controllerInfo.makeController(args, new MessageWrapper(null).copyAttributes(in), logEntry, msg.seqid, thriftClient, registry.getType(), this.protocolFactory);
 			LazyLoadManager.enable();
@@ -140,7 +140,7 @@ public class ThriftProcessor implements TProcessor{
 			public Map<Address, Object> call() {
 				try {
 					final Set<Address> me = Collections.singleton(jgroupsMessageDispatcher.getLocalAddress());
-					final InvocationInfo ii = new InvocationInfo(msg.name, args, ctrl.resultCls.getConstructor());
+					final InvocationInfo ii = new InvocationInfo(msg.name, args, ctrl.getControllerCls().getConstructor());
 					final Map<Address, Object> clusterResults = jGroupsThrift.thriftCall(null, me, ann.timeout(), msg.seqid, ann.value(), ii);
 					log.debug("Cluster results:{}", clusterResults);
 					return clusterResults;
@@ -160,7 +160,11 @@ public class ThriftProcessor implements TProcessor{
 
 	@Override
 	public boolean process(TProtocol inp, TProtocol out) throws TException {
-		return process(inp, out, null);
+		try{
+			return process(inp, out, null);
+		}catch(RuntimeException e){
+			return true;
+		}
 	}
 	
 	public boolean process(final TProtocol inp, TProtocol out, final MessageWrapper attributes) throws TException {
@@ -238,7 +242,7 @@ public class ThriftProcessor implements TProcessor{
 			args.read(inp);
 			inp.readMessageEnd();
 			
-			final Logger _log = LoggerFactory.getLogger(controllerInfo.controllerCls);
+			final Logger _log = LoggerFactory.getLogger(controllerInfo.getControllerCls());
 			
 			logStart(_log, thriftClient, msg.name, null, args);
 			
@@ -275,8 +279,9 @@ public class ThriftProcessor implements TProcessor{
 		}catch (AsyncAnswer e){
 			log.error("Processor interface not support AsyncAnswer, controllerCls");
 			throw new RuntimeException("Processor interface not support AsyncAnswer", e);
-		}catch (Exception e){
+		}catch (RuntimeException e){
 			log.error("Exception while serving thrift request", e);
+			throw e;
 		}
 		
 		return true;

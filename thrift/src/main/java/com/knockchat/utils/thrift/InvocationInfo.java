@@ -18,7 +18,10 @@ import org.apache.thrift.transport.TTransport;
 
 import com.google.common.util.concurrent.AbstractFuture;
 
+@SuppressWarnings("rawtypes")
 public class InvocationInfo<T> extends AbstractFuture<T>{
+	public final String fullMethodName;
+	public final String serviceName;
 	public final String methodName;
 	public final TBase args;
 	public final Constructor<? extends TBase> resultInit;
@@ -26,9 +29,12 @@ public class InvocationInfo<T> extends AbstractFuture<T>{
 	
 	private int seqId;
 
-	public InvocationInfo(String methodName, TBase args, Constructor<? extends TBase> resultInit) {
+	public InvocationInfo(String fullMethodName, TBase args, Constructor<? extends TBase> resultInit) {
 		super();
-		this.methodName = methodName;
+		this.fullMethodName = fullMethodName;
+		final String[] m = fullMethodName.split(":");
+		this.serviceName = m[0];
+		this.methodName = m[1];
 		this.args = args;
 		this.resultInit = resultInit;
 		this.asyncMethodCallback = null;
@@ -36,10 +42,27 @@ public class InvocationInfo<T> extends AbstractFuture<T>{
 
 	public InvocationInfo(String serviceName, String methodName, TBase args, Constructor<? extends TBase> resultInit, AsyncMethodCallback asyncMethodCallback) {
 		super();
-		this.methodName = serviceName + ":" + methodName;
+		this.fullMethodName = serviceName + ":" + methodName;
+		this.serviceName = serviceName;
+		this.methodName = methodName;
 		this.args = args;
 		this.resultInit = resultInit;
 		this.asyncMethodCallback = asyncMethodCallback;
+	}
+	
+	public void buildCall(int seqId, TTransport outT, TProtocolFactory protocolFactory){
+		this.seqId = seqId;
+					
+		final TProtocol outProtocol = protocolFactory.getProtocol(outT);
+		
+		try {
+			outProtocol.writeMessageBegin(new TMessage(fullMethodName, TMessageType.CALL, seqId));
+		    args.write(outProtocol);
+		    outProtocol.writeMessageEnd();
+		    outProtocol.getTransport().flush();									
+		} catch (TException e) {
+			throw new RuntimeException(e);
+		}							
 	}
 	
 	/**
@@ -53,22 +76,10 @@ public class InvocationInfo<T> extends AbstractFuture<T>{
 	 * payload.array(), payload.position(), payload.limit() - payload.position()
 	 */
 	public TMemoryBuffer buildCall(int seqId, TProtocolFactory protocolFactory){
-		this.seqId = seqId;
 		
 		final TMemoryBuffer outT = new TMemoryBuffer(1024);
-			
-		final TProtocol outProtocol = protocolFactory.getProtocol(outT);
-		
-		try {
-			outProtocol.writeMessageBegin(new TMessage(methodName, TMessageType.CALL, seqId));
-		    args.write(outProtocol);
-		    outProtocol.writeMessageEnd();
-		    outProtocol.getTransport().flush();
-					
-			return outT;				
-		} catch (TException e) {
-			throw new RuntimeException(e);
-		}							
+		buildCall(seqId, outT, protocolFactory);
+		return outT;				
 	}
 	
 	public T setReply(byte[] data, TProtocolFactory protocolFactory) throws TException{
@@ -79,6 +90,7 @@ public class InvocationInfo<T> extends AbstractFuture<T>{
 		return setReply(new TMemoryInputTransport(data, offset, length), protocolFactory);
 	}
 	
+	@SuppressWarnings("unchecked")
 	public T setReply(TTransport inT, TProtocolFactory protocolFactory) throws TException{
 		try{
 			final T ret = (T)this.parseReply(inT, protocolFactory);
@@ -94,6 +106,7 @@ public class InvocationInfo<T> extends AbstractFuture<T>{
 		super.setException(e);
 	}
 			
+	@SuppressWarnings("unchecked")
 	private Object parseReply(TTransport inT, TProtocolFactory protocolFactory) throws TException{
 		final TProtocol inProtocol = protocolFactory.getProtocol(inT);
 		
@@ -105,15 +118,15 @@ public class InvocationInfo<T> extends AbstractFuture<T>{
 		}
 		
 		if (msg.type != TMessageType.REPLY){
-			throw new TApplicationException(TApplicationException.INVALID_MESSAGE_TYPE,  this.methodName + " failed: invalid msg type"); 
+			throw new TApplicationException(TApplicationException.INVALID_MESSAGE_TYPE,  this.fullMethodName + " failed: invalid msg type"); 
 		}				
 		
 		if (msg.seqid != seqId) {
-			throw new TApplicationException(TApplicationException.BAD_SEQUENCE_ID, methodName + " failed: out of sequence response");
+			throw new TApplicationException(TApplicationException.BAD_SEQUENCE_ID, fullMethodName + " failed: out of sequence response");
 		}
 		
-		if (!msg.name.equals(this.methodName)){
-			throw new TApplicationException(TApplicationException.WRONG_METHOD_NAME, methodName + " failed: invalid method name '" + msg.name + "' in reply. Need '" + this.methodName + "'");
+		if (!msg.name.equals(this.fullMethodName)){
+			throw new TApplicationException(TApplicationException.WRONG_METHOD_NAME, fullMethodName + " failed: invalid method name '" + msg.name + "' in reply. Need '" + this.fullMethodName + "'");
 		}
 		
 		final TBase result;
@@ -166,6 +179,6 @@ public class InvocationInfo<T> extends AbstractFuture<T>{
 
 	@Override
 	public String toString() {
-		return "InvocationInfo [" + methodName + "(" + args + "), seqId=" + seqId + "]";
+		return "InvocationInfo [" + fullMethodName + "(" + args + "), seqId=" + seqId + "]";
 	}								
 }
