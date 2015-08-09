@@ -2,6 +2,7 @@ package com.knockchat.appserver.model;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.thrift.TBase;
 import org.slf4j.Logger;
@@ -10,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Function;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
 import com.knockchat.utils.ClassUtils;
 import com.knockchat.utils.thrift.scanner.ScenarioAwareIF;
 import com.knockchat.utils.thrift.scanner.TBaseScanHandler;
@@ -118,6 +120,8 @@ public class LazyLoadManager {
 
 	public static class LoadList{
 		final Multimap<Function<Iterable, Integer>, Object> loadList = HashMultimap.create();
+		final Set<Object> uniqSet = Sets.newIdentityHashSet();
+		
 		boolean buildLoadList;
 		private boolean enabled=true;
 				
@@ -140,7 +144,7 @@ public class LazyLoadManager {
 			//loadList.clear();
 		}
 		
-		public void start(){
+		private void start(){
 			loadList.clear();
 			buildLoadList = true;
 		}
@@ -176,6 +180,8 @@ public class LazyLoadManager {
 			int lap=0;			
 			int nLoaded;
 			
+			uniqSet.clear();
+			
 			do{
 				nLoaded =0;
 				start();
@@ -197,6 +203,8 @@ public class LazyLoadManager {
 				lap++;
 				nAllLoaded += nLoaded;
 			}while(nLoaded > 0 && lap < maxIterations);
+			
+			uniqSet.clear();
 			
 			return nAllLoaded;
 		}
@@ -239,7 +247,11 @@ public class LazyLoadManager {
 	public static boolean addToLoad(Function<Iterable, Integer> function, Object object){
 		final LoadList l = get();
 		if (l.buildLoadList){
-			l.loadList.put(function, object);
+			if (l.uniqSet.add(object)){
+				l.loadList.put(function, object);
+			}else{
+				log.debug("skip duplicated: {}", object);
+			}			
 			return true;
 		}
 		return false;

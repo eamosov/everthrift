@@ -12,7 +12,7 @@ import org.apache.commons.collections.CollectionUtils;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
-public abstract class CachedIndexModelFactory<PK, ENTITY> extends AbstractCachedModelFactory<PK, List<ENTITY>, Void> implements RoModelFactoryIF<PK, List<ENTITY>> {
+public abstract class CachedIndexModelFactory<PK, ENTITY> extends AbstractCachedModelFactory<PK, List<ENTITY>> implements RoModelFactoryIF<PK, List<ENTITY>> {
 	
 	/**
 	 * 

@@ -21,7 +21,7 @@ import com.knockchat.node.model.ModelFactoryIF;
 import com.knockchat.node.model.RwModelFactoryHelper;
 import com.knockchat.utils.LongTimestamp;
 
-public class AbstractMongoModelFactory<PK extends Serializable, ENTITY extends DaoEntityIF, A> extends AbstractCachedModelFactory<PK, ENTITY, A> implements InitializingBean, ModelFactoryIF<PK, ENTITY> {
+public class AbstractMongoModelFactory<PK extends Serializable, ENTITY extends DaoEntityIF> extends AbstractCachedModelFactory<PK, ENTITY> implements InitializingBean, ModelFactoryIF<PK, ENTITY> {
 	    
     @Autowired
     private ApplicationContext ctx;

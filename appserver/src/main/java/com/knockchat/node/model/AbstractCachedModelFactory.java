@@ -17,7 +17,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 
-public abstract class AbstractCachedModelFactory<PK,ENTITY, A> extends RoModelFactoryImpl<PK, ENTITY, A> implements InitializingBean{
+public abstract class AbstractCachedModelFactory<PK,ENTITY> extends RoModelFactoryImpl<PK, ENTITY> implements InitializingBean{
 	
 	@Autowired
 	protected CacheManager cm;

@@ -25,7 +25,7 @@ import com.knockchat.node.model.RwModelFactoryHelper;
 import com.knockchat.node.model.RwModelFactoryIF;
 import com.knockchat.utils.Pair;
 
-public class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY extends DaoEntityIF, A> extends AbstractCachedModelFactory<PK, ENTITY, A> implements InitializingBean, RwModelFactoryIF<PK, ENTITY> {
+public class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY extends DaoEntityIF> extends AbstractCachedModelFactory<PK, ENTITY> implements InitializingBean, RwModelFactoryIF<PK, ENTITY> {
 		
     @Autowired
     protected List<SessionFactory> sessionFactories;
