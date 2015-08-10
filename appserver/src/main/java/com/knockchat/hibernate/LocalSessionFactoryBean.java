@@ -53,6 +53,7 @@ import com.knockchat.hibernate.model.types.DoubleListType;
 import com.knockchat.hibernate.model.types.IntegerListType;
 import com.knockchat.hibernate.model.types.JsonType;
 import com.knockchat.hibernate.model.types.LongDateType;
+import com.knockchat.hibernate.model.types.LongIntervalType;
 import com.knockchat.hibernate.model.types.LongListType;
 import com.knockchat.hibernate.model.types.LongLongHstoreType;
 import com.knockchat.hibernate.model.types.LongTimestampType;
@@ -434,7 +435,7 @@ public class LocalSessionFactoryBean extends org.springframework.orm.hibernate4.
                                     Class javaType,
                                     final int jdbcType) {
     	
-    	LOG.debug("{}.{} {} <-> {}", new Object[]{value.getTable().getName(), col.getName(), javaType, jdbcType});    	
+    	LOG.debug("{}.{} {} <-> {}/{}", new Object[]{value.getTable().getName(), col.getName(), javaType, jdbcType, columnModel.getColumnType()});    	
     	
         String typeName;
         Properties typeParams = null;
@@ -449,6 +450,12 @@ public class LocalSessionFactoryBean extends org.springframework.orm.hibernate4.
             	case Types.DATE:
             		typeName = LongDateType.class.getCanonicalName();
             		break;
+            	case Types.OTHER:
+            		if (columnModel.getColumnType().equalsIgnoreCase("interval")){
+            			typeName = LongIntervalType.class.getCanonicalName();
+            			col.setCustomRead("extract(epoch from " + columnModel.getColumnName() + ")");
+            			break;
+            		}
             	default:
             		typeName = LongType.INSTANCE.getName();
             }            
