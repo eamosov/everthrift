@@ -75,21 +75,20 @@ public class LazyLoadManager {
 			return s;
 		}
 		
+		private final TBaseScanHandler tBaseScanHandler = new TBaseScanHandler(){
+
+			@Override
+			public void apply(TBase o) {
+				scannerFactory.create(o.getClass(), getScenario(o)).scan(o, this);
+				ClassUtils.invokeFirstMethod(methods, o);					
+			}			
+		};
+		
 		private void invoke(Object o){
 
 			
-			if (o instanceof TBase){
-				
-				final TBaseScanHandler h = new TBaseScanHandler(){
-
-					@Override
-					public void apply(TBase o) {
-						scannerFactory.create(o.getClass(), getScenario(o)).scan(o, this);
-						ClassUtils.invokeFirstMethod(methods, o);					
-					}			
-				};
-				
-				scannerFactory.create((Class)o.getClass(), getScenario(o)).scan((TBase)o, h);				
+			if (o instanceof TBase){				
+				scannerFactory.create((Class)o.getClass(), getScenario(o)).scan((TBase)o, tBaseScanHandler);				
 			}
 			
 			ClassUtils.invokeFirstMethod(methods, o);
