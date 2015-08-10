@@ -47,7 +47,7 @@ public class LongIntervalType implements UserType {
 
 	@Override
 	public Object nullSafeGet(ResultSet rs, String[] names, SessionImplementor session, Object owner) throws HibernateException, SQLException {		
-		return rs.getLong(names[0]);
+		return rs.getLong(names[0]) * 1000;
 	}
 
 	@Override
@@ -55,7 +55,7 @@ public class LongIntervalType implements UserType {
 		
 		final PGobject o = new PGobject();
 		o.setType("interval");
-		o.setValue(value == null ? null : (Long) value + " seconds");
+		o.setValue(value == null ? null : ((Long) value / 1000) + " seconds");
 		st.setObject(index, o);
 	}
 
