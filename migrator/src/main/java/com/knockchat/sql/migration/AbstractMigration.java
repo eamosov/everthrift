@@ -3,7 +3,6 @@ package com.knockchat.sql.migration;
 import java.sql.Types;
 
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.transaction.annotation.Transactional;
 
 public abstract class AbstractMigration {
 

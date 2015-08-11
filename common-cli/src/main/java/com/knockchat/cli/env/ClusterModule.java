@@ -50,7 +50,8 @@ public class ClusterModule extends BaseModule<ClusterService.Client> {
 
 
 
-    public void runModule(PrintWriter out, String option, CommandLine cmd) throws Exception {
+    @Override
+	public void runModule(PrintWriter out, String option, CommandLine cmd) throws Exception {
         switch (option) {
             case "gc": {
                 out.println("\n\n");
