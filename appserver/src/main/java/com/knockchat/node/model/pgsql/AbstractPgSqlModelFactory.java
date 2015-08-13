@@ -131,6 +131,12 @@ public class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY extends D
     }
     
     @Override
+    public void invalidateLocal(PK id){
+    	super.invalidateLocal(id);
+    	getDao().evict(id);
+    }
+    
+    @Override
     protected ENTITY fetchEntityById(PK id){
     	return dao.findById(id);
     }

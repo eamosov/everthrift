@@ -203,10 +203,14 @@ public abstract class AbstractCachedModelFactory<PK,ENTITY> extends RoModelFacto
 		_afterPropertiesSet();
 	}		
 
-	public void invalidate(PK id){
-		
+	public void invalidate(PK id){		
 		if (cache!=null)
-			cache.remove(id);
+			cache.remove(id);		
+	}
+	
+	public void invalidateLocal(PK id){
+		if (cache!=null)
+			cache.remove(id, true);
 	}
 	
 //	/**
