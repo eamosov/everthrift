@@ -8,8 +8,12 @@ import java.io.ObjectOutputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.base.Throwables;
+import com.google.common.collect.Maps;
 
 
 /**
@@ -79,25 +83,86 @@ public class ClassUtils {
 		}									
 	}
 	
-	public static boolean invokeFirstMethod(final String[] methods, final Object o){
+	private static class Key{
+		final String methods[];
+		final Class cls;
 		
+		public Key(String[] methods, Class cls) {
+			super();
+			this.methods = methods;
+			this.cls = cls;
+		}
+		
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + ((cls == null) ? 0 : cls.hashCode());
+			result = prime * result + Arrays.hashCode(methods);
+			return result;
+		}
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			Key other = (Key) obj;
+			if (cls == null) {
+				if (other.cls != null)
+					return false;
+			} else if (!cls.equals(other.cls))
+				return false;
+			if (!Arrays.equals(methods, other.methods))
+				return false;
+			return true;
+		}			
+	}
+	
+	private static final Object NULL_METHOD = new Object();
+	private static final AtomicReference<Map<Key, Object>> methods = new AtomicReference<Map<Key, Object>>(Maps.<Key, Object>newHashMap());
+
+	private static Method findFirstMethod(final String[] methods, final Class cls){
 		for (int i=0; i<methods.length; i++){
 			final Method m;
 			try {
-				m = o.getClass().getMethod(methods[i]);
+				m =cls.getMethod(methods[i]);
 			} catch (IllegalArgumentException | NoSuchMethodException | SecurityException e) {
 				continue;
 			}
-			
-			try {
-				m.invoke(o);
-			} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-				throw Throwables.propagate(e);
-			}
-			return true;
+			return m;
+		}
+		return null;
+	}
+
+	public static boolean invokeFirstMethod(final String[] _methods, final Object o){
+		
+		Map<Key, Object> methods = ClassUtils.methods.get();
+		final Key k = new Key(_methods, o.getClass());
+		
+		Object m = methods.get(k);
+		
+		if (m == null){
+			m = findFirstMethod(_methods, o.getClass());
+			if (m == null)
+				m = NULL_METHOD;
+
+			methods = Maps.newHashMap(methods);
+			methods.put(k, m);
+			ClassUtils.methods.set(methods);
 		}
 		
-		return false;
+		if (m == NULL_METHOD)
+			return false;
+		
+		try {
+			((Method)m).invoke(o);
+		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+			throw Throwables.propagate(e);
+		}
+		return true;
 	}
 	
 	@SuppressWarnings("rawtypes")

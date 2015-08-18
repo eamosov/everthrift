@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.RandomAccess;
 
 import org.apache.thrift.TBase;
 import org.apache.thrift.TFieldIdEnum;
@@ -72,8 +73,11 @@ public class ThriftTraversal {
 			
 			final ThriftTraversal node = getNode(Utils.getRootThriftClass((Class)obj.getClass()).first);
 			
-			for (TFieldIdEnum f: node.getChildsOfType(thriftBaseType)){
-				
+			final List<TFieldIdEnum> _l = node.getChildsOfType(thriftBaseType);
+			
+			for (int i=0; i< _l.size(); i++){
+				final TFieldIdEnum f = _l.get(i);
+			
 				if (log.isDebugEnabled())
 					log.debug("visit field {} of class {}", f, obj.getClass());
 				
@@ -87,8 +91,14 @@ public class ThriftTraversal {
 			if (((Collection)obj).isEmpty())
 				return;
 			
-			for (Object i: ((Collection)obj))
-				visitChildsOfType(i, type, thriftBaseType, visitHandler);
+			if (obj instanceof RandomAccess){
+				final List _l = (List)obj;
+				for (int i=0; i<_l.size(); i++)
+					visitChildsOfType(_l.get(i), type, thriftBaseType, visitHandler);
+			}else{
+				for (Object i: ((Collection)obj))
+					visitChildsOfType(i, type, thriftBaseType, visitHandler);				
+			}
 			
 			return;				
 		}else if (obj instanceof Map){
