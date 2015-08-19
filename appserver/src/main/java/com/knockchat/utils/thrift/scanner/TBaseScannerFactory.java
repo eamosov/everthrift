@@ -75,32 +75,38 @@ public class TBaseScannerFactory {
 		
 	}
 	
-	public TBaseScanner create(Class<? extends TBase> cls, String ... scenario){
+	public TBaseScanner create(Class<? extends TBase> tModel, String ... scenario){
 		
-		final Key key = new Key(cls, scenario);
+		final Key key = new Key(tModel, scenario);
 		
 		TBaseScanner s = scanners.get(key);
 		if (s !=null)
 			return s;
 		
-		return _create(key, cls, scenario);
+		return _create(key, tModel, scenario);
 	}
 	
-	private synchronized TBaseScanner _create(final Key key, Class<? extends TBase> cls, String ... scenario){
+	private synchronized TBaseScanner _create(final Key key, Class<? extends TBase> tModel, String ... scenario){
 		
 		TBaseScanner s = scanners.get(key);
 		if (s !=null)
 			return s;
 		
 		final ClassPool pool = ClassPool.getDefault();
-		final CtClass cc = pool.makeClass("com.knockchat.utils.thrift.generated." + cls.getSimpleName() + "Scanner" + Arrays.hashCode(scenario));		
+		final Class<? extends TBase> rootCls =  Utils.getRootThriftClass(tModel).first;
+		final String scannerClassName = rootCls.getPackage().getName() + "." + tModel.getSimpleName() + "Scanner" + Arrays.hashCode(scenario);
+		final CtClass cc = pool.makeClass(scannerClassName);
+		
 		try {
+			//cc.setSuperclass(pool.get(cls.getName()));
 			cc.setSuperclass(pool.get(AbstractTBaseScanner.class.getName()));
-			final String code = buildScannerCode("scan", cls, scenario);
-			log.debug("build scan code for {}: {}", cls.getSimpleName(), code);
+			cc.setInterfaces(new CtClass[]{pool.get(TBaseScanner.class.getName())});
+			final String code = buildScannerCode("scan", rootCls, scenario);
+			log.debug("build scan code for {}: {}", rootCls.getSimpleName(), code);
 			cc.addMethod(CtMethod.make(code, cc));
 			cc.addMethod(CtMethod.make("public String getGeneratedCode(){return \"" + code.replaceAll("\"", "\\\\\"").replaceAll("\n", "\\\\n") + "\";}", cc));
-			s = (TBaseScanner)cc.toClass().newInstance();
+						
+			s = (TBaseScanner)cc.toClass(rootCls.getClassLoader(), null).newInstance();
 			
 			final Map<Key, TBaseScanner> _scanners = Maps.newHashMap(scanners);
 			_scanners.put(key, s);
@@ -134,7 +140,7 @@ public class TBaseScannerFactory {
 				allFields.put(e.getKey().getFieldName(), e.getKey());
 			}
 		}
-		
+				
 		final Map<String, TFieldIdEnum> filteredFields = Maps.newHashMap();
 		for (String s: scenario){
 			if (s.equals("*"))
@@ -150,26 +156,36 @@ public class TBaseScannerFactory {
 				}
 			}
 		}
-		
+				
 		for (TFieldIdEnum id : filteredFields.values()){			
 			final FieldValueMetaData v = md.get(id).valueMetaData;
 			final String fieldName = id.getFieldName();
 			
 			if (v instanceof StructMetaData){
 				
-				code.append(String.format("\tfinal Object _%s=obj.get%s();\n", fieldName, StringUtils.capitalizeFirstLetter(fieldName)));
-				code.append(String.format("\tif (_%s !=null) {\n\t\th.apply((org.apache.thrift.TBase)_%s);\n\t}\n\n", fieldName, fieldName));
+				final String type = ((StructMetaData) v).structClass.getCanonicalName();
 				
-			}else if ( (v instanceof ListMetaData && ((ListMetaData) v).elemMetaData instanceof StructMetaData) ||
-					   (v instanceof SetMetaData && ((SetMetaData) v).elemMetaData instanceof StructMetaData)){
+				code.append(String.format("\t%s _%s=obj.get%s();\n", type, fieldName, StringUtils.capitalizeFirstLetter(fieldName)));
+				code.append(String.format("\t\n\tif (_%s == null){\n\t\ttry{\n\t\t\tobj.set%s((_%s = obj.load%s()));\n\t\t}catch (org.apache.thrift.LoadException e){\n\t\t}\n\t}\n\t\n\tif (_%s !=null) {\n\t\th.apply((org.apache.thrift.TBase)_%s);\n\t}\n",
+						fieldName, StringUtils.capitalizeFirstLetter(fieldName), fieldName, StringUtils.capitalizeFirstLetter(fieldName), fieldName, fieldName));
 				
-				code.append(String.format("\tfinal java.util.Collection _%s=(java.util.Collection)obj.get%s();\n", fieldName, StringUtils.capitalizeFirstLetter(fieldName)));
-				code.append(String.format("\tif (_%s !=null && _%s.size() !=0) {\n\t\tif (_%s instanceof java.util.RandomAccess){\n\t\t\tfinal java.util.List _l = (java.util.List)_%s;\n\t\t\tfor (int i=0; i < _l.size(); i++){\n\t\t\t\th.apply((org.apache.thrift.TBase)_l.get(i));\n\t\t\t}\n\t\t}else{\n\t\t\tfinal java.util.Iterator it = _%s.iterator();\n\t\t\twhile (it.hasNext()) {\n\t\t\t\th.apply((org.apache.thrift.TBase)it.next());\n\t\t\t}\t\t\n\t\t}\n\t}\n", fieldName, fieldName, fieldName, fieldName, fieldName));
+			}else if (v instanceof ListMetaData && ((ListMetaData) v).elemMetaData instanceof StructMetaData){
+				
+				code.append(String.format("\t\n\tjava.util.List _%s=(java.util.List)obj.get%s();\n\t\n\tif (_%s == null){\n\t\ttry{\n\t\t\tobj.set%s((_%s = obj.load%s()));\n\t\t}catch(org.apache.thrift.LoadException e){\n\t\t}\n\t}\n\t\n\tif (_%s !=null && _%s.size() !=0) {\n\t\tif (_%s instanceof java.util.RandomAccess){\n\t\t\tfinal java.util.List _l = (java.util.List)_%s;\n\t\t\tfor (int i=0; i < _l.size(); i++){\n\t\t\t\th.apply((org.apache.thrift.TBase)_l.get(i));\n\t\t\t}\n\t\t}else{\n\t\t\tfinal java.util.Iterator it = _%s.iterator();\n\t\t\twhile (it.hasNext()) {\n\t\t\t\th.apply((org.apache.thrift.TBase)it.next());\n\t\t\t}\t\t\n\t\t}\n\t}\n",
+						fieldName, StringUtils.capitalizeFirstLetter(fieldName), fieldName, StringUtils.capitalizeFirstLetter(fieldName), fieldName, StringUtils.capitalizeFirstLetter(fieldName), fieldName, fieldName, fieldName, fieldName, fieldName));
+				
+			}else if (v instanceof SetMetaData && ((SetMetaData) v).elemMetaData instanceof StructMetaData){
+				
+				code.append(String.format("\t\n\tjava.util.Set _%s=(java.util.Set)obj.get%s();\n\t\n\tif (_%s == null){\n\t\ttry{\n\t\t\tobj.set%s((_%s = obj.load%s()));\n\t\t}catch(org.apache.thrift.LoadException e){\n\t\t}\n\t}\n\t\n\tif (_%s !=null && _%s.size() !=0) {\n\t\tfinal java.util.Iterator it = _%s.iterator();\n\t\twhile (it.hasNext()) {\n\t\t\th.apply((org.apache.thrift.TBase)it.next());\n\t\t}\t\t\n\t}\n",
+						fieldName, StringUtils.capitalizeFirstLetter(fieldName), fieldName, StringUtils.capitalizeFirstLetter(fieldName), fieldName, StringUtils.capitalizeFirstLetter(fieldName), fieldName, fieldName, fieldName));
+				
 			}else if (v instanceof MapMetaData){
 				
 				if (((MapMetaData) v).keyMetaData instanceof StructMetaData || ((MapMetaData) v).valueMetaData instanceof StructMetaData){
 				
 					code.append(String.format("\tfinal java.util.Map _%s=(java.util.Map)obj.get%s();\n", fieldName, StringUtils.capitalizeFirstLetter(fieldName)));
+					code.append(String.format("\t\n\tif (_%s == null){\n\t\ttry{\n\t\t\tobj.set%s((_%s = obj.load%s()));\n\t\t}catch(org.apache.thrift.LoadException e){\n\t\t}\n\t}\n",
+							fieldName, StringUtils.capitalizeFirstLetter(fieldName), fieldName, StringUtils.capitalizeFirstLetter(fieldName)));
 					code.append(String.format("\tif ( _%s != null && _%s.size() !=0) {\n", fieldName, fieldName));
 					code.append(String.format("\t\tfinal java.util.Iterator it = _%s.entrySet().iterator();\n", fieldName));
 					code.append(String.format("\t\twhile(it.hasNext()){\n"));

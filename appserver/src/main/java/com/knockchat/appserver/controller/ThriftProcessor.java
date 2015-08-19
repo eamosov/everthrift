@@ -308,11 +308,13 @@ public class ThriftProcessor implements TProcessor{
 		
 		if (l.isDebugEnabled() || logControllerEnd.isDebugEnabled() ||
 				(c.getExecutionMcs() > c.getWarnExecutionMcsLimit() && (l.isWarnEnabled() || logControllerEnd.isWarnEnabled()))){
+			
+			final boolean tracing = l.isTraceEnabled() || logControllerEnd.isTraceEnabled();
 						
-			final String data = ret == null ? null : ret.toString();
+			final String data = ret == null ? null : (tracing ? ret.toString() : (ret instanceof Exception ? ret.toString() : "<suppressed>"));
 			final SessionIF session = c.thriftClient !=null ? c.thriftClient.getSession() : null;
 			final String format = "user:{} ip:{} END method:{} ctrl:{} delay:{} mcs correlationId: {} return: {}";
-			final Object args[] = new Object[]{session !=null ? session.getCredentials() : null, c.thriftClient !=null ? c.thriftClient.getClientIp() : null, method, c.ctrlLog(), c.getExecutionMcs(), correlationId, data !=null ? ((data.length() > 200 && !(l.isTraceEnabled() || logControllerEnd.isTraceEnabled())) ? data.substring(0, 199) + "..." : data) : null};
+			final Object args[] = new Object[]{session !=null ? session.getCredentials() : null, c.thriftClient !=null ? c.thriftClient.getClientIp() : null, method, c.ctrlLog(), c.getExecutionMcs(), correlationId, data};
 			
 			final Logger _l;
 			if (c.getExecutionMcs() > c.getWarnExecutionMcsLimit()){

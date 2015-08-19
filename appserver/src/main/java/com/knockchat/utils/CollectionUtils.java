@@ -1,8 +1,17 @@
 package com.knockchat.utils;
 
+import gnu.trove.TLongCollection;
+import gnu.trove.map.TLongObjectMap;
+import gnu.trove.map.hash.TLongObjectHashMap;
+import gnu.trove.procedure.TLongProcedure;
+
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+
 import org.apache.commons.lang.StringUtils;
 
 import com.google.common.base.CharMatcher;
@@ -166,4 +175,45 @@ public class CollectionUtils {
 		return false;
 	}
 	
+	public static boolean isEmpty(TLongCollection c){
+		return c==null || c.isEmpty();
+	}
+	
+	public static <T> boolean isEmpty(Collection<T> c){
+		return c==null || c.isEmpty();
+	}
+
+	public static List<Long> asList(TLongCollection c){
+		if (c==null || c.isEmpty())
+			return Collections.emptyList();
+		
+    	final List<Long> _ids = Lists.newArrayListWithCapacity(c.size());
+    	c.forEach(new TLongProcedure(){
+
+			@Override
+			public boolean execute(long value) {
+				_ids.add(value);
+				return true;
+			}});
+    	
+    	return _ids;
+	}
+	
+	public static <T> TLongObjectMap<T> asTLongObjectMap(Map<Long, T> m){
+		final TLongObjectMap<T> r;
+		
+		if (m == null)
+			return null;
+		
+		if (!m.isEmpty()){
+			r = new TLongObjectHashMap<T>(m.size());
+		
+			for (Entry<Long, T> e: m.entrySet())
+				r.put(e.getKey(), e.getValue());
+		}else{
+			r = new TLongObjectHashMap<T>();
+		}
+		
+		return r; 
+	}
 }

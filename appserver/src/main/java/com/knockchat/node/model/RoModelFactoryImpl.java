@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.RandomAccess;
 import java.util.Set;
 
 import org.apache.commons.collections.CollectionUtils;
@@ -15,7 +16,6 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Function;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Collections2;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.knockchat.appserver.model.LazyLoaderHelper;
@@ -152,14 +152,6 @@ public abstract class RoModelFactoryImpl<PK, ENTITY>  implements RoModelFactoryI
     	return loadException;
     }    
 
-    public <I> void load(Iterable<? extends I> s, Function<I, XAwareIF<PK, ENTITY>> adapter) {
-    	
-    	if (s instanceof Collection && ((Collection)s).size() == 0)
-    		return;
-    	
-        this._load(Iterables.transform(s, adapter));
-    }
-    
     protected void _lazyLoad(XAwareIF<PK, ENTITY> m) {
         lazyLoader.load(m);
     }
@@ -240,30 +232,59 @@ public abstract class RoModelFactoryImpl<PK, ENTITY>  implements RoModelFactoryI
      * @param setEntity - функция присвоения связи
      * @param loader - загрузчик объектов для связи(U) по их ключам (K)
      */
-    public static <K, U, T> int joinByIds(Iterable<? extends T> s, Function<T, K> getEntityId, Function2<T, U, Void> setEntity, MultiLoader<K, U> loader) {
+    public static <K, U, T> int joinByIds(final Iterable<? extends T> s, Function<T, K> getEntityId, Function2<T, U, Void> setEntity, MultiLoader<K, U> loader) {
     	
     	if (s instanceof Collection && ((Collection)s).size() == 0)
     		return 0;
 
         final Set<K> ids = new HashSet<K>();
-        for (T i : s) {
-            final K id = getEntityId.apply(i);
-            if (id != null)
-                ids.add(id);
-        }
+        
+        if (s instanceof RandomAccess){
+        	
+        	final List<? extends T> _s = (List)s;
+        	
+        	for (int i=0; i<_s.size() ; i++){
+                final K id = getEntityId.apply(_s.get(i));
+                if (id != null)
+                    ids.add(id);        		
+        	}
+        	
+        }else{
+            for (T i : s) {
+                final K id = getEntityId.apply(i);
+                if (id != null)
+                    ids.add(id);
+            }        	
+        }        
 
         final Map<K, U> loaded = loader.findByIds(ids);
         int k = 0;
-        for (T i : s) {
-            final K id = getEntityId.apply(i);
-            if (id == null)
-                continue;
+        if (s instanceof RandomAccess){
+        	final List<? extends T> _s = (List)s;
+        	for (int j=0; j<_s.size(); j++){
+        		final T i = _s.get(j);
+                final K id = getEntityId.apply(i);
+                if (id == null)
+                    continue;
 
-            final U u = loaded.get(id);
-            if (u != null) {
-                k++;
-            }
-            setEntity.apply(i, u);
+                final U u = loaded.get(id);
+                if (u != null) {
+                    k++;
+                }
+                setEntity.apply(i, u);        		
+        	}
+        }else{
+            for (T i : s) {
+                final K id = getEntityId.apply(i);
+                if (id == null)
+                    continue;
+
+                final U u = loaded.get(id);
+                if (u != null) {
+                    k++;
+                }
+                setEntity.apply(i, u);
+            }        	
         }
         return k;
     }

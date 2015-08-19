@@ -1,7 +1,9 @@
 package com.knockchat.appserver.model;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
+import java.util.RandomAccess;
 import java.util.Set;
 
 import org.apache.thrift.TBase;
@@ -78,7 +80,7 @@ public class LazyLoadManager {
 		private final TBaseScanHandler tBaseScanHandler = new TBaseScanHandler(){
 
 			@Override
-			public void apply(TBase o) {
+			public void apply(TBase o) {				
 				scannerFactory.create(o.getClass(), getScenario(o)).scan(o, this);
 				ClassUtils.invokeFirstMethod(methods, o);					
 			}			
@@ -86,7 +88,6 @@ public class LazyLoadManager {
 		
 		private void invoke(Object o){
 
-			
 			if (o instanceof TBase){				
 				scannerFactory.create((Class)o.getClass(), getScenario(o)).scan((TBase)o, tBaseScanHandler);				
 			}
@@ -95,11 +96,19 @@ public class LazyLoadManager {
 		}
 				
 		private void recursive(final Object o){
-			
+						
 			if (o == null)
 				return;
 
-			if (o instanceof Iterable){
+			if (o instanceof RandomAccess){
+				final List _l = (List)o;
+				for (int i=0; i<_l.size(); i++){
+					final Object j = _l.get(i);
+					if (j!=null)
+						recursive(j);
+				}
+					
+			}else if (o instanceof Iterable){
 				for (Object i: ((Iterable)o))
 					if (i!=null)
 						recursive(i);
