@@ -1,5 +1,8 @@
 package com.knockchat.utils.thrift;
 
+import it.unimi.dsi.fastutil.objects.Reference2ObjectMap;
+import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
+
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -7,18 +10,17 @@ import org.apache.thrift.TBase;
 import org.apache.thrift.TFieldIdEnum;
 import org.apache.thrift.meta_data.FieldMetaData;
 
-import com.google.common.collect.Maps;
 import com.knockchat.utils.Pair;
 
 public class Utils {
 	
 	private static final Object NULL_RESULT = new Object();
-	private static final AtomicReference<Map<Class, Object>> classes = new AtomicReference<Map<Class, Object>>(Maps.<Class, Object>newHashMap());	
+	private static final AtomicReference<Reference2ObjectMap<Class, Object>> classes = new AtomicReference<Reference2ObjectMap<Class, Object>>(new Reference2ObjectOpenHashMap<Class, Object>());	
 	
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public static Pair<Class<? extends TBase>, Map<? extends TFieldIdEnum, FieldMetaData>> getRootThriftClass(Class<? extends TBase> cls){
 	
-		Map<Class, Object> _classes = classes.get();		
+		Reference2ObjectMap<Class, Object> _classes = classes.get();		
 		Object p = _classes.get(cls);
 				
 		if (p == null){
@@ -26,7 +28,7 @@ public class Utils {
 			if (p == null)
 				p = NULL_RESULT;
 			
-			_classes = Maps.newHashMap(_classes);
+			_classes = new Reference2ObjectOpenHashMap<Class, Object>(_classes);
 			_classes.put(cls, p);
 			classes.set(_classes);
 		}

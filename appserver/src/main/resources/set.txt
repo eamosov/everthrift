@@ -1,0 +1,9 @@
+	java.util.Set _{0}=(java.util.Set)obj.get{1}();
+	
+	{2}	
+	if (_{0} !=null && _{0}.size() !=0) '{'
+		final java.util.Iterator it = _{0}.iterator();
+		while (it.hasNext()) '{'
+			h.apply((org.apache.thrift.TBase)it.next());
+		'}'		
+	'}'

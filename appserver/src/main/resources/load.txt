@@ -1,0 +1,4 @@
+if (_{0} == null)'{'
+	obj.load{1}();
+'}'
+else

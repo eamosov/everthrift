@@ -1,5 +1,8 @@
 package com.knockchat.utils.thrift;
 
+import it.unimi.dsi.fastutil.objects.Reference2ObjectMap;
+import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -19,18 +22,17 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 
 @SuppressWarnings({ "unchecked", "rawtypes" })
 public class ThriftTraversal {
 	
 	private static final Logger log = LoggerFactory.getLogger(ThriftTraversal.class);
 	
-	private static Map<Class<? extends TBase>, ThriftTraversal> nodes = Maps.newIdentityHashMap(); 
+	private static Reference2ObjectMap<Class<? extends TBase>, ThriftTraversal> nodes = new Reference2ObjectOpenHashMap<Class<? extends TBase>, ThriftTraversal>(); 
 	
 	private final Class<? extends TBase> cls;	
 	private final Map<TFieldIdEnum, FieldMetaData> fields;
-	private final Map<Class<? extends TBase>, List<TFieldIdEnum>> routing = Maps.newIdentityHashMap();
+	private final Reference2ObjectMap<Class<? extends TBase>, List<TFieldIdEnum>> routing = new Reference2ObjectOpenHashMap<Class<? extends TBase>, List<TFieldIdEnum>>();
 		
 	private ThriftTraversal(Class<? extends TBase> cls) {
 		this.fields = (Map)FieldMetaData.getStructMetaDataMap(cls);

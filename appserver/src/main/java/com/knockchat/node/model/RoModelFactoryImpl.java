@@ -9,7 +9,6 @@ import java.util.RandomAccess;
 import java.util.Set;
 
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.thrift.LoadException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,8 +23,6 @@ import com.knockchat.utils.Function2;
 
 public abstract class RoModelFactoryImpl<PK, ENTITY>  implements RoModelFactoryIF<PK, ENTITY>{
 	
-	private final static LoadException loadException = new LoadException(); 
-
 	public RoModelFactoryImpl() {
 		
 	}
@@ -147,22 +144,12 @@ public abstract class RoModelFactoryImpl<PK, ENTITY>  implements RoModelFactoryI
         this._lazyLoad(m);
     }    
 
-    public LoadException lazyLoadThrow(XAwareIF<PK, ENTITY> m) {
-    	lazyLoad(m);
-    	return loadException;
-    }    
-
     protected void _lazyLoad(XAwareIF<PK, ENTITY> m) {
         lazyLoader.load(m);
     }
     
     public void lazyListLoad(XAwareIF<List<PK>, List<ENTITY>> m) {
         lazyListLoader.load(m);
-    }
-    
-    public LoadException lazyListLoadThrow(XAwareIF<List<PK>, List<ENTITY>> m) {
-    	lazyListLoad(m);
-    	return loadException;
     }
     
     private Function<XAwareIF<List<PK>, List<ENTITY>>, List<PK>> _listGetEntityId = new Function<XAwareIF<List<PK>, List<ENTITY>>, List<PK>>() {
