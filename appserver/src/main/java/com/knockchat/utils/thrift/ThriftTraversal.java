@@ -2,12 +2,16 @@ package com.knockchat.utils.thrift;
 
 import it.unimi.dsi.fastutil.objects.Reference2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.RandomAccess;
+import java.util.Set;
 
 import org.apache.thrift.TBase;
 import org.apache.thrift.TFieldIdEnum;
@@ -54,22 +58,34 @@ public class ThriftTraversal {
 	}
 	
 	public static <T extends TBase> void visitChildsOfType(final Object obj, final Class<T> type, final Function<T, Void> visitHandler){
-		visitChildsOfType(obj, type, Utils.getRootThriftClass(type).first, visitHandler);
+		final Set<Object> visited = new ReferenceOpenHashSet<Object>();
+		visitChildsOfType(visited, obj, type, Utils.getRootThriftClass(type).first, visitHandler);
 	}
 			
-	private static <T extends TBase> void visitChildsOfType(final Object obj, final Class<T> type, final Class<? extends TBase> thriftBaseType, final Function<T, Void> visitHandler){
-		
-		if (log.isDebugEnabled())
-			log.debug("visit: objClass={}, type={},  thriftBaseType={}, obj={}", obj==null ? null : obj.getClass(), type.getSimpleName(), thriftBaseType.getSimpleName(), obj);
+	private static <T extends TBase> void visitChildsOfType(Set<Object> visited, final Object obj, final Class<T> type, final Class<? extends TBase> thriftBaseType, final Function<T, Void> visitHandler){
 		
 		if (obj == null)
 			return;
-		
-		if (type.isInstance(obj)){
-			visitHandler.apply((T)obj);
-			return;
+
+		if (log.isDebugEnabled()){
+			String id=null;
+			try {
+				Method m = obj.getClass().getMethod("getId");
+				id = m.invoke(obj).toString();
+			} catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+				id = "<unknown>";
+			}
+			log.debug("visit: objClass={}, type={},  thriftBaseType={}, id={}", obj==null ? null : obj.getClass().getSimpleName(), type.getSimpleName(), thriftBaseType.getSimpleName(), id);
 		}
-		
+				
+		if (type.isInstance(obj)){
+			if (visited.add(obj)){
+				visitHandler.apply((T)obj);
+			}else{
+				log.debug("allready visited: objClass={}, type={},  thriftBaseType={}",  obj==null ? null : obj.getClass().getSimpleName(), type.getSimpleName(), thriftBaseType.getSimpleName());
+			}
+			return;
+		}		
 		
 		if (obj instanceof TBase){
 			
@@ -83,7 +99,7 @@ public class ThriftTraversal {
 				if (log.isDebugEnabled())
 					log.debug("visit field {} of class {}", f, obj.getClass());
 				
-				visitChildsOfType(((TBase)obj).getFieldValue(f), type, thriftBaseType, visitHandler);
+				visitChildsOfType(visited, ((TBase)obj).getFieldValue(f), type, thriftBaseType, visitHandler);
 			}
 			
 			return;
@@ -96,10 +112,10 @@ public class ThriftTraversal {
 			if (obj instanceof RandomAccess){
 				final List _l = (List)obj;
 				for (int i=0; i<_l.size(); i++)
-					visitChildsOfType(_l.get(i), type, thriftBaseType, visitHandler);
+					visitChildsOfType(visited, _l.get(i), type, thriftBaseType, visitHandler);
 			}else{
 				for (Object i: ((Collection)obj))
-					visitChildsOfType(i, type, thriftBaseType, visitHandler);				
+					visitChildsOfType(visited, i, type, thriftBaseType, visitHandler);				
 			}
 			
 			return;				
@@ -108,8 +124,8 @@ public class ThriftTraversal {
 				return;
 			
 			for (Map.Entry e: ((Map<?,?>)obj).entrySet()){
-				visitChildsOfType(e.getKey(), type, thriftBaseType, visitHandler);
-				visitChildsOfType(e.getValue(), type, thriftBaseType, visitHandler);
+				visitChildsOfType(visited, e.getKey(), type, thriftBaseType, visitHandler);
+				visitChildsOfType(visited, e.getValue(), type, thriftBaseType, visitHandler);
 			}
 
 			return;

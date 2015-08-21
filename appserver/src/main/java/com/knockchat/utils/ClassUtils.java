@@ -1,5 +1,8 @@
 package com.knockchat.utils;
 
+import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
+import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -9,11 +12,10 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.base.Throwables;
-import com.google.common.collect.Maps;
+import com.knockchat.appserver.model.Registry;
 
 
 /**
@@ -81,54 +83,16 @@ public class ClassUtils {
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}									
-	}
-	
-	private static class Key{
-		final String methods[];
-		final Class cls;
-		
-		public Key(String[] methods, Class cls) {
-			super();
-			this.methods = methods;
-			this.cls = cls;
-		}
-		
-		@Override
-		public int hashCode() {
-			final int prime = 31;
-			int result = 1;
-			result = prime * result + ((cls == null) ? 0 : cls.hashCode());
-			result = prime * result + Arrays.hashCode(methods);
-			return result;
-		}
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj)
-				return true;
-			if (obj == null)
-				return false;
-			if (getClass() != obj.getClass())
-				return false;
-			Key other = (Key) obj;
-			if (cls == null) {
-				if (other.cls != null)
-					return false;
-			} else if (!cls.equals(other.cls))
-				return false;
-			if (!Arrays.equals(methods, other.methods))
-				return false;
-			return true;
-		}			
-	}
+	}	
 	
 	private static final Object NULL_METHOD = new Object();
-	private static final AtomicReference<Map<Key, Object>> methods = new AtomicReference<Map<Key, Object>>(Maps.<Key, Object>newHashMap());
+	private static final AtomicReference<Int2ReferenceMap<Object>> methods = new AtomicReference<Int2ReferenceMap<Object>>(new Int2ReferenceOpenHashMap<Object>());
 
-	private static Method findFirstMethod(final String[] methods, final Class cls){
+	private static Method findFirstMethod(final String[] methods, final Class cls, Class... parameterTypes){
 		for (int i=0; i<methods.length; i++){
 			final Method m;
 			try {
-				m =cls.getMethod(methods[i]);
+				m =cls.getMethod(methods[i], parameterTypes);
 			} catch (IllegalArgumentException | NoSuchMethodException | SecurityException e) {
 				continue;
 			}
@@ -137,19 +101,22 @@ public class ClassUtils {
 		return null;
 	}
 
-	public static boolean invokeFirstMethod(final String[] _methods, final Object o){
+	public static boolean invokeFirstMethod(final String[] _methods, final Object o, final Registry r){
 		
-		Map<Key, Object> methods = ClassUtils.methods.get();
-		final Key k = new Key(_methods, o.getClass());
+		Int2ReferenceMap<Object> methods = ClassUtils.methods.get();
+		
+		int k = 1;
+		k = 31 * k + o.getClass().hashCode();
+		k = 31 * k + Arrays.hashCode(_methods);
 		
 		Object m = methods.get(k);
 		
 		if (m == null){
-			m = findFirstMethod(_methods, o.getClass());
+			m = findFirstMethod(_methods, o.getClass(), Registry.class);
 			if (m == null)
 				m = NULL_METHOD;
 
-			methods = Maps.newHashMap(methods);
+			methods = new Int2ReferenceOpenHashMap<Object>(methods);
 			methods.put(k, m);
 			ClassUtils.methods.set(methods);
 		}
@@ -158,7 +125,7 @@ public class ClassUtils {
 			return false;
 		
 		try {
-			((Method)m).invoke(o);
+			((Method)m).invoke(o, r);
 		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
 			throw Throwables.propagate(e);
 		}

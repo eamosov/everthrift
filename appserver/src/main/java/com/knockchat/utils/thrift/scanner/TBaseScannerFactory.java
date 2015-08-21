@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 import org.terracotta.license.util.IOUtils;
 
 import com.google.common.collect.Maps;
+import com.knockchat.appserver.model.Registry;
 import com.knockchat.utils.thrift.Utils;
 
 public class TBaseScannerFactory {
@@ -103,7 +104,7 @@ public class TBaseScannerFactory {
 	public String buildScannerCode(String methodName, Class<? extends TBase> cls, String[] scenario) throws IOException{
 		
 		final StringBuilder code = new StringBuilder();
-		code.append(String.format("public void %s(org.apache.thrift.TBase _obj, com.knockchat.utils.thrift.scanner.TBaseScanHandler h){\n", methodName));
+		code.append(String.format("public void %s(org.apache.thrift.TBase _obj, com.knockchat.utils.thrift.scanner.TBaseScanHandler h, com.knockchat.appserver.model.Registry r){\n", methodName));
 		code.append(String.format("\tfinal %s obj = (%s)_obj;\n\n", cls.getName(), cls.getName()));
 		
 		final Map<? extends TFieldIdEnum, FieldMetaData> md = Utils.getRootThriftClass(cls).second;
@@ -145,7 +146,7 @@ public class TBaseScannerFactory {
 			
 			String load;
 			try {
-				final Method loadMethod = cls.getMethod("load" + StringUtils.capitalizeFirstLetter(fieldName));
+				final Method loadMethod = cls.getMethod("load" + StringUtils.capitalizeFirstLetter(fieldName), Registry.class);
 				load = MessageFormat.format(loadTemplate, fieldName, StringUtils.capitalizeFirstLetter(fieldName));
 			} catch (NoSuchMethodException | SecurityException e1) {
 				load = "";

@@ -37,7 +37,6 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.knockchat.appserver.cluster.JgroupsMessageDispatcher;
 import com.knockchat.appserver.cluster.thrift.JGroupsThrift;
-import com.knockchat.appserver.model.LazyLoadManager;
 import com.knockchat.utils.thrift.AbstractThriftClient;
 import com.knockchat.utils.thrift.InvocationInfo;
 import com.knockchat.utils.thrift.SessionIF;
@@ -48,6 +47,7 @@ import com.knockchat.utils.thrift.ThriftClient;
  * @author fluder
  *
  */
+@SuppressWarnings({"rawtypes","unchecked"})
 public class ThriftProcessor implements TProcessor{
 	
 	private final static Logger log = LoggerFactory.getLogger(ThriftProcessor.class);
@@ -76,6 +76,7 @@ public class ThriftProcessor implements TProcessor{
 		this.protocolFactory = protocolFactory;
 	}
 	
+	
 	public boolean processOnOpen(MessageWrapper in, ThriftClient thriftClient){	
 		for (Class<ConnectionStateHandler> cls: registry.getStateHandlers()){
 			final ConnectionStateHandler h = applicationContext.getBean(cls);
@@ -85,7 +86,7 @@ public class ThriftProcessor implements TProcessor{
 		}
 		return true;
 	}
-				
+					
 	public MessageWrapper process(MessageWrapper in, ThriftClient thriftClient) throws Exception{
 
 		try{		
@@ -120,7 +121,6 @@ public class ThriftProcessor implements TProcessor{
 			final Logger log = LoggerFactory.getLogger(controllerInfo.getControllerCls());
 			logStart(log, thriftClient, msg.name, in.getSessionId(), args);									
 			final ThriftController controller = controllerInfo.makeController(args, new MessageWrapper(null).copyAttributes(in), logEntry, msg.seqid, thriftClient, registry.getType(), this.protocolFactory);
-			LazyLoadManager.enable();
 			final Object ret = controller.handle(args);			
 			final TMemoryBuffer outT = controller.serializeAnswer(ret);
 						
@@ -166,7 +166,7 @@ public class ThriftProcessor implements TProcessor{
 			return true;
 		}
 	}
-	
+		
 	public boolean process(final TProtocol inp, TProtocol out, final MessageWrapper attributes) throws TException {
 		final TMessage msg = inp.readMessageBegin();
 
@@ -266,7 +266,6 @@ public class ThriftProcessor implements TProcessor{
 			Object ret = null;
 			try{
 				
-				LazyLoadManager.enable();
 				ret = controller.handle(args);				
 				controller.serializeAnswer(ret, out);
 				

@@ -43,7 +43,7 @@ public class GetNodeConfigurationController extends ThriftController<ClusterServ
 			}
 		}
 		
-		LazyLoadManager.disable();
+		this.loadLazyRelations = false;
 		
 		final ConnectorServerFactoryBean cs = context.getBean(ConnectorServerFactoryBean.class);
 		

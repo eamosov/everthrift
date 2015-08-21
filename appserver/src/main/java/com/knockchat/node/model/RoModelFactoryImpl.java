@@ -18,6 +18,7 @@ import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.knockchat.appserver.model.LazyLoaderHelper;
+import com.knockchat.appserver.model.Registry;
 import com.knockchat.utils.Function2;
 
 
@@ -83,17 +84,7 @@ public abstract class RoModelFactoryImpl<PK, ENTITY>  implements RoModelFactoryI
         return result;
     }    
      
-    protected final LazyLoaderHelper<XAwareIF<PK, ENTITY>, ENTITY> lazyLoader = new LazyLoaderHelper<XAwareIF<PK, ENTITY>, ENTITY>(){
-
-		@Override
-		protected int loadImpl(Iterable<? extends XAwareIF<PK, ENTITY>> input) {
-			return _load(input);
-		}
-
-		@Override
-		protected void loadImpl(XAwareIF<PK, ENTITY> input) {
-			input.set(findEntityById((PK) input.getId()));
-		}
+    protected final LazyLoaderHelper<XAwareIF<PK, ENTITY>> lazyLoader = new LazyLoaderHelper<XAwareIF<PK, ENTITY>>(){
     	
 		@Override
 	    protected boolean beforeLoad(XAwareIF<PK, ENTITY> key){
@@ -102,20 +93,15 @@ public abstract class RoModelFactoryImpl<PK, ENTITY>  implements RoModelFactoryI
 	        
 	        return true;
 	    }
+
+		@Override
+		protected int loadImpl(List<XAwareIF<PK, ENTITY>> entities) {
+			return _load(entities);
+		}
     };
     
-    protected final LazyLoaderHelper<XAwareIF<List<PK>, List<ENTITY>>, List<ENTITY>> lazyListLoader = new LazyLoaderHelper<XAwareIF<List<PK>, List<ENTITY>>, List<ENTITY>>(){
+    protected final LazyLoaderHelper<XAwareIF<List<PK>, List<ENTITY>>> lazyListLoader = new LazyLoaderHelper<XAwareIF<List<PK>, List<ENTITY>>>(){
 
-		@Override
-		protected int loadImpl(Iterable<? extends XAwareIF<List<PK>, List<ENTITY>>> input) {
-			return _loadList(input);
-		}
-
-		@Override
-		protected void loadImpl(XAwareIF<List<PK>, List<ENTITY>> input) {
-			input.set(findEntityByIdsInOrder(input.getId()));
-		}
-    	
 		@Override
 	    protected boolean beforeLoad(XAwareIF<List<PK>, List<ENTITY>> key){
 	        if (!key.isSetId())
@@ -123,6 +109,11 @@ public abstract class RoModelFactoryImpl<PK, ENTITY>  implements RoModelFactoryI
 	        
 	        return true;
 	    }
+
+		@Override
+		protected int loadImpl(List<XAwareIF<List<PK>, List<ENTITY>>> entities) {
+			return _loadList(entities);
+		}
     };
     
     private final MultiLoader<PK, ENTITY> multiLoader = new MultiLoader<PK, ENTITY>(){
@@ -140,16 +131,13 @@ public abstract class RoModelFactoryImpl<PK, ENTITY>  implements RoModelFactoryI
 		}};
 		
         
-    public void lazyLoad(XAwareIF<PK, ENTITY> m) {
-        this._lazyLoad(m);
+    public void lazyLoad(Registry r, XAwareIF<PK, ENTITY> m) {
+    	lazyLoader.load(r, m);
     }    
 
-    protected void _lazyLoad(XAwareIF<PK, ENTITY> m) {
-        lazyLoader.load(m);
-    }
     
-    public void lazyListLoad(XAwareIF<List<PK>, List<ENTITY>> m) {
-        lazyListLoader.load(m);
+    public void lazyListLoad(Registry r, XAwareIF<List<PK>, List<ENTITY>> m) {
+        lazyListLoader.load(r, m);
     }
     
     private Function<XAwareIF<List<PK>, List<ENTITY>>, List<PK>> _listGetEntityId = new Function<XAwareIF<List<PK>, List<ENTITY>>, List<PK>>() {
