@@ -15,7 +15,7 @@ import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.base.Throwables;
-import com.knockchat.appserver.model.Registry;
+import com.knockchat.appserver.model.lazy.Registry;
 
 
 /**
@@ -85,52 +85,52 @@ public class ClassUtils {
 		}									
 	}	
 	
-	private static final Object NULL_METHOD = new Object();
-	private static final AtomicReference<Int2ReferenceMap<Object>> methods = new AtomicReference<Int2ReferenceMap<Object>>(new Int2ReferenceOpenHashMap<Object>());
-
-	private static Method findFirstMethod(final String[] methods, final Class cls, Class... parameterTypes){
-		for (int i=0; i<methods.length; i++){
-			final Method m;
-			try {
-				m =cls.getMethod(methods[i], parameterTypes);
-			} catch (IllegalArgumentException | NoSuchMethodException | SecurityException e) {
-				continue;
-			}
-			return m;
-		}
-		return null;
-	}
-
-	public static boolean invokeFirstMethod(final String[] _methods, final Object o, final Registry r){
-		
-		Int2ReferenceMap<Object> methods = ClassUtils.methods.get();
-		
-		int k = 1;
-		k = 31 * k + o.getClass().hashCode();
-		k = 31 * k + Arrays.hashCode(_methods);
-		
-		Object m = methods.get(k);
-		
-		if (m == null){
-			m = findFirstMethod(_methods, o.getClass(), Registry.class);
-			if (m == null)
-				m = NULL_METHOD;
-
-			methods = new Int2ReferenceOpenHashMap<Object>(methods);
-			methods.put(k, m);
-			ClassUtils.methods.set(methods);
-		}
-		
-		if (m == NULL_METHOD)
-			return false;
-		
-		try {
-			((Method)m).invoke(o, r);
-		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-			throw Throwables.propagate(e);
-		}
-		return true;
-	}
+//	private static final Object NULL_METHOD = new Object();
+//	private static final AtomicReference<Int2ReferenceMap<Object>> methods = new AtomicReference<Int2ReferenceMap<Object>>(new Int2ReferenceOpenHashMap<Object>());
+//
+//	private static Method findFirstMethod(final String[] methods, final Class cls, Class... parameterTypes){
+//		for (int i=0; i<methods.length; i++){
+//			final Method m;
+//			try {
+//				m =cls.getMethod(methods[i], parameterTypes);
+//			} catch (IllegalArgumentException | NoSuchMethodException | SecurityException e) {
+//				continue;
+//			}
+//			return m;
+//		}
+//		return null;
+//	}
+//
+//	public static boolean invokeFirstMethod(final String[] _methods, final Object o, final Registry r){
+//		
+//		Int2ReferenceMap<Object> methods = ClassUtils.methods.get();
+//		
+//		int k = 1;
+//		k = 31 * k + o.getClass().hashCode();
+//		k = 31 * k + Arrays.hashCode(_methods);
+//		
+//		Object m = methods.get(k);
+//		
+//		if (m == null){
+//			m = findFirstMethod(_methods, o.getClass(), Registry.class);
+//			if (m == null)
+//				m = NULL_METHOD;
+//
+//			methods = new Int2ReferenceOpenHashMap<Object>(methods);
+//			methods.put(k, m);
+//			ClassUtils.methods.set(methods);
+//		}
+//		
+//		if (m == NULL_METHOD)
+//			return false;
+//		
+//		try {
+//			((Method)m).invoke(o, r);
+//		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+//			throw Throwables.propagate(e);
+//		}
+//		return true;
+//	}
 	
 	@SuppressWarnings("rawtypes")
 	public static Field getDeclaredField(Class cls, String fieldName) throws NoSuchFieldException, SecurityException{		

@@ -1,11 +1,11 @@
-package com.knockchat.appserver.model;
+package com.knockchat.appserver.model.lazy;
 
 import java.util.List;
 
-public abstract class LazyLoaderHelper<K> implements LazyLoader<K> {
+public abstract class AbstractLazyLoader<K> implements LazyLoader<K> {
 
 
-    public LazyLoaderHelper() {
+    public AbstractLazyLoader() {
 
     }
     

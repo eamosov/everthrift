@@ -1,4 +1,4 @@
-package com.knockchat.appserver.model;
+package com.knockchat.appserver.model.lazy;
 
 import java.util.Collection;
 import java.util.Map;
@@ -16,11 +16,7 @@ public class LazyLoadManager {
 	public static String SCENARIO_ADMIN = "admin";
 	public static String SCENARIO_JSON = "json";
 	
-	
-	public static String LOAD_ALL = "loadAll";
-	public static String LOAD_JSON = "loadJson";
-	public static String LOAD_ADMIN = "loadAdmin";
-			
+				
 	public static int load(int maxIterations, Object o, Registry r, WalkerIF walker){
 		
 		log.debug("load, maxIterations={}, o.class={}", maxIterations, o.getClass().getSimpleName());
@@ -51,7 +47,7 @@ public class LazyLoadManager {
 		return nAllLoaded;
 	}
 	
-	public static <T> T load(final String scenario, final String[] methods, int maxIterations, final T o){
+	public static <T> T load(final String scenario, int maxIterations, final T o){
 		
 		if (o == null ||
 			(o instanceof Collection && ((Collection)o).isEmpty()) ||
@@ -59,17 +55,17 @@ public class LazyLoadManager {
 			return o;
 		
 		final Registry r = new RegistryImpl();
-		final WalkerIF walker = new RecursiveWalker(r, scenario, methods);
+		final WalkerIF walker = new RecursiveWalker(r, scenario);
 		load(maxIterations, o, r, walker);
 		return o;
 	}		
 
-	public static <T> T load(final String scenario, final String[] methods, final T o){
-		return load(scenario, methods, MAX_LOAD_ITERATIONS, o);
+	public static <T> T load(final String scenario, final T o){
+		return load(scenario, MAX_LOAD_ITERATIONS, o);
 	}
 	
 	public static <T> T loadForJson(final T o){
-		return load(LazyLoadManager.SCENARIO_JSON, new String[]{LazyLoadManager.LOAD_JSON, LazyLoadManager.LOAD_ALL}, o);
+		return load(LazyLoadManager.SCENARIO_JSON, o);
 	}
 	
 }

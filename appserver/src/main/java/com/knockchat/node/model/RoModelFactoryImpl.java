@@ -17,8 +17,8 @@ import com.google.common.base.Predicates;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.knockchat.appserver.model.LazyLoaderHelper;
-import com.knockchat.appserver.model.Registry;
+import com.knockchat.appserver.model.lazy.AbstractLazyLoader;
+import com.knockchat.appserver.model.lazy.Registry;
 import com.knockchat.utils.Function2;
 
 
@@ -84,7 +84,7 @@ public abstract class RoModelFactoryImpl<PK, ENTITY>  implements RoModelFactoryI
         return result;
     }    
      
-    protected final LazyLoaderHelper<XAwareIF<PK, ENTITY>> lazyLoader = new LazyLoaderHelper<XAwareIF<PK, ENTITY>>(){
+    protected final AbstractLazyLoader<XAwareIF<PK, ENTITY>> lazyLoader = new AbstractLazyLoader<XAwareIF<PK, ENTITY>>(){
     	
 		@Override
 	    protected boolean beforeLoad(XAwareIF<PK, ENTITY> key){
@@ -100,7 +100,7 @@ public abstract class RoModelFactoryImpl<PK, ENTITY>  implements RoModelFactoryI
 		}
     };
     
-    protected final LazyLoaderHelper<XAwareIF<List<PK>, List<ENTITY>>> lazyListLoader = new LazyLoaderHelper<XAwareIF<List<PK>, List<ENTITY>>>(){
+    protected final AbstractLazyLoader<XAwareIF<List<PK>, List<ENTITY>>> lazyListLoader = new AbstractLazyLoader<XAwareIF<List<PK>, List<ENTITY>>>(){
 
 		@Override
 	    protected boolean beforeLoad(XAwareIF<List<PK>, List<ENTITY>> key){

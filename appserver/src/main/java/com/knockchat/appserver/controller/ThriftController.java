@@ -33,7 +33,7 @@ import org.springframework.transaction.TransactionStatus;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.knockchat.appserver.model.LazyLoadManager;
+import com.knockchat.appserver.model.lazy.LazyLoadManager;
 import com.knockchat.appserver.transport.http.RpcHttp;
 import com.knockchat.utils.ExecutionStats;
 import com.knockchat.utils.Pair;
@@ -356,7 +356,7 @@ public abstract class ThriftController<ArgsType extends TBase, ResultType> {
 	}
 	
 	protected ResultType loadLazyRelations(ResultType result){
-		return loadLazyRelations ? LazyLoadManager.load(LazyLoadManager.SCENARIO_DEFAULT, new String[]{LazyLoadManager.LOAD_ALL}, result) : result;
+		return loadLazyRelations ? LazyLoadManager.load(LazyLoadManager.SCENARIO_DEFAULT, result) : result;
 	}
 
 }

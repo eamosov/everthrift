@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.text.MessageFormat;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -30,7 +31,9 @@ import org.slf4j.LoggerFactory;
 import org.terracotta.license.util.IOUtils;
 
 import com.google.common.collect.Maps;
-import com.knockchat.appserver.model.Registry;
+import com.knockchat.appserver.model.lazy.LazyMethod;
+import com.knockchat.appserver.model.lazy.LazyMethods;
+import com.knockchat.appserver.model.lazy.Registry;
 import com.knockchat.utils.thrift.Utils;
 
 public class TBaseScannerFactory {
@@ -50,10 +53,10 @@ public class TBaseScannerFactory {
 		}
 	}
 	
-	public TBaseScanner create(Class<? extends TBase> tModel, String ... scenario){
+	public TBaseScanner create(Class<? extends TBase> tModel, String scenario){
 				
 		int key = 1;
-		key = 31 * key + Arrays.hashCode(scenario);
+		key = 31 * key + scenario.hashCode();
 		key = 31 * key + System.identityHashCode(tModel);
 				
 		TBaseScanner s = scanners.get(key);
@@ -63,14 +66,14 @@ public class TBaseScannerFactory {
 		return _create(key, tModel, scenario);
 	}
 	
-	private synchronized TBaseScanner _create(final int key, Class<? extends TBase> tModel, String ... scenario){
+	private synchronized TBaseScanner _create(final int key, Class<? extends TBase> tModel, String scenario){
 		
 		TBaseScanner s = scanners.get(key);
 		if (s !=null)
 			return s;
 		
 		final ClassPool pool = ClassPool.getDefault();
-		final String scannerClassName = tModel.getPackage().getName() + "." + tModel.getSimpleName() + "Scanner" + Arrays.hashCode(scenario);
+		final String scannerClassName = tModel.getPackage().getName() + "." + tModel.getSimpleName() + "Scanner_" + scenario;
 		final CtClass cc = pool.makeClass(scannerClassName);
 		
 		try {
@@ -100,11 +103,23 @@ public class TBaseScannerFactory {
 		//StringUtils.ch
 		return input.replaceAll("(?m)^", sb.toString()).replaceAll("^(\t+)", "");		
 	}
+	
+	private boolean hasScenario(LazyMethod a, String scenario){
+		
+		if (Arrays.equals(a.value(), new String[]{""}))
+			return true;
+		
+		for (String s: a.value()){
+			if (s.equals(scenario))
+				return true;
+		}
+		return false;
+	}
 
-	public String buildScannerCode(String methodName, Class<? extends TBase> cls, String[] scenario) throws IOException{
+	public String buildScannerCode(String methodName, Class<? extends TBase> cls, String scenario) throws IOException{
 		
 		final StringBuilder code = new StringBuilder();
-		code.append(String.format("public void %s(org.apache.thrift.TBase _obj, com.knockchat.utils.thrift.scanner.TBaseScanHandler h, com.knockchat.appserver.model.Registry r){\n", methodName));
+		code.append(String.format("public void %s(org.apache.thrift.TBase _obj, com.knockchat.utils.thrift.scanner.TBaseScanHandler h, com.knockchat.appserver.model.lazy.Registry r){\n", methodName));
 		code.append(String.format("\tfinal %s obj = (%s)_obj;\n\n", cls.getName(), cls.getName()));
 		
 		final Map<? extends TFieldIdEnum, FieldMetaData> md = Utils.getRootThriftClass(cls).second;
@@ -123,32 +138,72 @@ public class TBaseScannerFactory {
 				allFields.put(e.getKey().getFieldName(), e.getKey());
 			}
 		}
+		
+		final Map<String, LazyMethod> clsAnnotations = Maps.newHashMap();
+		final LazyMethod a = cls.getClass().getAnnotation(LazyMethod.class);
+		if (a!=null){
+			
+			if (a.method() == null)
+				throw new RuntimeException("@LazyMethod without method name on " + cls.getCanonicalName());
+			
+			clsAnnotations.put(a.method(), a);
+		}
+		
+		final LazyMethods aa = cls.getClass().getAnnotation(LazyMethods.class);
+		if (aa!=null){
+			for (LazyMethod _a: aa.value()){
 				
-		final Map<String, TFieldIdEnum> filteredFields = Maps.newHashMap();
-		for (String s: scenario){
-			if (s.equals("*"))
-				filteredFields.putAll(allFields);
-			else if (s.charAt(0) == '!'){
-				filteredFields.remove(s.substring(1));
-			}else{
-				final TFieldIdEnum _id = allFields.get(s);
-				if (_id !=null){
-					filteredFields.put(s, _id);
-				}else{
-					log.error("Coud't find field {} in {}", s, cls.getSimpleName());
-				}
+				if (_a.method() == null)
+					throw new RuntimeException("@LazyMethod without method name on " + cls.getCanonicalName());
+				
+				clsAnnotations.put(_a.method(), _a);
 			}
 		}
+		
+		final Iterator<Map.Entry<String, LazyMethod>> it = clsAnnotations.entrySet().iterator();
+		while(it.hasNext()){
+			final Map.Entry<String, LazyMethod> e = it.next();
+			
+			//Check annotation on corresponding method - must be @LazyMethod
+			final Method m;
+			try {
+				m = cls.getMethod(e.getKey(), Registry.class);
+			} catch (NoSuchMethodException | SecurityException e1) {
+				throw new RuntimeException(String.format("Method '%s' not found in class %s", e.getKey(), cls.getSimpleName()));
+			}
+			final LazyMethod _a = m.getAnnotation(LazyMethod.class);
+			if ( !(_a != null && Arrays.equals(a.value(), new String[]{""}) && a.method().equals("")))
+				throw new RuntimeException(String.format("Incompartible annotations: cls=%s,  method=%s, class annotation=%s, method annotation=%s", cls.getSimpleName(), m.getName(), e.getValue().toString(), _a.toString()));
+
+			if (!hasScenario(e.getValue(), scenario))
+				it.remove();
+		}
+		
+		for (Method m: cls.getMethods()){
+			final LazyMethod _a = m.getAnnotation(LazyMethod.class);
+			if (_a !=null){
 				
-		for (TFieldIdEnum id : filteredFields.values()){			
+				if (!Arrays.equals(m.getParameterTypes(), new Class[]{Registry.class}))
+					throw new RuntimeException(String.format("Incompartible method: cls=%s, method=%s, method annotation=%s", cls.getSimpleName(), m.getName(), _a.toString()));
+				
+				if (!(_a.method().equals("") || _a.method().equals(m.getName())))
+					throw new RuntimeException(String.format("Incompartible annotations: cls=%s, method=%s, method annotation=%s", cls.getSimpleName(), m.getName(), _a.toString()));
+				
+				if (hasScenario(_a, scenario) && !clsAnnotations.containsKey(m.getName()))
+					clsAnnotations.put(m.getName(), _a);
+			}
+		}				
+				
+		for (TFieldIdEnum id : allFields.values()){			
 			final FieldValueMetaData v = md.get(id).valueMetaData;
 			final String fieldName = id.getFieldName();
 			
-			String load;
-			try {
-				final Method loadMethod = cls.getMethod("load" + StringUtils.capitalizeFirstLetter(fieldName), Registry.class);
-				load = MessageFormat.format(loadTemplate, fieldName, StringUtils.capitalizeFirstLetter(fieldName));
-			} catch (NoSuchMethodException | SecurityException e1) {
+			final String loadMethodName = "load" + StringUtils.capitalizeFirstLetter(fieldName);
+			final String load;
+			
+			if (clsAnnotations.remove(loadMethodName) !=null){
+				load = MessageFormat.format(loadTemplate, fieldName, StringUtils.capitalizeFirstLetter(fieldName));				
+			}else{
 				load = "";
 			}
 
@@ -188,7 +243,11 @@ public class TBaseScannerFactory {
 					code.append(MessageFormat.format(template, fieldName, StringUtils.capitalizeFirstLetter(fieldName), indent(1,load), indent(3,body.toString())));						
 				}				
 			}			
-		}		
+		}
+		
+		for (Map.Entry<String, LazyMethod> e:clsAnnotations.entrySet()){
+			code.append("\tobj." + e.getKey() + "(r);\n");
+		}
 		
 		code.append("}\n");
 		

@@ -1,4 +1,5 @@
-package com.knockchat.appserver.model;
+package com.knockchat.appserver.model.lazy;
+
 
 public interface Registry {	
 	

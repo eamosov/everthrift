@@ -1,4 +1,4 @@
-package com.knockchat.appserver.model;
+package com.knockchat.appserver.model.lazy;
 
 import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
 
