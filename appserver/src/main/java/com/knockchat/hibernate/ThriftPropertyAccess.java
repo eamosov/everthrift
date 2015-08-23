@@ -9,17 +9,19 @@ import org.hibernate.HibernateException;
 import org.hibernate.PropertyNotFoundException;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SessionImplementor;
-import org.hibernate.property.Getter;
-import org.hibernate.property.PropertyAccessor;
-import org.hibernate.property.Setter;
+import org.hibernate.property.access.spi.Getter;
+import org.hibernate.property.access.spi.PropertyAccess;
+import org.hibernate.property.access.spi.PropertyAccessStrategy;
+import org.hibernate.property.access.spi.Setter;
 
 import com.google.common.base.CaseFormat;
+import com.knockchat.hibernate.model.MetaDataProvider;
 import com.knockchat.utils.meta.MetaClass;
 import com.knockchat.utils.meta.MetaClasses;
 import com.knockchat.utils.meta.MetaProperty;
 
-public class ThriftModelPropertyAccessor implements PropertyAccessor {
-
+public class ThriftPropertyAccess implements PropertyAccess {
+	
     public static class ThriftSetter implements Setter {
         private Class clazz;
         private final transient MetaProperty property;
@@ -144,27 +146,29 @@ public class ThriftModelPropertyAccessor implements PropertyAccessor {
         }
 
     }
+    
+	private final Setter setter;
+	private final Getter getter;
+	private PropertyAccessStrategy strategy;
 
+    public ThriftPropertyAccess(PropertyAccessStrategy strategy, Class theClass, String propertyName) {
+		super();
+		this.strategy = strategy;
+		this.setter = createSetter(theClass, propertyName);
+		this.getter = createGetter(theClass, propertyName);
+	}
 
-
-
-    @Override
-	public Setter getSetter(Class theClass, String propertyName)
-            throws PropertyNotFoundException {
-        return createSetter(theClass, propertyName);
+	@Override
+	public Setter getSetter() throws PropertyNotFoundException {
+        return setter;
     }
 
-    private static Setter createSetter(Class theClass, String propertyName)
-            throws PropertyNotFoundException {
+    private static Setter createSetter(Class theClass, String propertyName) throws PropertyNotFoundException {
+    	
         ThriftSetter result = getSetterOrNull(theClass, propertyName);
-        if (result==null) {
-            throw new PropertyNotFoundException(
-                    "Could not find a setter for property " +
-                            propertyName +
-                            " in class " +
-                            theClass.getName()
-            );
-        }
+        if (result==null) 
+            throw new PropertyNotFoundException( "Could not find a setter for property " + propertyName + " in class " + theClass.getName() );
+        
         return result;
     }
 
@@ -187,20 +191,16 @@ public class ThriftModelPropertyAccessor implements PropertyAccessor {
     }
 
     @Override
-	public Getter getGetter(Class theClass, String propertyName) throws PropertyNotFoundException {
-        return createGetter(theClass, propertyName);
+	public Getter getGetter() throws PropertyNotFoundException {
+        return getter;
     }
 
     public static Getter createGetter(Class theClass, String propertyName) throws PropertyNotFoundException {
-        ThriftGetter result = getGetterOrNull(theClass, propertyName);
-        if (result==null) {
-            throw new PropertyNotFoundException(
-                    "Could not find a getter for " +
-                            propertyName +
-                            " in class " +
-                            theClass.getName()
-            );
-        }
+        final ThriftGetter result = getGetterOrNull(theClass, propertyName);
+        
+        if (result==null)
+            throw new PropertyNotFoundException( "Could not find a getter for " + propertyName + " in class " + theClass.getName());
+        
         return result;
     }
 
@@ -233,5 +233,9 @@ public class ThriftModelPropertyAccessor implements PropertyAccessor {
         return auxProperty;
     }
 
+	@Override
+	public PropertyAccessStrategy getPropertyAccessStrategy() {
+		return strategy;
+	}
 
 }

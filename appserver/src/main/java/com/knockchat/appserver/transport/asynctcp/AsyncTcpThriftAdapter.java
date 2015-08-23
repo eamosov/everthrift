@@ -8,10 +8,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
-import org.springframework.integration.Message;
-import org.springframework.integration.MessageChannel;
-import org.springframework.integration.channel.ChannelInterceptor;
 import org.springframework.integration.support.MessageBuilder;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.support.ChannelInterceptor;
 
 import com.knockchat.appserver.controller.MessageWrapper;
 import com.knockchat.appserver.controller.ThriftProcessor;
@@ -72,5 +72,13 @@ public class AsyncTcpThriftAdapter implements InitializingBean, ChannelIntercept
 	@Override
 	public Message<?> postReceive(Message<?> message, MessageChannel channel) {
 		return message;
+	}
+
+	@Override
+	public void afterSendCompletion(Message<?> message, MessageChannel channel, boolean sent, Exception ex) {
+	}
+
+	@Override
+	public void afterReceiveCompletion(Message<?> message, MessageChannel channel, Exception ex) {
 	}
 }

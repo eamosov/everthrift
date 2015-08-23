@@ -1,4 +1,4 @@
-package com.knockchat.hibernate;
+package com.knockchat.hibernate.model;
 
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
@@ -10,6 +10,7 @@ import java.util.Properties;
 
 import javax.sql.DataSource;
 
+import org.hibernate.annotations.OptimisticLocking;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.support.DatabaseMetaDataCallback;
@@ -17,9 +18,6 @@ import org.springframework.jdbc.support.JdbcUtils;
 import org.springframework.jdbc.support.MetaDataAccessException;
 
 import com.google.common.base.CaseFormat;
-import com.knockchat.hibernate.model.Column;
-import com.knockchat.hibernate.model.PrimaryKey;
-import com.knockchat.hibernate.model.Table;
 import com.knockchat.utils.meta.MetaClass;
 import com.knockchat.utils.meta.MetaClasses;
 import com.knockchat.utils.meta.MetaProperty;
@@ -63,9 +61,20 @@ public class MetaDataProvider {
             final String schemaName = schemaTable.substring(0, schemaTable.indexOf("."));
             final String tableName = schemaTable.substring(schemaTable.indexOf(".") + 1);
             final Class clazz = Class.forName(modelName);
-            final List<Column> tableColumns = readColumns(tableName, clazz);
+            
+            final Table table = new Table(schemaName, tableName, clazz,tableName.endsWith(VIEW_POSTFIX));
+            
+            final List<Column> tableColumns = readColumns(table, clazz);
             final PrimaryKey pk = readPK(tableName);
-            final Table table = new Table(schemaName, tableName, clazz, tableColumns, pk, tableName.endsWith(VIEW_POSTFIX));
+            
+            table.setColumns(tableColumns);
+            table.setPrimaryKey(pk);
+            
+            
+            if (clazz.isAnnotationPresent(OptimisticLocking.class)){
+            	table.setOptimisticLockType(((OptimisticLocking)clazz.getAnnotation(OptimisticLocking.class)).type());
+            }
+            
             tableModels.add(table);
         } catch (MetaDataAccessException e) {
             LOG.error("Error get model metadata {}", schemaTable, e);
@@ -74,17 +83,19 @@ public class MetaDataProvider {
         }   	
     }
 
-    private List<Column> readColumns(final String tableName, Class clazz) throws MetaDataAccessException {
+    @SuppressWarnings({ "unchecked"})
+	private List<Column> readColumns(final Table table, Class clazz) throws MetaDataAccessException {
         MetaClass meta = MetaClasses.get(clazz);
         List<Column> columns = (List<Column>) JdbcUtils.extractDatabaseMetaData(dataSource, new DatabaseMetaDataCallback() {
             @Override
             public Object processMetaData(DatabaseMetaData dbmd) throws SQLException, MetaDataAccessException {
-                List<Column> columns = new Column.ColumnExtractor().extractData(dbmd.getColumns(null, null, tableName.toLowerCase(), null));
+                List<Column> columns = new Column.ColumnExtractor(table).extractData(dbmd.getColumns(null, null, table.getTableName().toLowerCase(), null));
                 return columns;
             }
         });
         for (Column column : columns) {
             setColProperiesDetails(column , meta);
+            column.setHibernateType();
         }
         return columns;
     }
@@ -98,12 +109,16 @@ public class MetaDataProvider {
             case Types.TIME:
             case Types.DATE: camelCaseTs = camelCase.concat(TS_POSTFIX);
         }
-        MetaProperty property = (camelCaseTs != null && meta.getProperty(camelCaseTs) != null) ? meta.getProperty(camelCaseTs)
+        
+        final MetaProperty property = (camelCaseTs != null && meta.getProperty(camelCaseTs) != null) ? meta.getProperty(camelCaseTs)
                 : meta.getProperty(camelCase) != null ? meta.getProperty(camelCase)
                 : meta.getProperty(lowerCase);
+                
         if (property != null) {
             column.setJavaClass(property.getType());
             column.setPropertyName(property.getName());
+        }else{
+        	//System.err.println("Coudn't find property " + column.getColumnName() + " in class " + meta.getName());
         }
 
     }
@@ -123,10 +138,22 @@ public class MetaDataProvider {
         }
         return primaryKey;
     }
-
-    private List<MetaProperty> readJavaFields(Class clazz){
-        MetaClass metaClass = MetaClasses.get(clazz);
-        return Arrays.asList(metaClass.getProperties());
+    
+    public String toHbmXml() {
+    	final StringBuilder sb = new StringBuilder();
+    	sb.append("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
+    	//sb.append("<!DOCTYPE hibernate-mapping PUBLIC \n\"-//Hibernate/Hibernate Mapping DTD//EN\"\n \"http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd\">\n");
+    	sb.append("<hibernate-mapping>\n");
+    	for(Table t: tableModels){
+    		
+    		if (!t.isValid())
+    			throw new RuntimeException("Table " + t.getTableName() + " is invalid");
+    		
+    		sb.append(t.toHbmXml().replaceAll("(?m)^", "\t"));
+    	}
+    	sb.append("</hibernate-mapping>");
+    	sb.toString();
+    	return sb.toString();
     }
 
 }

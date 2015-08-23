@@ -9,7 +9,6 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportResource;
 import org.springframework.context.annotation.Scope;
-import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
@@ -21,7 +20,7 @@ import com.knockchat.appserver.controller.ThriftProcessor;
 
 @Configuration
 @ImportResource("classpath:app-context.xml")
-@EnableJpaRepositories(basePackages={"com.knockchat"})
+//@EnableJpaRepositories(basePackages={"com.knockchat"})
 @ComponentScan("com.knockchat")
 public class Config {
         

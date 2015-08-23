@@ -11,8 +11,8 @@ import java.util.Map.Entry;
 import org.apache.thrift.transport.TMemoryBuffer;
 import org.apache.thrift.transport.TMemoryInputTransport;
 import org.apache.thrift.transport.TTransport;
-import org.springframework.integration.MessageChannel;
-import org.springframework.integration.MessageHeaders;
+import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.MessageHeaders;
 
 import com.google.common.collect.Maps;
 

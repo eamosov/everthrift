@@ -19,9 +19,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
-import org.springframework.integration.MessageChannel;
-import org.springframework.integration.MessageHeaders;
 import org.springframework.integration.support.MessageBuilder;
+import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.MessageHeaders;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -61,7 +61,7 @@ public class JgroupsMessageDispatcher implements AsyncRequestHandler, Initializi
 		final MessageWrapper w = (MessageWrapper)request.getObject();
 		w.setAttribute(JGroupsThriftAdapter.HEADER_JRESPONSE, response);
 				
-		org.springframework.integration.Message<MessageWrapper> m = MessageBuilder.<MessageWrapper>withPayload(w).setHeader(MessageHeaders.REPLY_CHANNEL, "outJGroupsChannel").build();		
+		org.springframework.messaging.Message<MessageWrapper> m = MessageBuilder.<MessageWrapper>withPayload(w).setHeader(MessageHeaders.REPLY_CHANNEL, "outJGroupsChannel").build();		
 		inJGroupsChannel.send(m);		
 	}
 	

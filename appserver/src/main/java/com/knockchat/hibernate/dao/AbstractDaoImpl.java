@@ -42,7 +42,7 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
 	
 	private static final Logger log = LoggerFactory.getLogger(AbstractDaoImpl.class);
 
-    private static final String NO_SESSION_FOR_THREAD = "No Session found for current thread";
+    private static final String NO_SESSION_FOR_THREAD = "Could not obtain transaction-synchronized Session for current thread";
 
     private SessionFactory sessionFactory;
     protected final Class<V> entityClass;
@@ -88,7 +88,7 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
         	final Session session = getCurrentSession();
         	
         	if (log.isDebugEnabled())
-        		log.debug("findById tx={}: {}#{}", session.getTransaction().getLocalStatus(), entityClass.getSimpleName(), id);
+        		log.debug("findById tx={}: {}#{}", session.getTransaction().getStatus(), entityClass.getSimpleName(), id);
         	        	
             return (V) session.get(entityClass, id);
         } catch (HibernateException he) {
@@ -128,7 +128,7 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
         final Session session = getCurrentSession();
                 
         if (log.isDebugEnabled())
-        	log.debug("saveOrUpdate tx={}: {}", session.getTransaction().getLocalStatus(), e);
+        	log.debug("saveOrUpdate tx={}: {}", session.getTransaction().getStatus(), e);
         
         if (e.getPk() == null){
         	e.setPk(session.save(e));            	
@@ -150,7 +150,7 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
             final Session session = getCurrentSession();
             
             if (log.isDebugEnabled())
-            	log.debug("delete tx={}: {}", session.getTransaction().getLocalStatus(), e);
+            	log.debug("delete tx={}: {}", session.getTransaction().getStatus(), e);
 
             session.delete(e);
         } catch (HibernateException he) {
@@ -201,7 +201,7 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
             criteria = session.createCriteria(entityClass);
 
             if (log.isDebugEnabled())
-                log.debug("createCriteria tx={}: {}", session.getTransaction().getLocalStatus(), entityClass.getSimpleName());
+                log.debug("createCriteria tx={}: {}", session.getTransaction().getStatus(), entityClass.getSimpleName());
 
         } catch (HibernateException he) {
             propogateIfAbsentMessage(he, NO_SESSION_FOR_THREAD);
@@ -277,7 +277,7 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
                 q = session.createSQLQuery(query);
                 
                 if (log.isDebugEnabled())
-                	log.debug("findBySQLQuery tx={}: {}#{}", session.getTransaction().getLocalStatus(), entityClass.getSimpleName(), query);                                
+                	log.debug("findBySQLQuery tx={}: {}#{}", session.getTransaction().getStatus(), entityClass.getSimpleName(), query);                                
                 
             } catch (HibernateException he) {
                 propogateIfAbsentMessage(he, NO_SESSION_FOR_THREAD);
@@ -331,7 +331,7 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
                 q = session.createSQLQuery(query);
                 
                 if (log.isDebugEnabled())
-                	log.debug("executeCustomUpdate tx={}: {}#{}", session.getTransaction().getLocalStatus(), entityClass.getSimpleName(), query);                                
+                	log.debug("executeCustomUpdate tx={}: {}#{}", session.getTransaction().getStatus(), entityClass.getSimpleName(), query);                                
 
             } catch (HibernateException he) {
                 propogateIfAbsentMessage(he, NO_SESSION_FOR_THREAD);

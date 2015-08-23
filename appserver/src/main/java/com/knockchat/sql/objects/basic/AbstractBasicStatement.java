@@ -16,8 +16,6 @@ import com.google.common.collect.Lists;
 import com.knockchat.sql.SqlUtils;
 import com.knockchat.utils.ExecutionStats;
 import com.knockchat.utils.Pair;
-import com.knockchat.utils.settings.AllreadyExistEx;
-import com.knockchat.utils.settings.PersistsSettings;
 import com.knockchat.utils.timestat.StatFactory;
 import com.knockchat.utils.timestat.TimeStat;
 
@@ -48,12 +46,6 @@ public abstract class AbstractBasicStatement<ObjectType> {
 			ts = StatFactory.createTimeStat( "sql-query" );
 		} catch ( Throwable e ) {
 			throw new RuntimeException( "Error creating timestat 'sql-query'", e );
-		}
-		
-		try {
-			PersistsSettings.addSettings(settings, "sql-query");
-		} catch (AllreadyExistEx e) {
-			throw new RuntimeException( "Error creating settings 'sql-query'", e );
 		}		
 	}
 

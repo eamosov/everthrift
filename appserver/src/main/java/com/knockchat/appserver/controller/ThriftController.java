@@ -25,9 +25,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
-import org.springframework.integration.MessageChannel;
-import org.springframework.integration.MessageHeaders;
-import org.springframework.integration.message.GenericMessage;
+import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.MessageHeaders;
+import org.springframework.messaging.support.GenericMessage;
 import org.springframework.transaction.TransactionStatus;
 
 import com.google.common.util.concurrent.FutureCallback;

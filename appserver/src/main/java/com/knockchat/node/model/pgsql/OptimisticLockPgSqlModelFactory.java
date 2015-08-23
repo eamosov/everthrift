@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 
 import org.apache.thrift.TException;
-import org.hibernate.StaleObjectStateException;
+import org.hibernate.StaleStateException;
 import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -79,7 +79,7 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
 							return null;
 						else
 							throw Throwables.propagate(e);
-					}catch(StaleObjectStateException e){
+					}catch(StaleStateException e){
 						if (TransactionSynchronizationManager.isActualTransactionActive()) {
 							throw e;
 						}

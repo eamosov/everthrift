@@ -5,6 +5,7 @@ import java.util.Properties;
 import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.Ehcache;
 
+import org.hibernate.boot.spi.SessionFactoryOptions;
 import org.hibernate.cache.CacheException;
 import org.hibernate.cache.ehcache.internal.nonstop.NonstopAccessStrategyFactory;
 import org.hibernate.cache.ehcache.internal.regions.EhcacheCollectionRegion;
@@ -14,7 +15,6 @@ import org.hibernate.cache.ehcache.internal.regions.EhcacheQueryResultsRegion;
 import org.hibernate.cache.ehcache.internal.regions.EhcacheTimestampsRegion;
 import org.hibernate.cache.ehcache.internal.strategy.EhcacheAccessStrategyFactory;
 import org.hibernate.cache.ehcache.internal.strategy.EhcacheAccessStrategyFactoryImpl;
-import org.hibernate.cache.ehcache.internal.util.HibernateUtil;
 import org.hibernate.cache.spi.CacheDataDescription;
 import org.hibernate.cache.spi.CollectionRegion;
 import org.hibernate.cache.spi.EntityRegion;
@@ -23,7 +23,6 @@ import org.hibernate.cache.spi.QueryResultsRegion;
 import org.hibernate.cache.spi.RegionFactory;
 import org.hibernate.cache.spi.TimestampsRegion;
 import org.hibernate.cache.spi.access.AccessType;
-import org.hibernate.cfg.Settings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +35,7 @@ public class HibernateCache implements RegionFactory {
     /**
      * Settings object for the Hibernate persistence unit.
      */
-    private Settings settings;
+    private SessionFactoryOptions settings;
 
     /**
      * {@link EhcacheAccessStrategyFactory} for creating various access strategies
@@ -51,7 +50,7 @@ public class HibernateCache implements RegionFactory {
      * {@inheritDoc}
      */
     @Override
-	public void start(Settings settings, Properties properties) throws CacheException {
+	public void start(SessionFactoryOptions settings, Properties properties) throws CacheException {
         this.settings = settings;
     }
 
@@ -132,7 +131,7 @@ public class HibernateCache implements RegionFactory {
                 cache = manager.getEhcache( name );
                 log.debug( "started EHCache region: {}", name );
             }
-            HibernateUtil.validateEhcache( cache );
+            //HibernateUtil.validateEhcache( cache );
             return cache;
         }
         catch ( net.sf.ehcache.CacheException e ) {
