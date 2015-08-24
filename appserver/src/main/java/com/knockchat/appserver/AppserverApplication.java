@@ -31,6 +31,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -56,7 +59,10 @@ import org.springframework.core.env.SimpleCommandLinePropertySource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.ResourcePropertySource;
 import org.springframework.web.context.support.XmlWebApplicationContext;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsProcessor;
 import org.springframework.web.servlet.DispatcherServlet;
+import org.springframework.web.servlet.handler.AbstractHandlerMapping;
 
 import com.knockchat.appserver.thrift.cluster.NodeAddress;
 import com.knockchat.appserver.transport.http.BinaryThriftServlet;
@@ -326,6 +332,19 @@ public class AppserverApplication {
 
         final DispatcherServlet dispatcherServlet = new DispatcherServlet(springWebApplicationContext);
         jettyContext.addServlet(new ServletHolder(dispatcherServlet), "/*");
+        
+        springWebApplicationContext.refresh();
+        
+        //hack for disable CORS
+        for (AbstractHandlerMapping m: springWebApplicationContext.getBeansOfType(AbstractHandlerMapping.class).values()){
+        	m.setCorsProcessor(new CorsProcessor(){
+
+				@Override
+				public boolean processRequest(CorsConfiguration configuration, HttpServletRequest request, HttpServletResponse response) throws IOException {					
+					return true;
+				}});
+        }
+			
     }
 
     public synchronized void start() {
