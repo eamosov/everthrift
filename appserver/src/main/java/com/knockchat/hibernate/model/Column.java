@@ -47,6 +47,7 @@ import com.knockchat.hibernate.model.types.LongTimestampType;
 import com.knockchat.hibernate.model.types.PointType;
 import com.knockchat.hibernate.model.types.ShortListType;
 import com.knockchat.hibernate.model.types.StringListType;
+import com.knockchat.hibernate.model.types.TBaseLazyType;
 import com.knockchat.hibernate.model.types.TEnumTypeFactory;
 import com.knockchat.utils.thrift.TBaseLazy;
 import com.knockchat.utils.thrift.Utils;
@@ -377,7 +378,7 @@ public class Column {
     			throw new RuntimeException("TBaseLazy field must be root thrift class");
     		}
     		
-    		hibernateType = CustomTypeFactory.create(javaClass, javaClass).getCanonicalName();
+    		hibernateType = CustomTypeFactory.create(javaClass, TBaseLazyType.class).getCanonicalName();
     	}
     	
     	

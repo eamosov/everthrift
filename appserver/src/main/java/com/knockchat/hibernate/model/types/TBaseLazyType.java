@@ -63,14 +63,14 @@ public abstract class TBaseLazyType implements UserType {
 
 	@Override
 	public Object nullSafeGet(ResultSet rs, String[] names, SessionImplementor session, Object owner) throws HibernateException, SQLException {
-		
+				
 		final byte[] bytes = rs.getBytes(names[0]);
 		
-		if (bytes == null)
-			return null;
-		
 		if (log.isDebugEnabled())
-			log.debug("Load {} bytes for type {}", bytes.length, returnedClass().getSimpleName());
+			log.debug("Load {} bytes for type {}", bytes == null ? 0 : bytes.length, returnedClass().getSimpleName());
+
+		if (bytes == null)
+			return null;		
 				
 		try {
 			final TBaseLazy o = init.newInstance(bytes);
