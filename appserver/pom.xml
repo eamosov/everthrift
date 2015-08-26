@@ -216,9 +216,9 @@
 		</dependency>
 
 		<dependency>
-			<groupId>asm</groupId>
-			<artifactId>asm-all</artifactId>
-			<version>3.3.1</version>
+			<groupId>org.ow2.asm</groupId>
+			<artifactId>asm</artifactId>
+			<version>5.0.4</version>
 		</dependency>
 
 		<dependency><!-- PostgreSQL for testing -->

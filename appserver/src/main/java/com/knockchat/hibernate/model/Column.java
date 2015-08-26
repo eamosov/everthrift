@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.thrift.TBase;
 import org.apache.thrift.TEnum;
 import org.hibernate.type.BigDecimalType;
 import org.hibernate.type.BigIntegerType;
@@ -47,6 +48,8 @@ import com.knockchat.hibernate.model.types.PointType;
 import com.knockchat.hibernate.model.types.ShortListType;
 import com.knockchat.hibernate.model.types.StringListType;
 import com.knockchat.hibernate.model.types.TEnumTypeFactory;
+import com.knockchat.utils.thrift.TBaseLazy;
+import com.knockchat.utils.thrift.Utils;
 
 public class Column {
 	
@@ -138,7 +141,7 @@ public class Column {
     }
 
     public boolean isValid(){
-        return this.propertyName!=null && this.javaClass != null;
+        return this.propertyName!=null && this.javaClass != null && this.hibernateType !=null;
     }
 
     public static class ColumnExtractor implements ResultSetExtractor<List<Column>> {
@@ -187,12 +190,20 @@ public class Column {
 
     public boolean setHibernateType() {
 
-    	//LOG.debug("{}.{} {} <-> {}/{}", new Object[]{value.getTable().getName(), col.getName(), javaType, jdbcType, columnModel.getColumnType()});    	
+    	final String logFmt = "{}.{}({}/{})  <-> {}.{}({})";
+    	final Object[] logArgs = new Object[]{table.getTableName(), columnName, jdbcType, columnType, table.javaClass.getSimpleName(), propertyName, javaClass !=null ? javaClass.getSimpleName(): "null"};
 
-    	if(javaClass == null) {
+    	if (propertyName == null){
+    		log.trace("Skip not existing " + logFmt, logArgs);
     		return false;
+    	}else if(javaClass == null) {
+    		log.warn(logFmt, logArgs);
+    		return false;
+    	}else{
+    		log.debug(logFmt, logArgs);
     	}
     	
+
     	if (javaClass == Long.class || javaClass == long.class) {            
     		switch(jdbcType){
     			case Types.TIMESTAMP:
@@ -353,11 +364,25 @@ public class Column {
     	}else if (jdbcType == Types.OTHER && columnType.contains("jsonb")){
     		
     		hibernateType = CustomTypeFactory.create(javaClass, JsonType.class).getCanonicalName();        	
+    	}else if (jdbcType == Types.BINARY && TBaseLazy.class.isAssignableFrom(javaClass)){
+    		
+    		if (!TBase.class.isAssignableFrom(javaClass)){
+    			log.error("Error mapping " + logFmt, logArgs);
+    			throw new RuntimeException("TBaseLazy must implement TBase");
+    		}
+    		
+    		final Class rootThriftCls = Utils.getRootThriftClass(javaClass).first;
+    		if (rootThriftCls != javaClass){
+    			log.error("Error mapping " + logFmt, logArgs);
+    			throw new RuntimeException("TBaseLazy field must be root thrift class");
+    		}
+    		
+    		hibernateType = CustomTypeFactory.create(javaClass, javaClass).getCanonicalName();
     	}
     	
     	
-    	if (columnType == null){
-    		log.error("Unsupported type (java type: {}, jdbc type: {}) for column '{}'.", javaClass, jdbcType, columnName );
+    	if (hibernateType == null){
+    		log.error("Unknown mapping " + logFmt, logArgs);
     		return false;
     	}
 
