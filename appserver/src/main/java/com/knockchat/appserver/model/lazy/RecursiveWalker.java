@@ -5,11 +5,16 @@ import java.util.Map;
 import java.util.RandomAccess;
 
 import org.apache.thrift.TBase;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.knockchat.utils.thrift.scanner.TBaseScanHandler;
+import com.knockchat.utils.thrift.scanner.TBaseScanner;
 import com.knockchat.utils.thrift.scanner.TBaseScannerFactory;
 
 public class RecursiveWalker implements WalkerIF {
+	
+	private static final Logger log = LoggerFactory.getLogger(RecursiveWalker.class);
 	
 	public static String SCENARIO_DEFAULT = "default";
 	
@@ -23,8 +28,21 @@ public class RecursiveWalker implements WalkerIF {
 	private final TBaseScanHandler tBaseScanHandler = new TBaseScanHandler(){
 
 		@Override
-		public void apply(TBase o) {				
-			scannerFactory.create(o.getClass(), scenario).scan(o, this, registry);					
+		public void apply(TBase o) {
+			
+			if (o == null){
+				log.error("o is NULL");
+				return;
+			}
+			
+			final TBaseScanner s = scannerFactory.create(o.getClass(), scenario);
+			
+			if (s == null){
+				log.error("Coudn't get TBaseScanner for class={} and scenario={}", o.getClass().getSimpleName(), scenario);
+				return;
+			}
+			
+			s.scan(o, this, registry);
 		}			
 	};
 	
