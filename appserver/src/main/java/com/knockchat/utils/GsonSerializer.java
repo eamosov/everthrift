@@ -98,7 +98,7 @@ public class GsonSerializer {
 			for (Map.Entry<String, JsonElement> e:json.getAsJsonObject().entrySet()){
 				final MetaProperty p = mc.getProperty(e.getKey());
 				if (p == null){
-					log.error("coudn't find property {} for class {}", e.getKey(), mc.getName());
+					log.warn("coudn't find property {} for class {}", e.getKey(), mc.getName());
 					continue;
 				}
 				
