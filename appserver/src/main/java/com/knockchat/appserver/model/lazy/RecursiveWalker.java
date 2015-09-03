@@ -30,10 +30,8 @@ public class RecursiveWalker implements WalkerIF {
 		@Override
 		public void apply(TBase o) {
 			
-			if (o == null){
-				log.error("o is NULL");
+			if (o == null)
 				return;
-			}
 			
 			final TBaseScanner s = scannerFactory.create(o.getClass(), scenario);
 			

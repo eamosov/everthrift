@@ -216,7 +216,7 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
 		}
 		final InvocationInfo tf = sd.async.pop(msg.seqid);
 		if (tf == null){
-			log.error("No registered thrift callback for msg:{}", msg);
+			log.warn("No registered thrift callback for msg:{}", msg);
 			return;
 		}
 		
@@ -272,7 +272,7 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
 		
 		final SessionData sd = sessionRegistry.get(sessionId);
 		if (sd == null)
-			throw new TTransportException("websocket connection " + sessionId + " not found");
+			throw new TTransportException(TTransportException.NOT_OPEN, "websocket connection " + sessionId + " not found");
 	
 		final int seqId = sd.async.nextSeqId();
 		
