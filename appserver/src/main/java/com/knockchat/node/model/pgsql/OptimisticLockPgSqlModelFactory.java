@@ -126,9 +126,14 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
 				return OptimisticUpdateResult.create(helper.updateEntity(e), orig, helper.isUpdated());
 			}else{
 				return OptimisticUpdateResult.create(e, e, false);
-			}			
-		}catch(TException | EntityNotFoundException e){
+			}
+		}catch (EntityNotFoundException e){
+			log.debug("tryOptimisticUpdate ends with exception of type {}", e.getClass().getSimpleName());
+			throw e;
+		}catch(TException e){
 			log.warn("tryOptimisticUpdate ends with exception of type {}", e.getClass().getSimpleName());
+			throw e;
+		}catch (StaleStateException e){
 			throw e;
 		}catch (Exception e){		
 			log.warn("tryOptimisticUpdate ends with exception of type {}", e.getClass().getSimpleName());
