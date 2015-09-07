@@ -58,7 +58,7 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
 	 * @return <new, old>
 	 * @throws Exception
 	 */
-    private OptimisticUpdateResult<ENTITY> optimisticUpdate(final PK id, final EntityMutator<ENTITY> mutator, final EntityFactory<PK, ENTITY> factory) throws TException, EntityNotFoundException {
+    private OptimisticUpdateResult<ENTITY> optimisticUpdate(final PK id, final EntityMutator<ENTITY> mutator, final EntityFactory<PK, ENTITY> factory) throws TException, EntityNotFoundException, StaleStateException {
 		
     	final OptimisticUpdateResult<ENTITY> ret =  RwModelFactoryHelper.optimisticUpdate(new Callable<OptimisticUpdateResult<ENTITY>>(){
 
@@ -97,7 +97,7 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
 	}
 	
 	@Transactional(rollbackFor=Exception.class)
-	private OptimisticUpdateResult<ENTITY> tryOptimisticUpdate(PK id, EntityMutator<ENTITY> mutator, final EntityFactory<PK, ENTITY> factory) throws TException, EntityNotFoundException{
+	private OptimisticUpdateResult<ENTITY> tryOptimisticUpdate(PK id, EntityMutator<ENTITY> mutator, final EntityFactory<PK, ENTITY> factory) throws TException, EntityNotFoundException, StaleStateException{
 		
 		try{
 			ENTITY e;
