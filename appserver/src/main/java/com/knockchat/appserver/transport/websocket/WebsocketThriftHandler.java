@@ -329,7 +329,7 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
 			@Override
 			public String getClientIp() {
 				final String xRealIp =  (String)sd.session.getAttributes().get(HTTP_X_REAL_IP);
-				return xRealIp != null ? xRealIp : sd.session.getRemoteAddress().toString();
+				return xRealIp != null ? xRealIp : sd.session.getRemoteAddress().getAddress().getHostAddress();
 			}
 		};
 	}

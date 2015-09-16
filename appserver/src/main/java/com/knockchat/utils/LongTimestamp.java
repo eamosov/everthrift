@@ -1,5 +1,10 @@
 package com.knockchat.utils;
 
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 
 public class LongTimestamp {
@@ -7,6 +12,12 @@ public class LongTimestamp {
 	public final static long DAY = 3600L * 24L * 1000L;
 	public final static long MONTH = DAY * 30L;
 	public final static long WEEK = DAY * 7L;
+	
+	public static final ZoneId systemDefault = ZoneId.systemDefault();
+	public static final ZoneId gmt = ZoneId.of("GMT");
+	
+	public static final DateTimeFormatter formatterDateTime = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.nx");
+	public static final DateTimeFormatter formatterDate = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
 	public static long now(){
 		return System.currentTimeMillis();
@@ -32,4 +43,26 @@ public class LongTimestamp {
 		return date.getTime();
 	}
 	
+	public static long dayStart(long timestamp, ZoneId zoneId){
+		return ZonedDateTime.ofInstant(Instant.ofEpochMilli(timestamp), zoneId).truncatedTo(ChronoUnit.DAYS).toEpochSecond() * 1000L;
+	}
+
+	public static long dayStart(long timestamp){
+		return dayStart(timestamp, systemDefault);
+	}
+
+	public static long dayStartGmt(long timestamp){
+		return dayStart(timestamp, gmt);
+	}
+	
+	public static String formatDateTime(long timestamp, ZoneId zoneId){
+		final ZonedDateTime dt = ZonedDateTime.ofInstant(Instant.ofEpochMilli(timestamp), zoneId);		
+		return dt.format(formatterDateTime);			
+	}
+
+	public static String formatDate(long timestamp, ZoneId zoneId){
+		final ZonedDateTime dt = ZonedDateTime.ofInstant(Instant.ofEpochMilli(timestamp), zoneId);		
+		return dt.format(formatterDate);			
+	}
+
 }

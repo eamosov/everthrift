@@ -4,7 +4,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.hibernate.annotations.OptimisticLockType;
-import org.hibernate.cache.spi.access.AccessType;
+import org.hibernate.annotations.ResultCheckStyle;
+import org.hibernate.annotations.SQLInsert;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Maps;
@@ -18,6 +19,8 @@ public class Table {
     protected Class javaClass;
     protected boolean view = false;
     protected OptimisticLockType optimisticLockType = OptimisticLockType.NONE;
+    
+    protected SQLInsert sqlInsert;
 
     public Table(String schema, String tableName, Class<?> javaClass, boolean view) {
         this.view = view;
@@ -81,6 +84,18 @@ public class Table {
 		this.optimisticLockType = optimisticLockType;
 	}
 	
+	private String toXmlValue (ResultCheckStyle s){
+		switch (s){
+			case NONE:
+				return "none";
+			case COUNT:
+				return "rowcount";
+			case PARAM:
+				return "param";
+		}
+		return null;
+	}
+	
 	public String toHbmXml() {
 		final StringBuilder sb = new StringBuilder();
 		
@@ -97,7 +112,7 @@ public class Table {
         
 //        if (secondLevelCache.equalsIgnoreCase("true"))
   //      	clazz.setCacheConcurrencyStrategy(AccessType.NONSTRICT_READ_WRITE.getExternalName());
-
+		
 		sb.append("\t<cache usage=\"nonstrict-read-write\" />\n");
 		
 		final String pkColumnName = primaryKey.getColumnNames().get(0);
@@ -132,6 +147,10 @@ public class Table {
 				sb.append(col.replaceAll("(?m)^", "\t") + "\n");    	
 		}		
 		
+		if (sqlInsert !=null){
+			sb.append(String.format("\t<sql-insert callable=\"%s\" check=\"%s\">%s</sql-insert>\n", Boolean.toString(sqlInsert.callable()), toXmlValue(sqlInsert.check()), sqlInsert.sql()));
+		}
+
 		sb.append("</class>\n");
 		
 		return sb.toString();

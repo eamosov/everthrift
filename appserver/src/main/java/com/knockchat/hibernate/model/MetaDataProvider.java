@@ -4,13 +4,13 @@ import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 
 import javax.sql.DataSource;
 
 import org.hibernate.annotations.OptimisticLocking;
+import org.hibernate.annotations.SQLInsert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.support.DatabaseMetaDataCallback;
@@ -74,6 +74,8 @@ public class MetaDataProvider {
             if (clazz.isAnnotationPresent(OptimisticLocking.class)){
             	table.setOptimisticLockType(((OptimisticLocking)clazz.getAnnotation(OptimisticLocking.class)).type());
             }
+            
+            table.sqlInsert = (SQLInsert)clazz.getAnnotation(SQLInsert.class);
             
             tableModels.add(table);
         } catch (MetaDataAccessException e) {
