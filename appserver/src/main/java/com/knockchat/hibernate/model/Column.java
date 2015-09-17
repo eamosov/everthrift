@@ -47,6 +47,7 @@ import com.knockchat.hibernate.model.types.LongTimestampType;
 import com.knockchat.hibernate.model.types.PointType;
 import com.knockchat.hibernate.model.types.ShortListType;
 import com.knockchat.hibernate.model.types.StringListType;
+import com.knockchat.hibernate.model.types.StringSetType;
 import com.knockchat.hibernate.model.types.TBaseLazyType;
 import com.knockchat.hibernate.model.types.TEnumTypeFactory;
 import com.knockchat.utils.thrift.TBaseLazy;
@@ -319,13 +320,19 @@ public class Column {
 
     			hibernateType = IntegerListType.class.getCanonicalName();
 
-    		}else if (columnType.contains("short")){
+    		}else if (columnType.contains("_short")){
 
     			hibernateType = ShortListType.class.getCanonicalName();
 
-    		}else if (columnType.contains("varchar") || columnType.contains("text")) {
+    		}else if (columnType.contains("_varchar") || columnType.contains("_text")) {
 
     			hibernateType = StringListType.class.getCanonicalName();
+    		}
+    		
+    	}else if (java.util.Set.class.equals(javaClass)){
+    		
+    		if (columnType.contains("_varchar") || columnType.contains("_text")) {
+    			hibernateType = StringSetType.class.getCanonicalName();
     		}
     		
     	}else if (Map.class.equals(javaClass)){
