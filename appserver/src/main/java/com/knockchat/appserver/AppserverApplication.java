@@ -64,6 +64,7 @@ import org.springframework.web.cors.CorsProcessor;
 import org.springframework.web.servlet.DispatcherServlet;
 import org.springframework.web.servlet.handler.AbstractHandlerMapping;
 
+import com.knockchat.appserver.monitoring.RpsServlet;
 import com.knockchat.appserver.thrift.cluster.NodeAddress;
 import com.knockchat.appserver.transport.http.BinaryThriftServlet;
 import com.knockchat.appserver.transport.http.JsonThriftServlet;
@@ -323,6 +324,9 @@ public class AppserverApplication {
 
         final BinaryThriftServlet binaryThriftServlet = context.getBean(BinaryThriftServlet.class);
         jettyContext.addServlet(new ServletHolder(binaryThriftServlet), "/TBINARY");
+                
+        final RpsServlet rpsServlet = context.getBean(RpsServlet.class);
+        jettyContext.addServlet(new ServletHolder(rpsServlet), "/rps");
 
         //final AnnotationConfigWebApplicationContext springWebApplicationContext = new AnnotationConfigWebApplicationContext();
         final XmlWebApplicationContext springWebApplicationContext = new XmlWebApplicationContext();

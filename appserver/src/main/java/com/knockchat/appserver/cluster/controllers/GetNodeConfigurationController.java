@@ -9,7 +9,6 @@ import org.springframework.jmx.support.ConnectorServerFactoryBean;
 import com.knockchat.appserver.AppserverApplication;
 import com.knockchat.appserver.controller.ThriftController;
 import com.knockchat.appserver.controller.ThriftControllerRegistry;
-import com.knockchat.appserver.model.lazy.LazyLoadManager;
 import com.knockchat.appserver.thrift.cluster.ClusterService;
 import com.knockchat.appserver.thrift.cluster.ClusterService.getNodeConfiguration_args;
 import com.knockchat.appserver.thrift.cluster.Node;

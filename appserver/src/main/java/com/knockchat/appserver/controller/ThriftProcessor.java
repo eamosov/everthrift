@@ -1,5 +1,6 @@
 package com.knockchat.appserver.controller;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.Map;
@@ -37,6 +38,14 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.knockchat.appserver.cluster.JgroupsMessageDispatcher;
 import com.knockchat.appserver.cluster.thrift.JGroupsThrift;
+import com.knockchat.appserver.monitoring.RpsServlet;
+import com.knockchat.appserver.monitoring.RpsServlet.DsName;
+import com.knockchat.appserver.transport.asynctcp.RpcAsyncTcp;
+import com.knockchat.appserver.transport.http.RpcHttp;
+import com.knockchat.appserver.transport.jgroups.RpcJGroups;
+import com.knockchat.appserver.transport.jms.RpcJms;
+import com.knockchat.appserver.transport.tcp.RpcSyncTcp;
+import com.knockchat.appserver.transport.websocket.RpcWebsocket;
 import com.knockchat.utils.thrift.AbstractThriftClient;
 import com.knockchat.utils.thrift.InvocationInfo;
 import com.knockchat.utils.thrift.SessionIF;
@@ -69,6 +78,9 @@ public class ThriftProcessor implements TProcessor{
 	@Autowired
 	protected ApplicationContext applicationContext;
 	
+	@Autowired
+	private RpsServlet rpsServlet;
+	
 	private final TProtocolFactory protocolFactory;
 	
 	public ThriftProcessor(ThriftControllerRegistry registry, TProtocolFactory protocolFactory){
@@ -86,8 +98,26 @@ public class ThriftProcessor implements TProcessor{
 		}
 		return true;
 	}
+	
+	private void stat(){
+		
+		final Class<? extends Annotation> type = registry.getType();
+		
+		if (type == RpcSyncTcp.class || type == RpcAsyncTcp.class)
+			rpsServlet.incThrift(DsName.THRIFT_TCP);
+		else if (type == RpcHttp.class)
+			rpsServlet.incThrift(DsName.THRIFT_HTTP);
+		else if (type == RpcJGroups.class)
+			rpsServlet.incThrift(DsName.THRIFT_JGROUPS);
+		else if (type == RpcJms.class)
+			rpsServlet.incThrift(DsName.THRIFT_JMS);
+		else if (type == RpcWebsocket.class)
+			rpsServlet.incThrift(DsName.THRIFT_WS);
+	}
 					
 	public MessageWrapper process(MessageWrapper in, ThriftClient thriftClient) throws Exception{
+		
+		stat();
 
 		try{		
 			final TProtocol inp = protocolFactory.getProtocol(in.getTTransport());
@@ -168,6 +198,9 @@ public class ThriftProcessor implements TProcessor{
 	}
 		
 	public boolean process(final TProtocol inp, TProtocol out, final MessageWrapper attributes) throws TException {
+		
+		stat();
+		
 		final TMessage msg = inp.readMessageBegin();
 
 		final ThriftControllerInfo controllerInfo = registry.getController(msg.name);

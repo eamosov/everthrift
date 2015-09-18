@@ -9,7 +9,9 @@ import java.util.Date;
 
 public class LongTimestamp {
 	
-	public final static long DAY = 3600L * 24L * 1000L;
+	public final static long MIN = 60L * 1000L;
+	public final static long HOUR = MIN * 60;
+	public final static long DAY = HOUR * 24L;
 	public final static long MONTH = DAY * 30L;
 	public final static long WEEK = DAY * 7L;
 	
