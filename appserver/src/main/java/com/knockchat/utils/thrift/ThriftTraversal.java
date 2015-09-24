@@ -57,12 +57,13 @@ public class ThriftTraversal {
 		}
 	}
 	
-	public static <T extends TBase> void visitChildsOfType(final Object obj, final Class<T> type, final Function<T, Void> visitHandler){
-		final Set<Object> visited = new ReferenceOpenHashSet<Object>();
+	public static <T extends TBase> Set<T> visitChildsOfType(final Object obj, final Class<T> type, final Function<T, Void> visitHandler){
+		final Set<T> visited = new ReferenceOpenHashSet<T>();
 		visitChildsOfType(visited, obj, type, Utils.getRootThriftClass(type).first, visitHandler);
+		return visited;
 	}
 			
-	private static <T extends TBase> void visitChildsOfType(Set<Object> visited, final Object obj, final Class<T> type, final Class<? extends TBase> thriftBaseType, final Function<T, Void> visitHandler){
+	private static <T extends TBase> void visitChildsOfType(Set<T> visited, final Object obj, final Class<T> type, final Class<? extends TBase> thriftBaseType, final Function<T, Void> visitHandler){
 		
 		if (obj == null)
 			return;
@@ -79,7 +80,7 @@ public class ThriftTraversal {
 		}
 				
 		if (type.isInstance(obj)){
-			if (visited.add(obj)){
+			if (visited.add((T)obj)){
 				visitHandler.apply((T)obj);
 			}else{
 				log.debug("allready visited: objClass={}, type={},  thriftBaseType={}",  obj==null ? null : obj.getClass().getSimpleName(), type.getSimpleName(), thriftBaseType.getSimpleName());
