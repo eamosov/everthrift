@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Throwables;
+import com.knockchat.utils.thrift.Mapper;
 import com.knockchat.utils.thrift.TBaseLazy;
 
 public abstract class TBaseLazyType implements UserType {
@@ -26,7 +27,7 @@ public abstract class TBaseLazyType implements UserType {
 	
 	public TBaseLazyType(){
 		try {
-			init = returnedClass().getConstructor(byte[].class);
+			init = Mapper.from(returnedClass()).getConstructor(byte[].class);
 		} catch (NoSuchMethodException | SecurityException e) {
 			throw Throwables.propagate(e);
 		}
