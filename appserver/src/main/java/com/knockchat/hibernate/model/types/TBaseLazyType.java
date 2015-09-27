@@ -7,6 +7,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 
+import org.apache.commons.lang3.concurrent.ConcurrentInitializer;
+import org.apache.commons.lang3.concurrent.LazyInitializer;
 import org.apache.thrift.TBase;
 import org.apache.thrift.TException;
 import org.hibernate.HibernateException;
@@ -23,14 +25,20 @@ public abstract class TBaseLazyType implements UserType {
 	
 	private static final Logger log = LoggerFactory.getLogger(TBaseLazyType.class);
 	
-	final Constructor<TBaseLazy> init;
+	final ConcurrentInitializer<Constructor<TBaseLazy>> init;
 	
 	public TBaseLazyType(){
-		try {
-			init = Mapper.from(returnedClass()).getConstructor(byte[].class);
-		} catch (NoSuchMethodException | SecurityException e) {
-			throw Throwables.propagate(e);
-		}
+		
+		init = new LazyInitializer<Constructor<TBaseLazy>>(){
+
+			@Override
+			protected Constructor<TBaseLazy> initialize() {
+				try {
+					return Mapper.from(returnedClass()).getConstructor(byte[].class);
+				} catch (NoSuchMethodException | SecurityException e) {
+					throw Throwables.propagate(e);
+				}
+			}};
 	}
 
 	@Override
@@ -74,7 +82,7 @@ public abstract class TBaseLazyType implements UserType {
 			return null;		
 				
 		try {
-			final TBaseLazy o = init.newInstance(bytes);
+			final TBaseLazy o = init.get().newInstance(bytes);
 			return o;
 		} catch (Exception e) {		
 			if (e instanceof RuntimeException)

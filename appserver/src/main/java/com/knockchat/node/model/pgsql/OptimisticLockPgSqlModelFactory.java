@@ -27,7 +27,31 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
 	
     public OptimisticLockPgSqlModelFactory(String cacheName, Class<ENTITY> entityClass) {
         super(cacheName, entityClass);
-    }    
+    }
+    
+    @Override
+	public OptimisticUpdateResult<ENTITY> update(final PK id, final LambdaMutator<ENTITY> mutator, final EntityFactory<PK, ENTITY> factory) throws TException, E{
+    	
+    	return update(id, new EntityMutator<ENTITY>(){
+
+			@Override
+			public boolean beforeUpdate() throws TException {
+				return true;
+			}
+
+			@Override
+			public boolean update(ENTITY e) throws TException {
+				return mutator.apply(e);
+			}
+
+			@Override
+			public void afterTransactionClosed() {
+			}
+
+			@Override
+			public void afterUpdate() {
+			}}, factory);
+    }
 
     @Override
 	public OptimisticUpdateResult<ENTITY> update(PK id, EntityMutator<ENTITY> mutator, final EntityFactory<PK, ENTITY> factory) throws TException, E{

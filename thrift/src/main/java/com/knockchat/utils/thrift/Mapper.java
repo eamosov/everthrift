@@ -1,5 +1,6 @@
 package com.knockchat.utils.thrift;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -20,7 +21,15 @@ public class Mapper {
 			throw new RuntimeException(e);
 		}
 	}
-	
+
+	public static <T extends TBase> T create(Class<T> src, T arg){		
+		try {
+			return from(src).getConstructor(arg.getClass()).newInstance(arg);
+		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
 	public static <T> Class<T> from(Class<T> src){
 		return (Class)m.getOrDefault(src, src);
 	}

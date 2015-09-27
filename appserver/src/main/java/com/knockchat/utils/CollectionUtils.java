@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -16,6 +17,7 @@ import org.apache.commons.lang.StringUtils;
 
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Function;
+import com.google.common.base.Predicate;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -165,14 +167,10 @@ public class CollectionUtils {
 	}
 	
 	public static boolean contains(Collection<?> collection, Object element) {
-		if (collection != null) {
-			for (Object candidate : collection) {
-				if (Objects.equals(candidate,element)) {
-					return true;
-				}
-			}
-		}
-		return false;
+		if (collection == null || collection.isEmpty())
+			return false;
+		else
+			return collection.contains(element);
 	}
 	
 	public static boolean isEmpty(TLongCollection c){
@@ -215,5 +213,22 @@ public class CollectionUtils {
 		}
 		
 		return r; 
+	}
+	
+	public static <T> void optimisticFilter(List<T> input, Predicate<? super T> p){
+		
+		if (input == null || input.isEmpty())
+			return;
+		
+		for (int i=0; i< input.size(); i++){
+			if (p.apply(input.get(i)) == false){
+				final ListIterator<T> it = input.listIterator(i);
+				while(it.hasNext()){
+					if (!p.apply(it.next()))
+						it.remove();
+				}
+				return;
+			}
+		}
 	}
 }
