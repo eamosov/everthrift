@@ -16,8 +16,15 @@ public class LongTimestamp {
 	public final static long WEEK = DAY * 7L;
 	
 	public static final ZoneId systemDefault = ZoneId.systemDefault();
-	public static final ZoneId gmt = ZoneId.of("GMT");
 	
+	public static final ZoneId[] zones = new ZoneId[25];
+	
+	static {
+		for (int i=-12; i<=12; i++){
+			zones[i+12] = ZoneId.of("GMT" + (i>=0 ? "+" : "") + i);
+		}
+	}
+		
 	public static final DateTimeFormatter formatterDateTime = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.nx");
 	public static final DateTimeFormatter formatterDate = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
@@ -45,6 +52,17 @@ public class LongTimestamp {
 		return date.getTime();
 	}
 	
+	public static ZoneId zoneOf(int offset){
+		if (offset <-12 || offset > 12)
+			throw new IllegalArgumentException("zone must be in [-12; 12]");
+		
+		return zones[offset+12];
+	}
+	
+	public static long dayStart(long timestamp, int zoneOffset){
+		return dayStart(timestamp, zoneOf(zoneOffset));
+	}
+	
 	public static long dayStart(long timestamp, ZoneId zoneId){
 		return ZonedDateTime.ofInstant(Instant.ofEpochMilli(timestamp), zoneId).truncatedTo(ChronoUnit.DAYS).toEpochSecond() * 1000L;
 	}
@@ -54,7 +72,7 @@ public class LongTimestamp {
 	}
 
 	public static long dayStartGmt(long timestamp){
-		return dayStart(timestamp, gmt);
+		return dayStart(timestamp, zoneOf(0));
 	}
 	
 	public static String formatDateTime(long timestamp, ZoneId zoneId){

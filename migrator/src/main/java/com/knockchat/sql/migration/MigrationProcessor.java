@@ -1,10 +1,22 @@
 package com.knockchat.sql.migration;
 
-import org.springframework.beans.BeansException;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
+import org.springframework.beans.factory.support.BeanDefinitionBuilder;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
 import org.springframework.core.type.filter.AnnotationTypeFilter;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -18,18 +30,13 @@ import org.springframework.util.ClassUtils;
 
 import com.knockchat.utils.ConsoleUtils;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.*;
-
-public class MigrationProcessor implements ApplicationContextAware {
+public class MigrationProcessor{
 
     @Autowired
     private PlatformTransactionManager txManager;
 
-    private ApplicationContext context;
+    @Autowired
+    private ConfigurableApplicationContext context;
 
     public static final String GET_EXIST_MIGRATIONS_FROM_DB_QUERY = "select * from yii_migration where version in ( :versions ) ";
     private static Comparator<String> BY_VERSION_DATETIME = new Comparator<String>() {
@@ -88,16 +95,23 @@ public class MigrationProcessor implements ApplicationContextAware {
     }
 
     private Map<String, AbstractMigration> scanMigrationClasses(ClassPathScanningCandidateComponentProvider scanner, String basePath) {
-        Map<String, AbstractMigration> migrations4Path = new HashMap<>();
+    	
+        final Map<String, AbstractMigration> migrations4Path = new HashMap<>();
+        final DefaultListableBeanFactory beanFactory = (DefaultListableBeanFactory)context.getBeanFactory();
+        
         for (BeanDefinition b : scanner.findCandidateComponents(basePath)) {
+        	
             final Class cls = ClassUtils.resolveClassName(b.getBeanClassName(), ClassUtils.getDefaultClassLoader());
-            try {
-                AbstractMigration migration = (AbstractMigration) cls.newInstance();
-                migration.setJdbcTemplate(jdbcTemplate);
-                migrations4Path.put(((Migration) migration.getClass().getAnnotation(Migration.class)).version(), migration);
-            } catch (InstantiationException | IllegalAccessException e) {
-                e.printStackTrace();
-            }
+            	
+           	beanFactory.registerBeanDefinition(cls.getSimpleName(), BeanDefinitionBuilder.rootBeanDefinition(cls).getBeanDefinition());
+            	
+           	final AbstractMigration migration = context.getBean(cls.getSimpleName(), AbstractMigration.class);
+           	
+           	if (migration == null)
+           		throw new RuntimeException("cound't get bean:" + cls.getSimpleName());
+           	
+            migration.setJdbcTemplate(jdbcTemplate);
+            migrations4Path.put(((Migration)cls.getAnnotation(Migration.class)).version(), migration);
         }
         return migrations4Path;
     }
@@ -192,10 +206,5 @@ public class MigrationProcessor implements ApplicationContextAware {
                 return availableMigrations.put(rs.getString("version"), tmpMigrations.get(rs.getString("version")));
             }
         });
-    }
-
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        this.context = applicationContext;
     }
 }
