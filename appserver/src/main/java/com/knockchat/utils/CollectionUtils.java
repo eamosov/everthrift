@@ -274,7 +274,11 @@ public class CollectionUtils {
 
 		@Override
 		public boolean isEmpty() {
-			return !iterator().hasNext();
+			for (final Collection<? extends E> coll : items) {
+				if (!coll.isEmpty())
+					return false;
+			}
+			return true;
 		}
 
 		@Override
