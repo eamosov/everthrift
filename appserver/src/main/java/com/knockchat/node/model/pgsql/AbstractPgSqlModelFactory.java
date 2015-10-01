@@ -29,6 +29,8 @@ public class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY extends D
 		
     @Autowired
     protected List<SessionFactory> sessionFactories;
+    
+    protected SessionFactory sessionFactory;
 
     @Autowired
     protected ListeningExecutorService listeningExecutorService;
@@ -80,18 +82,17 @@ public class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY extends D
     }
     
     private void _afterPropertiesSet(){
-    	SessionFactory sf = null;
     	
         for (SessionFactory factory : sessionFactories)
             if (factory.getClassMetadata(this.entityClass) != null){
-            	sf = factory;
+            	sessionFactory = factory;
             	break;
             }
 
-        if (sf == null)
+        if (sessionFactory == null)
         	throw new RuntimeException("Cound't find SessionFactory for class " + this.entityClass.getSimpleName());
         	            
-        dao.setSessionFactory(sf);            
+        dao.setSessionFactory(sessionFactory);            
         dao.setListeningExecutorService(listeningExecutorService);    	
     }
 
