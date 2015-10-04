@@ -25,6 +25,11 @@
 			<arg line="-o ." />
 			<arg line="${file}" />
 		</exec>
+		<exec executable="${thrift.binary}" dir="src/main" failonerror="true">
+			<arg line="--gen perl -I thrift-includes/META-INF/thrift/ -I thrift" />
+			<arg line="-o ." />
+			<arg line="${file}" />
+		</exec>
 	</target>
 	
 	<target name="build-one-cocoa" depends="check-local-thrift">
@@ -48,6 +53,19 @@
 			<arg line="-o ." />
 			<arg line="${file}" />
 		</exec>
+
+		<exec executable="${thrift.binary}" dir="src/main" failonerror="true">
+			<arg line="-nowarn --gen js:ws -I thrift-includes/META-INF/thrift/ -I thrift" />
+			<arg line="-o ." />
+			<arg line="${file}" />
+		</exec>
+
+		<exec executable="${thrift.binary}" dir="src/main" failonerror="true">
+			<arg line="--gen perl -I thrift-includes/META-INF/thrift/ -I thrift" />
+			<arg line="-o ." />
+			<arg line="${file}" />
+		</exec>
+
 	</target>
 	
 

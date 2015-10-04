@@ -11,7 +11,7 @@ import net.jpountz.lz4.LZ4FastDecompressor;
 
 import org.apache.thrift.TBase;
 import org.apache.thrift.TException;
-import org.apache.thrift.protocol.TTupleProtocol;
+import org.apache.thrift.protocol.TCompactProtocol;
 import org.apache.thrift.transport.AutoExpandingBufferWriteTransport;
 import org.apache.thrift.transport.TMemoryInputTransport;
 import org.slf4j.Logger;
@@ -36,20 +36,20 @@ public aspect TBaseLazyAspect {
 	public byte[] TBaseLazy.thrift_data = null;
 	
 	private static final void encodeFrameSize(final int frameSize, final byte[] buf) {
-		buf[0] = (byte)(0xff & (frameSize >> 24));
-		buf[1] = (byte)(0xff & (frameSize >> 16));
-		buf[2] = (byte)(0xff & (frameSize >> 8));
-		buf[3] = (byte)(0xff & (frameSize));
+		buf[3] = (byte)(0xff & (frameSize >> 24));
+		buf[2] = (byte)(0xff & (frameSize >> 16));
+		buf[1] = (byte)(0xff & (frameSize >> 8));
+		buf[0] = (byte)(0xff & (frameSize));
 	}
 
 	private static final int decodeFrameSize(final byte[] buf) {
-		return  ((buf[0] & 0xff) << 24) | ((buf[1] & 0xff) << 16) | ((buf[2] & 0xff) <<  8) | ((buf[3] & 0xff));
+		return  ((buf[3] & 0xff) << 24) | ((buf[2] & 0xff) << 16) | ((buf[1] & 0xff) <<  8) | ((buf[0] & 0xff));
 	}
 
 	@SuppressWarnings("rawtypes")
 	private static byte[] toByteArray(TBase o) throws TException{
 		final AutoExpandingBufferWriteTransport t = new AutoExpandingBufferWriteTransport(1024, 1.5);
-		o.write(new TTupleProtocol(t));
+		o.write(new TCompactProtocol(t));
 				
 		final int decompressedLength = t.getPos();
 		final int maxCompressedLength = compressor.maxCompressedLength(decompressedLength);
@@ -78,7 +78,7 @@ public aspect TBaseLazyAspect {
 		if (compressedLength2 != _data.length - 4)
 			throw new TException("Decompress LZ4 error: compressedLength=" + (_data.length - 4) + " compressedLength2=" + compressedLength2);
 		
-		o.read(new TTupleProtocol(new TMemoryInputTransport(restored)));		
+		o.read(new TCompactProtocol(new TMemoryInputTransport(restored)));		
 	}
 	
 	@SuppressWarnings({ "rawtypes", "unchecked" })
