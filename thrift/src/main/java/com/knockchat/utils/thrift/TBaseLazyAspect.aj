@@ -1,25 +1,16 @@
 package com.knockchat.utils.thrift;
 
-import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Arrays;
 
-import net.jpountz.lz4.LZ4Compressor;
-import net.jpountz.lz4.LZ4Factory;
-import net.jpountz.lz4.LZ4FastDecompressor;
-
 import org.apache.thrift.TBase;
-import org.apache.thrift.TException;
-import org.apache.thrift.protocol.TCompactProtocol;
-import org.apache.thrift.transport.AutoExpandingBufferWriteTransport;
-import org.apache.thrift.transport.TMemoryInputTransport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public aspect TBaseLazyAspect {
 				
-	private static final Logger log = LoggerFactory.getLogger(TBaseLazy.class); 
+	private static final Logger log = LoggerFactory.getLogger(TBaseLazyModel.class); 
 
 	public pointcut rwObject(): execution(void writeObject(java.io.ObjectOutputStream)) || execution(void readObject(java.io.ObjectInputStream));
 
@@ -27,159 +18,69 @@ public aspect TBaseLazyAspect {
 					execution(void writeExternal(ObjectOutput)) || execution(void clear()) || execution(void deepCopyFields(..)) ||
 					execution(* deepCopy()) || execution(String toString()) || execution(void unpack()) || execution(void pack()) ||
 					execution(void read(org.apache.thrift.protocol.TProtocol)) || execution(void write(org.apache.thrift.protocol.TProtocol)) || rwObject() ||
-					execution(boolean equals(..));
+					execution(boolean equals(..)) || execution(Logger getLogger()) || execution(byte[] getThriftData()) || execution(void setThriftData(byte[])) ||
+					execution(* fieldForId(int));
 	
-	private final static LZ4Factory factory = LZ4Factory.fastestInstance();	
-	private final static LZ4Compressor compressor = factory.fastCompressor();
-	private final static LZ4FastDecompressor decompressor = factory.fastDecompressor();
-
-	public byte[] TBaseLazy.thrift_data = null;
+	public byte[] TBaseLazyModel.thrift_data = null;
 	
-	private static final void encodeFrameSize(final int frameSize, final byte[] buf) {
-		buf[3] = (byte)(0xff & (frameSize >> 24));
-		buf[2] = (byte)(0xff & (frameSize >> 16));
-		buf[1] = (byte)(0xff & (frameSize >> 8));
-		buf[0] = (byte)(0xff & (frameSize));
+	public byte[] TBaseLazyModel.getThriftData(){
+		return thrift_data;
 	}
-
-	private static final int decodeFrameSize(final byte[] buf) {
-		return  ((buf[3] & 0xff) << 24) | ((buf[2] & 0xff) << 16) | ((buf[1] & 0xff) <<  8) | ((buf[0] & 0xff));
+	
+	public void TBaseLazyModel.setThriftData(byte[] bytes){
+		thrift_data = bytes;
 	}
-
-	@SuppressWarnings("rawtypes")
-	private static byte[] toByteArray(TBase o) throws TException{
-		final AutoExpandingBufferWriteTransport t = new AutoExpandingBufferWriteTransport(1024, 1.5);
-		o.write(new TCompactProtocol(t));
-				
-		final int decompressedLength = t.getPos();
-		final int maxCompressedLength = compressor.maxCompressedLength(decompressedLength);
-		final byte[] compressed = new byte[maxCompressedLength+4];
-		final int compressedLength = compressor.compress(t.getBuf().array(), 0, decompressedLength, compressed, 4, maxCompressedLength);
+	
+	Object around(TBaseLazyModel acc): this(acc) && execution(String TBaseHasLazyModel+.toString()){
 		
-		log.debug("toByteArray: decompressedLength={}, compressedLength={}", decompressedLength, compressedLength);
-
-		encodeFrameSize(decompressedLength, compressed);
-				
-		if (compressedLength == maxCompressedLength)
-			return compressed;
+		final byte[] bytes = acc.getThriftData();
+		if (bytes != null)
+			return String.format("%s(<compressed>, length:%d)", thisJoinPointStaticPart.getSignature().getDeclaringType().getName(), bytes.length);
 		else
-			return Arrays.copyOf(compressed, compressedLength+4);
+			return proceed(acc);
+	}
+
+	before(TBaseLazyModel acc): this(acc) && execution(void TBaseHasLazyModel+.clear()){
+		acc.setThriftData(null);
+	}
+		
+	Object around(TBaseLazyModel acc, TBaseLazyModel that): this(acc) && execution(boolean TBaseHasLazyModel+.equals(TBase+)) && args(that){
+		
+		if (log.isTraceEnabled())
+			log.trace("equals {} {}", System.identityHashCode(acc), System.identityHashCode(that));
+		
+	    if (that == null)
+	        return false;
+	    
+	    final byte[] acc_bytes = acc.getThriftData();
+	    final byte[] that_bytes = acc.getThriftData();
+	    
+	    if (acc_bytes !=null && that_bytes !=null && (acc_bytes == that_bytes || Arrays.equals(acc_bytes, that_bytes)))
+	    	return true;
+	   
+		return proceed(acc.asUnpacked(), that.asUnpacked());
 	}
 	
-	@SuppressWarnings("rawtypes")
-	private static void fromByteArray(TBase o, byte []_data) throws TException{
+	Object around(TBaseLazyModel acc, TBaseLazyModel other): this(acc) && execution(void TBaseHasLazyModel+.deepCopyFields(..)) && args(other) {
 		
-		final int decompressedLength = decodeFrameSize(_data);
-		final byte[] restored = new byte[decompressedLength];
-		final int compressedLength2 = decompressor.decompress(_data, 4, restored, 0, decompressedLength);
+		final byte[] _data = other.getThriftData();
 		
-		log.debug("fromByteArray: compressedLength={} decompressedLength={}", _data.length-4, decompressedLength);
-		
-		if (compressedLength2 != _data.length - 4)
-			throw new TException("Decompress LZ4 error: compressedLength=" + (_data.length - 4) + " compressedLength2=" + compressedLength2);
-		
-		o.read(new TCompactProtocol(new TMemoryInputTransport(restored)));		
-	}
-	
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public static <T extends TBaseLazy> T asUnpacked(T t){
-		if (t.thrift_data == null){
-			return t;
+		if (_data == null){
+			return proceed(acc, other);
 		}else{
-			final T other = (T)((TBase)t).deepCopy();
-			other.unpack();
-			return other;
+			acc.clear();
+			acc.setThriftData(_data);
+			return null;
 		}
 	}
-	
-	@SuppressWarnings({ "rawtypes" })
-	public byte[] TBaseLazy.write() throws TException{
-				
-		if (this.thrift_data !=null){
-			return this.thrift_data;
-		}else{
-			return toByteArray((TBase)this);
-		}		
-	}
-	
-	@SuppressWarnings({ "rawtypes"})
-	public void TBaseLazy.read(byte[] in) throws TException{
-		((TBase)this).clear();
-		this.thrift_data = Arrays.copyOf(in, in.length);
-	}
-	
-	@SuppressWarnings({ "rawtypes" })
-	public void TBaseLazy.writeExternal(final ObjectOutput out) throws IOException {
-		if (this.thrift_data !=null){
-			out.writeInt(this.thrift_data.length);
-			out.write(this.thrift_data);
-		}else{
-			try {
-				final byte[] _data = toByteArray((TBase)this);
-				out.writeInt(_data.length);
-				out.write(_data);
-			} catch (org.apache.thrift.TException te) {
-				throw new java.io.IOException(te);
-			}				
-		}
-	}
-	
-	@SuppressWarnings({ "rawtypes"})
-	public void TBaseLazy.readExternal(final ObjectInput in) throws IOException, ClassNotFoundException {
-        // it doesn't seem like you should have to do this, but java serialization is wacky, and doesn't call the default constructor.
-		((TBase)this).clear();
-    	final int l = in.readInt();
-    	final byte[] _data = new byte[l];
-    	in.read(_data, 0, l);
-    	this.thrift_data = _data;
-	}
-	
-	@SuppressWarnings({ "rawtypes"})
-	public void TBaseLazy.unpack(){
-		if (this.thrift_data !=null){
 			
-			if (log.isDebugEnabled())
-				log.debug("Unpack object {} of type {}", System.identityHashCode(this), this.getClass().getSimpleName());
-	    	  
-			byte []_data = this.thrift_data;
-			this.thrift_data = null;
-			try{
-				fromByteArray((TBase)this, _data);
-			}catch(TException e){
-				throw new RuntimeException(e);
-			}
-		}		
-	}
-
-	@SuppressWarnings({ "rawtypes"})
-	public void TBaseLazy.pack(){
-		if (this.thrift_data ==null){
-			
-			if (log.isDebugEnabled())
-				log.debug("Pack object {} of type {}", System.identityHashCode(this), this.getClass().getSimpleName());
-	    	
-			try{
-				byte[] _data = toByteArray((TBase)this);
-				((TBase)this).clear();
-				this.thrift_data = _data;
-			}catch(TException e){
-				throw new RuntimeException(e);
-			}
-		}		
+	Object around(TBaseLazyModel acc): this(acc) && execution(* (TBaseHasLazyModel+).*(..)) && within(com.knockchat.knock.thrift..*) && !TBaseLazyAspect.tBaseExclude() && !cflow(adviceexecution() && within(TBaseLazyAspect)) && !cflow(within(TBaseLazyModel)) {
+		
+		if (log.isTraceEnabled())
+			log.trace("around: {}", thisJoinPoint.toShortString());
+		
+		acc.unpack();
+		return proceed(acc);
 	}
 	
-	public boolean TBaseLazy.isPacked(){
-		return this.thrift_data != null;
-	}
-
-//	static private void printParameters(JoinPoint jp) {
-//		println("Arguments: " );
-//		Object[] args = jp.getArgs();
-//		String[] names = ((CodeSignature)jp.getSignature()).getParameterNames();
-//		Class[] types = ((CodeSignature)jp.getSignature()).getParameterTypes();
-//		for (int i = 0; i < args.length; i++) {
-//			println("  "  + i + ". " + names[i] + " : " +  types[i].getName() + " = " + args[i]);
-//		}
-//	}
-
 }

@@ -69,8 +69,6 @@ import com.knockchat.appserver.thrift.cluster.NodeAddress;
 import com.knockchat.appserver.transport.http.BinaryThriftServlet;
 import com.knockchat.appserver.transport.http.JsonThriftServlet;
 import com.knockchat.appserver.transport.tcp.ThriftServer;
-import com.knockchat.proactor.handlers.Handlers;
-import com.knockchat.proactor.handlers.mcb.CachedMcbHandlerFactory;
 import com.knockchat.sql.migration.MigrationProcessor;
 import com.knockchat.utils.NetUtils;
 import com.knockchat.utils.PosAppInitializingBean;
@@ -111,20 +109,6 @@ public class AppserverApplication {
 
     @SuppressWarnings("rawtypes")
     public synchronized void init(String[] args, String version) {
-
-		/*
-         * Устанавливаем фабрики для вспомогательных объектов - метаклассов и
-		 * обработчиков.
-		 */
-        MetaClasses.registerFactory(new ThriftMetaClassFactory(this.getClass().getClassLoader())); // Фабрика метаклассов на базе Asm
-        MetaClasses.registerFactory(new AsmMetaClassFactory(this.getClass().getClassLoader())); // Фабрика метаклассов на базе Asm
-
-
-        Handlers.registerFactory(new CachedMcbHandlerFactory()); // Фабрика
-        // обработчиков
-        // на основе
-        // кэшированных
-        // метаклассов
 
         final Resource resource = context.getResource("classpath:application.properties");
 

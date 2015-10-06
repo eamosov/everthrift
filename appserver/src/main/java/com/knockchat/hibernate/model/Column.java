@@ -1,7 +1,5 @@
 package com.knockchat.hibernate.model;
 
-import gnu.trove.map.hash.TLongLongHashMap;
-
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.ResultSet;
@@ -11,7 +9,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.thrift.TBase;
 import org.apache.thrift.TEnum;
 import org.hibernate.type.BigDecimalType;
 import org.hibernate.type.BigIntegerType;
@@ -48,10 +45,12 @@ import com.knockchat.hibernate.model.types.PointType;
 import com.knockchat.hibernate.model.types.ShortListType;
 import com.knockchat.hibernate.model.types.StringListType;
 import com.knockchat.hibernate.model.types.StringSetType;
-import com.knockchat.hibernate.model.types.TBaseLazyType;
+import com.knockchat.hibernate.model.types.TBaseType;
 import com.knockchat.hibernate.model.types.TEnumTypeFactory;
-import com.knockchat.utils.thrift.TBaseLazy;
-import com.knockchat.utils.thrift.Utils;
+import com.knockchat.utils.thrift.TBaseHasModel;
+import com.knockchat.utils.thrift.TBaseModel;
+
+import gnu.trove.map.hash.TLongLongHashMap;
 
 public class Column {
 	
@@ -371,21 +370,14 @@ public class Column {
     	
     	}else if (jdbcType == Types.OTHER && columnType.contains("jsonb")){
     		
-    		hibernateType = CustomTypeFactory.create(javaClass, JsonType.class).getCanonicalName();        	
-    	}else if (jdbcType == Types.BINARY && TBaseLazy.class.isAssignableFrom(javaClass)){
+    		final Class model = TBaseHasModel.getModel(javaClass);
+    		hibernateType = CustomTypeFactory.create(model !=null ? model : javaClass, JsonType.class).getCanonicalName();        	
+    	}else if (jdbcType == Types.BINARY && TBaseModel.class.isAssignableFrom(javaClass)){
+    		    		
+    		hibernateType = CustomTypeFactory.create(javaClass, TBaseType.class).getCanonicalName();
+    	}else if (jdbcType == Types.BINARY && TBaseHasModel.getModel(javaClass) !=null){
     		
-    		if (!TBase.class.isAssignableFrom(javaClass)){
-    			log.error("Error mapping " + logFmt, logArgs);
-    			throw new RuntimeException("TBaseLazy must implement TBase");
-    		}
-    		
-    		final Class rootThriftCls = Utils.getRootThriftClass(javaClass).first;
-    		if (rootThriftCls != javaClass){
-    			log.error("Error mapping " + logFmt, logArgs);
-    			throw new RuntimeException("TBaseLazy field must be root thrift class");
-    		}
-    		
-    		hibernateType = CustomTypeFactory.create(javaClass, TBaseLazyType.class).getCanonicalName();
+    		hibernateType = CustomTypeFactory.create(TBaseHasModel.getModel(javaClass), TBaseType.class).getCanonicalName();
     	}
     	
     	

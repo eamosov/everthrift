@@ -7,10 +7,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 
-import org.apache.commons.lang3.concurrent.ConcurrentInitializer;
-import org.apache.commons.lang3.concurrent.LazyInitializer;
-import org.apache.thrift.TBase;
-import org.apache.thrift.TException;
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.usertype.UserType;
@@ -18,27 +14,21 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Throwables;
-import com.knockchat.utils.thrift.Mapper;
-import com.knockchat.utils.thrift.TBaseLazy;
+import com.knockchat.utils.thrift.TBaseModel;
 
-public abstract class TBaseLazyType implements UserType {
+public abstract class TBaseType implements UserType {
 	
-	private static final Logger log = LoggerFactory.getLogger(TBaseLazyType.class);
+	private static final Logger log = LoggerFactory.getLogger(TBaseType.class);
 	
-	final ConcurrentInitializer<Constructor<TBaseLazy>> init;
+	final Constructor<TBaseModel> init;
 	
-	public TBaseLazyType(){
+	public TBaseType(){
 		
-		init = new LazyInitializer<Constructor<TBaseLazy>>(){
-
-			@Override
-			protected Constructor<TBaseLazy> initialize() {
-				try {
-					return Mapper.from(returnedClass()).getConstructor(byte[].class);
-				} catch (NoSuchMethodException | SecurityException e) {
-					throw Throwables.propagate(e);
-				}
-			}};
+		try {
+			init = returnedClass().getConstructor();
+		} catch (NoSuchMethodException | SecurityException e) {
+			throw Throwables.propagate(e);
+		}
 	}
 
 	@Override
@@ -82,7 +72,8 @@ public abstract class TBaseLazyType implements UserType {
 			return null;		
 				
 		try {
-			final TBaseLazy o = init.get().newInstance(bytes);
+			final TBaseModel o = init.newInstance();
+			o.read(bytes);
 			return o;
 		} catch (Exception e) {		
 			if (e instanceof RuntimeException)
@@ -98,17 +89,13 @@ public abstract class TBaseLazyType implements UserType {
 		if (value == null){
 			st.setNull(index, Types.BINARY);
 		}else{
-			try {
-				st.setBytes(index, ((TBaseLazy)value).write());
-			} catch (TException e) {
-				throw new HibernateException(e);
-			}
+			st.setBytes(index, ((TBaseModel)value).write());
 		}		
 	}
 
 	@Override
 	public Object deepCopy(Object value) throws HibernateException {
-		return value==null ? null : ((TBase)value).deepCopy();
+		return value==null ? null : ((TBaseModel)value).deepCopy();
 	}
 
 	@Override

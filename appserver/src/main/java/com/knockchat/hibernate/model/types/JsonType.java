@@ -20,7 +20,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
 import com.knockchat.utils.GsonSerializer.TBaseSerializer;
-import com.knockchat.utils.thrift.Mapper;
 
 @SuppressWarnings({"unchecked"})
 public abstract class JsonType implements UserType {
@@ -57,7 +56,7 @@ public abstract class JsonType implements UserType {
 			return null;
 		
 		try{
-			return gson.fromJson(json.getValue(), Mapper.from(returnedClass()));
+			return gson.fromJson(json.getValue(), returnedClass());
 		}catch(JsonSyntaxException e){
 			log.error("Coudn't parse '{}' in {}", json.getValue(), this.returnedClass().getSimpleName());
 			throw new HibernateException(e);

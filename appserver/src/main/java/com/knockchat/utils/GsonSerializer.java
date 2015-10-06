@@ -25,6 +25,7 @@ import com.google.gson.reflect.TypeToken;
 import com.knockchat.utils.meta.MetaClass;
 import com.knockchat.utils.meta.MetaClasses;
 import com.knockchat.utils.meta.MetaProperty;
+import com.knockchat.utils.thrift.TBaseHasModel;
 import com.knockchat.utils.thrift.Utils;
 
 /**
@@ -86,7 +87,11 @@ public class GsonSerializer {
 			
 			final TBase o;
 			try {
-				o = (TBase)((Class)typeOfT).newInstance();
+				final Class m = TBaseHasModel.getModel((Class)typeOfT);
+				if (m == null)
+					o = (TBase)((Class)typeOfT).newInstance();
+				else
+					o = (TBase)m.newInstance();
 			} catch (InstantiationException | IllegalAccessException e1) {
 				throw new JsonParseException(e1);
 			}
