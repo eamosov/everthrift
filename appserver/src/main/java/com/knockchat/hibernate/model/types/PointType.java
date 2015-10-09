@@ -147,13 +147,12 @@ public abstract class PointType implements UserType {
 
 	@Override
 	public Serializable disassemble(Object value) throws HibernateException {
-		return (Serializable) value;
+		return (Serializable) deepCopy(value);
 	}
 
 	@Override
-	public Object assemble(Serializable cached, Object owner)
-			throws HibernateException {
-		return cached;
+	public Object assemble(Serializable cached, Object owner) throws HibernateException {
+		return deepCopy(cached);
 	}
 
 	@Override

@@ -17,9 +17,9 @@ public interface TBaseModel<T extends TBase<?,?>, F extends TFieldIdEnum> extend
 		try{
 			final AutoExpandingBufferWriteTransport t = new AutoExpandingBufferWriteTransport(1024, 1.5);
 			
-			synchronized(this){				
+//			synchronized(this){				
 				write(new TCompactProtocol(t));						
-			}
+//			}
 			return Arrays.copyOf(t.getBuf().array(), t.getPos()); 
 		}catch (TException e){
 			throw Throwables.propagate(e);
@@ -28,10 +28,10 @@ public interface TBaseModel<T extends TBase<?,?>, F extends TFieldIdEnum> extend
 	
 	default void read(byte[] in){
 		try{
-			synchronized(this){
+	//		synchronized(this){
 				clear();
 				read(new TCompactProtocol(new TMemoryInputTransport(in)));			
-			}			
+//			}			
 		}catch (TException e){
 			throw Throwables.propagate(e);
 		}		

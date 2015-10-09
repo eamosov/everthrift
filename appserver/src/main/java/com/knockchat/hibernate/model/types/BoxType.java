@@ -38,8 +38,7 @@ public abstract class BoxType implements UserType {
 	private final MetaProperty maxX;
 	private final MetaProperty maxY;
 
-	private final static Pattern boxPattern = Pattern
-			.compile("BOX\\(([0-9.-]+) ([0-9.-]+),([0-9.-]+) ([0-9.-]+)\\)");
+	private final static Pattern boxPattern = Pattern.compile("BOX\\(([0-9.-]+) ([0-9.-]+),([0-9.-]+) ([0-9.-]+)\\)");
 
 	@Override
 	public int[] sqlTypes() {
@@ -195,13 +194,12 @@ public abstract class BoxType implements UserType {
 
 	@Override
 	public Serializable disassemble(Object value) throws HibernateException {
-		return (Serializable) value;
+		return (Serializable) deepCopy(value);
 	}
 
 	@Override
-	public Object assemble(Serializable cached, Object owner)
-			throws HibernateException {
-		return cached;
+	public Object assemble(Serializable cached, Object owner) throws HibernateException {
+		return deepCopy(cached);
 	}
 
 	@Override

@@ -90,13 +90,13 @@ public abstract class JsonType implements UserType {
 
     @Override
     public Object assemble(final Serializable cached, final Object owner) throws HibernateException {
-        return cached;
+        return deepCopy(cached);
     }
 
 
     @Override
     public Serializable disassemble(final Object o) throws HibernateException {
-        return (Serializable) o;
+        return (Serializable) deepCopy(o);
     }
 
 	@Override

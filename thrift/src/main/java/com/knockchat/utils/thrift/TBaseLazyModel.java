@@ -44,7 +44,7 @@ public interface TBaseLazyModel<T extends TBase<?,?>, F extends TFieldIdEnum> ex
 	
 	default byte[] toByteArray(){
 		try{
-			synchronized(this){
+//			synchronized(this){
 				final AutoExpandingBufferWriteTransport t = new AutoExpandingBufferWriteTransport(1024, 1.5);
 				write(new TCompactProtocol(t));
 						
@@ -61,7 +61,7 @@ public interface TBaseLazyModel<T extends TBase<?,?>, F extends TFieldIdEnum> ex
 					return compressed;
 				else
 					return Arrays.copyOf(compressed, compressedLength+4);			
-			}			
+//			}			
 		}catch (TException e){
 			throw Throwables.propagate(e);
 		}
@@ -69,7 +69,7 @@ public interface TBaseLazyModel<T extends TBase<?,?>, F extends TFieldIdEnum> ex
 	
 	default void fromByteArray(byte []_data){
 		try{
-			synchronized(this){
+//			synchronized(this){
 				final int decompressedLength = decodeFrameSize(_data);
 				final byte[] restored = new byte[decompressedLength];
 				final int compressedLength2 = decompressor.decompress(_data, 4, restored, 0, decompressedLength);
@@ -80,7 +80,7 @@ public interface TBaseLazyModel<T extends TBase<?,?>, F extends TFieldIdEnum> ex
 					throw new TException("Decompress LZ4 error: compressedLength=" + (_data.length - 4) + " compressedLength2=" + compressedLength2);
 				
 				read(new TCompactProtocol(new TMemoryInputTransport(restored)));					
-			}			
+//			}			
 		}catch (TException e){
 			throw Throwables.propagate(e);
 		}
@@ -92,38 +92,42 @@ public interface TBaseLazyModel<T extends TBase<?,?>, F extends TFieldIdEnum> ex
 		final byte [] bytes = getThriftData();
 		if (bytes == null)
 			return (T)this;
-		
+				
 		final T other = (T)newInstance();
+
+		if (log.isTraceEnabled())
+			log.trace("unpack object {} to new object {}", System.identityHashCode(this), System.identityHashCode(other));
+
 		other.fromByteArray(bytes);
 		return other;		
 	}
 
 	default byte[] write(){
-		synchronized(this){
+//		synchronized(this){
 			final byte [] bytes = getThriftData();
 			if (bytes !=null){
 				return bytes;
 			}else{
 				return toByteArray();
 			}					
-		}
+//		}
 	}
 	
 	default void read(byte[] in){
-		synchronized(this){
+//		synchronized(this){
 			clear();
 			setThriftData(in);			
-		}
+//		}
 	}
 	
 	default void writeExternal(final ObjectOutput out) throws IOException {
 		byte[] _data;
 		
-		synchronized(this){
+//		synchronized(this){
 			if ((_data = getThriftData()) == null)
 				_data = toByteArray();
 
-		}
+//		}
 		
 		out.writeInt(_data.length);
 		out.write(_data);		
@@ -135,14 +139,14 @@ public interface TBaseLazyModel<T extends TBase<?,?>, F extends TFieldIdEnum> ex
     	final byte[] _data = new byte[l];
     	in.read(_data, 0, l);
 
-		synchronized(this){
+//		synchronized(this){
 			clear();
 	    	setThriftData(_data);			
-		}
+//		}
 	}
 	
 	default void unpack(){
-		synchronized(this){
+//		synchronized(this){
 			final byte [] bytes = getThriftData();
 			if (bytes !=null){
 				
@@ -152,11 +156,11 @@ public interface TBaseLazyModel<T extends TBase<?,?>, F extends TFieldIdEnum> ex
 				setThriftData(null);
 				fromByteArray(bytes);
 			}					
-		}
+//		}
 	}
 
 	default void pack(){
-		synchronized(this){
+//		synchronized(this){
 			if (this.getThriftData() ==null){
 				
 				if (log.isDebugEnabled())
@@ -166,13 +170,13 @@ public interface TBaseLazyModel<T extends TBase<?,?>, F extends TFieldIdEnum> ex
 				clear();
 				setThriftData(_data);
 			}					
-		}
+//		}
 	}
 	
 	default boolean isPacked(){
-		synchronized(this){
+//		synchronized(this){
 			return getThriftData() != null;			
-		}
+//		}
 	}
 	
 }
