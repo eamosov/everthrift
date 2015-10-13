@@ -5,6 +5,7 @@ import gnu.trove.map.TLongObjectMap;
 import gnu.trove.map.hash.TLongObjectHashMap;
 import gnu.trove.procedure.TLongProcedure;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -312,12 +313,31 @@ public class CollectionUtils {
 
 		@Override
 		public Object[] toArray() {
-			throw new UnsupportedOperationException();
+			Object arr[] = new Object[size()];
+			int i=0;
+			Iterator<E> it = this.iterator();
+			while(it.hasNext()){
+				arr[i++] = it.next();
+			}
+			return arr;
 		}
 
 		@Override
 		public <T> T[] toArray(T[] a) {
-			throw new UnsupportedOperationException();
+			final int _size = size();
+			final Object arr[];
+			if (a.length < _size){
+				arr = (Object[])Array.newInstance(a.getClass().getComponentType(), size());
+			}else{
+				arr = a;
+			}
+			
+			int i=0;
+			Iterator<E> it = this.iterator();
+			while(it.hasNext()){
+				arr[i++] = it.next();
+			}
+			return (T[])arr;
 		}
 
 		@Override

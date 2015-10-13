@@ -1,7 +1,10 @@
 package com.knockchat.sql.migration;
 
+import java.io.IOException;
 import java.sql.Types;
 
+import org.apache.commons.io.IOUtils;
+import org.springframework.core.io.Resource;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 public abstract class AbstractMigration {
@@ -35,6 +38,14 @@ public abstract class AbstractMigration {
     
     public void execute(String sql){
     	this.getJdbcTemplate().execute(sql);
+    }
+    
+    public void execute(Resource sql){
+        try {
+			execute(IOUtils.toString(sql.getInputStream()));
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}    	
     }
 
 }

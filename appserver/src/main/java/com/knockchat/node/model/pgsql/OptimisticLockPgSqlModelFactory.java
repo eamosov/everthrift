@@ -25,6 +25,11 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
 	
 	protected abstract E createNotFoundException(PK id);
 	
+	/**
+	 * Cache need only because Hibernate does not cache rows selected by "IN" statement
+	 * @param cacheName
+	 * @param entityClass
+	 */
     public OptimisticLockPgSqlModelFactory(String cacheName, Class<ENTITY> entityClass) {
         super(cacheName, entityClass);
     }

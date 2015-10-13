@@ -155,5 +155,10 @@ public class Table {
 		
 		return sb.toString();
 	}
+	
+	@Override
+	public String toString(){
+		return schema + "." + tableName;
+	}
 
 }

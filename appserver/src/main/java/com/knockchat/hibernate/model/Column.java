@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.thrift.TEnum;
 import org.hibernate.type.BigDecimalType;
 import org.hibernate.type.BigIntegerType;
@@ -166,6 +167,15 @@ public class Column {
                 column.setNullable(rs.getInt("NULLABLE") > 0);
                 column.setColumnType(rs.getString("TYPE_NAME"));
                 column.setAutoincrement(rs.getString("IS_AUTOINCREMENT").equals("YES"));
+                
+                if (column.isAutoincrement() == false &&
+                		column.getColumnName().equalsIgnoreCase("id") &&
+                		!StringUtils.isEmpty(rs.getString("COLUMN_DEF")) &&
+                		!column.isNullable()){
+                	
+                	column.setAutoincrement(true);
+                }
+                
                 columns.add(column);
             }
             return columns;
@@ -383,7 +393,7 @@ public class Column {
     	
     	if (hibernateType == null){
     		log.error("Unknown mapping " + logFmt, logArgs);
-    		return false;
+    		throw new RuntimeException("Coudn't map some fields");
     	}
 
     	return true;

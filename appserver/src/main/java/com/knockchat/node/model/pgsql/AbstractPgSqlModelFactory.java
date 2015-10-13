@@ -144,6 +144,10 @@ public class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY extends D
 
     @Override
     protected Map<PK, ENTITY> fetchEntityByIdAsMap(Collection<PK> ids){
+    	
+    	if (this.cache == null)
+    		log.error("fetch by collection, but cache is null");
+    	
     	return dao.findByIdsAsMap(ids);
     }
     
