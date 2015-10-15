@@ -1,7 +1,13 @@
 package com.knockchat.sql.migration;
 
-import ch.qos.logback.classic.PatternLayout;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.support.AbstractXmlApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.core.env.ConfigurableEnvironment;
@@ -14,11 +20,7 @@ import com.knockchat.utils.ConsoleUtils;
 import com.knockchat.utils.logging.ColorOffConverter;
 import com.knockchat.utils.logging.ColorOnConverter;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import ch.qos.logback.classic.PatternLayout;
 
 public class Migrator {
 	
@@ -30,6 +32,8 @@ public class Migrator {
     private static AbstractXmlApplicationContext context;
     private static ConfigurableEnvironment env;
     private static MigrationProcessor processor;
+    
+    private static final Logger log = LoggerFactory.getLogger(Migrator.class);
 
     /**
      *
@@ -45,12 +49,22 @@ public class Migrator {
             printHelp();
         }else {
             processor = (MigrationProcessor) context.getBean("processor");
-            Map<String, MigrationProcessor.Result> result = processor.process(
+            
+            final Map<String, MigrationProcessor.Result> result = processor.process(
                     env.getProperty("force") != null
                     , env.getProperty("name", List.class) == null ? Collections.emptyList() : env.getProperty("name", List.class)
                     , env.getProperty("down") != null);
-            for (Map.Entry<String, MigrationProcessor.Result> entry : result.entrySet())
-                ConsoleUtils.printString(entry.getKey() + "\t\t" + (entry.getValue().equals(MigrationProcessor.Result.FAIL)? entry.getValue().getMessage() : entry.getValue() ) + " \n");
+            
+            for (Map.Entry<String, MigrationProcessor.Result> entry : result.entrySet()){
+            	
+            	if (entry.getValue().equals(MigrationProcessor.Result.FAIL)){
+            		log.error(entry.getKey(), entry.getValue().getException());	
+            	}else{
+            		log.info("{}\t\t{}", entry.getKey(), entry.getValue());
+            	}
+            	
+                //ConsoleUtils.printString(entry.getKey() + "\t\t" + (entry.getValue().equals(MigrationProcessor.Result.FAIL)? entry.getValue().getMessage() : entry.getValue() ) + " \n");
+            }
         }
     }
 

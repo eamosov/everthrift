@@ -46,8 +46,10 @@ import com.knockchat.hibernate.model.types.PointType;
 import com.knockchat.hibernate.model.types.ShortListType;
 import com.knockchat.hibernate.model.types.StringListType;
 import com.knockchat.hibernate.model.types.StringSetType;
+import com.knockchat.hibernate.model.types.StringUUIDType;
 import com.knockchat.hibernate.model.types.TBaseType;
 import com.knockchat.hibernate.model.types.TEnumTypeFactory;
+import com.knockchat.hibernate.model.types.UUIDStringListType;
 import com.knockchat.utils.thrift.TBaseHasModel;
 import com.knockchat.utils.thrift.TBaseModel;
 
@@ -262,25 +264,25 @@ public class Column {
     		
     		hibernateType = StringType.INSTANCE.getName();
     		
-    		switch(jdbcType){
-    			case Types.TIMESTAMP:
-    				
-    				customRead = columnName+"::text";
-    				customWrite = "?::timestamp";
-    				break;
-    				
-    			case Types.OTHER:
-    				
-    				if (columnType.equals("geography")) {
-    					customRead = columnName + "::text";
-    					customWrite = "?::geography";
-    				} else if (columnType.equals("inet")){
-    					customRead = columnName + "::text";
-    					customWrite = "?::inet";
-    				}
-    				break;
+    		if (jdbcType == Types.TIMESTAMP){
+    			
+				customRead = columnName+"::text";
+				customWrite = "?::timestamp";
+				
+    		}else if (columnType.equals("geography")){
+    			
+				customRead = columnName + "::text";
+				customWrite = "?::geography";
+				
+    		}else if (columnType.equals("inet")){
+    			
+				customRead = columnName + "::text";
+				customWrite = "?::inet";
+				
+    		}else if (columnType.equals("uuid")){
+    			hibernateType = StringUUIDType.class.getCanonicalName();
     		}
-    		    		
+    		    		    		
     	} else if (java.util.Date.class.isAssignableFrom(javaClass)) {
     		
     		switch (jdbcType) {
@@ -336,6 +338,11 @@ public class Column {
     		}else if (columnType.contains("_varchar") || columnType.contains("_text")) {
 
     			hibernateType = StringListType.class.getCanonicalName();
+    		}else if (columnType.equals("_uuid")){
+    			
+    			hibernateType = UUIDStringListType.class.getCanonicalName();
+				customRead = columnName + "::text[]";
+				customWrite = "?::uuid[]";    			    			
     		}
     		
     	}else if (java.util.Set.class.equals(javaClass)){

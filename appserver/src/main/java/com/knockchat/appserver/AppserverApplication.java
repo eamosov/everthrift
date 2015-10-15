@@ -64,6 +64,7 @@ import org.springframework.web.cors.CorsProcessor;
 import org.springframework.web.servlet.DispatcherServlet;
 import org.springframework.web.servlet.handler.AbstractHandlerMapping;
 
+import com.google.common.base.Throwables;
 import com.knockchat.appserver.monitoring.RpsServlet;
 import com.knockchat.appserver.thrift.cluster.NodeAddress;
 import com.knockchat.appserver.transport.http.BinaryThriftServlet;
@@ -193,7 +194,7 @@ public class AppserverApplication {
             for (final Map.Entry<String, MigrationProcessor.Result> entry : results.entrySet())
                 if (entry.getValue().equals(MigrationProcessor.Result.FAIL)) {
                     log.error("Filed to execute migration: {} ", entry.getKey());
-                    throw new RuntimeException(entry.getValue().getMessage());
+                    throw Throwables.propagate(entry.getValue().getException());
                 }
         } finally {
             if (xmlContext != null && xmlContext.isActive())

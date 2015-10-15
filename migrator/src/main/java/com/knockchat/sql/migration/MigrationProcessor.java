@@ -119,20 +119,20 @@ public class MigrationProcessor{
     public enum Result {
         SUCCESS, FAIL, SKIP;
 
-        private String message;
+        private Exception e;
 
-        public Result setMessage(String message) {
-            this.message = message;
+        public Result setException(Exception e) {
+            this.e = e;
             return this;
         }
 
-        public String getMessage() {
-            return message;
+        public Exception getException() {
+            return e;
         }
 
         @Override
         public String toString() {
-            return "[" + this.name() + "] " + (message != null ? message : "");
+            return "[" + this.name() + "] " + (e != null ? e.toString() : "");
         }
     }
 
@@ -154,7 +154,7 @@ public class MigrationProcessor{
                     migrationResults.put(entry.getKey(),executeMigration(entry, down));
                 } catch (Exception e) {
                     //ConsoleUtils.printString(entry.getKey() + "\t\t" + Result.FAIL.setMessage(e.getMessage()) + " \n");
-                    migrationResults.put(entry.getKey(),Result.FAIL.setMessage(e.getMessage()));
+                    migrationResults.put(entry.getKey(),Result.FAIL.setException(e));
                     break;
                 }
             }
