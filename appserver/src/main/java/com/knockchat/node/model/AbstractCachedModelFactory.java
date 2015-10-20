@@ -5,6 +5,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.collections.CollectionUtils;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.support.TransactionSynchronizationAdapter;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+
 import net.sf.ehcache.Cache;
 import net.sf.ehcache.CacheException;
 import net.sf.ehcache.CacheManager;
@@ -12,10 +18,6 @@ import net.sf.ehcache.Ehcache;
 import net.sf.ehcache.Element;
 import net.sf.ehcache.Status;
 import net.sf.ehcache.loader.CacheLoader;
-
-import org.apache.commons.collections.CollectionUtils;
-import org.springframework.beans.factory.InitializingBean;
-import org.springframework.beans.factory.annotation.Autowired;
 
 public abstract class AbstractCachedModelFactory<PK,ENTITY> extends RoModelFactoryImpl<PK, ENTITY> implements InitializingBean{
 	
@@ -272,4 +274,17 @@ public abstract class AbstractCachedModelFactory<PK,ENTITY> extends RoModelFacto
 		
 		return (Map)cache.getAllWithLoader(ids, _loader);
     }
+    
+	public static void doAfterCommit(Runnable r){
+		if (TransactionSynchronizationManager.isActualTransactionActive()) {
+			TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronizationAdapter(){
+				@Override
+				public void afterCommit() {
+					r.run();
+				}
+			});
+		}else{
+			r.run();	
+		}		
+	}
 }

@@ -6,8 +6,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import net.sf.ehcache.Cache;
-
 import org.hibernate.SessionFactory;
 import org.hibernate.criterion.Order;
 import org.hibernate.criterion.Projections;
@@ -24,6 +22,8 @@ import com.knockchat.node.model.AbstractCachedModelFactory;
 import com.knockchat.node.model.RwModelFactoryHelper;
 import com.knockchat.node.model.RwModelFactoryIF;
 import com.knockchat.utils.Pair;
+
+import net.sf.ehcache.Cache;
 
 public class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY extends DaoEntityIF> extends AbstractCachedModelFactory<PK, ENTITY> implements InitializingBean, RwModelFactoryIF<PK, ENTITY> {
 		
@@ -109,9 +109,9 @@ public class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY extends D
 		try{
 			final Pair<ENTITY, Boolean> ret = dao.saveOrUpdate(e);
 			
-			//TODO при внешней транзации удалять после завершения транзакции???
-			if (ret.second)
-				_invalidate((PK)e.getPk());
+			if (ret.second){
+				doAfterCommit( () -> {_invalidate((PK)e.getPk());} );
+			}
 			
 			helper.setUpdated(ret.second);
 			return ret.first;
@@ -160,7 +160,8 @@ public class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY extends D
     	if (_e !=null){
     		dao.delete(_e);
     	}
-   		_invalidate(pk);
+    	
+    	doAfterCommit(()->{_invalidate(pk);});   		
     }
         
     public AbstractDao<PK, ENTITY> getDao(){
@@ -190,5 +191,5 @@ public class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY extends D
 		
 		if (cache !=null)
 			cache.removeAll();
-	}
+	}	
 }

@@ -15,8 +15,10 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Function;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Collections2;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.knockchat.appserver.model.lazy.AbstractLazyLoader;
 import com.knockchat.appserver.model.lazy.Registry;
 import com.knockchat.utils.Function2;
@@ -131,8 +133,8 @@ public abstract class RoModelFactoryImpl<PK, ENTITY>  implements RoModelFactoryI
 		}};
 		
         
-    public void lazyLoad(Registry r, XAwareIF<PK, ENTITY> m) {
-    	lazyLoader.load(r, m);
+    public boolean lazyLoad(Registry r, XAwareIF<PK, ENTITY> m) {
+    	return lazyLoader.load(r, m);
     }    
 
     
@@ -152,7 +154,7 @@ public abstract class RoModelFactoryImpl<PK, ENTITY>  implements RoModelFactoryI
 
         @Override
         public Void apply(XAwareIF<List<PK>, List<ENTITY>> input1, List<ENTITY> input2) {
-            input1.set(input2);
+            input1.set(Lists.newArrayList(Iterables.filter(input2, Predicates.notNull())));
             return null;
         }
     };
@@ -175,7 +177,15 @@ public abstract class RoModelFactoryImpl<PK, ENTITY>  implements RoModelFactoryI
 
         @Override
         public Void apply(XAwareIF<PK, ENTITY> input1, ENTITY input2) {
-            input1.set(input2);
+        	if (input2 instanceof List){
+        		input1.set((ENTITY)Lists.newArrayList(Iterables.filter((List)input2, Predicates.notNull())));
+        	}else if (input2 instanceof Set){        		
+        		input1.set((ENTITY)Sets.filter((Set)input2, Predicates.notNull()));
+        	}else if (input2 instanceof Collection){
+        		input1.set((ENTITY)Collections2.filter((Set)input2, Predicates.notNull()));
+        	}else{
+        		input1.set(input2);
+        	}
             return null;
         }
     };

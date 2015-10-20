@@ -117,9 +117,9 @@ public class ThriftProcessor implements TProcessor{
 					
 	public MessageWrapper process(MessageWrapper in, ThriftClient thriftClient) throws Exception{
 		
-		stat();
+		try{
+			stat();
 
-		try{		
 			final TProtocol inp = protocolFactory.getProtocol(in.getTTransport());
 			final TMessage msg = inp.readMessageBegin();
 		
@@ -151,16 +151,28 @@ public class ThriftProcessor implements TProcessor{
 			final Logger log = LoggerFactory.getLogger(controllerInfo.getControllerCls());
 			logStart(log, thriftClient, msg.name, in.getSessionId(), args);									
 			final ThriftController controller = controllerInfo.makeController(args, new MessageWrapper(null).copyAttributes(in), logEntry, msg.seqid, thriftClient, registry.getType(), this.protocolFactory);
-			final Object ret = controller.handle(args);			
-			final TMemoryBuffer outT = controller.serializeAnswer(ret);
-						
-			controller.setEndNanos(System.nanoTime());
-			controller.setResultSentFlag();
-			logEnd(log, controller, msg.name, in.getSessionId(), ret);
-			return  new MessageWrapper(outT).copyAttributes(in).removeCorrelationHeaders();
-		}catch (AsyncAnswer e){
-			return null;
-		}		
+			
+			try{
+				final Object ret = controller.handle(args);
+				final TMemoryBuffer outT = controller.serializeAnswer(ret);
+				controller.setEndNanos(System.nanoTime());
+				controller.setResultSentFlag();
+				logEnd(log, controller, msg.name, in.getSessionId(), ret);
+				return  new MessageWrapper(outT).copyAttributes(in).removeCorrelationHeaders();				
+			}catch(AsyncAnswer e){
+				return null;
+			}catch(Exception e){
+				log.error("Exception while handle thrift request", e);
+				final TMemoryBuffer outT = controller.serializeAnswer(new TApplicationException(TApplicationException.INTERNAL_ERROR));
+				controller.setEndNanos(System.nanoTime());
+				controller.setResultSentFlag();
+				logEnd(log, controller, msg.name, in.getSessionId(), null);				
+				return  new MessageWrapper(outT).copyAttributes(in).removeCorrelationHeaders();
+			}			
+		}catch(Exception e){
+			log.error("Exception while serving thrift request", e);
+			throw e;
+		}
 	}
 	
 	private Future<Map<Address, Object>> castThriftMessage(final RpcClustered ann, final ThriftControllerInfo ctrl, final TMessage msg, final TBase args){
@@ -253,7 +265,13 @@ public class ThriftProcessor implements TProcessor{
 			@Override
 			protected ListenableFuture thriftCall(Object sessionId,int timeout, InvocationInfo tInfo) throws TException {
 				throw new NotImplementedException();
-			}};
+			}
+
+			@Override
+			public boolean isThriftCallEnabled() {
+				return false;
+			}
+		};
 
 		try{
 			
@@ -301,19 +319,21 @@ public class ThriftProcessor implements TProcessor{
 				
 				ret = controller.handle(args);				
 				controller.serializeAnswer(ret, out);
-				
-			}finally{
+			}catch (Exception e){
+				if (e instanceof AsyncAnswer){
+					log.error("Processor interface not support AsyncAnswer, controllerCls");					
+				}else{
+					log.error("Exception while handle thrift request", e);
+				}
+				controller.serializeAnswer(new TApplicationException(TApplicationException.INTERNAL_ERROR), out);
+			}finally{			
 				controller.setEndNanos(System.nanoTime());
 				controller.setResultSentFlag();
 				logEnd(_log, controller, msg.name, null, ret);
 			}			
 									
-		}catch (AsyncAnswer e){
-			log.error("Processor interface not support AsyncAnswer, controllerCls");
-			throw new RuntimeException("Processor interface not support AsyncAnswer", e);
-		}catch (RuntimeException e){
-			log.error("Exception while serving thrift request", e);
-			throw e;
+		}catch (Exception e){
+			log.error("RuntimeException while serving thrift request", e);
 		}
 		
 		return true;

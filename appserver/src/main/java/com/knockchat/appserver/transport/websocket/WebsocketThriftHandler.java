@@ -307,6 +307,11 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
 			}
 
 			@Override
+			public boolean isThriftCallEnabled() {
+				return true;
+			}
+			
+			@Override
 			public void setSession(SessionIF data) {				
 				sd.userSessionObject.set(data);				
 			}

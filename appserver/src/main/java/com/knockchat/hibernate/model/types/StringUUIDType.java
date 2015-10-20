@@ -10,11 +10,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.Objects;
-import java.util.UUID;
 
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.usertype.UserType;
+
+import com.knockchat.utils.UUID;
 
 public class StringUUIDType implements UserType, Externalizable {
 
@@ -43,7 +44,7 @@ public class StringUUIDType implements UserType, Externalizable {
 	@Override
 	public Object nullSafeGet(ResultSet rs, String[] names, SessionImplementor session, Object owner) throws HibernateException, SQLException {
 		
-		final UUID uuid = (UUID)rs.getObject(names[0]);
+		final UUID uuid = UUID.fromJdkUUID((java.util.UUID)rs.getObject(names[0]));
 		
 		if (uuid == null)
 			return null;
@@ -57,7 +58,7 @@ public class StringUUIDType implements UserType, Externalizable {
 		if (value == null)
 			st.setObject(index, null);
 		else
-			st.setObject(index, UUID.fromString((String)value));
+			st.setObject(index, java.util.UUID.fromString((String)value));
 	}
 
 	@Override
