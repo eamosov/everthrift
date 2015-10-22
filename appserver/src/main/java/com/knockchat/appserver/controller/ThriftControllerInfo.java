@@ -72,7 +72,7 @@ public class ThriftControllerInfo {
 				}
 				
 				if (f==null){
-					throw new IllegalArgumentException("no such field for class " + ret.getClass().getSimpleName());
+					throw new IllegalArgumentException("no such field for class " + ret.getClass().getSimpleName(), (ret instanceof Throwable) ? (Throwable)ret : null);
 				}
 				
 				res.setFieldValue(f, ret);				

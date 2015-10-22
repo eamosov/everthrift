@@ -16,7 +16,6 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import com.google.common.base.Throwables;
 import com.knockchat.hibernate.dao.DaoEntityIF;
 import com.knockchat.node.model.EntityFactory;
-import com.knockchat.node.model.EntityMutator;
 import com.knockchat.node.model.EntityNotFoundException;
 import com.knockchat.node.model.OptimisticLockModelFactoryIF;
 import com.knockchat.node.model.OptimisticUpdateResult;
@@ -35,33 +34,9 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
     public OptimisticLockPgSqlModelFactory(String cacheName, Class<ENTITY> entityClass) {
         super(cacheName, entityClass);
     }
-    
-    @Override
-	public OptimisticUpdateResult<ENTITY> update(final PK id, final TFunction<ENTITY, Boolean> mutator, final EntityFactory<PK, ENTITY> factory) throws TException, E{    	
-    	
-    	return update(id, new EntityMutator<ENTITY>(){
-
-			@Override
-			public boolean beforeUpdate() throws TException {
-				return true;
-			}
-
-			@Override
-			public boolean update(ENTITY e) throws TException {
-				return mutator.apply(e);
-			}
-
-			@Override
-			public void afterTransactionClosed() {
-			}
-
-			@Override
-			public void afterUpdate() {
-			}}, factory);
-    }
 
     @Override
-	public OptimisticUpdateResult<ENTITY> update(PK id, EntityMutator<ENTITY> mutator, final EntityFactory<PK, ENTITY> factory) throws TException, E{
+	public OptimisticUpdateResult<ENTITY> update(PK id, TFunction<ENTITY, Boolean> mutator, final EntityFactory<PK, ENTITY> factory) throws TException, E{
 		try {
 			return  this.optimisticUpdate(id, mutator, factory);
 		} catch (EntityNotFoundException e) {
@@ -80,7 +55,7 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
     	return e;
     }
     
-    public void deleteEntity(ENTITY e){
+    public final void deleteEntity(ENTITY e){
     	throw new UnsupportedOperationException();
     }
     
@@ -132,7 +107,7 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
 	 * @return <new, old>
 	 * @throws Exception
 	 */
-    private OptimisticUpdateResult<ENTITY> optimisticUpdate(final PK id, final EntityMutator<ENTITY> mutator, final EntityFactory<PK, ENTITY> factory) throws TException, EntityNotFoundException, StaleStateException, ConcurrencyFailureException {
+    private OptimisticUpdateResult<ENTITY> optimisticUpdate(final PK id, final TFunction<ENTITY, Boolean> mutator, final EntityFactory<PK, ENTITY> factory) throws TException, EntityNotFoundException, StaleStateException, ConcurrencyFailureException {
     	
     	if (TransactionSynchronizationManager.isActualTransactionActive())
     		throw new RuntimeException("Can't correctly do optimistic update within transaction");
@@ -142,15 +117,7 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
 				@Override
 				public OptimisticUpdateResult<ENTITY> call() throws Exception {
 					try{
-						if (mutator.beforeUpdate()){
-							final OptimisticUpdateResult<ENTITY> ret = tryOptimisticUpdate(id, mutator, factory);
-							if (ret.isUpdated){
-								mutator.afterUpdate();
-							}
-							return ret;
-						}else{
-							return OptimisticUpdateResult.CANCELED;
-						}
+						return tryOptimisticUpdate(id, mutator, factory);
 					}catch (ConstraintViolationException e){
 						if (e.getConstraintName().contains("pkey"))
 							return null;
@@ -162,8 +129,6 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
 						}
 						log.debug("update fails id={}, let's try one more time? {}", id, e.getMessage());
 						return null;
-					}finally{
-						mutator.afterTransactionClosed();
 					}
 				}}, RwModelFactoryHelper.MAX_ITERATIONS, RwModelFactoryHelper.MAX_TIMEOUT);
 		
@@ -176,7 +141,7 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
 	}
 	
 	@Transactional(rollbackFor=Exception.class)
-	private OptimisticUpdateResult<ENTITY> tryOptimisticUpdate(PK id, EntityMutator<ENTITY> mutator, final EntityFactory<PK, ENTITY> factory) throws TException, EntityNotFoundException, StaleStateException, ConcurrencyFailureException{
+	private OptimisticUpdateResult<ENTITY> tryOptimisticUpdate(PK id, TFunction<ENTITY, Boolean> mutator, final EntityFactory<PK, ENTITY> factory) throws TException, EntityNotFoundException, StaleStateException, ConcurrencyFailureException{
 		
 		try{
 			ENTITY e;
@@ -201,7 +166,7 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
 			}
 			
 			
-			if (mutator.update(e)){
+			if (mutator.apply(e)){
 				return OptimisticUpdateResult.create(helper.updateEntity(e), orig, helper.isUpdated());
 			}else{
 				return OptimisticUpdateResult.create(e, e, false);

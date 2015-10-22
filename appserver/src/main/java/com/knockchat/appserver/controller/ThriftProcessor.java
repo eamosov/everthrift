@@ -323,7 +323,7 @@ public class ThriftProcessor implements TProcessor{
 				if (e instanceof AsyncAnswer){
 					log.error("Processor interface not support AsyncAnswer, controllerCls");					
 				}else{
-					log.error("Exception while handle thrift request", e);
+					log.error("Exception while handle thrift request in controller " + controller.getClass().getCanonicalName(), e);
 				}
 				controller.serializeAnswer(new TApplicationException(TApplicationException.INTERNAL_ERROR), out);
 			}finally{			

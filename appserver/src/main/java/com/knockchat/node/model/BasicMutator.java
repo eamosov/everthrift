@@ -2,19 +2,13 @@ package com.knockchat.node.model;
 
 import org.apache.thrift.TException;
 
-public abstract class BasicMutator<ENTITY> implements EntityMutator<ENTITY>{
+import com.knockchat.utils.thrift.TFunction;
 
-	@Override
-	public boolean beforeUpdate() throws TException {
-		return true;
-	}
-
-	@Override
-	public void afterTransactionClosed() {
+public abstract class BasicMutator<ENTITY> implements TFunction<ENTITY, Boolean>{
+	
+	public Boolean apply(ENTITY input) throws TException {
+		return update(input);
 	}
 	
-	@Override
-	public void afterUpdate(){
-		
-	}
+	public abstract boolean update(ENTITY input) throws TException;
 }

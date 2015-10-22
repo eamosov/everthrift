@@ -138,6 +138,15 @@ public class UUID implements Comparable<UUID>, Serializable{
 	public long getMost40Bits(){
 		return (mostSigBits >> 16) & 0xFFFFFFFFFFL;
 	}
+	
+	/**
+	 * 
+	 * @param uuid
+	 * @return get middle 40bits
+	 */
+	public static long getAccountId(String uuid){
+		return UUID.fromString(uuid).getMiddle40Bits();
+	}
 
 	/**
 	 * 12bit - shardId
@@ -151,6 +160,10 @@ public class UUID implements Comparable<UUID>, Serializable{
 	public long getLeast40Bits(){
 		return leastSigBits & 0xFFFFFFFFFFL;
 	}
+	
+	public static long pack(String uuid){
+		return UUID.fromString(uuid).pack();
+	}
 
 	/**
 	 * UNSAFE and temporary
@@ -158,6 +171,10 @@ public class UUID implements Comparable<UUID>, Serializable{
 	 */
 	public long pack(){
 		return ((getSpace8bit() & 0x0FL) << 60) | ((getMost40Bits() & 0xFFFFFL) << 40) | ((getMiddle40Bits() & 0xFFFFFL) << 20) | (getLeast40Bits() & 0xFFFFFL);
+	}
+	
+	public static String unpacks(long value){
+		return unpack(value).toString();
 	}
 	
 	/**
@@ -176,6 +193,9 @@ public class UUID implements Comparable<UUID>, Serializable{
 	}
 	
 	public static List<String> unpack(List<Long> values){
+		if (CollectionUtils.isEmpty(values))
+			return (List)values;
+		
 		return Lists.transform(values, i -> (unpack(i).toString()));
 	}
 
