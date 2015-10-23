@@ -120,7 +120,7 @@ public abstract class TBaseType implements UserType {
 		if (cached == null)
 			return null;
 		
-		if (cached instanceof TBaseLazyModel){
+		if (cached instanceof byte[]){
 			try {
 				final TBaseModel o = init.newInstance();
 				o.read((byte[])cached);
