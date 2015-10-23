@@ -2,6 +2,7 @@ package com.knockchat.hibernate.model.types;
 
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -14,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Throwables;
+import com.knockchat.utils.thrift.TBaseLazyModel;
 import com.knockchat.utils.thrift.TBaseModel;
 
 public abstract class TBaseType implements UserType {
@@ -105,12 +107,30 @@ public abstract class TBaseType implements UserType {
 
 	@Override
 	public Serializable disassemble(Object value) throws HibernateException {
-		return (Serializable)deepCopy(value);
+		
+		if (value == null)
+			return null;
+
+		return (value instanceof TBaseLazyModel) ? ((TBaseLazyModel)value).write() : (Serializable)deepCopy(value);
 	}
 
 	@Override
 	public Object assemble(Serializable cached, Object owner) throws HibernateException {
-		return deepCopy(cached);
+		
+		if (cached == null)
+			return null;
+		
+		if (cached instanceof TBaseLazyModel){
+			try {
+				final TBaseModel o = init.newInstance();
+				o.read((byte[])cached);
+				return o;
+			} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+				throw new HibernateException(e);
+			}							
+		}else{
+			return deepCopy(cached);
+		}
 	}
 
 	@Override
