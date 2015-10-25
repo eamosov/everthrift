@@ -39,6 +39,7 @@ public class RegistryImpl implements Registry {
 		loadList.clear();
 	}
 
+	@Override
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public int load(){
 		

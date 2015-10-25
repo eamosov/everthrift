@@ -24,6 +24,7 @@ public class EntityInterceptor extends EmptyInterceptor {
 	public static final EntityInterceptor INSTANCE = new EntityInterceptor();
 	
 	private final ThreadLocal<Set<Pair<String, Serializable>>> dirty = new ThreadLocal<Set<Pair<String, Serializable>>>(){
+		@Override
 		protected Set<Pair<String, Serializable>> initialValue(){
 			return Sets.newHashSet();
 		}
@@ -33,11 +34,13 @@ public class EntityInterceptor extends EmptyInterceptor {
 		
 	}
 	
+	@Override
 	public void afterTransactionBegin(Transaction tx) {
 		log.debug("begin transaction");
 		dirty.get().clear();
 	}
 	
+	@Override
 	public void afterTransactionCompletion(Transaction tx) {
 		log.debug("end transaction");
 		dirty.get().clear();

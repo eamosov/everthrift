@@ -38,7 +38,7 @@ public class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY extends D
     private final AbstractDao<PK, ENTITY> dao;
     protected final Class<ENTITY> entityClass;
     
-    protected final RwModelFactoryHelper<PK, ENTITY> helper;
+    final RwModelFactoryHelper<PK, ENTITY> helper;
     
     protected AbstractPgSqlModelFactory(Cache cache, Class<ENTITY> entityClass, ListeningExecutorService listeningExecutorService, List<SessionFactory> sessionFactories) {
     	super(cache);
@@ -182,7 +182,7 @@ public class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY extends D
 	}
 
 	@Override
-	public ENTITY insert(ENTITY e) {
+	public ENTITY insertEntity(ENTITY e) {
 		return helper.updateEntity(e);
 	}
 	

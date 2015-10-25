@@ -6,6 +6,7 @@ import com.knockchat.utils.thrift.TFunction;
 
 public abstract class BasicMutator<ENTITY> implements TFunction<ENTITY, Boolean>{
 	
+	@Override
 	public Boolean apply(ENTITY input) throws TException {
 		return update(input);
 	}

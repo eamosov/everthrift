@@ -140,6 +140,7 @@ public class RpsServlet extends HttpServlet implements InitializingBean, Disposa
 		return graph.getRrdGraphInfo().getBytes();
 	}
 	
+	@Override
 	protected void doGet(HttpServletRequest req, HttpServletResponse response) throws IOException{
 		
 		response.setContentType("text/html");

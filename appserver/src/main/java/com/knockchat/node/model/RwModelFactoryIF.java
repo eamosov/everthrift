@@ -3,7 +3,7 @@ package com.knockchat.node.model;
 
 public interface RwModelFactoryIF<PK, ENTITY> extends RoModelFactoryIF<PK, ENTITY>{		            
         
-    ENTITY insert(ENTITY e);
+    ENTITY insertEntity(ENTITY e);
             
     void deleteEntity(ENTITY e);
         	

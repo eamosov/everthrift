@@ -74,9 +74,6 @@ import com.knockchat.sql.migration.MigrationProcessor;
 import com.knockchat.utils.NetUtils;
 import com.knockchat.utils.PosAppInitializingBean;
 import com.knockchat.utils.SocketUtils;
-import com.knockchat.utils.meta.MetaClasses;
-import com.knockchat.utils.meta.asm.AsmMetaClassFactory;
-import com.knockchat.utils.meta.thrift.ThriftMetaClassFactory;
 
 public class AppserverApplication {
 

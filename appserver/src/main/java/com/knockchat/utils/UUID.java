@@ -280,7 +280,8 @@ public class UUID implements Comparable<UUID>, Serializable{
      *
      * @return  A string representation of this {@code UUID}
      */
-    public String toString() {
+    @Override
+	public String toString() {
         return (digits(mostSigBits >> 32, 8) + "-" +
                 digits(mostSigBits >> 16, 4) + "-" +
                 digits(mostSigBits, 4) + "-" +
@@ -303,7 +304,8 @@ public class UUID implements Comparable<UUID>, Serializable{
      *
      * @return  A hash code value for this {@code UUID}
      */
-    public int hashCode() {
+    @Override
+	public int hashCode() {
         long hilo = mostSigBits ^ leastSigBits;
         return ((int)(hilo >> 32)) ^ (int) hilo;
     }
@@ -320,7 +322,8 @@ public class UUID implements Comparable<UUID>, Serializable{
      * @return  {@code true} if the objects are the same; {@code false}
      *          otherwise
      */
-    public boolean equals(Object obj) {
+    @Override
+	public boolean equals(Object obj) {
         if ((null == obj) || (obj.getClass() != UUID.class))
             return false;
         UUID id = (UUID)obj;
@@ -344,7 +347,8 @@ public class UUID implements Comparable<UUID>, Serializable{
      *          greater than {@code val}
      *
      */
-    public int compareTo(UUID val) {
+    @Override
+	public int compareTo(UUID val) {
     	final int r = UnsignedLongs.compare(this.mostSigBits, val.mostSigBits);
     	
     	return r==0 ? UnsignedLongs.compare(this.leastSigBits, val.leastSigBits) : r;

@@ -11,8 +11,6 @@ import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.usertype.UserType;
 import org.postgresql.util.PGobject;
 
-import com.knockchat.utils.LongTimestamp;
-
 public class LongIntervalType implements UserType {
 
 	public LongIntervalType() {

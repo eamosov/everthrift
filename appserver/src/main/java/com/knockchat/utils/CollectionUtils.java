@@ -1,14 +1,10 @@
 package com.knockchat.utils;
 
-import gnu.trove.TLongCollection;
-import gnu.trove.map.TLongObjectMap;
-import gnu.trove.map.hash.TLongObjectHashMap;
-import gnu.trove.procedure.TLongProcedure;
-
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
@@ -23,6 +19,12 @@ import com.google.common.base.Predicate;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+
+import gnu.trove.TLongCollection;
+import gnu.trove.map.TLongObjectMap;
+import gnu.trove.map.hash.TLongObjectHashMap;
+import gnu.trove.procedure.TLongProcedure;
 
 public class CollectionUtils {
 	
@@ -359,5 +361,18 @@ public class CollectionUtils {
 	 */
 	public static <T> Collection<T> combine(final Collection<? extends T>... items) {
 		return new JoinedCollectionView<T>(items);
+	}
+	
+	public static <T> HashSet<T> newHashSet(final Collection<? extends T> ...collections){
+		final HashSet<T> ret = Sets.newHashSet();		
+		
+		if (collections !=null){
+			for (Collection<? extends T> c: collections){
+				if (c!=null)
+					ret.addAll(c);
+			}			
+		}
+		
+		return ret;
 	}
 }
