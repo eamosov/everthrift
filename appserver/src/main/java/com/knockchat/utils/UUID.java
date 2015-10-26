@@ -54,11 +54,11 @@ public class UUID implements Comparable<UUID>, Serializable{
 	public static final DiscreteDomain<UUID> discreteDomain = UUIDDomain.INSTANCE; 
 
 	
-	public static final UUID MIN_VALUE = new UUID(0,0);
-	public static final UUID MAX_VALUE = new UUID(0xFFFFFFFFFFFFFFFFL, 0xFFFFFFFFFFFFFFFFL);
+	public static final UUID MIN_VALUE = createWithString(0,0);
+	public static final UUID MAX_VALUE = createWithString(0xFFFFFFFFFFFFFFFFL, 0xFFFFFFFFFFFFFFFFL);
 	
-	public static final UUID MIN_LONG = new UUID(0xFFFFFFFFFFFFFFFFL, Long.MIN_VALUE);
-	public static final UUID MAX_LONG = new UUID(0, Long.MAX_VALUE);
+	public static final UUID MIN_LONG = createWithString(0xFFFFFFFFFFFFFFFFL, Long.MIN_VALUE);
+	public static final UUID MAX_LONG = createWithString(0, Long.MAX_VALUE);
 
     /**
      * Explicit serialVersionUID for interoperability.
@@ -78,7 +78,11 @@ public class UUID implements Comparable<UUID>, Serializable{
      * @serial
      */
     private final long leastSigBits;
+    
+    private final String asString;
 
+    private static final UUID[] cache = new UUID[1024*10];
+    
     /*
 
     // Constructors and Factories
@@ -96,6 +100,7 @@ public class UUID implements Comparable<UUID>, Serializable{
             lsb = (lsb << 8) | (data[i] & 0xff);
         this.mostSigBits = msb;
         this.leastSigBits = lsb;
+        this.asString = null;
     }
 
     /**
@@ -113,7 +118,19 @@ public class UUID implements Comparable<UUID>, Serializable{
     public UUID(long mostSigBits, long leastSigBits) {
         this.mostSigBits = mostSigBits;
         this.leastSigBits = leastSigBits;
+        this.asString = null;
     }
+    
+    private UUID(long mostSigBits, long leastSigBits, String asString) {
+        this.mostSigBits = mostSigBits;
+        this.leastSigBits = leastSigBits;
+        this.asString = asString;
+    }
+    
+    private static UUID createWithString(long mostSigBits, long leastSigBits) {
+    	return new UUID(mostSigBits, leastSigBits, new UUID(mostSigBits, leastSigBits).toString());
+    }
+
 
     public static UUID fromLong(long leastSigBits){
     	return new UUID(0, leastSigBits);
@@ -128,7 +145,8 @@ public class UUID implements Comparable<UUID>, Serializable{
     
     public UUID(int space8bit, long most40Bits, long middle40Bits, long least40Bits){    	
 		mostSigBits = (((long)(space8bit & 0xFF)) << 56) | (most40Bits << 16) | ((middle40Bits >> 24) & 0xFFFFL);
-		leastSigBits = (middle40Bits << 40) | (least40Bits & 0xFFFFFFFFFFL);     	
+		leastSigBits = (middle40Bits << 40) | (least40Bits & 0xFFFFFFFFFFL);
+		asString = null;
     }
     
 	public int getSpace8bit(){
@@ -214,6 +232,12 @@ public class UUID implements Comparable<UUID>, Serializable{
      *
      */
     public static UUID fromString(String name) {
+    	
+    	final int cacheKey = name.hashCode() % cache.length;
+    	final UUID cached = cache[cacheKey];
+    	if (cached !=null && cached.asString.equals(name))
+    		return cached;
+    	
         String[] components = name.split("-");
         if (components.length != 5)
             throw new IllegalArgumentException("Invalid UUID string: "+name);
@@ -229,8 +253,11 @@ public class UUID implements Comparable<UUID>, Serializable{
         long leastSigBits = Long.decode(components[3]).longValue();
         leastSigBits <<= 48;
         leastSigBits |= Long.decode(components[4]).longValue();
-
-        return new UUID(mostSigBits, leastSigBits);
+        
+        final UUID created =  new UUID(mostSigBits, leastSigBits, name);
+        
+        cache[cacheKey] = created;
+        return created;
     }
 
     // Field Accessor Methods
@@ -282,11 +309,14 @@ public class UUID implements Comparable<UUID>, Serializable{
      */
     @Override
 	public String toString() {
-        return (digits(mostSigBits >> 32, 8) + "-" +
-                digits(mostSigBits >> 16, 4) + "-" +
-                digits(mostSigBits, 4) + "-" +
-                digits(leastSigBits >> 48, 4) + "-" +
-                digits(leastSigBits, 12));
+    	if (this.asString !=null)
+    		return asString;
+    	else
+	        return (digits(mostSigBits >> 32, 8) + "-" +
+	                digits(mostSigBits >> 16, 4) + "-" +
+	                digits(mostSigBits, 4) + "-" +
+	                digits(leastSigBits >> 48, 4) + "-" +
+	                digits(leastSigBits, 12));
     }
     
     public static List<String> toString(List<UUID> uuids){
