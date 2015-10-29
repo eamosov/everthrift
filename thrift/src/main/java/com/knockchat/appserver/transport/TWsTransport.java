@@ -19,12 +19,16 @@ import java.util.concurrent.TimeoutException;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
 
+import org.apache.thrift.ProcessFunction;
+import org.apache.thrift.TApplicationException;
 import org.apache.thrift.TException;
 import org.apache.thrift.TProcessor;
 import org.apache.thrift.protocol.TMessage;
 import org.apache.thrift.protocol.TMessageType;
 import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.protocol.TProtocolFactory;
+import org.apache.thrift.protocol.TProtocolUtil;
+import org.apache.thrift.protocol.TType;
 import org.apache.thrift.transport.TMemoryBuffer;
 import org.apache.thrift.transport.TMemoryInputTransport;
 import org.apache.thrift.transport.TTransport;
@@ -442,7 +446,18 @@ public class TWsTransport extends TAsyncTransport {
         	final TProtocol inP = protocolFactory.getProtocol(inWrapT);		
     		final TProtocol outP = protocolFactory.getProtocol(outWrapT);
     		
-    		processor.process(inP, outP);
+    		if (processor!=null){
+    			processor.process(inP, outP);
+    		}else{
+    		    inP.readMessageBegin();
+    		    TProtocolUtil.skip(inP, TType.STRUCT);
+    		    inP.readMessageEnd();
+    		    TApplicationException x = new TApplicationException(TApplicationException.UNSUPPORTED_CLIENT_TYPE, "Invalid method name: '"+msg.name+"'");
+    		    outP.writeMessageBegin(new TMessage(msg.name, TMessageType.EXCEPTION, msg.seqid));
+    		    x.write(outP);
+    		    outP.writeMessageEnd();
+    		    outP.getTransport().flush();
+    		}
     		
             try {
             	websocket.send(outT.toByteArray());

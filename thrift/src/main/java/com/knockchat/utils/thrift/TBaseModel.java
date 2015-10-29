@@ -39,48 +39,52 @@ public interface TBaseModel<T extends TBase<?,?>, F extends TFieldIdEnum> extend
 		return  ((buf[3] & 0xff) << 24) | ((buf[2] & 0xff) << 16) | ((buf[1] & 0xff) <<  8) | ((buf[0] & 0xff));
 	}
 
-	default byte[] toByteArray(){
+	static byte[] toByteArray(TBase tBase){
 		try{
-//			synchronized(this){
-				final AutoExpandingBufferWriteTransport t = new AutoExpandingBufferWriteTransport(1024, 1.5);
-				write(new TCompactProtocol(t));
-						
-				final int decompressedLength = t.getPos();
-				final int maxCompressedLength = compressor.maxCompressedLength(decompressedLength);
-				final byte[] compressed = new byte[maxCompressedLength+4];
-				final int compressedLength = compressor.compress(t.getBuf().array(), 0, decompressedLength, compressed, 4, maxCompressedLength);
-				
-				log.debug("toByteArray: decompressedLength={}, compressedLength={}", decompressedLength, compressedLength);
+			final AutoExpandingBufferWriteTransport t = new AutoExpandingBufferWriteTransport(1024, 1.5);
+			tBase.write(new TCompactProtocol(t));
+					
+			final int decompressedLength = t.getPos();
+			final int maxCompressedLength = compressor.maxCompressedLength(decompressedLength);
+			final byte[] compressed = new byte[maxCompressedLength+4];
+			final int compressedLength = compressor.compress(t.getBuf().array(), 0, decompressedLength, compressed, 4, maxCompressedLength);
+			
+			log.debug("toByteArray: decompressedLength={}, compressedLength={}", decompressedLength, compressedLength);
 
-				encodeFrameSize(decompressedLength, compressed);
-						
-				if (compressedLength == maxCompressedLength)
-					return compressed;
-				else
-					return Arrays.copyOf(compressed, compressedLength+4);			
-//			}			
+			encodeFrameSize(decompressedLength, compressed);
+					
+			if (compressedLength == maxCompressedLength)
+				return compressed;
+			else
+				return Arrays.copyOf(compressed, compressedLength+4);			
 		}catch (TException e){
 			throw Throwables.propagate(e);
 		}
 	}
+
+	default byte[] toByteArray(){
+		return toByteArray(this);
+	}
 	
-	default void fromByteArray(byte []_data){
+	static void fromByteArray(TBase tBase, byte []_data){
 		try{
-//			synchronized(this){
-				final int decompressedLength = decodeFrameSize(_data);
-				final byte[] restored = new byte[decompressedLength];
-				final int compressedLength2 = decompressor.decompress(_data, 4, restored, 0, decompressedLength);
-				
-				log.debug("fromByteArray: compressedLength={} decompressedLength={}", _data.length-4, decompressedLength);
-				
-				if (compressedLength2 != _data.length - 4)
-					throw new TException("Decompress LZ4 error: compressedLength=" + (_data.length - 4) + " compressedLength2=" + compressedLength2);
-				
-				read(new TCompactProtocol(new TMemoryInputTransport(restored)));					
-//			}			
+			final int decompressedLength = decodeFrameSize(_data);
+			final byte[] restored = new byte[decompressedLength];
+			final int compressedLength2 = decompressor.decompress(_data, 4, restored, 0, decompressedLength);
+			
+			log.debug("fromByteArray: compressedLength={} decompressedLength={}", _data.length-4, decompressedLength);
+			
+			if (compressedLength2 != _data.length - 4)
+				throw new TException("Decompress LZ4 error: compressedLength=" + (_data.length - 4) + " compressedLength2=" + compressedLength2);
+			
+			tBase.read(new TCompactProtocol(new TMemoryInputTransport(restored)));					
 		}catch (TException e){
 			throw Throwables.propagate(e);
 		}
+	}	
+
+	default void fromByteArray(byte []_data){
+		fromByteArray(this, _data);
 	}	
 
 

@@ -233,7 +233,7 @@ public class UUID implements Comparable<UUID>, Serializable{
      */
     public static UUID fromString(String name) {
     	
-    	final int cacheKey = name.hashCode() % cache.length;
+    	final int cacheKey = Math.abs(name.hashCode()) % cache.length;
     	final UUID cached = cache[cacheKey];
     	if (cached !=null && cached.asString.equals(name))
     		return cached;
