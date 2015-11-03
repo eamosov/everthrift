@@ -217,6 +217,13 @@ public class UUID implements Comparable<UUID>, Serializable{
 		return Lists.transform(values, i -> (unpack(i).toString()));
 	}
 
+	public static List<Long> pack(List<String> values){
+		if (CollectionUtils.isEmpty(values))
+			return (List)values;
+		
+		return Lists.transform(values, i -> (pack(i)));
+	}
+
     /**
      * Creates a {@code UUID} from the string standard representation as
      * described in the {@link #toString} method.
