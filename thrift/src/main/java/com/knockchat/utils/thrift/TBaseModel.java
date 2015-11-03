@@ -107,8 +107,8 @@ public interface TBaseModel<T extends TBase<?,?>, F extends TFieldIdEnum> extend
 		
     	final int l = in.readInt();
     	final byte[] _data = new byte[l];
-    	in.read(_data, 0, l);
-
+    	in.readFully(_data, 0, l);
+    	
 		clear();
 		fromByteArray(_data);			
 	}
