@@ -9,5 +9,5 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD, ElementType.TYPE})
 public @interface LazyMethod {
 	String method() default "";
-	String[] value() default ""; //scenarios
+	String[] value() default ""; //scenarios "default", "admin", "json" ...
 }
