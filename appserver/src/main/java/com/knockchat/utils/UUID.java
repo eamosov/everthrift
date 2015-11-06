@@ -186,7 +186,7 @@ public class UUID implements Comparable<UUID>, Serializable{
 
 	/**
 	 * UNSAFE and temporary
-	 * @return  packed UUID to 56 bit integer 
+	 * @return  packed UUID to 53 bit integer 
 	 */
 	public long pack(){
 		
