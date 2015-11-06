@@ -195,22 +195,22 @@ public class UUID implements Comparable<UUID>, Serializable{
 		final long least = getLeast40Bits();
 		final long most = getMost40Bits();
 		
-		if (space == 0){ //private chat ->  4/18/18/16
+		if (space == 0){ //private chat ->  4/16/16/17
 			
-			if (most > 0x3FFFFL || middle > 0x3FFFFL || least > 0xFFFFL)
+			if (most > 0xFFFFL || middle > 0xFFFFL || least > 0x1FFFFL)
 				throw new RuntimeException(String.format("UUID %s can not be packed: space=0x%x, most=0x%x, middle=0x%x, least=0x%x", toString(), space, most, middle, least));
 		
-			return ((space & 0x0FL) << 52) | ((most & 0x3FFFFL) << 34) | ((middle & 0x3FFFFL) << 16) | (least & 0xFFFFL);
+			return ((space & 0x0FL) << 49) | ((most & 0xFFFFL) << 33) | ((middle & 0xFFFFL) << 17) | (least & 0x1FFFFL);
 		}else{
 			
 			if (most !=0)
 				throw new RuntimeException(String.format("UUID %s can not be packed: space=0x%x, most=0x%x, middle=0x%x, least=0x%x", toString(), space, most, middle, least));
 
-			if (middle > 0xFFFFFFFL || least > 0xFFFFFFL)
+			if (middle > 0x7FFFFFFL || least > 0x3FFFFFL)
 				throw new RuntimeException(String.format("UUID %s can not be packed: space=0x%x, most=0x%x, middle=0x%x, least=0x%x", toString(), space, most, middle, least));
 
-			// 4/28/24
-			return ((space & 0x0FL) << 52) | ((middle & 0xFFFFFFFL) << 24) | (getLeast40Bits() & 0xFFFFFFL);
+			// 4/27/22
+			return ((space & 0x0FL) << 49) | ((middle & 0x7FFFFFFL) << 22) | (getLeast40Bits() & 0x3FFFFFL);
 		}				
 	}
 	
@@ -225,18 +225,18 @@ public class UUID implements Comparable<UUID>, Serializable{
 	 */
 	public static UUID unpack(long value){
 		
-		final int space = (int)((value >> 52) & 0x0FL);
+		final int space = (int)((value >> 49) & 0x0FL);
 		
 		final long most, middle, least;
 
 		if (space == 0){
-			most = (value >> 34) & 0x3FFFFL;
-			middle = (value >> 16) & 0x3FFFFL;
-			least = value & 0xFFFFL;			
+			most = (value >> 33) & 0xFFFFL;
+			middle = (value >> 17) & 0xFFFFL;
+			least = value & 0x1FFFFL;			
 		}else{
 			most = 0;
-			middle = (value >> 24) & 0xFFFFFFFL;
-			least = value & 0xFFFFFFL;			
+			middle = (value >> 22) & 0x7FFFFFFL;
+			least = value & 0x3FFFFFL;			
 		}
 		
 		return new UUID(space, most, middle, least);
