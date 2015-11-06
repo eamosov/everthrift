@@ -1,6 +1,7 @@
 package com.knockchat.utils;
 
 import java.io.Serializable;
+import java.nio.ByteBuffer;
 import java.util.List;
 
 import com.google.common.collect.DiscreteDomain;
@@ -185,10 +186,32 @@ public class UUID implements Comparable<UUID>, Serializable{
 
 	/**
 	 * UNSAFE and temporary
-	 * @return  packed UUID:  4/20/20/20 
+	 * @return  packed UUID to 56 bit integer 
 	 */
 	public long pack(){
-		return ((getSpace8bit() & 0x0FL) << 60) | ((getMost40Bits() & 0xFFFFFL) << 40) | ((getMiddle40Bits() & 0xFFFFFL) << 20) | (getLeast40Bits() & 0xFFFFFL);
+		
+		final long space = getSpace8bit();
+		final long middle = getMiddle40Bits();
+		final long least = getLeast40Bits();
+		final long most = getMost40Bits();
+		
+		if (space == 0){ //private chat ->  4/18/18/16
+			
+			if (most > 0x3FFFFL || middle > 0x3FFFFL || least > 0xFFFFL)
+				throw new RuntimeException(String.format("UUID %s can not be packed: space=0x%x, most=0x%x, middle=0x%x, least=0x%x", toString(), space, most, middle, least));
+		
+			return ((space & 0x0FL) << 52) | ((most & 0x3FFFFL) << 34) | ((middle & 0x3FFFFL) << 16) | (least & 0xFFFFL);
+		}else{
+			
+			if (most !=0)
+				throw new RuntimeException(String.format("UUID %s can not be packed: space=0x%x, most=0x%x, middle=0x%x, least=0x%x", toString(), space, most, middle, least));
+
+			if (middle > 0xFFFFFFFL || least > 0xFFFFFFL)
+				throw new RuntimeException(String.format("UUID %s can not be packed: space=0x%x, most=0x%x, middle=0x%x, least=0x%x", toString(), space, most, middle, least));
+
+			// 4/28/24
+			return ((space & 0x0FL) << 52) | ((middle & 0xFFFFFFFL) << 24) | (getLeast40Bits() & 0xFFFFFFL);
+		}				
 	}
 	
 	public static String unpacks(long value){
@@ -202,10 +225,19 @@ public class UUID implements Comparable<UUID>, Serializable{
 	 */
 	public static UUID unpack(long value){
 		
-		int space = (int)((value >> 60) & 0x0FL);
-		long most = (value >> 40) & 0xFFFFFL;
-		long middle = (value >> 20) & 0xFFFFFL;
-		long least = value & 0xFFFFFL;
+		final int space = (int)((value >> 52) & 0x0FL);
+		
+		final long most, middle, least;
+
+		if (space == 0){
+			most = (value >> 34) & 0x3FFFFL;
+			middle = (value >> 16) & 0x3FFFFL;
+			least = value & 0xFFFFL;			
+		}else{
+			most = 0;
+			middle = (value >> 24) & 0xFFFFFFFL;
+			least = value & 0xFFFFFFL;			
+		}
 		
 		return new UUID(space, most, middle, least);
 	}
@@ -457,4 +489,18 @@ public class UUID implements Comparable<UUID>, Serializable{
     	return toLongNotOverflow(this);
     }
     
+    public static UUID fromBytes(byte []bytes){
+    	ByteBuffer bb = ByteBuffer.wrap(bytes);
+        long firstLong = bb.getLong();
+        long secondLong = bb.getLong();
+        return new UUID(firstLong, secondLong);    	
+    }
+ 
+    public byte[] asBytes(){    	
+    	final ByteBuffer bb = ByteBuffer.wrap(new byte[16]);
+        bb.putLong(getMostSignificantBits());
+        bb.putLong(getLeastSignificantBits());
+        return bb.array();    	
+    }
+
 }
