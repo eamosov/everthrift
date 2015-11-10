@@ -64,7 +64,7 @@ public interface TBaseLazyModel<T extends TBase<?,?>, F extends TFieldIdEnum> ex
 		
     	final int l = in.readInt();
     	final byte[] _data = new byte[l];
-    	in.read(_data, 0, l);
+    	in.readFully(_data, 0, l);
 
 //		synchronized(this){
 			clear();
