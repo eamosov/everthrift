@@ -164,7 +164,15 @@ public class UUID implements Comparable<UUID>, Serializable{
 	 * @return get middle 40bits
 	 */
 	public static long getAccountId(String uuid){
-		return UUID.fromString(uuid).getMiddle40Bits();
+		final  UUID u = UUID.fromString(uuid);
+		return u.getAccountId();
+	}
+
+	public long getAccountId(){
+		if (getSpace8bit() == 8) /*Device*/
+			return getMost40Bits();
+		else
+			return getMiddle40Bits();
 	}
 
 	/**
