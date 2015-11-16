@@ -28,7 +28,7 @@ public class RecursiveWalker implements WalkerIF {
 	private final TBaseScanHandler tBaseScanHandler = new TBaseScanHandler(){
 
 		@Override
-		public void apply(TBase o) {
+		public void apply(Object o) {
 			
 			if (o == null)
 				return;

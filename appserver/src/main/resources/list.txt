@@ -5,12 +5,12 @@
 		if (_{0} instanceof java.util.RandomAccess)'{'
 			final java.util.List _l = (java.util.List)_{0};
 			for (int i=0; i < _l.size(); i++)'{'
-				h.apply((org.apache.thrift.TBase)_l.get(i));
+				h.apply(_l.get(i));
 			'}'
 		'}'else'{'
 			final java.util.Iterator it = _{0}.iterator();
 			while (it.hasNext()) '{'
-				h.apply((org.apache.thrift.TBase)it.next());
+				h.apply(it.next());
 			'}'		
 		'}'
 	'}'
