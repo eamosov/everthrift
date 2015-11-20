@@ -60,6 +60,7 @@ public class JgroupsMessageDispatcher implements AsyncRequestHandler, Initializi
 		
 		final MessageWrapper w = (MessageWrapper)request.getObject();
 		w.setAttribute(JGroupsThriftAdapter.HEADER_JRESPONSE, response);
+		w.setAttribute("src", request.getSrc());
 				
 		org.springframework.messaging.Message<MessageWrapper> m = MessageBuilder.<MessageWrapper>withPayload(w).setHeader(MessageHeaders.REPLY_CHANNEL, "outJGroupsChannel").build();		
 		inJGroupsChannel.send(m);		

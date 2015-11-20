@@ -42,6 +42,10 @@ public class JGroupsThrift {
 		return thriftCall(dest, null, timeout, seqId, ResponseMode.GET_ALL, info);
 	}
 	
+	public Address getLocalAddress(){
+		return jgroupsMessageDispatcher.getLocalAddress();
+	}
+	
 	public <T> Map<Address, T> thriftCall(Collection<Address> dest, Collection<Address> exclusionList, int timeout, int seqId, ResponseMode responseMode, InvocationInfo tInfo) throws TException{
 		
 				
