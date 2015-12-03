@@ -1,6 +1,7 @@
 package com.knockchat.utils;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -65,6 +66,21 @@ public class LongTimestamp {
 	
 	public static long dayStart(long timestamp, ZoneId zoneId){
 		return ZonedDateTime.ofInstant(Instant.ofEpochMilli(timestamp), zoneId).truncatedTo(ChronoUnit.DAYS).toEpochSecond() * 1000L;
+	}
+
+	/**
+	 *  timestamp2 - timestamp1 in days
+	 * @param timestamp1
+	 * @param timestamp2
+	 * @param zoneId
+	 * @return
+	 */
+	public static long days(long timestamp1, long timestamp2, ZoneId zoneId){
+		
+		final LocalDate d2 = LocalDate.from(ZonedDateTime.ofInstant(Instant.ofEpochMilli(timestamp2), zoneId));
+		final LocalDate d1 = LocalDate.from(ZonedDateTime.ofInstant(Instant.ofEpochMilli(timestamp1), zoneId));
+		
+		return d2.toEpochDay() - d1.toEpochDay();
 	}
 
 	public static long dayStart(long timestamp){
