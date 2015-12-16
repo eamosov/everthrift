@@ -177,11 +177,6 @@ public class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY extends D
 	}
 
 	@Override
-	public void updateRelatedData(ENTITY entity) {
-		
-	}
-
-	@Override
 	public ENTITY insertEntity(ENTITY e) {
 		return helper.updateEntity(e);
 	}

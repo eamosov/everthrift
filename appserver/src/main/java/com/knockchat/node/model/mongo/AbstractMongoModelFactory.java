@@ -109,11 +109,6 @@ public class AbstractMongoModelFactory<PK extends Serializable, ENTITY extends D
 	}
 
 	@Override
-	public void updateRelatedData(ENTITY entity) {
-		
-	}
-
-	@Override
 	public ENTITY update(ENTITY e) {
 		return helper.updateEntity(e);
 	}
