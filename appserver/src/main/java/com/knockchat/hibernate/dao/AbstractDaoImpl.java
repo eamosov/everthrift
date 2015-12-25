@@ -23,6 +23,7 @@ import org.hibernate.criterion.Projection;
 import org.hibernate.criterion.ProjectionList;
 import org.hibernate.criterion.Projections;
 import org.hibernate.criterion.Restrictions;
+import org.hibernate.exception.ConstraintViolationException;
 import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.transform.ResultTransformer;
 import org.hibernate.type.Type;
@@ -35,6 +36,7 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
+import com.knockchat.node.model.UniqueException;
 import com.knockchat.utils.Pair;
 
 
@@ -122,26 +124,30 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
     @Transactional
 	public Pair<V, Boolean> saveOrUpdate(V e) {
     	
-    	if (log.isDebugEnabled())
-    		log.debug("saveOrUpdate, class={}, object={}, id={}", e.getClass().getSimpleName(), System.identityHashCode(e), e.getPk());
-    	
-        final Session session = getCurrentSession();
-                
-        if (log.isDebugEnabled())
-        	log.debug("saveOrUpdate tx={}: {}", session.getTransaction().getStatus(), e);
-        
-        if (e.getPk() == null){
-        	e.setPk(session.save(e));            	
-        	session.refresh(e);
-        	return Pair.create((V)session.get(entityClass, e.getPk()), true);
-    	}else{
-    		V ret = (V) session.merge(e);
-    		if (session.isDirty()){    			    			
-    			session.flush();
-    		}
-    		
-            return Pair.create(ret, EntityInterceptor.INSTANCE.isDirty(e));
-        }            
+    	try{
+        	if (log.isDebugEnabled())
+        		log.debug("saveOrUpdate, class={}, object={}, id={}", e.getClass().getSimpleName(), System.identityHashCode(e), e.getPk());
+        	
+            final Session session = getCurrentSession();
+                    
+            if (log.isDebugEnabled())
+            	log.debug("saveOrUpdate tx={}: {}", session.getTransaction().getStatus(), e);
+            
+            if (e.getPk() == null){
+            	e.setPk(session.save(e));            	
+            	session.refresh(e);
+            	return Pair.create((V)session.get(entityClass, e.getPk()), true);
+        	}else{
+        		V ret = (V) session.merge(e);
+        		if (session.isDirty()){    			    			
+        			session.flush();
+        		}
+        		
+                return Pair.create(ret, EntityInterceptor.INSTANCE.isDirty(e));
+            }                		
+    	}catch(ConstraintViolationException e1){
+    		throw new UniqueException(e1);
+    	}    	
     }
 
     @Override
@@ -351,6 +357,8 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
             	if (evictId !=null)
             		sessionFactory.getCache().evictEntity(entityClass, evictId);
             }
+        } catch (ConstraintViolationException e){
+        	throw new UniqueException(e);
         } finally {
             if (ss != null)
                 ss.close();
