@@ -375,4 +375,11 @@ public class CollectionUtils {
 		
 		return ret;
 	}
+	
+	public static int cardinality(boolean ...values){
+		int c=0;
+		for (int j=0; j<values.length; j++)
+			c += values[j] ? 1: 0;
+		return c;
+	}
 }
