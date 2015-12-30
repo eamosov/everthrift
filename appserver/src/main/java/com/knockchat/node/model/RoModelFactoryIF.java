@@ -6,6 +6,8 @@ import java.util.Map;
 
 public interface RoModelFactoryIF<PK, ENTITY>{
 	
+	Class<ENTITY> getEntityClass();
+	
     ENTITY findEntityById(PK id);
     
     /**

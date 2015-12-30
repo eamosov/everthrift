@@ -421,4 +421,9 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
     	this.sessionFactory.getCache().evictEntity(entityClass, id);
     }
 
+	@Override
+	public Class<V> getEntityClass() {
+		return this.entityClass;
+	}
+
 }

@@ -186,5 +186,10 @@ public class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY extends D
 		
 		if (cache !=null)
 			cache.removeAll();
+	}
+
+	@Override
+	public Class<ENTITY> getEntityClass() {
+		return this.entityClass;
 	}	
 }

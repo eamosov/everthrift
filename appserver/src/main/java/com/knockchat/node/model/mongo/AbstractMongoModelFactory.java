@@ -117,4 +117,9 @@ public class AbstractMongoModelFactory<PK extends Serializable, ENTITY extends D
 	public ENTITY insertEntity(ENTITY e) {
 		return helper.updateEntity(e);
 	}
+	
+	@Override
+	public Class<ENTITY> getEntityClass() {
+		return this.entityClass;
+	}		
 }

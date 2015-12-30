@@ -2,8 +2,7 @@ package com.knockchat.node.model.pgsql;
 
 import java.util.Collection;
 import java.util.Collections;
-
-import net.sf.ehcache.Cache;
+import java.util.List;
 
 import org.hibernate.criterion.Criterion;
 import org.hibernate.criterion.Order;
@@ -11,6 +10,8 @@ import org.hibernate.criterion.Projections;
 
 import com.knockchat.hibernate.dao.AbstractDao;
 import com.knockchat.node.model.CachedIndexModelFactory;
+
+import net.sf.ehcache.Cache;
 
 public abstract class DaoCachedIndexModelFactory<K, V> extends CachedIndexModelFactory<K, V> {
 	
@@ -35,4 +36,10 @@ public abstract class DaoCachedIndexModelFactory<K, V> extends CachedIndexModelF
 	protected abstract String getPkProperty();
 	protected abstract String getIndexedProperty();
 	protected abstract Order getOrder();
+	
+	@Override
+	public Class<List<V>> getEntityClass() {
+		return dao.getEntityClass();
+	}
+
 }

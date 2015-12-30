@@ -22,6 +22,8 @@ import com.knockchat.utils.Pair;
 
 
 public interface AbstractDao<K, V extends DaoEntityIF> {
+	
+	public Class<V> getEntityClass();
 
     public V findById(K id);
 
