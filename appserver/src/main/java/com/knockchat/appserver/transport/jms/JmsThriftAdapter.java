@@ -10,6 +10,7 @@ import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.Session;
 
+import org.apache.thrift.TApplicationException;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocolFactory;
@@ -81,7 +82,7 @@ public class JmsThriftAdapter implements InitializingBean, DisposableBean{
 			
 			
 			try {
-				thriftProcessor.process(
+				final Object ret = thriftProcessor.process(
 						binaryProtocolFactory.getProtocol(						
 							new TTransport(){
 		
@@ -139,17 +140,39 @@ public class JmsThriftAdapter implements InitializingBean, DisposableBean{
 									}
 								}),
 						null);
+				
+				if (ret instanceof TApplicationException){
+					throw asJMSException((TApplicationException)ret);
+				}else if (ret instanceof TException){
+					return;
+				}else if (ret instanceof Exception)
+					throw asJMSException((Exception)ret);
 			} catch (TException e) {
-				
-				if (e.getCause() instanceof JMSException)
-					throw (JMSException)e.getCause();
-				
-				final JMSException je = new JMSException(e.getMessage());
-				je.setLinkedException(e);
-				throw je;
+				throw asJMSException(e);
 			}
 		}};
 
+	
+	private JMSException asJMSException(Exception e){
+		
+		if (e instanceof JMSException)
+			return (JMSException)e;
+		
+		if (e.getCause() !=null && e.getCause() instanceof JMSException)
+			return (JMSException)e.getCause();
+		
+		if (e.getSuppressed() != null){
+			for (Throwable s: e.getSuppressed()){
+				if (s !=null && s instanceof JMSException)
+					return (JMSException)s;
+			}
+		}
+		
+		final JMSException je = new JMSException(e.getMessage());
+		je.setLinkedException(e);
+		return je;
+	}
+		
 	@SuppressWarnings("unchecked")
 	public <T> T onIface(Class<T> cls){
 		

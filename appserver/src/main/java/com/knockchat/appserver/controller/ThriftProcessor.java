@@ -115,7 +115,7 @@ public class ThriftProcessor implements TProcessor{
 			rpsServlet.incThrift(DsName.THRIFT_WS);
 	}
 					
-	public MessageWrapper process(MessageWrapper in, ThriftClient thriftClient) throws Exception{
+	public MessageWrapper process(MessageWrapper in, ThriftClient thriftClient) throws TException{
 		
 		try{
 			stat();
@@ -169,7 +169,7 @@ public class ThriftProcessor implements TProcessor{
 				logEnd(log, controller, msg.name, in.getSessionId(), null);				
 				return  new MessageWrapper(outT).copyAttributes(in).removeCorrelationHeaders();
 			}			
-		}catch(Exception e){
+		}catch(RuntimeException e){
 			log.error("Exception while serving thrift request", e);
 			throw e;
 		}
@@ -203,13 +203,21 @@ public class ThriftProcessor implements TProcessor{
 	@Override
 	public boolean process(TProtocol inp, TProtocol out) throws TException {
 		try{
-			return process(inp, out, null);
+			process(inp, out, null);
 		}catch(RuntimeException e){
-			return true;
 		}
+		return true;
 	}
-		
-	public boolean process(final TProtocol inp, TProtocol out, final MessageWrapper attributes) throws TException {
+	
+	/**
+	 * 
+	 * @param inp
+	 * @param out
+	 * @param attributes
+	 * @return Controller result (success or Exception)
+	 * @throws TException
+	 */
+	public Object process(final TProtocol inp, TProtocol out, final MessageWrapper attributes) throws TException {
 		
 		stat();
 		
@@ -286,7 +294,7 @@ public class ThriftProcessor implements TProcessor{
 				x.write(out);
 				out.writeMessageEnd();
 				out.getTransport().flush(msg.seqid);							
-				return true;
+				return x;
 			}
 			
 			final TBase args = controllerInfo.makeArgument();
@@ -319,6 +327,7 @@ public class ThriftProcessor implements TProcessor{
 				
 				ret = controller.handle(args);				
 				controller.serializeAnswer(ret, out);
+				return out;
 			}catch (Exception e){
 				if (e instanceof AsyncAnswer){
 					log.error("Processor interface not support AsyncAnswer, controllerCls");					
@@ -326,17 +335,17 @@ public class ThriftProcessor implements TProcessor{
 					log.error("Exception while handle thrift request in controller " + controller.getClass().getCanonicalName(), e);
 				}
 				controller.serializeAnswer(new TApplicationException(TApplicationException.INTERNAL_ERROR), out);
+				return e;
 			}finally{			
 				controller.setEndNanos(System.nanoTime());
 				controller.setResultSentFlag();
 				logEnd(_log, controller, msg.name, null, ret);
 			}			
 									
-		}catch (Exception e){
+		}catch (RuntimeException e){
 			log.error("RuntimeException while serving thrift request", e);
+			throw e;
 		}
-		
-		return true;
 	}
 	
 	private static void logStart(Logger l, ThriftClient thriftClient, String method, String correlationId, Object args){		
