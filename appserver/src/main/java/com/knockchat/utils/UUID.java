@@ -188,65 +188,7 @@ public class UUID implements Comparable<UUID>, Serializable{
 	public long getLeast40Bits(){
 		return leastSigBits & 0xFFFFFFFFFFL;
 	}
-	
-	public static long pack(String uuid){
-		return UUID.fromString(uuid).pack();
-	}
-
-	/**
-	 * UNSAFE and temporary
-	 * @return  packed UUID to 53 bit integer 
-	 */
-	public long pack(){
 		
-		final long space = getSpace8bit();
-		final long middle = getMiddle40Bits();
-		final long least = getLeast40Bits();
-		final long most = getMost40Bits();
-		
-		// 4/16/16/17
-		if (most > 0xFFFFL || middle > 0xFFFFL || least > 0x1FFFFL)
-			throw new RuntimeException(String.format("UUID %s can not be packed: space=0x%x, most=0x%x, middle=0x%x, least=0x%x", toString(), space, most, middle, least));
-	
-		return ((space & 0x0FL) << 49) | ((most & 0xFFFFL) << 33) | ((middle & 0xFFFFL) << 17) | (least & 0x1FFFFL);
-	}
-	
-	public static String unpacks(long value){
-		return unpack(value).toString();
-	}
-	
-	/**
-	 * UNSAFE and temporary
-	 * @param value
-	 * @return
-	 */
-	public static UUID unpack(long value){
-		
-		final int space = (int)((value >> 49) & 0x0FL);
-		
-		final long most, middle, least;
-
-		most = (value >> 33) & 0xFFFFL;
-		middle = (value >> 17) & 0xFFFFL;
-		least = value & 0x1FFFFL;			
-		
-		return new UUID(space, most, middle, least);
-	}
-	
-	public static List<String> unpack(List<Long> values){
-		if (CollectionUtils.isEmpty(values))
-			return (List)values;
-		
-		return Lists.transform(values, i -> (unpack(i).toString()));
-	}
-
-	public static List<Long> pack(List<String> values){
-		if (CollectionUtils.isEmpty(values))
-			return (List)values;
-		
-		return Lists.transform(values, i -> (pack(i)));
-	}
-
     /**
      * Creates a {@code UUID} from the string standard representation as
      * described in the {@link #toString} method.
