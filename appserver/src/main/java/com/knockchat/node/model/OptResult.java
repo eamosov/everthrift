@@ -1,9 +1,12 @@
 package com.knockchat.node.model;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.collections.CollectionUtils;
 
+import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
 import com.knockchat.hibernate.dao.DaoEntityIF;
 
@@ -43,6 +46,13 @@ public class OptResult<ENTITY extends DaoEntityIF> {
 			inner = Lists.newArrayList();
 		
 		inner.add(e);
+	}
+	
+	public <PK, T extends DaoEntityIF> Collection<OptResult> getInner(OptimisticLockModelFactoryIF<PK, T, ?> factory){
+		if (CollectionUtils.isEmpty(inner))
+			return Collections.emptyList();
+		
+		return Collections2.filter(inner, r ->(r.factory == factory));
 	}
 	
 	public <PK, T extends DaoEntityIF> T getInnerUpdated(OptimisticLockModelFactoryIF<PK, T, ?> factory, T defaultValue){
