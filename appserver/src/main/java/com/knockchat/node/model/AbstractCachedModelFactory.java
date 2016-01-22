@@ -242,7 +242,7 @@ public abstract class AbstractCachedModelFactory<PK,ENTITY> extends RoModelFacto
     protected abstract ENTITY fetchEntityById(PK id);
 			
 	@Override
-    public final ENTITY findEntityById(PK id){
+    final public ENTITY findEntityById(PK id){
 		if (id == null)
 			return null;
 				
@@ -259,7 +259,7 @@ public abstract class AbstractCachedModelFactory<PK,ENTITY> extends RoModelFacto
 	
     
     @Override
-    public final Map<PK, ENTITY> findEntityByIdAsMap(Collection<PK> ids){
+    final public Map<PK, ENTITY> findEntityByIdAsMap(Collection<PK> ids){
 		if (CollectionUtils.isEmpty(ids))
 			return Collections.emptyMap();
 		

@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.thrift.TBase;
 import org.apache.thrift.TFieldIdEnum;
 import org.apache.thrift.meta_data.FieldMetaData;
@@ -20,13 +21,12 @@ import org.apache.thrift.meta_data.StructMetaData;
 import org.apache.velocity.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.terracotta.license.util.IOUtils;
 
 import com.google.common.collect.Maps;
+import com.knockchat.appserver.model.lazy.LazyAccessor;
 import com.knockchat.appserver.model.lazy.LazyMethod;
 import com.knockchat.appserver.model.lazy.LazyMethods;
 import com.knockchat.appserver.model.lazy.Registry;
-import com.knockchat.appserver.model.lazy.LazyAccessor;
 import com.knockchat.utils.thrift.Utils;
 
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
@@ -48,7 +48,7 @@ public class TBaseScannerFactory {
 	
 	public TBaseScannerFactory() {
 		try {
-			loadTemplate = IOUtils.readToString(TBaseScannerFactory.class.getClassLoader().getResourceAsStream("load.txt"));
+			loadTemplate = IOUtils.toString(TBaseScannerFactory.class.getClassLoader().getResourceAsStream("load.txt"));
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
@@ -203,26 +203,26 @@ public class TBaseScannerFactory {
 
 					if (v instanceof StructMetaData){
 						
-						final String template = IOUtils.readToString(TBaseScannerFactory.class.getClassLoader().getResourceAsStream("struct.txt"));				
+						final String template = IOUtils.toString(TBaseScannerFactory.class.getClassLoader().getResourceAsStream("struct.txt"));				
 
 						code.append(MessageFormat.format(template, fieldName, StringUtils.capitalizeFirstLetter(fieldName), indent(1,load), ((StructMetaData) v).structClass.getCanonicalName()));										
 						
 					}else if (v instanceof ListMetaData && ((ListMetaData) v).elemMetaData instanceof StructMetaData){
 						
 						
-						final String template = IOUtils.readToString(TBaseScannerFactory.class.getClassLoader().getResourceAsStream("list.txt"));				
+						final String template = IOUtils.toString(TBaseScannerFactory.class.getClassLoader().getResourceAsStream("list.txt"));				
 						code.append(MessageFormat.format(template, fieldName, StringUtils.capitalizeFirstLetter(fieldName), indent(1,load)));										
 						
 					}else if (v instanceof SetMetaData && ((SetMetaData) v).elemMetaData instanceof StructMetaData){
 
-						final String template = IOUtils.readToString(TBaseScannerFactory.class.getClassLoader().getResourceAsStream("set.txt"));				
+						final String template = IOUtils.toString(TBaseScannerFactory.class.getClassLoader().getResourceAsStream("set.txt"));				
 						code.append(MessageFormat.format(template, fieldName, StringUtils.capitalizeFirstLetter(fieldName), indent(1,load)));										
 						
 					}else if (v instanceof MapMetaData){
 						
 						if (((MapMetaData) v).keyMetaData instanceof StructMetaData || ((MapMetaData) v).valueMetaData instanceof StructMetaData){
 							
-							final String template = IOUtils.readToString(TBaseScannerFactory.class.getClassLoader().getResourceAsStream("map.txt"));
+							final String template = IOUtils.toString(TBaseScannerFactory.class.getClassLoader().getResourceAsStream("map.txt"));
 							
 							final StringBuilder body = new StringBuilder();
 							
@@ -263,10 +263,10 @@ public class TBaseScannerFactory {
 					}
 					
 					if (List.class.isAssignableFrom(m.getReturnType())){
-						final String template = IOUtils.readToString(TBaseScannerFactory.class.getClassLoader().getResourceAsStream("list.txt"));				
+						final String template = IOUtils.toString(TBaseScannerFactory.class.getClassLoader().getResourceAsStream("list.txt"));				
 						code.append(MessageFormat.format(template, fieldName, StringUtils.capitalizeFirstLetter(fieldName), indent(1,load)));																
 					}else{
-						final String template = IOUtils.readToString(TBaseScannerFactory.class.getClassLoader().getResourceAsStream("struct.txt"));				
+						final String template = IOUtils.toString(TBaseScannerFactory.class.getClassLoader().getResourceAsStream("struct.txt"));				
 
 						code.append(MessageFormat.format(template, fieldName, StringUtils.capitalizeFirstLetter(fieldName), indent(1,load), m.getReturnType().getCanonicalName()));																					
 					}

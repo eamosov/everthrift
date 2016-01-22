@@ -6,6 +6,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TProtocol;
@@ -16,7 +17,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.terracotta.license.util.IOUtils;
 
 import com.knockchat.appserver.controller.MessageWrapper;
 import com.knockchat.appserver.controller.ThriftProcessor;
@@ -45,7 +45,7 @@ public abstract class AbstractThriftServlet extends HttpServlet implements Initi
 				
 		log.debug("Handle thrift request on THttpTransport");
 		
-		final byte[] packet = IOUtils.readBytes(request.getInputStream());
+		final byte[] packet = IOUtils.toByteArray(request.getInputStream());
 		
 		final TMemoryInputTransport it = new TMemoryInputTransport(packet);
 		final AutoExpandingBufferWriteTransport ot = new AutoExpandingBufferWriteTransport(1024, 1.5);

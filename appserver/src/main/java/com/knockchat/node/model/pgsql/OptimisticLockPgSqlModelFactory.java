@@ -8,7 +8,6 @@ import java.util.concurrent.Callable;
 
 import org.apache.thrift.TException;
 import org.hibernate.StaleStateException;
-import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.ConcurrencyFailureException;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -17,9 +16,10 @@ import com.google.common.base.Throwables;
 import com.knockchat.hibernate.dao.DaoEntityIF;
 import com.knockchat.node.model.EntityFactory;
 import com.knockchat.node.model.EntityNotFoundException;
-import com.knockchat.node.model.OptimisticLockModelFactoryIF;
 import com.knockchat.node.model.OptResult;
+import com.knockchat.node.model.OptimisticLockModelFactoryIF;
 import com.knockchat.node.model.RwModelFactoryHelper;
+import com.knockchat.node.model.UniqueException;
 import com.knockchat.utils.thrift.TFunction;
 
 public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,ENTITY extends DaoEntityIF, E extends TException> extends AbstractPgSqlModelFactory<PK, ENTITY> implements OptimisticLockModelFactoryIF<PK, ENTITY, E>  {
@@ -166,8 +166,8 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
 				public OptResult<ENTITY> call() throws Exception {
 					try{
 						return tryOptimisticUpdate(id, mutator, factory);
-					}catch (ConstraintViolationException e){
-						if (e.getConstraintName().contains("pkey"))
+					}catch (UniqueException e){
+						if (e.isPrimaryKey())
 							return null;
 						else
 							throw Throwables.propagate(e);
