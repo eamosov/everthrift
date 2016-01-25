@@ -70,7 +70,7 @@ public class ThriftContext implements Closeable{
 	private long wsReconnectTimeout = 5000;
 	private long wsConnectTimeoutMs = 5000;
 	
-	private long asyncCallTimeout = 5000;
+	private long asyncCallTimeout = 15000;
 	
 	private boolean opened = false;
 	
