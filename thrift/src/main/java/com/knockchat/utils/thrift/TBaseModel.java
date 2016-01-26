@@ -20,7 +20,7 @@ import net.jpountz.lz4.LZ4Compressor;
 import net.jpountz.lz4.LZ4Factory;
 import net.jpountz.lz4.LZ4FastDecompressor;
 
-public interface TBaseModel<T extends TBase<?,?>, F extends TFieldIdEnum> extends TBase<T,F>, java.io.Externalizable{
+public interface TBaseModel<T extends TBase<T,F>, F extends TFieldIdEnum> extends TBase<T,F>, java.io.Externalizable{
 	
 	static final Logger log = LoggerFactory.getLogger(TBaseLazyModel.class);
 

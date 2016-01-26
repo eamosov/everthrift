@@ -9,7 +9,7 @@
 	<version>0.0.1</version>
 
 	<properties>
-		<thrift.version>08.10.15</thrift.version>
+		<thrift.version>26.01.16</thrift.version>
 		<spring.version>4.2.0.RELEASE</spring.version>
 		<spring-integration.version>4.2.0.BUILD-SNAPSHOT</spring-integration.version>
 		<github.global.server>github</github.global.server>
@@ -344,14 +344,15 @@
 			<name>Public online Restlet repository</name>
 			<url>http://maven.restlet.org</url>
 		</repository>
+		
 		<repository>
-			<id>mvn-repo</id>
-			<url>https://raw.githubusercontent.com/knockchat/knock4j/mvn-repo/</url>
+			<id>efreet-thrift-repo</id>
+			<url>https://eamosov.github.io/thrift/</url>
 		</repository>
 
 		<repository>
-			<id>efreet-thrift-repo</id>
-			<url>https://raw.githubusercontent.com/eamosov/thrift/mvn-repo/</url>
+			<id>efreet-ehcache-jgroupsreplication</id>
+			<url>https://eamosov.github.io/ehcache-jgroupsreplication/</url>
 		</repository>
 
 	</repositories>

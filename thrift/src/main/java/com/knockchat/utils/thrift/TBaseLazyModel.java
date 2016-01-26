@@ -7,7 +7,7 @@ import java.io.ObjectOutput;
 import org.apache.thrift.TBase;
 import org.apache.thrift.TFieldIdEnum;
 
-public interface TBaseLazyModel<T extends TBase<?,?>, F extends TFieldIdEnum> extends TBaseModel<T,F>{
+public interface TBaseLazyModel<T extends TBase<T,F>, F extends TFieldIdEnum> extends TBaseModel<T,F>{
 	
 				
 	byte[] getThriftData();
