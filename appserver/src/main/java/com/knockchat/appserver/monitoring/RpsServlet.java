@@ -1,7 +1,5 @@
 package com.knockchat.appserver.monitoring;
 
-import gnu.trove.map.hash.TObjectLongHashMap;
-
 import java.awt.Color;
 import java.io.IOException;
 import java.util.Date;
@@ -28,6 +26,8 @@ import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Component;
 
 import com.knockchat.utils.LongTimestamp;
+
+import gnu.trove.map.hash.TObjectLongHashMap;
 
 @Component
 public class RpsServlet extends HttpServlet implements InitializingBean, DisposableBean{

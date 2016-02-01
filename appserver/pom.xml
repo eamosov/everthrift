@@ -23,50 +23,58 @@
 
 	<build>
 		<plugins>
-		
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.3</version>
 
-                <executions>
-                    <execution>
-                        <id>default-compile</id>
-                        <phase>none</phase>
-                    </execution>
-                </executions>
-            </plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.3</version>
 
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>aspectj-maven-plugin</artifactId>
-                <version>1.7</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>compile</goal>
-                            <goal>test-compile</goal>
-                        </goals>
-                    </execution>
-                </executions>
+				<executions>
+					<execution>
+						<id>default-compile</id>
+						<phase>none</phase>
+					</execution>
+				</executions>
+			</plugin>
 
-                <configuration>
-                    <showWeaveInfo>false</showWeaveInfo>
-                    <source>1.8</source>
-                    <target>1.8</target>
-                    <Xlint>ignore</Xlint>
-                    <complianceLevel>1.8</complianceLevel>
-                    <encoding>UTF-8</encoding>
-                    <verbose>true</verbose>
-                    <aspectLibraries>
-                        <aspectLibrary>
-                            <groupId>org.springframework</groupId>
-                            <artifactId>spring-aspects</artifactId>
-                        </aspectLibrary>
-                    </aspectLibraries>
-                </configuration>
-            </plugin>
-		
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>aspectj-maven-plugin</artifactId>
+				<version>1.7</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>compile</goal>
+							<goal>test-compile</goal>
+						</goals>
+					</execution>
+				</executions>
+
+				<configuration>
+					<showWeaveInfo>false</showWeaveInfo>
+					<source>1.8</source>
+					<target>1.8</target>
+					<Xlint>ignore</Xlint>
+					<complianceLevel>1.8</complianceLevel>
+					<encoding>UTF-8</encoding>
+					<verbose>true</verbose>
+
+					<weaveDependencies>
+						<weaveDependency>
+							<groupId>com.datastax.cassandra</groupId>
+							<artifactId>cassandra-driver-core</artifactId>
+						</weaveDependency>
+					</weaveDependencies>
+
+					<aspectLibraries>
+						<aspectLibrary>
+							<groupId>org.springframework</groupId>
+							<artifactId>spring-aspects</artifactId>
+						</aspectLibrary>
+					</aspectLibraries>
+				</configuration>
+			</plugin>
+
 			<plugin>
 				<groupId>com.knockchat</groupId>
 				<artifactId>migration-maven-plugin</artifactId>
@@ -162,11 +170,11 @@
 			<artifactId>spring-websocket</artifactId>
 		</dependency>
 
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-aspects</artifactId>
-        </dependency>
-                
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-aspects</artifactId>
+		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.data</groupId>
 			<artifactId>spring-data-jpa</artifactId>
@@ -195,19 +203,19 @@
 			<artifactId>hibernate-entitymanager</artifactId>
 			<version>5.0.0.Final</version>
 		</dependency>
-		
+
 		<dependency>
-  			<groupId>org.hibernate</groupId>
-  			<artifactId>hibernate-ehcache</artifactId>
-  			<version>5.0.0.Final</version>
+			<groupId>org.hibernate</groupId>
+			<artifactId>hibernate-ehcache</artifactId>
+			<version>5.0.0.Final</version>
 			<exclusions>
 				<exclusion>
 					<groupId>net.sf.ehcache</groupId>
 					<artifactId>ehcache-core</artifactId>
 				</exclusion>
-			</exclusions>  			
+			</exclusions>
 		</dependency>
-		
+
 
 		<dependency><!-- Apache Commons DbUtils -->
 			<groupId>commons-dbutils</groupId>
@@ -288,13 +296,13 @@
 			<groupId>org.jminix</groupId>
 			<artifactId>jminix</artifactId>
 			<version>1.2.0</version>
-			
+
 			<exclusions>
 				<exclusion>
-            		<groupId>commons-beanutils</groupId>
-            		<artifactId>commons-beanutils</artifactId>
-        		</exclusion>			
-			</exclusions>        			
+					<groupId>commons-beanutils</groupId>
+					<artifactId>commons-beanutils</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 
 		<dependency>
@@ -356,23 +364,17 @@
 			<version>2.3.1</version>
 		</dependency>
 
-        <dependency>
-            <groupId>com.knockchat</groupId>
-            <artifactId>knock4j-migrator</artifactId>
-        </dependency>
-		 
+		<dependency>
+			<groupId>com.knockchat</groupId>
+			<artifactId>knock4j-migrator</artifactId>
+		</dependency>
+
 		<dependency>
 			<groupId>org.mozilla</groupId>
 			<artifactId>rhino</artifactId>
 			<version>1.7.7</version>
 		</dependency>
-		 
-   		<dependency>
-       		<groupId>org.springframework.data</groupId>
-       		<artifactId>spring-data-mongodb</artifactId>
-       		<version>1.8.0.RC1</version>
-   		</dependency>
-		 
+
 		<dependency>
 			<groupId>org.springframework.data</groupId>
 			<artifactId>spring-data-commons</artifactId>
@@ -380,34 +382,51 @@
 		</dependency>
 
 		<dependency>
-            <groupId>com.knockchat</groupId>
-            <artifactId>knock4j-thrift</artifactId>
-        </dependency>                
-		 
+			<groupId>com.knockchat</groupId>
+			<artifactId>knock4j-thrift</artifactId>
+		</dependency>
+
 		<dependency>
 			<groupId>org.apache.geronimo.specs</groupId>
 			<artifactId>geronimo-jms_1.1_spec</artifactId>
 			<version>1.1.1</version>
 		</dependency>
-		 
+
 		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-jms</artifactId>
 			<version>${spring.version}</version>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>it.unimi.dsi</groupId>
 			<artifactId>fastutil</artifactId>
 			<version>7.0.7</version>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>org.rrd4j</groupId>
 			<artifactId>rrd4j</artifactId>
 			<version>2.2.1</version>
 		</dependency>
-		 
+
+		<dependency>
+			<groupId>com.datastax.cassandra</groupId>
+			<artifactId>cassandra-driver-core</artifactId>
+			<scope>provided</scope>
+		</dependency>
+		
+		<dependency>
+			<groupId>io.dropwizard.metrics</groupId>
+			<artifactId>metrics-core</artifactId>
+			<version>3.1.2</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.knockchat</groupId>
+			<artifactId>cassandra-driver-mapping</artifactId>
+		</dependency>
+
 	</dependencies>
 
 </project>

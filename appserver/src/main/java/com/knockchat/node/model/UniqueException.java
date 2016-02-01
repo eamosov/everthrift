@@ -15,15 +15,18 @@ public class UniqueException extends RuntimeException{
 	
 	private static final Pattern pkey = Pattern.compile("^[^_]+_pkey$");
 	private static final Pattern p = Pattern.compile("^[^_]+_([^_]+)_[^_]+$");
-	
-	private final boolean isPrimaryKey;
-	
-	private final String fieldName;
 
-	public UniqueException(String fieldName, Exception e) {
+	private final String fieldName;
+	private final boolean isPrimaryKey;	
+	
+	public UniqueException(String fieldName, boolean isPrimaryKey, Exception e){
 		super(e);
 		this.fieldName = fieldName;
-		this.isPrimaryKey = false;
+		this.isPrimaryKey = isPrimaryKey;
+	}
+
+	public UniqueException(String fieldName, Exception e) {
+		this(fieldName, false, e);
 	}
 	
 	public UniqueException(ConstraintViolationException e){

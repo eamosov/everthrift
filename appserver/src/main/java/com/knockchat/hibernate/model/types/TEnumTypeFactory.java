@@ -2,15 +2,15 @@ package com.knockchat.hibernate.model.types;
 
 import java.util.Map;
 
+import org.apache.thrift.TEnum;
+
+import com.google.common.collect.Maps;
+
 import javassist.CannotCompileException;
 import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.CtMethod;
 import javassist.NotFoundException;
-
-import org.apache.thrift.TEnum;
-
-import com.google.common.collect.Maps;
 
 @SuppressWarnings("rawtypes")
 public class TEnumTypeFactory {

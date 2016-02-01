@@ -1,8 +1,5 @@
 package com.knockchat.sql;
 
-import gnu.trove.map.TLongLongMap;
-import gnu.trove.procedure.TLongLongProcedure;
-
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -11,6 +8,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.thrift.TBase;
 import org.apache.thrift.protocol.TJSONProtocol;
 import org.apache.thrift.transport.TMemoryBuffer;
+
+import gnu.trove.map.TLongLongMap;
+import gnu.trove.procedure.TLongLongProcedure;
 
 /**
  * 

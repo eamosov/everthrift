@@ -28,11 +28,11 @@
 					<exclusion>
 						<groupId>org.apache.httpcomponents</groupId>
 						<artifactId>httpclient</artifactId>
-					</exclusion>					
+					</exclusion>
 					<exclusion>
 						<groupId>org.apache.httpcomponents</groupId>
 						<artifactId>httpcore</artifactId>
-					</exclusion>					
+					</exclusion>
 				</exclusions>
 			</dependency>
 
@@ -64,6 +64,12 @@
 			<dependency>
 				<groupId>com.knockchat</groupId>
 				<artifactId>knock4j-thrift</artifactId>
+				<version>0.0.1</version>
+			</dependency>
+
+			<dependency>
+				<groupId>com.knockchat</groupId>
+				<artifactId>cassandra-driver-mapping</artifactId>
 				<version>0.0.1</version>
 			</dependency>
 
@@ -132,12 +138,12 @@
 				<artifactId>spring-websocket</artifactId>
 				<version>${spring.version}</version>
 			</dependency>
-			
-        	<dependency>
-            	<groupId>org.springframework</groupId>
-            	<artifactId>spring-aspects</artifactId>
-        		<version>${spring.version}</version>
-			</dependency>			
+
+			<dependency>
+				<groupId>org.springframework</groupId>
+				<artifactId>spring-aspects</artifactId>
+				<version>${spring.version}</version>
+			</dependency>
 
 			<dependency>
 				<groupId>org.postgresql</groupId>
@@ -204,11 +210,25 @@
 				<artifactId>aspectjrt</artifactId>
 				<version>1.9.0.BETA-2</version>
 			</dependency>
-			
+
 			<dependency>
 				<groupId>org.apache.httpcomponents</groupId>
 				<artifactId>httpclient</artifactId>
 				<version>${httpclient.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>com.datastax.cassandra</groupId>
+				<artifactId>cassandra-driver-core</artifactId>
+				<version>3.0.0-SNAPSHOT</version>
+			</dependency>
+
+			<dependency>
+				<groupId>com.datastax.cassandra</groupId>
+				<artifactId>cassandra-driver-core</artifactId>
+				<version>3.0.0-SNAPSHOT</version>
+				<type>test-jar</type>
+				<scope>test</scope>
 			</dependency>
 
 		</dependencies>
@@ -287,7 +307,8 @@
 		</plugins>
 		<pluginManagement>
 			<plugins>
-				<!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
+				<!--This plugin's configuration is used to store Eclipse m2e settings 
+					only. It has no influence on the Maven build itself. -->
 				<plugin>
 					<groupId>org.eclipse.m2e</groupId>
 					<artifactId>lifecycle-mapping</artifactId>
@@ -344,7 +365,7 @@
 			<name>Public online Restlet repository</name>
 			<url>http://maven.restlet.org</url>
 		</repository>
-		
+
 		<repository>
 			<id>efreet-thrift-repo</id>
 			<url>https://eamosov.github.io/thrift/</url>
@@ -387,12 +408,13 @@
 	<modules>
 		<module>services</module>
 		<module>thrift</module>
+		<module>cassandra-driver-mapping</module>
 		<module>appserver</module>
 		<module>infonode</module>
 		<module>migrator</module>
 		<module>migration-plugin</module>
 		<module>jsvc</module>
 		<module>tmc</module>
-		<module>common-cli</module>		
-    </modules>
+		<module>common-cli</module>
+	</modules>
 </project>

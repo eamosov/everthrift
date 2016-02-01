@@ -1,7 +1,5 @@
 package com.knockchat.hibernate.model.types;
 
-import gnu.trove.impl.hash.THash;
-
 import java.io.Serializable;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -14,6 +12,8 @@ import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.usertype.UserType;
 
 import com.knockchat.sql.SqlUtils;
+
+import gnu.trove.impl.hash.THash;
 
 @SuppressWarnings({"rawtypes","unchecked"})
 public abstract class Trove4jHstoreType<T extends THash> implements UserType {

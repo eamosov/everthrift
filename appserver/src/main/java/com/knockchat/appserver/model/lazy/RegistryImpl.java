@@ -1,7 +1,5 @@
 package com.knockchat.appserver.model.lazy;
 
-import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
-
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -11,6 +9,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ArrayListMultimap;
+
+import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
 
 public class RegistryImpl implements Registry {
 	

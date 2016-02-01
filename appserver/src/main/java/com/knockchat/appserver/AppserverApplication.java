@@ -128,12 +128,14 @@ public class AppserverApplication {
             log.info("Try find migrations in {}", env.getProperty("migrator.root.package"));
             runMigrator(env.getProperty("migrator.root.package"));
         }
+        
+        final boolean nothrift = !env.getProperty("nothrift", "false").equalsIgnoreCase("false");
 
         try {
             if (env.getProperty("listen.port").equals("0"))
                 addProperty("listen.port", SocketUtils.findAvailableServerSocket());
 
-            if (env.getProperty("thrift.port").equals("0"))
+            if (!nothrift && env.getProperty("thrift.port").equals("0"))
                 addProperties("thrift.port", SocketUtils.findAvailableServerSocket());
 
         } catch (IOException e1) {
@@ -156,9 +158,11 @@ public class AppserverApplication {
                 throw new RuntimeException(e);
             }
 
-        thriftServer = context.getBean(ThriftServer.class);
-        thriftServer.setPort(Integer.parseInt(env.getProperty("thrift.port")));
-        thriftServer.setHost(env.getProperty("thrift.host"));
+        if (!nothrift){
+        	thriftServer = context.getBean(ThriftServer.class);
+        	thriftServer.setPort(Integer.parseInt(env.getProperty("thrift.port")));
+        	thriftServer.setHost(env.getProperty("thrift.host"));
+        }
 
         initialized = true;
 
@@ -334,7 +338,9 @@ public class AppserverApplication {
     }
 
     public synchronized void start() {
-        thriftServer.start();
+    	
+    	if (thriftServer !=null)
+    		thriftServer.start();
 
         try {
             if (jettyServer != null)
@@ -357,7 +363,9 @@ public class AppserverApplication {
             throw new RuntimeException(e);
         }
 
-        thriftServer.destroy();
+        if (thriftServer !=null)
+        	thriftServer.destroy();
+        
         context.close();
     }
 

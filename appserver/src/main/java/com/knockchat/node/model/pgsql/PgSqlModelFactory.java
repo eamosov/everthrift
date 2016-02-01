@@ -3,13 +3,13 @@ package com.knockchat.node.model.pgsql;
 import java.io.Serializable;
 import java.util.List;
 
-import net.sf.ehcache.Cache;
-
 import org.hibernate.SessionFactory;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.knockchat.hibernate.dao.DaoEntityIF;
 import com.knockchat.node.model.ModelFactoryIF;
+
+import net.sf.ehcache.Cache;
 
 public class PgSqlModelFactory<PK extends Serializable, ENTITY extends DaoEntityIF> extends AbstractPgSqlModelFactory<PK, ENTITY> implements ModelFactoryIF<PK, ENTITY>{
 

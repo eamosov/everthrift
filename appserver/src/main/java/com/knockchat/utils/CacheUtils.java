@@ -1,9 +1,9 @@
 package com.knockchat.utils;
 
+import com.google.common.base.Function;
+
 import net.sf.ehcache.Cache;
 import net.sf.ehcache.Element;
-
-import com.google.common.base.Function;
 
 public class CacheUtils {
 

@@ -2,9 +2,6 @@ package com.knockchat.hibernate;
 
 import java.util.Properties;
 
-import net.sf.ehcache.CacheManager;
-import net.sf.ehcache.Ehcache;
-
 import org.hibernate.boot.spi.SessionFactoryOptions;
 import org.hibernate.cache.CacheException;
 import org.hibernate.cache.ehcache.internal.nonstop.NonstopAccessStrategyFactory;
@@ -27,6 +24,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.knockchat.appserver.AppserverApplication;
+
+import net.sf.ehcache.CacheManager;
+import net.sf.ehcache.Ehcache;
 
 public class HibernateCache implements RegionFactory {
 

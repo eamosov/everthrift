@@ -4,7 +4,6 @@ import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
 import java.util.Map;
-import java.util.concurrent.Callable;
 
 import org.apache.thrift.TException;
 import org.hibernate.StaleStateException;
@@ -96,7 +95,7 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
     		throw new RuntimeException("Can't correctly do optimistic update within transaction");
 
     	try {
-    		final ENTITY deleted = RwModelFactoryHelper.optimisticUpdate( () ->
+    		final ENTITY deleted = RwModelFactoryHelper.optimisticUpdate( (count) ->
 				{
 					try{						
 						return tryOptimisticDelete(id); 
@@ -160,10 +159,7 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
     	if (TransactionSynchronizationManager.isActualTransactionActive())
     		throw new RuntimeException("Can't correctly do optimistic update within transaction");
     			
-    	final OptResult<ENTITY> ret =  RwModelFactoryHelper.optimisticUpdate(new Callable<OptResult<ENTITY>>(){
-
-				@Override
-				public OptResult<ENTITY> call() throws Exception {
+    	final OptResult<ENTITY> ret =  RwModelFactoryHelper.optimisticUpdate((count) -> {
 					try{
 						return tryOptimisticUpdate(id, mutator, factory);
 					}catch (UniqueException e){
@@ -178,10 +174,8 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
 						log.debug("update fails id={}, let's try one more time? {}", id, e.getMessage());
 						return null;
 					}
-				}}, RwModelFactoryHelper.MAX_ITERATIONS, RwModelFactoryHelper.MAX_TIMEOUT);
+				}, RwModelFactoryHelper.MAX_ITERATIONS, RwModelFactoryHelper.MAX_TIMEOUT);
 		
-    	
-
 		if (ret.isUpdated)
 			_invalidate(id);				
 

@@ -1,8 +1,5 @@
 package com.knockchat.utils.thrift;
 
-import it.unimi.dsi.fastutil.objects.Reference2ObjectMap;
-import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
-
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -11,6 +8,9 @@ import org.apache.thrift.TFieldIdEnum;
 import org.apache.thrift.meta_data.FieldMetaData;
 
 import com.knockchat.utils.Pair;
+
+import it.unimi.dsi.fastutil.objects.Reference2ObjectMap;
+import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
 
 public class Utils {
 	

@@ -5,12 +5,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import net.sf.ehcache.Cache;
-
 import org.apache.commons.collections.CollectionUtils;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+
+import net.sf.ehcache.Cache;
 
 public abstract class CachedIndexModelFactory<PK, ENTITY> extends AbstractCachedModelFactory<PK, List<ENTITY>> implements RoModelFactoryIF<PK, List<ENTITY>> {
 	
