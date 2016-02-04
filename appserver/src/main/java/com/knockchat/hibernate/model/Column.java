@@ -40,7 +40,7 @@ import com.knockchat.hibernate.model.types.JsonType;
 import com.knockchat.hibernate.model.types.LongDateType;
 import com.knockchat.hibernate.model.types.LongIntervalType;
 import com.knockchat.hibernate.model.types.LongListType;
-import com.knockchat.hibernate.model.types.LongLongHstoreType;
+import com.knockchat.hibernate.model.types.TLongLongHstoreType;
 import com.knockchat.hibernate.model.types.LongTimestampType;
 import com.knockchat.hibernate.model.types.PointType;
 import com.knockchat.hibernate.model.types.ShortListType;
@@ -354,7 +354,9 @@ public class Column {
     	}else if (Map.class.equals(javaClass)){
     		
     		if (columnType.contains("hstore")){
-    			hibernateType = com.knockchat.hibernate.model.types.HstoreType.class.getCanonicalName();
+    			hibernateType =
+    					propertyName.equals("deliveredAccountIds") ? com.knockchat.hibernate.model.types.LongLongHstoreType.class.getCanonicalName() ://FIXME hack... 
+    					com.knockchat.hibernate.model.types.HstoreType.class.getCanonicalName();
     			customRead = columnName+"::hstore";
     			customWrite = "?::hstore";
     		}
@@ -362,7 +364,7 @@ public class Column {
     	}else if (TLongLongHashMap.class.equals(javaClass)){
     		
     		if (columnType.contains("hstore")){
-    			hibernateType = LongLongHstoreType.class.getCanonicalName();
+    			hibernateType = TLongLongHstoreType.class.getCanonicalName();
     			customRead = columnName+"::hstore";
     			customWrite = "?::hstore";
     		}

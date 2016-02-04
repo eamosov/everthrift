@@ -19,6 +19,12 @@ public class UniqueException extends RuntimeException{
 	private final String fieldName;
 	private final boolean isPrimaryKey;	
 	
+	public UniqueException(String message, String fieldName){
+		super(message);
+		this.fieldName = fieldName;
+		this.isPrimaryKey = false;
+	}
+	
 	public UniqueException(String fieldName, boolean isPrimaryKey, Exception e){
 		super(e);
 		this.fieldName = fieldName;

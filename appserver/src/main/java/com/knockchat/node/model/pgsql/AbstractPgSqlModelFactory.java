@@ -3,6 +3,7 @@ package com.knockchat.node.model.pgsql;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -167,15 +168,11 @@ public class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY extends D
     public AbstractDao<PK, ENTITY> getDao(){
    		return dao;
     }
+    
+    public Iterator<PK> getAllIds(){
+    	return ((List)getDao().findByCriteria(Restrictions.and(), Projections.property("id"), null, Collections.singletonList(Order.asc("id")), null, null)).iterator();	
+    }
        
-	public List<PK> findAllIds(int limit, int offset){
-		return (List)getDao().findByCriteria(Restrictions.and(), Projections.property("id"), null, Collections.singletonList(Order.asc("id")), limit, offset);
-	}
-
-	public List<PK> findAllIds(){
-		return (List)getDao().findByCriteria(Restrictions.and(), Projections.property("id"), null, Collections.singletonList(Order.asc("id")), null, null);
-	}
-
 	@Override
 	public ENTITY insertEntity(ENTITY e) {
 		return helper.updateEntity(e);

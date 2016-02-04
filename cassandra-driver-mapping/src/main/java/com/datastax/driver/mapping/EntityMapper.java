@@ -18,7 +18,10 @@ package com.datastax.driver.mapping;
 import static com.datastax.driver.core.querybuilder.QueryBuilder.quote;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.datastax.driver.core.ConsistencyLevel;
@@ -35,10 +38,9 @@ public abstract class EntityMapper<T> {
     public final List<ColumnMapper<T>> partitionKeys = new ArrayList<ColumnMapper<T>>();
     public final List<ColumnMapper<T>> clusteringColumns = new ArrayList<ColumnMapper<T>>();
     public final List<ColumnMapper<T>> regularColumns = new ArrayList<ColumnMapper<T>>();
-
-    private final List<ColumnMapper<T>> allColumns = new ArrayList<ColumnMapper<T>>();
-    
     public ColumnMapper<T> versionColumn;
+    
+    private Map<String, ColumnMapper<T>> allColumns = new HashMap<String, ColumnMapper<T>>();
 
     protected EntityMapper(Class<T> entityClass, String keyspace, String table, ConsistencyLevel writeConsistency, ConsistencyLevel readConsistency) {
         this.entityClass = entityClass;
@@ -60,33 +62,39 @@ public abstract class EntityMapper<T> {
         return partitionKeys.size() + clusteringColumns.size();
     }
 
+    public ColumnMapper<T> getColumnByFieldName(final String fieldName){
+    	return allColumns.get(fieldName);
+    }
+    
     public ColumnMapper<T> getPrimaryKeyColumn(int i) {
         return i < partitionKeys.size() ? partitionKeys.get(i) : clusteringColumns.get(i - partitionKeys.size());
     }
 
     public void addColumns(List<ColumnMapper<T>> pks, List<ColumnMapper<T>> ccs, List<ColumnMapper<T>> rgs) {
-        partitionKeys.addAll(pks);
-        allColumns.addAll(pks);
+        partitionKeys.addAll(pks);        
+        addToAllColumns(pks);
 
         clusteringColumns.addAll(ccs);
-        allColumns.addAll(ccs);
+        addToAllColumns(ccs);
 
-        addColumns(rgs);
-    }
-
-    public void addColumns(List<ColumnMapper<T>> rgs) {
         regularColumns.addAll(rgs);
-        allColumns.addAll(rgs);
+        addToAllColumns(rgs);
     }
     
+    private void addToAllColumns(List<ColumnMapper<T>> cs){
+    	cs.forEach(c -> {
+    		allColumns.put(c.getFieldName(), c);
+    	});    	
+    }
+
     public void setVersionColumn(ColumnMapper<T> v) {
     	versionColumn = v;
     }
 
     public abstract T newEntity();
 
-    public List<ColumnMapper<T>> allColumns() {
-        return allColumns;
+    public Collection<ColumnMapper<T>> allColumns() {
+        return allColumns.values();
     }
     
     public boolean isVersion(ColumnMapper<?> cm){

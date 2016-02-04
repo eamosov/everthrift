@@ -133,6 +133,14 @@ public class Mapper<T> {
     public ColumnMapper<T> getPrimaryKeyColumn(int i) {
         return mapper.getPrimaryKeyColumn(i);
     }
+    
+    public ColumnMapper<T> getColumnByFieldName(final String fieldName){
+    	return mapper.getColumnByFieldName(fieldName);
+    }
+    
+    public String getTableName(){
+    	return mapper.getTable();
+    }
 
     PreparedStatement getPreparedQuery(QueryType type, Set<ColumnMapper<?>> columns, EnumMap<Option.Type, Option> options) {
 
@@ -355,7 +363,7 @@ public class Mapper<T> {
             opt.checkValidFor(QueryType.UPDATE, manager);
             opt.addToPreparedStatement(bs, i++);
         }
-
+        
         return bs;
     }
     
@@ -909,6 +917,14 @@ public class Mapper<T> {
             result.put(option.type, option);
         }
         return result;
+    }
+    
+    public ConsistencyLevel getReadConsistency(){
+    	return mapper.readConsistency;
+    }
+
+    public ConsistencyLevel getWriteConsistency(){
+    	return mapper.writeConsistency;
     }
 
     /**

@@ -72,4 +72,12 @@ public abstract class ColumnMapper<T> {
     public TypeToken<Object> getJavaType() {
         return fieldType;
     }
+    
+    public String getColumnNameUnquoted(){
+    	return columnName;
+    }
+
+	public String getFieldName() {
+		return fieldName;
+	}    
 }

@@ -18,6 +18,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -382,4 +383,9 @@ public class CollectionUtils {
 			c += values[j] ? 1: 0;
 		return c;
 	}
+	
+	public static <T> void aggregate(Iterator<T> it, int size, VoidFunction<List<T>> f) {		
+		Iterators.partition(it, size).forEachRemaining(a -> {f.apply(a);});
+	}
+
 }

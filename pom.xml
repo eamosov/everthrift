@@ -414,7 +414,6 @@
 		<module>migrator</module>
 		<module>migration-plugin</module>
 		<module>jsvc</module>
-		<module>tmc</module>
 		<module>common-cli</module>
 	</modules>
 </project>

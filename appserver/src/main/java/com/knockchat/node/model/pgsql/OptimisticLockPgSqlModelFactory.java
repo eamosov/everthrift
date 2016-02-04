@@ -3,15 +3,18 @@ package com.knockchat.node.model.pgsql;
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.thrift.TException;
+import org.hibernate.SessionFactory;
 import org.hibernate.StaleStateException;
 import org.springframework.dao.ConcurrencyFailureException;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.google.common.base.Throwables;
+import com.google.common.util.concurrent.ListeningExecutorService;
 import com.knockchat.hibernate.dao.DaoEntityIF;
 import com.knockchat.node.model.EntityFactory;
 import com.knockchat.node.model.EntityNotFoundException;
@@ -20,6 +23,8 @@ import com.knockchat.node.model.OptimisticLockModelFactoryIF;
 import com.knockchat.node.model.RwModelFactoryHelper;
 import com.knockchat.node.model.UniqueException;
 import com.knockchat.utils.thrift.TFunction;
+
+import net.sf.ehcache.Cache;
 
 public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,ENTITY extends DaoEntityIF, E extends TException> extends AbstractPgSqlModelFactory<PK, ENTITY> implements OptimisticLockModelFactoryIF<PK, ENTITY, E>  {
 	
@@ -34,7 +39,13 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
         super(cacheName, entityClass);
     }
     
-    @Override
+    
+    
+    public OptimisticLockPgSqlModelFactory(Cache cache, Class<ENTITY> entityClass, ListeningExecutorService listeningExecutorService, List<SessionFactory> sessionFactories) {
+		super(cache, entityClass, listeningExecutorService, sessionFactories);
+	}
+
+	@Override
     public final OptResult<ENTITY> updateUnchecked(PK id, TFunction<ENTITY, Boolean> mutator){
     	try {
     		return update(id, mutator);
