@@ -1,7 +1,9 @@
 package com.knockchat.utils;
 
 
+import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.Map;
@@ -22,9 +24,6 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import com.google.gson.reflect.TypeToken;
-import com.knockchat.utils.meta.MetaClass;
-import com.knockchat.utils.meta.MetaClasses;
-import com.knockchat.utils.meta.MetaProperty;
 import com.knockchat.utils.thrift.TBaseHasModel;
 import com.knockchat.utils.thrift.Utils;
 
@@ -95,16 +94,16 @@ public class GsonSerializer {
 			} catch (InstantiationException | IllegalAccessException e1) {
 				throw new JsonParseException(e1);
 			}
-						
-			final MetaClass mc = MetaClasses.get((Class)typeOfT);
-			if (mc == null)
-				throw new JsonParseException("can not create MetaClass for class " + typeOfT.getClass().getSimpleName());
+												
+			final Map<String, PropertyDescriptor> pds = ClassUtils.getPropertyDescriptors(o.getClass());
 			
 			for (Map.Entry<String, JsonElement> e:json.getAsJsonObject().entrySet()){
-				final MetaProperty p = mc.getProperty(e.getKey());
-				if (p == null){
+				
+				final PropertyDescriptor pd = pds.get(e.getKey()); 
+				
+				if (pd == null){
 					if (log.isDebugEnabled())
-						log.debug("coudn't find property {} for class {}, json={}", e.getKey(), mc.getName(), json.toString());
+						log.debug("coudn't find property {} for class {}, json={}", e.getKey(), o.getClass().getSimpleName(), json.toString());
 					continue;
 				}
 				
@@ -114,8 +113,12 @@ public class GsonSerializer {
 				} catch (SecurityException | NoSuchFieldException e1) {
 					throw new JsonParseException("class " + ((Class)typeOfT).getSimpleName(), e1);
 				}
-								
-				p.set(o, context.deserialize(e.getValue(), f.getGenericType()));				
+						
+				try {
+					pd.getWriteMethod().invoke(o, context.deserialize(e.getValue(), f.getGenericType()));
+				} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e1) {
+					throw new RuntimeException(e1);
+				}
 			}
 						
 			return (T)o;

@@ -1,5 +1,6 @@
 package com.knockchat.hibernate.model.types;
 
+import java.beans.PropertyDescriptor;
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -13,9 +14,7 @@ import java.util.Calendar;
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.usertype.UserType;
-
-import com.knockchat.utils.meta.MetaClasses;
-import com.knockchat.utils.meta.MetaProperty;
+import org.springframework.beans.BeanUtils;
 
 @SuppressWarnings("rawtypes")
 public abstract class DateType implements UserType {
@@ -23,17 +22,17 @@ public abstract class DateType implements UserType {
 	@Override
 	public abstract Class returnedClass();
 	
-	private final MetaProperty year; //the year
-	private final MetaProperty month;  //the month between 0-11
-	private final MetaProperty date;	//the day of the month between 1-31
+	private final PropertyDescriptor year; //the year
+	private final PropertyDescriptor month;  //the month between 0-11
+	private final PropertyDescriptor date;	//the day of the month between 1-31
 	
 	private Constructor copy;
 	
 	@SuppressWarnings("unchecked")
 	public DateType(){		
-		year = MetaClasses.get(returnedClass()).getProperty("year");
-		month = MetaClasses.get(returnedClass()).getProperty("month");
-		date = MetaClasses.get(returnedClass()).getProperty("date");
+		year = BeanUtils.getPropertyDescriptor(returnedClass(), "year");
+		month = BeanUtils.getPropertyDescriptor(returnedClass(), "month");
+		date = BeanUtils.getPropertyDescriptor(returnedClass(), "date");
 		
 		try {
 			copy = returnedClass().getConstructor(returnedClass());
@@ -58,9 +57,9 @@ public abstract class DateType implements UserType {
 			
 			final Object o = cls.newInstance();
 			
-			d.year.set(o, 0);
-			d.month.set(o, 0);
-			d.date.set(o, 0);		
+			d.year.getWriteMethod().invoke(o, 0);
+			d.month.getWriteMethod().invoke(o, 0);
+			d.date.getWriteMethod().invoke(o, 0);		
 
 			return true;
 		}catch(Exception e){
@@ -110,9 +109,13 @@ public abstract class DateType implements UserType {
 		final Calendar cld = Calendar.getInstance();
 		cld.setTime(value);
 		
-		year.set(ret, cld.get(Calendar.YEAR));
-		month.set(ret, cld.get(Calendar.MONTH)); /*0-11*/
-		date.set(ret, cld.get(Calendar.DATE)); /*1-31*/
+		try {
+			year.getWriteMethod().invoke(ret, cld.get(Calendar.YEAR));
+			month.getWriteMethod().invoke(ret, cld.get(Calendar.MONTH)); /*0-11*/
+			date.getWriteMethod().invoke(ret, cld.get(Calendar.DATE)); /*1-31*/			
+		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+			throw new HibernateException(e);
+		}
 		
 		return ret;
 	}
@@ -127,20 +130,27 @@ public abstract class DateType implements UserType {
 		
 		final Calendar cld = Calendar.getInstance();
 		
-		final Number y =  (Number)year.get(value);
-		if (y!=null)
-			cld.set(Calendar.YEAR, y.intValue());
-
-		final Number m =  (Number)month.get(value);
-		if (m!=null)
-			cld.set(Calendar.MONTH, m.intValue());
 		
-		final Number d =  (Number)date.get(value);
-		if (d!=null)
-			cld.set(Calendar.DATE, d.intValue());
-						
-		final Date date = new Date(cld.getTimeInMillis());
-		st.setDate(index, date);
+		try {
+			Number y = (Number)year.getReadMethod().invoke(value);
+			
+			if (y!=null)
+				cld.set(Calendar.YEAR, y.intValue());
+
+			final Number m =  (Number)month.getReadMethod().invoke(value);
+			if (m!=null)
+				cld.set(Calendar.MONTH, m.intValue());
+			
+			final Number d =  (Number)date.getReadMethod().invoke(value);
+			if (d!=null)
+				cld.set(Calendar.DATE, d.intValue());
+							
+			final Date date = new Date(cld.getTimeInMillis());
+			st.setDate(index, date);
+			
+		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+			throw new HibernateException(e);
+		}
 	}
 
 	@Override

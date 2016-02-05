@@ -1,5 +1,6 @@
 package com.knockchat.hibernate.model.types;
 
+import java.beans.PropertyDescriptor;
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -15,10 +16,7 @@ import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.usertype.UserType;
 import org.postgresql.util.PGobject;
-
-import com.knockchat.utils.meta.MetaClass;
-import com.knockchat.utils.meta.MetaClasses;
-import com.knockchat.utils.meta.MetaProperty;
+import org.springframework.beans.BeanUtils;
 
 @SuppressWarnings("rawtypes")
 public abstract class BoxType implements UserType {
@@ -28,15 +26,15 @@ public abstract class BoxType implements UserType {
 	final Constructor create;
 	final Constructor copy;
 
-	private final MetaProperty min;
-	private final MetaClass minType;
-	private final MetaProperty minX;
-	private final MetaProperty minY;
+	private final PropertyDescriptor min;
+	private final Class minType;
+	private final PropertyDescriptor minX;
+	private final PropertyDescriptor minY;
 
-	private final MetaProperty max;
-	private final MetaClass maxType;
-	private final MetaProperty maxX;
-	private final MetaProperty maxY;
+	private final PropertyDescriptor max;
+	private final Class maxType;
+	private final PropertyDescriptor maxX;
+	private final PropertyDescriptor maxY;
 
 	private final static Pattern boxPattern = Pattern.compile("BOX\\(([0-9.-]+) ([0-9.-]+),([0-9.-]+) ([0-9.-]+)\\)");
 
@@ -51,15 +49,15 @@ public abstract class BoxType implements UserType {
 		create = returnedClass().getConstructor();
 		copy = returnedClass().getConstructor(returnedClass());
 
-		min = MetaClasses.get(returnedClass()).getProperty("min");
-		minType = MetaClasses.get(min.getType());
-		minX = minType.getProperty("x");
-		minY = minType.getProperty("y");
+		min = BeanUtils.getPropertyDescriptor(returnedClass(), "min");
+		minType = min.getPropertyType();
+		minX = BeanUtils.getPropertyDescriptor(minType, "x");
+		minY = BeanUtils.getPropertyDescriptor(minType, "y");
 
-		max = MetaClasses.get(returnedClass()).getProperty("max");
-		maxType = MetaClasses.get(max.getType());
-		maxX = maxType.getProperty("x");
-		maxY = maxType.getProperty("y");
+		max = BeanUtils.getPropertyDescriptor(returnedClass(), "max");
+		maxType = max.getPropertyType();
+		maxX = BeanUtils.getPropertyDescriptor(maxType, "x");
+		maxY = BeanUtils.getPropertyDescriptor(maxType, "y");
 
 	}
 
@@ -77,15 +75,15 @@ public abstract class BoxType implements UserType {
 			final Object o = cls.newInstance();
 
 			final Object min = d.minType.newInstance();
-			d.minX.set(min, 0.0);
-			d.minY.set(min, 0.0);
+			d.minX.getWriteMethod().invoke(min, 0.0);
+			d.minY.getWriteMethod().invoke(min, 0.0);
 
 			final Object max = d.maxType.newInstance();
-			d.maxX.set(max, 0.0);
-			d.maxY.set(max, 0.0);
+			d.maxX.getWriteMethod().invoke(max, 0.0);
+			d.maxY.getWriteMethod().invoke(max, 0.0);
 
-			d.min.set(o, min);
-			d.max.set(o, max);
+			d.min.getWriteMethod().invoke(o, min);
+			d.max.getWriteMethod().invoke(o, max);
 			return true;
 		} catch (Exception e) {
 			return false;
@@ -131,15 +129,15 @@ public abstract class BoxType implements UserType {
 			ret = create.newInstance();
 
 			final Object _min = minType.newInstance();
-			minX.set(_min, Double.parseDouble(m.group(1)));
-			minY.set(_min, Double.parseDouble(m.group(2)));
+			minX.getWriteMethod().invoke(_min, Double.parseDouble(m.group(1)));
+			minY.getWriteMethod().invoke(_min, Double.parseDouble(m.group(2)));
 
 			final Object _max = maxType.newInstance();
-			maxX.set(_max, Double.parseDouble(m.group(3)));
-			maxY.set(_max, Double.parseDouble(m.group(4)));
+			maxX.getWriteMethod().invoke(_max, Double.parseDouble(m.group(3)));
+			maxY.getWriteMethod().invoke(_max, Double.parseDouble(m.group(4)));
 
-			min.set(ret, _min);
-			max.set(ret, _max);
+			min.getWriteMethod().invoke(ret, _min);
+			max.getWriteMethod().invoke(ret, _max);
 
 		} catch (InstantiationException | IllegalAccessException
 				| IllegalArgumentException | InvocationTargetException e) {
@@ -158,19 +156,25 @@ public abstract class BoxType implements UserType {
 			return;
 		}
 
-		final Object _min = min.get(value);
-		final Object _max = max.get(value);
+		;
+		try {
+			final Object _min = min.getReadMethod().invoke(value);
+			final Object _max = max.getReadMethod().invoke(value);
 
-		final Double _minX = (Double) minX.get(_min);
-		final Double _minY = (Double) minY.get(_min);
-		final Double _maxX = (Double) maxX.get(_max);
-		final Double _maxY = (Double) maxY.get(_max);
+			final Double _minX = (Double) minX.getReadMethod().invoke(_min);
+			final Double _minY = (Double) minY.getReadMethod().invoke(_min);
+			final Double _maxX = (Double) maxX.getReadMethod().invoke(_max);
+			final Double _maxY = (Double) maxY.getReadMethod().invoke(_max);
 
-		final PGobject o = new PGobject();
-		o.setType("box2d");
-		o.setValue(String.format(Locale.ENGLISH, "BOX(%f %f,%f %f)", _minX,
-				_minY, _maxX, _maxY));
-		st.setObject(index, o);
+			final PGobject o = new PGobject();
+			o.setType("box2d");
+			o.setValue(String.format(Locale.ENGLISH, "BOX(%f %f,%f %f)", _minX,
+					_minY, _maxX, _maxY));
+			st.setObject(index, o);
+			
+		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+			throw new HibernateException(e);
+		}
 	}
 
 	@Override

@@ -1,8 +1,5 @@
 package com.knockchat.cassandra.codecs;
 
-import java.beans.BeanInfo;
-import java.beans.IntrospectionException;
-import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
@@ -18,8 +15,7 @@ import com.datastax.driver.core.ParseUtils;
 import com.datastax.driver.core.ProtocolVersion;
 import com.datastax.driver.core.TypeCodec;
 import com.datastax.driver.core.exceptions.InvalidTypeException;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
+import com.knockchat.utils.ClassUtils;
 
 public class DateCodec<T> extends TypeCodec<T> {
 	
@@ -62,14 +58,7 @@ public class DateCodec<T> extends TypeCodec<T> {
 	
 	private static final PropertyDescriptor[] getDateProps(Class javaClass){
 		
-		final BeanInfo info;
-		try {
-			info = Introspector.getBeanInfo(javaClass);
-		} catch (IntrospectionException e) {
-			throw new IllegalArgumentException(e);
-		}
-
-		final Map<String, PropertyDescriptor> entityProps = Maps.uniqueIndex(Lists.newArrayList(info.getPropertyDescriptors()), PropertyDescriptor::getName); 
+		final Map<String, PropertyDescriptor> entityProps = ClassUtils.getPropertyDescriptors(javaClass); 
 
 		final PropertyDescriptor year = entityProps.get("year");
 		final PropertyDescriptor month = entityProps.get("month");
@@ -104,9 +93,9 @@ public class DateCodec<T> extends TypeCodec<T> {
 		final Calendar cld = Calendar.getInstance();
 		cld.setTime(value);
 				
-		year.getWriteMethod().invoke(ret, (short)cld.get(Calendar.YEAR));
-		month.getWriteMethod().invoke(ret, (byte)cld.get(Calendar.MONTH)); /*0-11*/
-		date.getWriteMethod().invoke(ret, (byte)cld.get(Calendar.DATE)); /*1-31*/
+		year.getWriteMethod().invoke(ret, cld.get(Calendar.YEAR));
+		month.getWriteMethod().invoke(ret, cld.get(Calendar.MONTH)); /*0-11*/
+		date.getWriteMethod().invoke(ret, cld.get(Calendar.DATE)); /*1-31*/
 		return ret;
 	}
 

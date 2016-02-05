@@ -1,0 +1,1 @@
+org.springframework.beans.BeanInfoFactory=com.knockchat.utils.beans.ThriftBeanInfoFactory,org.springframework.beans.ExtendedBeanInfoFactory

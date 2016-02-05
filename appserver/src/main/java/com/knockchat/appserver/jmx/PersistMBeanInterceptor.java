@@ -7,7 +7,6 @@ import java.lang.reflect.Method;
 import java.util.Enumeration;
 import java.util.Properties;
 
-import javax.annotation.PostConstruct;
 import javax.management.Attribute;
 import javax.management.AttributeList;
 
@@ -19,19 +18,15 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.jmx.export.annotation.ManagedResource;
 import org.springframework.stereotype.Component;
 
-import com.knockchat.sql.objects.ObjectStatements;
-import com.knockchat.sql.objects.QueryStatement;
-import com.knockchat.sql.objects.UpdateStatement;
-
 @Component(value = "persistMbeanInterceptor")
 @Scope(value = "prototype")
 public class PersistMBeanInterceptor implements MethodInterceptor, InitializingBean {
 
 	@Autowired
-	private StatementHolder holder;
+	private ApplicationPropertiesModelFactory propertiesModelFactory;
 
 	private Object clazzObj;
-	private String persistenceName;
+	private String persistencaName;
 	protected static final String GET_METHOD = "get";
 	protected static final String IS_METHOD = "is";
 	protected static final String SET_METHOD = "set";
@@ -44,7 +39,7 @@ public class PersistMBeanInterceptor implements MethodInterceptor, InitializingB
 
 	public PersistMBeanInterceptor(Object obj) {
 		this.clazzObj = obj;
-		this.persistenceName = this.clazzObj.getClass().getAnnotation(ManagedResource.class).persistName();
+		this.persistencaName = this.clazzObj.getClass().getAnnotation(ManagedResource.class).persistName();
 	}
 
 	@Override
@@ -120,25 +115,24 @@ public class PersistMBeanInterceptor implements MethodInterceptor, InitializingB
 
 	private Properties loadProperties() {
 		Properties returnValue = new Properties();
-		synchronized (holder.loadProperties) {
-			returnValue.putAll(holder.loadProperties.queryMap(2, this.persistenceName));
+		
+		for (ApplicationPropertiesModel m : propertiesModelFactory.findByPersistanceName(persistencaName)){
+			returnValue.put(m.getPropertyName(), m.getPropertyValue());
 		}
+		
 		return returnValue;
 	}
 
 	private void storeProperty(String propertyName, String propertyValue) {
-		synchronized (holder.findProperty) {
-			String value = holder.findProperty.queryFirst(this.persistenceName, propertyName);
-			if (value != null) {
-				synchronized (holder.updateProperty) {
-					holder.updateProperty.update(null, propertyValue, this.persistenceName, propertyName);
-				}
-			} else {
-				synchronized (holder.insertProperty) {
-					holder.insertProperty.update(null, this.persistenceName, propertyName, propertyValue);
-				}
-			}
-		}
+		
+		final ApplicationPropertiesModel m = new ApplicationPropertiesModel();
+		
+		m.setId(persistencaName + "." + propertyName);
+		m.setPersistanceName(persistencaName);
+		m.setPropertyName(propertyName);
+		m.setPropertyValue(propertyValue);
+		
+		propertiesModelFactory.update(m);
 	}
 
 	@Override
@@ -146,24 +140,4 @@ public class PersistMBeanInterceptor implements MethodInterceptor, InitializingB
 		this.load(clazzObj);
 	}
 
-	@Component
-	private static class StatementHolder {
-
-		@Autowired
-		private ObjectStatements objectStatements;
-
-		public QueryStatement<String> loadProperties;
-		public QueryStatement<String> findProperty;
-		public UpdateStatement<Void> updateProperty;
-		public UpdateStatement<Void> insertProperty;
-
-		@PostConstruct
-		private void init() {
-			loadProperties = objectStatements.getQuery(String.class, "select property_value, property_name  from application_properties where persistance_name=?");
-			updateProperty = objectStatements.getUpdate(Void.class, "update application_properties set property_value=? where persistance_name=? and property_name=?");
-			insertProperty = objectStatements.getUpdate(Void.class, "insert into application_properties(persistance_name, property_name, property_value) values (?, ?, ?)");
-			findProperty = objectStatements.getQuery(String.class, "select property_value  from application_properties where persistance_name=? and property_name = ?");
-		}
-
-	}
 }

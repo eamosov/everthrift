@@ -55,6 +55,11 @@ public class MappingManager {
     public MappingManager(Session session) {
         this(session, ReflectionMapper.factory(), AnnotationParser.INSTANCE);        
     }
+    
+    public MappingManager(Session session, EntityParser entityParser) {
+        this(session, ReflectionMapper.factory(), entityParser);        
+    }
+
 
     private static ProtocolVersion getProtocolVersion(Session session) {
         session.init();

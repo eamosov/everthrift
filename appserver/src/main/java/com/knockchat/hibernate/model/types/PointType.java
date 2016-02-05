@@ -1,5 +1,6 @@
 package com.knockchat.hibernate.model.types;
 
+import java.beans.PropertyDescriptor;
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -14,9 +15,7 @@ import java.util.regex.Pattern;
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.usertype.UserType;
-
-import com.knockchat.utils.meta.MetaClasses;
-import com.knockchat.utils.meta.MetaProperty;
+import org.springframework.beans.BeanUtils;
 
 @SuppressWarnings("rawtypes")
 public abstract class PointType implements UserType {
@@ -24,8 +23,8 @@ public abstract class PointType implements UserType {
 	final Constructor create;
 	final Constructor copy;
 
-	private final MetaProperty x;
-	private final MetaProperty y;
+	private final PropertyDescriptor x;
+	private final PropertyDescriptor y;
 	
 	private final static Pattern pointPattern = Pattern.compile("POINT\\(([0-9.-]+) ([0-9.-]+)\\)");
 
@@ -40,8 +39,8 @@ public abstract class PointType implements UserType {
 		create = returnedClass().getConstructor();
 		copy = returnedClass().getConstructor(returnedClass());
 
-		x = MetaClasses.get(returnedClass()).getProperty("x");
-		y = MetaClasses.get(returnedClass()).getProperty("y");
+		x = BeanUtils.getPropertyDescriptor(returnedClass(),"x");
+		y = BeanUtils.getPropertyDescriptor(returnedClass(),"y");
 	}
 
 	public static boolean isCompatible(final Class cls) {
@@ -56,8 +55,8 @@ public abstract class PointType implements UserType {
 			};
 
 			final Object o = cls.newInstance();
-			d.x.set(o, 0.0);
-			d.y.set(o, 0.0);
+			d.x.getWriteMethod().invoke(o, 0.0);
+			d.y.getWriteMethod().invoke(o, 0.0);
 			return true;
 		} catch (Exception e) {
 			return false;
@@ -101,8 +100,8 @@ public abstract class PointType implements UserType {
 		Object ret;
 		try {
 			ret = create.newInstance();
-			x.set(ret, Double.parseDouble(m.group(1)));
-			y.set(ret, Double.parseDouble(m.group(2)));
+			x.getWriteMethod().invoke(ret, Double.parseDouble(m.group(1)));
+			y.getWriteMethod().invoke(ret, Double.parseDouble(m.group(2)));
 		} catch (InstantiationException | IllegalAccessException
 				| IllegalArgumentException | InvocationTargetException e) {
 			throw new SQLException(e);
@@ -120,10 +119,14 @@ public abstract class PointType implements UserType {
 			return;
 		}
 
-		final Double _x = (Double)x.get(value);
-		final Double _y = (Double)y.get(value);
+		try {
+			final Double _x = (Double)x.getReadMethod().invoke(value);
+			final Double _y = (Double)y.getReadMethod().invoke(value);
 
-		st.setString(index, String.format(Locale.ENGLISH, "SRID=4326;POINT(%f %f)", _x, _y));
+			st.setString(index, String.format(Locale.ENGLISH, "SRID=4326;POINT(%f %f)", _x, _y));			
+		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+			throw new HibernateException(e);
+		}
 	}
 
 	@Override

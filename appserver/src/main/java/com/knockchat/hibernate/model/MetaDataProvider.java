@@ -1,5 +1,6 @@
 package com.knockchat.hibernate.model;
 
+import java.beans.PropertyDescriptor;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 import java.sql.Types;
@@ -13,14 +14,12 @@ import org.hibernate.annotations.OptimisticLocking;
 import org.hibernate.annotations.SQLInsert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
 import org.springframework.jdbc.support.DatabaseMetaDataCallback;
 import org.springframework.jdbc.support.JdbcUtils;
 import org.springframework.jdbc.support.MetaDataAccessException;
 
 import com.google.common.base.CaseFormat;
-import com.knockchat.utils.meta.MetaClass;
-import com.knockchat.utils.meta.MetaClasses;
-import com.knockchat.utils.meta.MetaProperty;
 
 public class MetaDataProvider {
 
@@ -87,7 +86,6 @@ public class MetaDataProvider {
 
     @SuppressWarnings({ "unchecked"})
 	private List<Column> readColumns(final Table table, Class clazz) throws MetaDataAccessException {
-        MetaClass meta = MetaClasses.get(clazz);
         List<Column> columns = (List<Column>) JdbcUtils.extractDatabaseMetaData(dataSource, new DatabaseMetaDataCallback() {
             @Override
             public Object processMetaData(DatabaseMetaData dbmd) throws SQLException, MetaDataAccessException {
@@ -96,13 +94,13 @@ public class MetaDataProvider {
             }
         });
         for (Column column : columns) {
-            setColProperiesDetails(column , meta);
+            setColProperiesDetails(column , clazz);
             column.setHibernateType();
         }
         return columns;
     }
 
-    private void setColProperiesDetails(Column column, MetaClass meta){
+    private void setColProperiesDetails(Column column, Class clazz){
         String lowerCase = column.getColumnName().toLowerCase();
         String camelCase = CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, lowerCase.toUpperCase());
         String camelCaseTs = null;
@@ -112,12 +110,12 @@ public class MetaDataProvider {
             case Types.DATE: camelCaseTs = camelCase.concat(TS_POSTFIX);
         }
         
-        final MetaProperty property = (camelCaseTs != null && meta.getProperty(camelCaseTs) != null) ? meta.getProperty(camelCaseTs)
-                : meta.getProperty(camelCase) != null ? meta.getProperty(camelCase)
-                : meta.getProperty(lowerCase);
+        final PropertyDescriptor property = (camelCaseTs != null && BeanUtils.getPropertyDescriptor(clazz, camelCaseTs) != null) ? BeanUtils.getPropertyDescriptor(clazz, camelCaseTs)
+                : BeanUtils.getPropertyDescriptor(clazz, camelCase) != null ? BeanUtils.getPropertyDescriptor(clazz, camelCase)
+                : BeanUtils.getPropertyDescriptor(clazz, lowerCase);
                 
         if (property != null) {
-            column.setJavaClass(property.getType());
+            column.setJavaClass(property.getPropertyType());
             column.setPropertyName(property.getName());
         }else{
         	//System.err.println("Coudn't find property " + column.getColumnName() + " in class " + meta.getName());

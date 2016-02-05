@@ -1,8 +1,5 @@
 package com.knockchat.cassandra;
 
-import java.beans.BeanInfo;
-import java.beans.IntrospectionException;
-import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
@@ -16,14 +13,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.datastax.driver.core.CodecRegistry;
 import com.datastax.driver.core.ColumnMetadata;
 import com.datastax.driver.core.ConsistencyLevel;
 import com.datastax.driver.core.Metadata;
 import com.datastax.driver.core.TableMetadata;
 import com.datastax.driver.core.TypeCodec;
 import com.datastax.driver.core.UserType;
-import com.datastax.driver.core.exceptions.CodecNotFoundException;
 import com.datastax.driver.mapping.AnnotationChecks;
 import com.datastax.driver.mapping.ColumnMapper;
 import com.datastax.driver.mapping.EntityMapper;
@@ -41,10 +36,9 @@ import com.datastax.driver.mapping.annotations.UDT;
 import com.datastax.driver.mapping.annotations.Version;
 import com.google.common.base.CaseFormat;
 import com.google.common.base.Strings;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.reflect.TypeToken;
-import com.knockchat.cassandra.codecs.MoreCodecRegistry;
+import com.knockchat.utils.ClassUtils;
 
 public class DbMetadataParser implements EntityParser {
 	
@@ -125,14 +119,7 @@ public class DbMetadataParser implements EntityParser {
 
         final EntityMapper<T> mapper = factory.create(entityClass, ksName, tableName, writeConsistency, readConsistency);
         
-		final BeanInfo info;
-		try {
-			info = Introspector.getBeanInfo(entityClass);
-		} catch (IntrospectionException e) {
-			throw new IllegalArgumentException(e);
-		}
-		
-		final Map<String, PropertyDescriptor> entityProps = Maps.uniqueIndex(Lists.newArrayList(info.getPropertyDescriptors()), PropertyDescriptor::getName); 
+		final Map<String, PropertyDescriptor> entityProps = ClassUtils.getPropertyDescriptors(entityClass); 
 		
 		final TableMetadata tableMetadata = mappingManager.getSession().getCluster().getMetadata().getKeyspace(ksName).getTable(tableName);
 
@@ -255,14 +242,7 @@ public class DbMetadataParser implements EntityParser {
 
         final UserType userType = mappingManager.getSession().getCluster().getMetadata().getKeyspace(ksName).getUserType(udtName);
         
-		final BeanInfo info;
-		try {
-			info = Introspector.getBeanInfo(udtClass);
-		} catch (IntrospectionException e) {
-			throw new IllegalArgumentException(e);
-		}
-		
-		final Map<String, PropertyDescriptor> entityProps = Maps.uniqueIndex(Lists.newArrayList(info.getPropertyDescriptors()), PropertyDescriptor::getName);         
+		final Map<String, PropertyDescriptor> entityProps = ClassUtils.getPropertyDescriptors(udtClass);         
 		final Map<String, ColumnMapper<T>> columnMappers = Maps.newHashMap();
 		
 		for (String udtFieldName: userType.getFieldNames()){

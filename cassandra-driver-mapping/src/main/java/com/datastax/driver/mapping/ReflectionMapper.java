@@ -15,10 +15,11 @@
  */
 package com.datastax.driver.mapping;
 
-import java.beans.IntrospectionException;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Method;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.springframework.beans.BeanUtils;
 
 import com.datastax.driver.core.ConsistencyLevel;
 
@@ -91,17 +92,15 @@ class ReflectionMapper<T> extends EntityMapper<T> {
         @Override
         public <T> ColumnMapper<T> createColumnMapper(Class<T> entityClass, FieldDescriptor field, MappingManager mappingManager, AtomicInteger columnCounter) {
             final String fieldName = field.getFieldName();
-            try {
-                PropertyDescriptor pd = new PropertyDescriptor(fieldName, entityClass);
+            final PropertyDescriptor pd = BeanUtils.getPropertyDescriptor(entityClass, fieldName);
+            
+            if (pd == null)
+            	throw new IllegalArgumentException("Cannot find matching getter and setter for field '" + fieldName + "'");
 
-                for (Class<?> udt : TypeMappings.findUDTs(field.getFieldType().getType()))
-                    mappingManager.getUDTCodec(udt);
+            for (Class<?> udt : TypeMappings.findUDTs(field.getFieldType().getType()))
+                mappingManager.getUDTCodec(udt);
 
-                return new LiteralMapper<T>(field, pd, columnCounter);
-
-            } catch (IntrospectionException e) {
-                throw new IllegalArgumentException("Cannot find matching getter and setter for field '" + fieldName + "'");
-            }
+            return new LiteralMapper<T>(field, pd, columnCounter);
         }
     }
 }
