@@ -73,6 +73,8 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 	private String sequenceName;
 	private SequenceFactory sequenceFactory;
 	private DLockFactory dLockFactory;
+	
+	private final static Option noSaveNulls = Option.saveNullFields(false);
 
 	
 	protected abstract E createNotFoundException(PK id);
@@ -501,6 +503,17 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 	@Override
 	public ENTITY updateEntity(ENTITY e) throws UniqueException {
 		throw new NotImplementedException();
+	}
+	
+	/*
+	 * save all not null fields without read
+	 */
+	public void saveNotNull(ENTITY entity) {
+		if (entity.getPk() == null)
+			throw new IllegalArgumentException("pk is null");
+		
+		mapper.save(entity, noSaveNulls);
+		invalidate((PK)entity.getPk());
 	}
 		
 }

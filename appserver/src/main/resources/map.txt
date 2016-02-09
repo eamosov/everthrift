@@ -1,5 +1,4 @@
-	final java.util.Map _{0}=(java.util.Map)obj.get{1}();
-	
+	final java.util.Map _{0}=(java.util.Map)obj.get{1}();	
 	{2}
 	if (_{0} != null && _{0}.size() !=0) '{'
 		final java.util.Iterator it = _{0}.entrySet().iterator();

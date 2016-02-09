@@ -10,3 +10,17 @@ import java.lang.annotation.Target;
 public @interface LazyAccessor {
 	String[] value() default ""; //scenarios "default", "admin", "json" ...
 }
+
+/*
+
+com.knockchat.node.model.account.AccountModel _account=obj.getAccount();  <-- LazyAccessor
+
+if (_account == null){
+        obj.loadAccount(r);  <-- LazyMethod
+}
+else    
+if (_account !=null) {
+        h.apply(_account);
+}}
+
+*/

@@ -6,7 +6,9 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Type;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.thrift.TBase;
 import org.apache.thrift.TFieldIdEnum;
@@ -39,9 +41,13 @@ public class GsonSerializer {
         }.getType();
 
         private final static Logger log = LoggerFactory.getLogger(TBaseSerializer.class);
-
+        
 		@Override
         public JsonElement serialize(T src, Type typeOfSrc, JsonSerializationContext context) {
+			return serialize(src, typeOfSrc, context, Collections.emptySet());
+		}
+
+        public JsonElement serialize(T src, Type typeOfSrc, JsonSerializationContext context, final Set<String> excludes) {
 
             if (!(src instanceof TBase)) {
                 log.error("coudn't serialize class {}", src.getClass());
@@ -59,7 +65,7 @@ public class GsonSerializer {
             
             for (TFieldIdEnum f : map.keySet()) {
             	
-                if (src.isSet(f)) {
+                if (src.isSet(f) && !excludes.contains(f.getFieldName())) {
 
                     final Object v = src.getFieldValue(f);
 
