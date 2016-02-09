@@ -18,6 +18,7 @@ import org.hibernate.type.Type;
 import com.google.common.base.Function;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
+import com.knockchat.node.model.UniqueException;
 import com.knockchat.utils.Pair;
 
 
@@ -37,8 +38,9 @@ public interface AbstractDao<K, V extends DaoEntityIF> {
      */
     public Map<K, V> findByIdsAsMap(Collection<K> id);
 
-    public void persist(V e);
-    public Pair<V, Boolean> saveOrUpdate(V e);
+    public void persist(V e) throws UniqueException;
+    public Pair<V, Boolean> saveOrUpdate(V e) throws UniqueException;
+    public Pair<V, Boolean> save(V e) throws UniqueException;
 
     public void delete(V e);
     

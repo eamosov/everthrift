@@ -8,8 +8,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
+import javax.annotation.PostConstruct;
+
+import org.apache.commons.lang.NotImplementedException;
 import org.apache.thrift.TException;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.datastax.driver.core.BoundStatement;
@@ -44,22 +46,28 @@ import com.knockchat.hibernate.dao.DaoEntityIF;
 import com.knockchat.node.model.AbstractCachedModelFactory;
 import com.knockchat.node.model.EntityFactory;
 import com.knockchat.node.model.EntityNotFoundException;
+import com.knockchat.node.model.LocalEventBus;
 import com.knockchat.node.model.OptResult;
 import com.knockchat.node.model.OptimisticLockModelFactoryIF;
-import com.knockchat.node.model.RwModelFactoryHelper;
 import com.knockchat.node.model.UniqueException;
+import com.knockchat.node.model.events.DeleteEntityEvent.SyncDeleteEntityEvent;
+import com.knockchat.node.model.events.InsertEntityEvent.SyncInsertEntityEvent;
+import com.knockchat.node.model.events.UpdateEntityEvent.SyncUpdateEntityEvent;
 import com.knockchat.utils.Pair;
 import com.knockchat.utils.thrift.TFunction;
 
 import net.sf.ehcache.Cache;
 
-public abstract class CassandraModelFactory<PK extends Serializable,ENTITY extends DaoEntityIF, E extends TException> extends AbstractCachedModelFactory<PK, ENTITY> implements OptimisticLockModelFactoryIF<PK, ENTITY, E>, InitializingBean{
+public abstract class CassandraModelFactory<PK extends Serializable,ENTITY extends DaoEntityIF, E extends TException> extends AbstractCachedModelFactory<PK, ENTITY> implements OptimisticLockModelFactoryIF<PK, ENTITY, E>{
 
 	private final Class<ENTITY> entityClass;
 	private final Constructor<ENTITY> copyConstructor;
 
 	@Autowired
 	private MappingManager mappingManager;
+	
+	@Autowired
+	private LocalEventBus localEventBus;
 	
 	private Mapper<ENTITY> mapper;
 	private String sequenceName;
@@ -95,7 +103,7 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 		
 	}
 	
-	public void setMappingManager(MappingManager mappingManager){
+	public final void setMappingManager(MappingManager mappingManager){
 		this.mappingManager = mappingManager;
 		initMapping();
 	}
@@ -129,7 +137,7 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 	}
 	
 	
-	public void setPkSequenceName(String sequenceName){
+	public final void setPkSequenceName(String sequenceName){
 		this.sequenceName = sequenceName;
 		
 		if (sequenceName == null){
@@ -150,7 +158,7 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 	}
 
 	@Override
-	public Class<ENTITY> getEntityClass() {
+	public final Class<ENTITY> getEntityClass() {
 		return entityClass;
 	}
 
@@ -178,13 +186,13 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 	}
 
 	@Override
-	public OptResult<ENTITY> update(PK id, TFunction<ENTITY, Boolean> mutator, EntityFactory<PK, ENTITY> factory) throws TException, E {
+	public final OptResult<ENTITY> update(PK id, TFunction<ENTITY, Boolean> mutator, EntityFactory<PK, ENTITY> factory) throws TException, E {
 		
 		if (id == null)
 			throw new IllegalArgumentException("id is null");
 		
 		try {
-			return RwModelFactoryHelper.optimisticUpdate((count) -> {
+			final OptResult<ENTITY> ret = OptimisticLockModelFactoryIF.optimisticUpdate((count) -> {
 				
 				final long now = System.currentTimeMillis();
 				
@@ -266,7 +274,14 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 			        	return null;
 			        }
 	        	}
-			});			
+			});
+			
+			if (ret.isUpdated){
+				localEventBus.post(syncUpdateEntityEvent(ret));
+				localEventBus.postAsync(asyncUpdateEntityEvent(ret.old, ret.updated));
+			}
+			
+			return ret;
 		} catch (EntityNotFoundException e) {
 			throw createNotFoundException(id);
 		}				
@@ -275,7 +290,10 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 	private OptResult<ENTITY> _delete(ENTITY e){				
 		mapper.delete(e);
 		invalidate((PK)e.getPk());
-		return OptResult.create(this, null, e, true);
+		final OptResult<ENTITY> r= OptResult.create(this, null, e, true);; 
+		localEventBus.post(syncDeleteEntityEvent(r));
+		localEventBus.postAsync(asyncDeleteEntityEvent(e));		
+		return r;
 	}
 
 	@Override
@@ -290,7 +308,7 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 	}
 
 	@Override
-	public OptResult<ENTITY> optInsert(ENTITY e) {
+	public final OptResult<ENTITY> optInsert(ENTITY e) {
 				
 		final long now = System.currentTimeMillis();
 		
@@ -321,7 +339,12 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 		if (saved == false)
 			throw new UniqueException(null, true, null);
 		
-		return OptResult.create(this, e, null, true);
+		final OptResult<ENTITY> r = OptResult.create(this, e, null, true); 
+
+		localEventBus.post(syncInsertEntityEvent(r));
+		localEventBus.postAsync(asyncInsertEntityEvent(e));
+		
+		return r;
 	}
 
 	@Override
@@ -350,8 +373,7 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 	
 	public abstract Iterator<PK> getAllIds();
 
-	//сделать поддержку указания названия поля
-	public <T> Iterator<T> getAll(String fieldName){
+	public final <T> Iterator<T> getAll(String fieldName){
 		
 		final Select.Selection select = QueryBuilder.select();
 		
@@ -434,26 +456,26 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 		return lock;
 	}
 
-	@Override
-	public void afterPropertiesSet(){
-		super.afterPropertiesSet();
+	@PostConstruct
+	private void afterPropertiesSet(){
 		initMapping();
+		localEventBus.register(this);
 	}
 	
-	public Session getSession(){
+	public final Session getSession(){
 		return this.mappingManager.getSession();
 	}
 	
-	public Select select(){
+	public final Select select(){
 		return (Select)QueryBuilder.select().all().from(mapper.getTableName()).setConsistencyLevel(mapper.getReadConsistency());
 	}
 	
-	public List<ENTITY> findByClause(Statement select){
+	public final List<ENTITY> findByClause(Statement select){
 		final ResultSet rs = mappingManager.getSession().execute(select);
 		return mapper.map(rs).all();		
 	}
 	
-	public ENTITY findOneByClause(Statement select){
+	public final ENTITY findOneByClause(Statement select){
 		final ResultSet rs = mappingManager.getSession().execute(select);		
 		final List<ENTITY> ret = mapper.map(rs).all();
 		if (ret.size() > 1)
@@ -461,4 +483,24 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 		return ret.isEmpty() ? null : ret.get(0);
 	}
 
+	@Override
+	final public SyncInsertEntityEvent<PK, ENTITY> syncInsertEntityEvent(ENTITY entity){
+		throw new NotImplementedException();
+	}
+	
+	@Override
+	final public SyncUpdateEntityEvent<PK, ENTITY> syncUpdateEntityEvent(ENTITY before, ENTITY after){
+		throw new NotImplementedException();
+	}
+
+	@Override
+	final public SyncDeleteEntityEvent<PK, ENTITY> syncDeleteEntityEvent(ENTITY entity){
+		throw new NotImplementedException();
+	}
+
+	@Override
+	public ENTITY updateEntity(ENTITY e) throws UniqueException {
+		throw new NotImplementedException();
+	}
+		
 }

@@ -5,8 +5,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.PostConstruct;
+
 import org.apache.commons.collections.CollectionUtils;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.support.TransactionSynchronizationAdapter;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -19,7 +20,7 @@ import net.sf.ehcache.Element;
 import net.sf.ehcache.Status;
 import net.sf.ehcache.loader.CacheLoader;
 
-public abstract class AbstractCachedModelFactory<PK,ENTITY> extends RoModelFactoryImpl<PK, ENTITY> implements InitializingBean{
+public abstract class AbstractCachedModelFactory<PK,ENTITY> extends RoModelFactoryImpl<PK, ENTITY>{
 	
 	@Autowired
 	protected CacheManager cm;
@@ -200,8 +201,8 @@ public abstract class AbstractCachedModelFactory<PK,ENTITY> extends RoModelFacto
 		}		
 	}
 	
-	@Override
-	public void afterPropertiesSet(){
+	@PostConstruct
+	private void afterPropertiesSet(){
 		_afterPropertiesSet();
 	}		
 

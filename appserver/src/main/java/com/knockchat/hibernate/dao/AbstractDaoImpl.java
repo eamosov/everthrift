@@ -36,6 +36,8 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
+import com.knockchat.appserver.model.CreatedAtIF;
+import com.knockchat.appserver.model.UpdatedAtIF;
 import com.knockchat.node.model.UniqueException;
 import com.knockchat.utils.Pair;
 
@@ -115,14 +117,19 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
     
     @Transactional
     @Override
-    public void persist(V e){
-    	final Session session =  getCurrentSession();    	
-    	session.persist(e);
+    public void persist(V e) throws UniqueException{
+    	final Session session =  getCurrentSession();
+    	
+    	try{
+    		session.persist(e);
+    	}catch(ConstraintViolationException e1){
+    		throw new UniqueException(e1);
+    	}    	
     }
 
     @Override
     @Transactional
-	public Pair<V, Boolean> saveOrUpdate(V e) {
+	public Pair<V, Boolean> saveOrUpdate(V e) throws UniqueException{
     	
     	try{
         	if (log.isDebugEnabled())
@@ -150,6 +157,44 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
     	}    	
     }
 
+    @Override
+    @Transactional
+	public Pair<V, Boolean> save(V e) throws UniqueException{
+    	
+    	try{
+        	if (log.isDebugEnabled())
+        		log.debug("save, class={}, object={}, id={}", e.getClass().getSimpleName(), System.identityHashCode(e), e.getPk());
+        	
+            final Session session = getCurrentSession();
+                    
+            if (log.isDebugEnabled())
+            	log.debug("save tx={}: {}", session.getTransaction().getStatus(), e);
+            
+            final long now = System.currentTimeMillis();
+            
+    		if (e instanceof CreatedAtIF && (((CreatedAtIF)e).getCreatedAt() == 0))
+            	((CreatedAtIF)e).setCreatedAt(now);
+            
+            if (e instanceof UpdatedAtIF)
+            	((UpdatedAtIF) e).setUpdatedAt(now);            
+            
+            if (e.getPk() == null){
+            	e.setPk(session.save(e));            	
+            	session.refresh(e);
+            	return Pair.create((V)session.get(entityClass, e.getPk()), true);
+        	}else{
+        		V ret = (V) session.merge(e);
+        		if (session.isDirty()){    			    			
+        			session.flush();
+        		}
+        		
+                return Pair.create(ret, EntityInterceptor.INSTANCE.isDirty(e));
+            }                		
+    	}catch(ConstraintViolationException e1){
+    		throw new UniqueException(e1);
+    	}    	
+    }
+    
     @Override
 	public void delete(V e) {
         try {

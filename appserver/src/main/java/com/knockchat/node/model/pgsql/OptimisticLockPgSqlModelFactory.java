@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang.NotImplementedException;
 import org.apache.thrift.TException;
 import org.hibernate.SessionFactory;
 import org.hibernate.StaleStateException;
@@ -15,18 +16,25 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.ListeningExecutorService;
+import com.knockchat.appserver.model.CreatedAtIF;
+import com.knockchat.appserver.model.UpdatedAtIF;
 import com.knockchat.hibernate.dao.DaoEntityIF;
 import com.knockchat.node.model.EntityFactory;
 import com.knockchat.node.model.EntityNotFoundException;
+import com.knockchat.node.model.LocalEventBus;
 import com.knockchat.node.model.OptResult;
 import com.knockchat.node.model.OptimisticLockModelFactoryIF;
-import com.knockchat.node.model.RwModelFactoryHelper;
 import com.knockchat.node.model.UniqueException;
+import com.knockchat.node.model.events.DeleteEntityEvent.SyncDeleteEntityEvent;
+import com.knockchat.node.model.events.InsertEntityEvent.SyncInsertEntityEvent;
+import com.knockchat.node.model.events.UpdateEntityEvent.SyncUpdateEntityEvent;
+import com.knockchat.utils.LongTimestamp;
+import com.knockchat.utils.Pair;
 import com.knockchat.utils.thrift.TFunction;
 
 import net.sf.ehcache.Cache;
 
-public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,ENTITY extends DaoEntityIF, E extends TException> extends AbstractPgSqlModelFactory<PK, ENTITY> implements OptimisticLockModelFactoryIF<PK, ENTITY, E>  {
+public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,ENTITY extends DaoEntityIF, E extends TException> extends AbstractPgSqlModelFactory<PK, ENTITY, E> implements OptimisticLockModelFactoryIF<PK, ENTITY, E>  {
 	
 	protected abstract E createNotFoundException(PK id);
 	
@@ -41,8 +49,8 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
     
     
     
-    public OptimisticLockPgSqlModelFactory(Cache cache, Class<ENTITY> entityClass, ListeningExecutorService listeningExecutorService, List<SessionFactory> sessionFactories) {
-		super(cache, entityClass, listeningExecutorService, sessionFactories);
+    public OptimisticLockPgSqlModelFactory(Cache cache, Class<ENTITY> entityClass, ListeningExecutorService listeningExecutorService, List<SessionFactory> sessionFactories, LocalEventBus localEventBus) {
+		super(cache, entityClass, listeningExecutorService, sessionFactories, localEventBus);
 	}
 
 	@Override
@@ -71,7 +79,7 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
 
 
     @Override
-	public OptResult<ENTITY> update(PK id, TFunction<ENTITY, Boolean> mutator, final EntityFactory<PK, ENTITY> factory) throws TException, E{
+	public final OptResult<ENTITY> update(PK id, TFunction<ENTITY, Boolean> mutator, final EntityFactory<PK, ENTITY> factory) throws TException, E{
 		try {
 			return optimisticUpdate(id, mutator, factory);			
 		} catch (EntityNotFoundException e) {
@@ -89,24 +97,15 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
     	this.getDao().delete(e);
     	return e;
     }
-    
+        
     @Override
-	public final void deleteEntity(ENTITY e){
-    	try {
-			delete((PK)e.getPk());
-		} catch (Exception e1) {
-			throw Throwables.propagate(e1);
-		}
-    }
-    
-    @Override
-    public OptResult<ENTITY> delete(final PK id) throws E {
+    public final OptResult<ENTITY> delete(final PK id) throws E {
     	
     	if (TransactionSynchronizationManager.isActualTransactionActive())
     		throw new RuntimeException("Can't correctly do optimistic update within transaction");
 
     	try {
-    		final ENTITY deleted = RwModelFactoryHelper.optimisticUpdate( (count) ->
+    		final ENTITY deleted = OptimisticLockModelFactoryIF.optimisticUpdate( (count) ->
 				{
 					try{						
 						return tryOptimisticDelete(id); 
@@ -117,16 +116,18 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
 						log.debug("update fails id={}, let's try one more time? {}", id, e.getMessage());
 						return null;
 					}
-				},
-				RwModelFactoryHelper.MAX_ITERATIONS, RwModelFactoryHelper.MAX_TIMEOUT);
-    		
-    		return OptResult.create(this, null, deleted, true);
+				});
+
+    		final OptResult<ENTITY> r = OptResult.create(this, null, deleted, true); 
+        	localEventBus.post(syncDeleteEntityEvent(r));
+        	localEventBus.postAsync(asyncDeleteEntityEvent(deleted));    		
+    		return r;
 		} catch (EntityNotFoundException e) {
 			throw createNotFoundException(id); 
 		} catch (TException e) {
 			throw Throwables.propagate(e);
 		}finally{
-			_invalidate(id);			
+			_invalidateEhCache(id);			
 		}
     }
     
@@ -140,20 +141,36 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
 	}
     
     @Override
-    public OptResult<ENTITY> optInsert(final ENTITY e){
-    	final ENTITY inserted = super.insertEntity(e);
-    	return OptResult.create(this, inserted, null, true);
+    public final OptResult<ENTITY> optInsert(final ENTITY e){
+    	
+    	final long now = LongTimestamp.now();
+    	
+    	if (e instanceof CreatedAtIF){
+    		((CreatedAtIF)e).setCreatedAt(now);
+    	}
+
+    	if (e instanceof UpdatedAtIF){
+    		((UpdatedAtIF)e).setUpdatedAt(now);
+    	}
+
+		final ENTITY inserted = getDao().save(e).first;
+		_invalidateEhCache((PK)inserted.getPk());
+		
+		final OptResult<ENTITY> r = OptResult.create(this, inserted, null, true); 
+    	localEventBus.post(syncInsertEntityEvent(r));
+    	localEventBus.postAsync(asyncInsertEntityEvent(inserted));    	
+    	return r;
     }
 
 	@Override
 	@Transactional
-    public ENTITY fetchEntityById(PK id){
+    protected final ENTITY fetchEntityById(PK id){
     	return super.fetchEntityById(id);
     }
 
 	@Override
 	@Transactional	
-    public Map<PK,ENTITY> fetchEntityByIdAsMap(Collection<PK> ids){
+	protected final Map<PK,ENTITY> fetchEntityByIdAsMap(Collection<PK> ids){
     	return super.fetchEntityByIdAsMap(ids);
     }
             
@@ -170,7 +187,7 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
     	if (TransactionSynchronizationManager.isActualTransactionActive())
     		throw new RuntimeException("Can't correctly do optimistic update within transaction");
     			
-    	final OptResult<ENTITY> ret =  RwModelFactoryHelper.optimisticUpdate((count) -> {
+    	final OptResult<ENTITY> ret =  OptimisticLockModelFactoryIF.optimisticUpdate((count) -> {
 					try{
 						return tryOptimisticUpdate(id, mutator, factory);
 					}catch (UniqueException e){
@@ -185,10 +202,14 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
 						log.debug("update fails id={}, let's try one more time? {}", id, e.getMessage());
 						return null;
 					}
-				}, RwModelFactoryHelper.MAX_ITERATIONS, RwModelFactoryHelper.MAX_TIMEOUT);
+				});
 		
-		if (ret.isUpdated)
-			_invalidate(id);				
+		if (ret.isUpdated){
+			_invalidateEhCache(id);
+			
+	    	localEventBus.post(syncUpdateEntityEvent(ret));
+	    	localEventBus.postAsync(asyncUpdateEntityEvent(ret.old, ret.updated));			
+		}
 
 		return ret;
 	}
@@ -207,6 +228,17 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
 			
 				orig = null;
 				e = factory.create(id);
+				
+		    	final long now = LongTimestamp.now();
+		    	
+		    	if (e instanceof CreatedAtIF){
+		    		((CreatedAtIF)e).setCreatedAt(now);
+		    	}
+
+		    	if (e instanceof UpdatedAtIF){
+		    		((UpdatedAtIF)e).setUpdatedAt(now);
+		    	}
+				
 				getDao().persist(e);
 			}else{
 				try {
@@ -219,8 +251,9 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
 			}
 			
 			
-			if (mutator.apply(e)){
-				return OptResult.create(this, helper.updateEntity(e), orig, helper.isUpdated());
+			if (mutator.apply(e)){				
+				final Pair<ENTITY, Boolean> r = getDao().saveOrUpdate(e);
+				return OptResult.create(this, r.first, orig, r.second);
 			}else{
 				return OptResult.create(this, e, e, false);
 			}
@@ -237,6 +270,44 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
 			throw Throwables.propagate(e);
 		}				
 	}
+
+	@Override
+	@Transactional
+	public final ENTITY updateEntity(ENTITY e) throws UniqueException {
+		
+		final ENTITY before;
+		if (e.getPk()!=null){
+			before = getDao().findById((PK)e.getPk());
+		}else{
+			before = null;
+		}
+
+		final Pair<ENTITY, Boolean> r = getDao().saveOrUpdate(e);
+		
+		final OptResult<ENTITY> ret = new OptResult<ENTITY>(this, r.first, before, true); 
+
+		if (r.second){
+	    	localEventBus.post(syncUpdateEntityEvent(ret));
+	    	localEventBus.postAsync(asyncUpdateEntityEvent(before, r.first));			
+		}
+		return r.first;
+	}
+	
+	@Override
+	final public SyncInsertEntityEvent<PK, ENTITY> syncInsertEntityEvent(ENTITY entity){
+		throw new NotImplementedException();
+	}
+	
+	@Override
+	final public SyncUpdateEntityEvent<PK, ENTITY> syncUpdateEntityEvent(ENTITY before, ENTITY after){
+		throw new NotImplementedException();
+	}
+
+	@Override
+	final public SyncDeleteEntityEvent<PK, ENTITY> syncDeleteEntityEvent(ENTITY entity){
+		throw new NotImplementedException();
+	}
+	
 	
 }
 

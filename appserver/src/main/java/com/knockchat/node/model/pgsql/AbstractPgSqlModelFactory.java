@@ -7,26 +7,26 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.PostConstruct;
+
+import org.apache.thrift.TException;
 import org.hibernate.SessionFactory;
 import org.hibernate.criterion.Order;
 import org.hibernate.criterion.Projections;
 import org.hibernate.criterion.Restrictions;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.knockchat.hibernate.dao.AbstractDao;
 import com.knockchat.hibernate.dao.AbstractDaoImpl;
 import com.knockchat.hibernate.dao.DaoEntityIF;
 import com.knockchat.node.model.AbstractCachedModelFactory;
-import com.knockchat.node.model.RwModelFactoryHelper;
+import com.knockchat.node.model.LocalEventBus;
 import com.knockchat.node.model.RwModelFactoryIF;
-import com.knockchat.utils.Pair;
 
 import net.sf.ehcache.Cache;
 
-public class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY extends DaoEntityIF> extends AbstractCachedModelFactory<PK, ENTITY> implements InitializingBean, RwModelFactoryIF<PK, ENTITY> {
+public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY extends DaoEntityIF, E extends TException> extends AbstractCachedModelFactory<PK, ENTITY> implements RwModelFactoryIF<PK, ENTITY, E> {
 		
     @Autowired
     protected List<SessionFactory> sessionFactories;
@@ -35,31 +35,38 @@ public class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY extends D
 
     @Autowired
     protected ListeningExecutorService listeningExecutorService;
+    
+	@Autowired
+	protected LocalEventBus localEventBus;
+
 
     private final AbstractDao<PK, ENTITY> dao;
     protected final Class<ENTITY> entityClass;
     
-    final RwModelFactoryHelper<PK, ENTITY> helper;
+//    final RwModelFactoryHelper<PK, ENTITY> helper;
+//    
+    protected abstract E createNotFoundException(PK id);
     
-    protected AbstractPgSqlModelFactory(Cache cache, Class<ENTITY> entityClass, ListeningExecutorService listeningExecutorService, List<SessionFactory> sessionFactories) {
+    protected AbstractPgSqlModelFactory(Cache cache, Class<ENTITY> entityClass, ListeningExecutorService listeningExecutorService, List<SessionFactory> sessionFactories, LocalEventBus localEventBus) {
     	super(cache);
     	
     	this.entityClass = entityClass;     	
        	dao = new AbstractDaoImpl<PK, ENTITY>(this.entityClass);
-       	helper = new RwModelFactoryHelper<PK, ENTITY>(){
-
-			@Override
-			protected ENTITY updateEntityImpl(ENTITY e) {
-				return AbstractPgSqlModelFactory.this.updateEntityImpl(e);
-			}
-
-			@Override
-			protected PK extractPk(ENTITY e) {
-				return (PK)e.getPk();
-			}};
+//       	helper = new RwModelFactoryHelper<PK, ENTITY>(){
+//
+//			@Override
+//			protected ENTITY updateEntityImpl(ENTITY e) {
+//				return AbstractPgSqlModelFactory.this.updateEntityImpl(e);
+//			}
+//
+//			@Override
+//			protected PK extractPk(ENTITY e) {
+//				return (PK)e.getPk();
+//			}};
 			
 		this.listeningExecutorService = listeningExecutorService;
 		this.sessionFactories = sessionFactories;
+		this.localEventBus = localEventBus;
 		_afterPropertiesSet();
     }
         
@@ -69,17 +76,17 @@ public class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY extends D
     	
     	this.entityClass = entityClass;     	
        	dao = new AbstractDaoImpl<PK, ENTITY>(this.entityClass);
-       	helper = new RwModelFactoryHelper<PK, ENTITY>(){
-
-			@Override
-			protected ENTITY updateEntityImpl(ENTITY e) {
-				return AbstractPgSqlModelFactory.this.updateEntityImpl(e);
-			}
-
-			@Override
-			protected PK extractPk(ENTITY e) {
-				return (PK)e.getPk();
-			}};
+//       	helper = new RwModelFactoryHelper<PK, ENTITY>(){
+//
+//			@Override
+//			protected ENTITY updateEntityImpl(ENTITY e) {
+//				return AbstractPgSqlModelFactory.this.updateEntityImpl(e);
+//			}
+//
+//			@Override
+//			protected PK extractPk(ENTITY e) {
+//				return (PK)e.getPk();
+//			}};
     }
     
     private void _afterPropertiesSet(){
@@ -94,46 +101,45 @@ public class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY extends D
         	throw new RuntimeException("Cound't find SessionFactory for class " + this.entityClass.getSimpleName());
         	            
         dao.setSessionFactory(sessionFactory);            
-        dao.setListeningExecutorService(listeningExecutorService);    	
+        dao.setListeningExecutorService(listeningExecutorService);
+        
+        localEventBus.register(this);
     }
 
-    @Override
-    public void afterPropertiesSet() {
-        	
-    	super.afterPropertiesSet();
-    	
+    @PostConstruct
+    private void afterPropertiesSet() {
     	_afterPropertiesSet();
     }
         
-    private ENTITY updateEntityImpl(ENTITY e) {
-    	    		
-		try{
-			final Pair<ENTITY, Boolean> ret = dao.saveOrUpdate(e);
-			
-			if (ret.second){
-				doAfterCommit( () -> {_invalidate((PK)e.getPk());} );
-			}
-			
-			helper.setUpdated(ret.second);
-			return ret.first;
-		}catch(Exception e1){
-			helper.setUpdated(false);
-			throw e1;
-		}				
-    }
+//    private ENTITY updateEntityImpl(ENTITY e) {
+//    	    		
+//		try{
+//			final Pair<ENTITY, Boolean> ret = dao.saveOrUpdate(e);
+//			
+//			if (ret.second){
+//				doAfterCommit( () -> {_invalidate((PK)e.getPk());} );
+//			}
+//			
+//			helper.setUpdated(ret.second);
+//			return ret.first;
+//		}catch(Exception e1){
+//			helper.setUpdated(false);
+//			throw e1;
+//		}				
+//    }
     
-    protected void _invalidate(PK id){
+    protected final void _invalidateEhCache(PK id){
     	super.invalidate(id);
     }
     
     @Override
-    public void invalidate(PK id){
-    	_invalidate(id);
+    public final void invalidate(PK id){
+    	_invalidateEhCache(id);
     	getDao().evict(id);
     }
     
     @Override
-    public void invalidateLocal(PK id){
+    public final void invalidateLocal(PK id){
     	super.invalidateLocal(id);
     	getDao().evict(id);
     }
@@ -153,40 +159,30 @@ public class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY extends D
     }
     
     @Override
-    @Transactional
-    public void deleteEntity(ENTITY e){
-    	@SuppressWarnings("unchecked")
+    public final void deleteEntity(ENTITY e) throws E{
 		final PK pk = (PK)e.getPk();
-    	final ENTITY _e = dao.findById(pk);
-    	if (_e !=null){
-    		dao.delete(_e);
-    	}
+    	final ENTITY _e = fetchEntityById(pk);
+    	if (_e ==null)
+    		throw createNotFoundException(pk);
+
+		dao.delete(_e);
+    	_invalidateEhCache(pk);
     	
-    	doAfterCommit(()->{_invalidate(pk);});   		
+    	localEventBus.post(syncDeleteEntityEvent(_e));
+    	localEventBus.postAsync(asyncDeleteEntityEvent(_e));
     }
         
-    public AbstractDao<PK, ENTITY> getDao(){
+    public final AbstractDao<PK, ENTITY> getDao(){
    		return dao;
     }
     
-    public Iterator<PK> getAllIds(){
-    	return ((List)getDao().findByCriteria(Restrictions.and(), Projections.property("id"), null, Collections.singletonList(Order.asc("id")), null, null)).iterator();	
+    public final Iterator<PK> getAllIds(String pkName){
+    	return ((List)getDao().findByCriteria(Restrictions.and(), Projections.property(pkName), null, Collections.singletonList(Order.asc(pkName)), null, null)).iterator();	
     }
-       
+    
 	@Override
-	public ENTITY insertEntity(ENTITY e) {
-		return helper.updateEntity(e);
-	}
-	
-	public void deleteAll(){
-		getDao().deleteAll();
-		
-		if (cache !=null)
-			cache.removeAll();
+	public final Class<ENTITY> getEntityClass() {
+		return this.entityClass;
 	}
 
-	@Override
-	public Class<ENTITY> getEntityClass() {
-		return this.entityClass;
-	}	
 }

@@ -132,7 +132,7 @@ public class PersistMBeanInterceptor implements MethodInterceptor, InitializingB
 		m.setPropertyName(propertyName);
 		m.setPropertyValue(propertyValue);
 		
-		propertiesModelFactory.update(m);
+		propertiesModelFactory.updateEntity(m);
 	}
 
 	@Override
