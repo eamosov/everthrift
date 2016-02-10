@@ -153,7 +153,7 @@ public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY 
     protected Map<PK, ENTITY> fetchEntityByIdAsMap(Collection<PK> ids){
     	
     	if (this.cache == null)
-    		log.error("fetch by collection, but cache is null");
+    		log.warn("fetch by collection, but cache is null");
     	
     	return dao.findByIdsAsMap(ids);
     }

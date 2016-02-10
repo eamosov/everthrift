@@ -36,6 +36,7 @@ import com.datastax.driver.mapping.annotations.UDT;
 import com.datastax.driver.mapping.annotations.Version;
 import com.google.common.base.CaseFormat;
 import com.google.common.base.Strings;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.reflect.TypeToken;
 import com.knockchat.utils.ClassUtils;
@@ -142,7 +143,7 @@ public class DbMetadataParser implements EntityParser {
 
 			final FieldDescriptor fd = new FieldDescriptor(cm.getName(), javaProp.getName(), ColumnMapper.Kind.PARTITION_KEY, (TypeToken)TypeToken.of(javaProp.getReadMethod().getGenericReturnType()), customCodec(entityClass, javaProp));
 			pks.add(factory.createColumnMapper(entityClass, fd, mappingManager, columnCounter));
-			keys.add(cm.getName());
+			keys.add(javaProp.getName());
 		}
 		
 		for (ColumnMetadata cm: tableMetadata.getClusteringColumns()){
@@ -156,25 +157,34 @@ public class DbMetadataParser implements EntityParser {
 
 			final FieldDescriptor fd = new FieldDescriptor(cm.getName(), javaProp.getName(), ColumnMapper.Kind.CLUSTERING_COLUMN, (TypeToken)TypeToken.of(javaProp.getReadMethod().getGenericReturnType()), customCodec(entityClass, javaProp));
 			ccs.add(factory.createColumnMapper(entityClass, fd, mappingManager, columnCounter));
-			keys.add(cm.getName());
+			keys.add(javaProp.getName());
 		}
-				
-		for (ColumnMetadata cm: tableMetadata.getColumns()){
+		
+		final Map<String, ColumnMetadata> columnsByName = Maps.uniqueIndex(tableMetadata.getColumns(), ColumnMetadata::getName);
+		
+		for (PropertyDescriptor javaProp: entityProps.values()){
 			
-			if (keys.contains(cm.getName()))
+			if (keys.contains(javaProp.getName()) || javaProp.getReadMethod() == null || javaProp.getWriteMethod() == null)
 				continue;
-			
-			PropertyDescriptor javaProp = entityProps.get(cm.getName());
-			if (javaProp == null)
-				javaProp = entityProps.get(CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, cm.getName()));
-			
-			if (javaProp == null){
-				log.warn("Coudn't find eny fields to map {}.{}", tableName, cm.getName());
-				continue;
-			}
 			
             if (getAnnotation(entityClass, javaProp, Transient.class) != null)            	
                 continue;
+			
+			final Column aColumn = getAnnotation(entityClass, javaProp, Column.class);
+			ColumnMetadata columnMetadata;
+			if (aColumn !=null && !aColumn.name().isEmpty()){
+				columnMetadata = columnsByName.get(aColumn.name());
+				if (columnMetadata == null)
+					throw new IllegalArgumentException("Coudn't find column '" + aColumn.name() + "' for map " + entityClass.getCanonicalName() + "." + javaProp.getName());
+			}else{
+				columnMetadata = columnsByName.get(javaProp.getName());
+				
+				if (columnMetadata == null)
+					columnMetadata = columnsByName.get(CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, javaProp.getName()));
+			}
+			
+			if (columnMetadata == null)
+				continue;
 			
             final boolean isComputed = getAnnotation(entityClass, javaProp, Computed.class) != null;
             if (mappingManager.isCassandraV1 && isComputed)
@@ -183,39 +193,23 @@ public class DbMetadataParser implements EntityParser {
             final TypeToken<Object> fieldType = (TypeToken)TypeToken.of(javaProp.getReadMethod().getGenericReturnType());
             final TypeCodec<Object> customCodec = customCodec(entityClass, javaProp);
 
-			final FieldDescriptor fd = new FieldDescriptor(cm.getName(), javaProp.getName(), isComputed ? ColumnMapper.Kind.COMPUTED : ColumnMapper.Kind.REGULAR, fieldType, customCodec);
+			final FieldDescriptor fd = new FieldDescriptor(columnMetadata.getName(), javaProp.getName(), isComputed ? ColumnMapper.Kind.COMPUTED : ColumnMapper.Kind.REGULAR, fieldType, customCodec);
 			 
-			final ColumnMapper<T> m = factory.createColumnMapper(entityClass, fd, mappingManager, columnCounter); 
-			rgs.add(m);
-
-//            if (customCodec == null){
-//            	final CodecRegistry cr = mappingManager.getSession().getCluster().getConfiguration().getCodecRegistry(); 
-//            	try{
-//            		cr.codecFor(cm.getType(), fieldType);
-//            	}catch(CodecNotFoundException e){
-//            		final TypeCodec<Object> c = MoreCodecRegistry.INSTANCE.lookupCodec(cm.getType(), fieldType.getRawType());
-//            		if (c!=null){
-//            			cr.register(c);
-//            		}else{
-//            			throw new IllegalArgumentException(
-//            					String.format("Couldn't find codec for %s.%s.%s %s <=> %s", ksName, tableName, cm.getName(), cm.getType().toString(), fieldType.toString()));
-//            		}
-//            	}
-//            }
-			
+			final ColumnMapper<T> columnMapper = factory.createColumnMapper(entityClass, fd, mappingManager, columnCounter); 
+			rgs.add(columnMapper);
             			
 			if (getAnnotation(entityClass, javaProp, Version.class) !=null){
 				
 				if (versionField !=null)
-					throw new IllegalArgumentException(String.format("Confliction in version fields: %s, %s", versionField.getColumnName(), m.getColumnName()));
+					throw new IllegalArgumentException(String.format("Confliction in version fields: %s, %s", versionField.getColumnName(), columnMapper.getColumnName()));
 								
 				if (!table.version().isEmpty())
 					throw new IllegalArgumentException(String.format("@Version annotation not allowed while @Table has parameter 'version'"));
 
-				versionField = m;
+				versionField = columnMapper;
 			}else if (table.version().equalsIgnoreCase(javaProp.getName())){
-				versionField = m;
-			}
+				versionField = columnMapper;
+			}			
 		}
 
         mapper.addColumns(pks,ccs,rgs);

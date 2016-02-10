@@ -67,7 +67,7 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 	private MappingManager mappingManager;
 	
 	@Autowired
-	private LocalEventBus localEventBus;
+	protected LocalEventBus localEventBus;
 	
 	private Mapper<ENTITY> mapper;
 	private String sequenceName;
@@ -108,6 +108,11 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 	public final void setMappingManager(MappingManager mappingManager){
 		this.mappingManager = mappingManager;
 		initMapping();
+	}
+	
+	public final void setLocalEventBus(LocalEventBus localEventBus){
+		this.localEventBus = localEventBus;
+		this.localEventBus.register(this);
 	}
 	
 	private void initMapping(){
@@ -507,8 +512,9 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 	
 	/*
 	 * save all not null fields without read
+	 * Method not generates any events
 	 */
-	public void saveNotNull(ENTITY entity) {
+	public void putEntity(ENTITY entity) {
 		if (entity.getPk() == null)
 			throw new IllegalArgumentException("pk is null");
 		
