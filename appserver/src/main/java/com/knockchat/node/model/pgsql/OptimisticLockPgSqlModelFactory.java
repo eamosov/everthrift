@@ -134,7 +134,7 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
 	@Override
 	public final ENTITY insertEntity(ENTITY e) {
 		try {
-			return this.optInsert(e).updated;
+			return this.optInsert(e).afterUpdate;
 		} catch (Exception e1) {
 			throw Throwables.propagate(e1);
 		}
@@ -208,7 +208,7 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
 			_invalidateEhCache(id);
 			
 	    	localEventBus.post(syncUpdateEntityEvent(ret));
-	    	localEventBus.postAsync(asyncUpdateEntityEvent(ret.old, ret.updated));			
+	    	localEventBus.postAsync(asyncUpdateEntityEvent(ret.beforeUpdate, ret.afterUpdate));			
 		}
 
 		return ret;

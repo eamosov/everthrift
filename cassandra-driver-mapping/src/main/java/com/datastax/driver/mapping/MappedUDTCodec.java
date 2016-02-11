@@ -80,6 +80,11 @@ public class MappedUDTCodec<T> extends TypeCodec.AbstractUDTCodec<T> {
         }
         return target;
     }
+    
+    @Override
+    public String format(T value) {
+    	return value.toString();
+    }
 
     @Override
     protected String formatField(T source, String fieldName) {

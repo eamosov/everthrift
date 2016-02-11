@@ -32,7 +32,7 @@ public abstract class InsertEntityEvent<PK, ENTITY extends DaoEntityIF> {
 		}
 		
 		public SyncInsertEntityEvent(RoModelFactoryIF<PK, ENTITY> factory, OptResult<ENTITY> optResult) {
-			super(factory, optResult.updated);
+			super(factory, optResult.afterUpdate);
 			this.optResult = optResult;
 		}
 		

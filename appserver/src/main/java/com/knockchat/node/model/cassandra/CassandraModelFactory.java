@@ -24,6 +24,8 @@ import com.datastax.driver.core.Statement;
 import com.datastax.driver.core.TypeCodec;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
+import com.datastax.driver.core.querybuilder.Update;
+import com.datastax.driver.core.querybuilder.Update.Assignments;
 import com.datastax.driver.mapping.ColumnMapper;
 import com.datastax.driver.mapping.Mapper;
 import com.datastax.driver.mapping.Mapper.Option;
@@ -54,6 +56,7 @@ import com.knockchat.node.model.events.DeleteEntityEvent.SyncDeleteEntityEvent;
 import com.knockchat.node.model.events.InsertEntityEvent.SyncInsertEntityEvent;
 import com.knockchat.node.model.events.UpdateEntityEvent.SyncUpdateEntityEvent;
 import com.knockchat.utils.Pair;
+import com.knockchat.utils.VoidFunction;
 import com.knockchat.utils.thrift.TFunction;
 
 import net.sf.ehcache.Cache;
@@ -156,7 +159,7 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 
 	@Override
 	public final ENTITY insertEntity(ENTITY e) {
-		return optInsert(e).updated;
+		return optInsert(e).afterUpdate;
 	}
 
 	@Override
@@ -190,6 +193,88 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 	
 	protected Object[] extractCompaundPk(PK id){
 		return new Object[]{id};
+	}
+	
+	public final OptResult<ENTITY> updateWithAssignments(PK id, VoidFunction<Assignments> assignment) throws TException, E {
+		
+		if (id == null)
+			throw new IllegalArgumentException("id is null");
+		
+		if (mapper.getVersionColumn() == null)
+			throw new IllegalArgumentException("version not configured");
+		
+		try {
+			final OptResult<ENTITY> optResult = OptimisticLockModelFactoryIF.optimisticUpdate((count) -> {
+				
+				final ColumnMapper<ENTITY> versionColumn = mapper.getVersionColumn();
+				final Select.Where where = QueryBuilder.select(versionColumn.getColumnNameUnquoted()).from(mapper.getTableName()).where();
+				
+				final Object[] pkeys = extractCompaundPk(id);
+				for (int i=0; i< mapper.primaryKeySize(); i++){
+					where.and(QueryBuilder.eq(mapper.getPrimaryKeyColumn(i).getColumnNameUnquoted(), pkeys[i]));
+				}
+				where.setConsistencyLevel(ConsistencyLevel.SERIAL);
+				ResultSet rs = getSession().execute(where);
+				final Row row = rs.one();
+				if (row == null)
+					throw new EntityNotFoundException(id);
+				
+	            final TypeCodec<Object> customCodec = versionColumn.getCustomCodec();
+	            final Number versionBefore;
+	            if (customCodec != null)
+	            	versionBefore = (Number)row.get(0, customCodec);
+	            else
+	            	versionBefore = (Number)row.get(0, versionColumn.getJavaType());
+	            	            
+	            final Number versionAfter;
+               	if (versionBefore instanceof Integer){
+               		versionAfter = (Integer) versionBefore + 1;
+               	}else if (versionBefore instanceof Long){
+               		versionAfter = (Long) versionBefore + 1;
+               	}else{
+               		throw new RuntimeException("invalid type for version column: " + versionBefore.getClass().getCanonicalName());
+               	}
+               	
+               	final Update update = QueryBuilder.update(mapper.getTableName());
+               	final Assignments assignments = update.with();
+               	assignments.and(QueryBuilder.set(versionColumn.getColumnNameUnquoted(), versionAfter));
+               	assignment.apply(assignments);
+               	update.onlyIf(QueryBuilder.eq(versionColumn.getColumnNameUnquoted(), versionBefore));
+               	
+               	final Update.Where uWhere = update.where();
+				for (int i=0; i< mapper.primaryKeySize(); i++){
+					uWhere.and(QueryBuilder.eq(mapper.getPrimaryKeyColumn(i).getColumnNameUnquoted(), pkeys[i]));
+				}
+               	
+               	rs = getSession().execute(update);
+               	
+               	if (!rs.wasApplied())
+               		return null;
+               	
+				try {
+					final ENTITY beforeUpdate = getEntityClass().newInstance();
+	               	beforeUpdate.setPk(id);
+	               	versionColumn.setValue(beforeUpdate, versionBefore);
+	               	
+	               	final ENTITY afterUpdate = getEntityClass().newInstance();
+	               	afterUpdate.setPk(id);
+	               	versionColumn.setValue(afterUpdate, versionAfter);
+	               	
+	               	return OptResult.create(CassandraModelFactory.this, afterUpdate, beforeUpdate, true);					
+				} catch (Exception e) {
+					throw Throwables.propagate(e);
+				}
+			});
+						
+			if (optResult.isUpdated){
+				localEventBus.post(syncUpdateEntityEvent(optResult));
+				localEventBus.postAsync(asyncUpdateEntityEvent(optResult.beforeUpdate, optResult.afterUpdate));
+			}
+			
+			return optResult;
+		} catch (EntityNotFoundException e) {
+			throw createNotFoundException(id); 
+		}
 	}
 
 	@Override
@@ -285,7 +370,7 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 			
 			if (ret.isUpdated){
 				localEventBus.post(syncUpdateEntityEvent(ret));
-				localEventBus.postAsync(asyncUpdateEntityEvent(ret.old, ret.updated));
+				localEventBus.postAsync(asyncUpdateEntityEvent(ret.beforeUpdate, ret.afterUpdate));
 			}
 			
 			return ret;
@@ -388,7 +473,7 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 		if (cm == null)
 			throw new RuntimeException("coundn't find mapper for property: " + fieldName);
 		
-		final ResultSet rs = mappingManager.getSession().execute(select.column(cm.getColumnName()).from(mapper.getTableMetadata().getName()).setFetchSize(1000));
+		final ResultSet rs = mappingManager.getSession().execute(select.column(cm.getColumnNameUnquoted()).from(mapper.getTableMetadata().getName()).setFetchSize(1000));
 		
 		return Iterators.transform(rs.iterator(), row -> {
 			final T value;

@@ -141,6 +141,10 @@ public class Mapper<T> {
     public String getTableName(){
     	return mapper.getTable();
     }
+    
+    public ColumnMapper<T> getVersionColumn(){
+    	return mapper.getVersionColumn();
+    }
 
     PreparedStatement getPreparedQuery(QueryType type, Set<ColumnMapper<?>> columns, EnumMap<Option.Type, Option> options) {
 
@@ -285,7 +289,7 @@ public class Mapper<T> {
         for (ColumnMapper<T> cm : mapper.allColumns()) {
             final Object value = cm.getValue(entity);
             
-            if (cm.getColumnName().equalsIgnoreCase("\"updated_at\""))
+            if (cm.getColumnNameUnquoted().equalsIgnoreCase("updated_at"))
             	updatedAtColumn = cm;
             
             if (original == null){

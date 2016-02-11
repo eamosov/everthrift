@@ -16,12 +16,14 @@ public abstract class UpdateEntityEvent<PK, ENTITY extends DaoEntityIF> {
 		this.beforeUpdate = beforeUpdate;
 		this.afterUpdate = afterUpdate;
 	}
+	
+	
 
 	UpdateEntityEvent(RoModelFactoryIF<PK, ENTITY> factory, OptResult<ENTITY> optResult) {
 		super();
 		this.factory = factory;
-		this.beforeUpdate = optResult.old;
-		this.afterUpdate = optResult.updated;
+		this.beforeUpdate = optResult.beforeUpdate;
+		this.afterUpdate = optResult.afterUpdate;
 	}
 
 	public static class AsyncUpdateEntityEvent<PK, ENTITY extends DaoEntityIF> extends UpdateEntityEvent<PK, ENTITY>{
@@ -36,7 +38,7 @@ public abstract class UpdateEntityEvent<PK, ENTITY extends DaoEntityIF> {
 		public final OptResult<ENTITY> optResult;
 
 		public SyncUpdateEntityEvent(RoModelFactoryIF<PK, ENTITY> factory, OptResult<ENTITY> optResult) {
-			super(factory, optResult.old, optResult.updated);
+			super(factory, optResult.beforeUpdate, optResult.afterUpdate);
 			this.optResult = optResult;
 		}
 		
@@ -44,6 +46,12 @@ public abstract class UpdateEntityEvent<PK, ENTITY extends DaoEntityIF> {
 			super(factory, beforeUpdate, afterUpdate);
 			this.optResult = null;
 		}		
+	}
+
+	@Override
+	public String toString() {
+		return this.getClass().getSimpleName() + " [factory=" + factory + ", beforeUpdate=" + beforeUpdate + ", afterUpdate="
+				+ afterUpdate + "]";
 	}
 	
 }

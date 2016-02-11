@@ -31,7 +31,7 @@ public abstract class DeleteEntityEvent<PK, ENTITY extends DaoEntityIF> {
 		}
 		
 		public SyncDeleteEntityEvent(RoModelFactoryIF<PK, ENTITY> factory, OptResult<ENTITY> optResult) {
-			super(factory, optResult.old);
+			super(factory, optResult.beforeUpdate);
 			this.optResult = optResult;
 		}				
 	}

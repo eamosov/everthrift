@@ -15,16 +15,16 @@ public class OptResult<ENTITY extends DaoEntityIF> {
 	public static final OptResult CANCELED =  OptResult.create(null, null, null, false);
 	
 	public final OptimisticLockModelFactoryIF<?, ENTITY, ?> factory;
-	public final ENTITY updated;
-	public final ENTITY old;
+	public final ENTITY afterUpdate;
+	public final ENTITY beforeUpdate;
 	public final boolean isUpdated; // true, если произошло изменение объекта в БД
 	
 	public List<OptResult> inner;
 	
-	public OptResult(OptimisticLockModelFactoryIF<?, ENTITY, ?> factory, ENTITY updated, ENTITY old, boolean isUpdated) {
+	public OptResult(OptimisticLockModelFactoryIF<?, ENTITY, ?> factory, ENTITY afterUpdate, ENTITY beforeUpdate, boolean isUpdated) {
 		super();
-		this.updated = updated;
-		this.old = old;
+		this.afterUpdate = afterUpdate;
+		this.beforeUpdate = beforeUpdate;
 		this.isUpdated = isUpdated;
 		this.factory = factory;
 	}
@@ -38,7 +38,7 @@ public class OptResult<ENTITY extends DaoEntityIF> {
 	}
 	
 	public boolean isInserted(){
-		return isUpdated && old ==null;
+		return isUpdated && beforeUpdate ==null;
 	}
 	
 	public <T extends DaoEntityIF> void add(OptResult<T> e){
@@ -61,9 +61,15 @@ public class OptResult<ENTITY extends DaoEntityIF> {
 			return defaultValue;
 		
 		for (OptResult r: inner){
-			if (r.factory == factory && r.updated !=null && r.updated.getPk().equals(defaultValue.getPk()))
-				return (T)r.updated;
+			if (r.factory == factory && r.afterUpdate !=null && r.afterUpdate.getPk().equals(defaultValue.getPk()))
+				return (T)r.afterUpdate;
 		}
 		return defaultValue;
 	}
+
+	@Override
+	public String toString() {
+		return "OptResult [factory=" + factory + ", afterUpdate=" + afterUpdate + ", beforeUpdate=" + beforeUpdate
+				+ ", isUpdated=" + isUpdated + ", inner=" + inner + "]";
+	}	
 }

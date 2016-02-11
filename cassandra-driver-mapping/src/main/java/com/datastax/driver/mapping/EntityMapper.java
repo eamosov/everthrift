@@ -98,7 +98,11 @@ public abstract class EntityMapper<T> {
     }
     
     public boolean isVersion(ColumnMapper<?> cm){
-    	return versionColumn !=null && versionColumn.getColumnName().equals(cm.getColumnName());	
+    	return versionColumn !=null && versionColumn.getColumnNameUnquoted().equals(cm.getColumnNameUnquoted());	
+    }
+    
+    public ColumnMapper<T> getVersionColumn(){
+    	return versionColumn;
     }
 
     public interface Factory {
