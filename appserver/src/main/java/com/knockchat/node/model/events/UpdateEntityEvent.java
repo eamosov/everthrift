@@ -50,7 +50,7 @@ public abstract class UpdateEntityEvent<PK, ENTITY extends DaoEntityIF> {
 
 	@Override
 	public String toString() {
-		return this.getClass().getSimpleName() + " [factory=" + factory + ", beforeUpdate=" + beforeUpdate + ", afterUpdate="
+		return this.getClass().getCanonicalName() + " [factory=" + factory + ", beforeUpdate=" + beforeUpdate + ", afterUpdate="
 				+ afterUpdate + "]";
 	}
 	

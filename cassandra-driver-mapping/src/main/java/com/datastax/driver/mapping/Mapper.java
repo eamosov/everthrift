@@ -266,6 +266,16 @@ public class Mapper<T> {
     public Statement updateQuery(T entity, T original, Option... options) throws NotModifiedException {
         return updateQuery(entity, original, toMapWithDefaults(options, this.defaultUpdateOptions));
     }
+    
+    private Number inc(Object value){
+       	if (value instanceof Integer){
+       		return (Integer) value + 1;
+       	}else if (value instanceof Long){
+       		return (Long) value + 1;
+       	}else{
+       		throw new RuntimeException("invalid type for version column: " + value.getClass().getCanonicalName());
+       	}    	
+    }
 
     private Statement updateQuery(T entity, T original, EnumMap<Option.Type, Option> options) throws NotModifiedException {
     	
@@ -279,7 +289,7 @@ public class Mapper<T> {
         if (isOptimisticUpdate && mapper.versionColumn == null)
         	throw new RuntimeException("ONLY_IF may be used only with versioned entities");
     		
-        Map<ColumnMapper<?>, Object> values = new HashMap<ColumnMapper<?>, Object>();
+        Map<ColumnMapper<T>, Object> values = new HashMap<ColumnMapper<T>, Object>();
 
         int nUpdatedFields =0;
         
@@ -332,20 +342,14 @@ public class Mapper<T> {
         if (updatedAtColumn !=null)
         	updatedAtColumn.setValue(entity, updatedAtValue);
 
-        BoundStatement bs = getPreparedQuery(QueryType.UPDATE, values.keySet(), options).bind();
+        BoundStatement bs = getPreparedQuery(QueryType.UPDATE, (Set)values.keySet(), options).bind();
         int i = 0;
-        for (Map.Entry<ColumnMapper<?>, Object> entry : values.entrySet()) {
-            final ColumnMapper<?> mapper = entry.getKey();
+        for (Map.Entry<ColumnMapper<T>, Object> entry : values.entrySet()) {
+            final ColumnMapper<T> mapper = entry.getKey();
             Object value = entry.getValue();
             
             if (this.mapper.isVersion(mapper) && isOptimisticUpdate){
-               	if (value instanceof Integer){
-               		value = (Integer) value + 1;
-               	}else if (value instanceof Long){
-               		value = (Long) value + 1;
-               	}else{
-               		throw new RuntimeException("invalid type for version column: " + value.getClass().getCanonicalName());
-               	}
+            	value = inc(value);
             }
            	setObject(bs, i++, value, mapper);
         }
@@ -468,16 +472,18 @@ public class Mapper<T> {
 		}
     	
     	final List<Row> all = rs.all();
-    	if (all.isEmpty())
+    	if (all.isEmpty()) //no optimistic locking
     		return true;
     	
     	final boolean applied = all.get(0).getBool(0);
-    	if (applied)
-    		return true;
-    	
-    	if (mapper.versionColumn !=null && rs.getColumnDefinitions().contains(mapper.versionColumn.getColumnName())){
+    	if (applied){
+    		//TODO не очень красивый хак. Правильнее было бы как-то получать точно обновленное значение из запроса, а не вычислять его заново 
+    		if (mapper.versionColumn !=null){
+    			mapper.versionColumn.setValue(entity, inc(mapper.versionColumn.getValue(entity)));
+    		}
+    	}else if (mapper.versionColumn !=null && rs.getColumnDefinitions().contains(mapper.versionColumn.getColumnName())){
     		throw new VersionException(all.get(0).getObject(mapper.versionColumn.getColumnName()));
-    	}    	
+    	}    	    	
     	    	
     	return applied;
     }

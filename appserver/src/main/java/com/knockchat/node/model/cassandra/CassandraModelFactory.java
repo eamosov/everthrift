@@ -60,6 +60,7 @@ import com.knockchat.utils.VoidFunction;
 import com.knockchat.utils.thrift.TFunction;
 
 import net.sf.ehcache.Cache;
+import net.sf.ehcache.Element;
 
 public abstract class CassandraModelFactory<PK extends Serializable,ENTITY extends DaoEntityIF, E extends TException> extends AbstractCachedModelFactory<PK, ENTITY> implements OptimisticLockModelFactoryIF<PK, ENTITY, E>{
 
@@ -195,6 +196,26 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 		return new Object[]{id};
 	}
 	
+	private  Number fetchCurrentVersion(PK id, final Object[] pkeys, final ColumnMapper<ENTITY> versionColumn) throws EntityNotFoundException{
+		final Select.Where where = QueryBuilder.select(versionColumn.getColumnNameUnquoted()).from(mapper.getTableName()).where();
+		
+		for (int i=0; i< mapper.primaryKeySize(); i++){
+			where.and(QueryBuilder.eq(mapper.getPrimaryKeyColumn(i).getColumnNameUnquoted(), pkeys[i]));
+		}
+		where.setConsistencyLevel(ConsistencyLevel.SERIAL);
+		final ResultSet rs = getSession().execute(where);
+		final Row row = rs.one();
+		if (row == null)
+			throw new EntityNotFoundException(id);
+		
+        final TypeCodec<Object> customCodec = versionColumn.getCustomCodec();
+        if (customCodec != null)
+        	return (Number)row.get(0, customCodec);
+        else
+        	return (Number)row.get(0, versionColumn.getJavaType());					
+		
+	}
+	
 	public final OptResult<ENTITY> updateWithAssignments(PK id, VoidFunction<Assignments> assignment) throws TException, E {
 		
 		if (id == null)
@@ -205,26 +226,22 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 		
 		try {
 			final OptResult<ENTITY> optResult = OptimisticLockModelFactoryIF.optimisticUpdate((count) -> {
-				
+
 				final ColumnMapper<ENTITY> versionColumn = mapper.getVersionColumn();
-				final Select.Where where = QueryBuilder.select(versionColumn.getColumnNameUnquoted()).from(mapper.getTableName()).where();
-				
 				final Object[] pkeys = extractCompaundPk(id);
-				for (int i=0; i< mapper.primaryKeySize(); i++){
-					where.and(QueryBuilder.eq(mapper.getPrimaryKeyColumn(i).getColumnNameUnquoted(), pkeys[i]));
-				}
-				where.setConsistencyLevel(ConsistencyLevel.SERIAL);
-				ResultSet rs = getSession().execute(where);
-				final Row row = rs.one();
-				if (row == null)
-					throw new EntityNotFoundException(id);
-				
-	            final TypeCodec<Object> customCodec = versionColumn.getCustomCodec();
+
 	            final Number versionBefore;
-	            if (customCodec != null)
-	            	versionBefore = (Number)row.get(0, customCodec);
-	            else
-	            	versionBefore = (Number)row.get(0, versionColumn.getJavaType());
+
+				if (count == 0 && cache != null){
+					final Element e = cache.get(id);
+					if (e != null && e.getObjectValue() != null){
+						versionBefore = (Number)versionColumn.getValue((ENTITY)e.getObjectValue());
+					}else{
+						versionBefore = fetchCurrentVersion(id, pkeys, versionColumn);
+					}
+				}else{
+					versionBefore = fetchCurrentVersion(id, pkeys, versionColumn);				
+				}				
 	            	            
 	            final Number versionAfter;
                	if (versionBefore instanceof Integer){
@@ -246,11 +263,13 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 					uWhere.and(QueryBuilder.eq(mapper.getPrimaryKeyColumn(i).getColumnNameUnquoted(), pkeys[i]));
 				}
                	
-               	rs = getSession().execute(update);
+				final ResultSet rs = getSession().execute(update);
                	
                	if (!rs.wasApplied())
                		return null;
                	
+   				invalidate(id);
+
 				try {
 					final ENTITY beforeUpdate = getEntityClass().newInstance();
 	               	beforeUpdate.setPk(id);
