@@ -3,6 +3,7 @@ package com.knockchat.utils;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.Random;
 
 import com.google.common.collect.DiscreteDomain;
 import com.google.common.collect.Lists;
@@ -10,6 +11,8 @@ import com.google.common.primitives.Longs;
 import com.google.common.primitives.UnsignedLongs;
 
 public class UUID implements Comparable<UUID>, Serializable{
+	
+	private static final Random rnd = new Random();
 	
 	  private static final class UUIDDomain extends DiscreteDomain<UUID> implements Serializable {
 		    private static final UUIDDomain INSTANCE = new UUIDDomain();
@@ -132,62 +135,73 @@ public class UUID implements Comparable<UUID>, Serializable{
     	return new UUID(mostSigBits, leastSigBits, new UUID(mostSigBits, leastSigBits).toString());
     }
 
-
-    public static UUID fromLong(long leastSigBits){
-    	return new UUID(0, leastSigBits);
-    }
-    
     public static UUID fromJdkUUID(java.util.UUID uuid){
     	if (uuid == null)
     		return null;
     	
     	return new UUID(uuid.getMostSignificantBits(), uuid.getLeastSignificantBits());
     }
-    
-    public UUID(int space8bit, long most40Bits, long middle40Bits, long least40Bits){    	
-		mostSigBits = (((long)(space8bit & 0xFF)) << 56) | (most40Bits << 16) | ((middle40Bits >> 24) & 0xFFFFL);
-		leastSigBits = (middle40Bits << 40) | (least40Bits & 0xFFFFFFFFFFL);
-		asString = null;
+
+    public UUID(int space8bit, long hi32Bits, long low32Bits, long millis48Bits, int rnd8Bits){    	
+    	mostSigBits = (((long)(space8bit & 0xFF)) << 56) | ((hi32Bits & 0xFFFFFFFFL) << 24) | ((low32Bits >> 8) & 0xFFFFFFL);
+    	leastSigBits = ((low32Bits & 0xFF) << 56) | ((millis48Bits & 0xFFFFFFFFFFFFL) << 8) | (rnd8Bits & 0xFF);
+    	asString = null;
     }
-    
+        
 	public int getSpace8bit(){
 		return (int)((mostSigBits >> 56) & 0xFF);
 	}
 
-	public long getMost40Bits(){
-		return (mostSigBits >> 16) & 0xFFFFFFFFFFL;
+	public long getHi32Bits(){
+		return (mostSigBits >> 24) & 0xFFFFFFFFL;
 	}
 	
-	/**
-	 * 
-	 * @param uuid
-	 * @return get middle 40bits
-	 */
-	public static long getAccountId(String uuid){
-		final  UUID u = UUID.fromString(uuid);
-		return u.getAccountId();
+	public long getLow32Bits(){
+		return  ((mostSigBits & 0xFFFFFFL) << 8) | ((leastSigBits >> 56) & 0xFFL);
+	}
+	
+	public long getMillis48Bits(){
+		return (leastSigBits >> 8) & 0xFFFFFFFFFFFFL;
+	}
+	
+	public int getRnd8Bits(){
+		return (int)(leastSigBits & 0xFF);
+	}
+	
+	public long getSeqBits(){
+		return leastSigBits & 0xFFFFFFFFFFFFFFL;
 	}
 
-	public long getAccountId(){
-		final int space = getSpace8bit(); 
-		if (space == 8/*Device*/ || space == 10 /*gift image*/ || space == 11 /*offer image*/) 
-			return getMost40Bits();
-		else
-			return getMiddle40Bits();
+	public static UUID rnd(int space8bit, long hi32Bits, long low32Bits){
+		return new UUID(space8bit, hi32Bits, low32Bits, System.currentTimeMillis(), rnd.nextInt());
 	}
 
-	/**
-	 * 12bit - shardId
-	 * 28bit - sequence id
-	 * @return
-	 */
-	public long getMiddle40Bits(){
-		return  ((mostSigBits & 0xFFFFL) << 24) | ((leastSigBits >> 40) & 0xFFFFFFL);
+	public static UUID rnd(int space8bit, long low32Bits){
+		return rnd(space8bit, 0, low32Bits);
 	}
+	
+//	/**
+//	 * 
+//	 * @param uuid
+//	 * @return get middle 40bits
+//	 */
+//	public static long getAccountId(String uuid){
+//		final  UUID u = UUID.fromString(uuid);
+//		return u.getAccountId();
+//	}
 
-	public long getLeast40Bits(){
-		return leastSigBits & 0xFFFFFFFFFFL;
-	}
+//	public long getAccountId(){
+//		final int space = getSpace8bit(); 
+//		if (space == 8/*Device*/ || space == 10 /*gift image*/ || space == 11 /*offer image*/) 
+//			return getMost40Bits();
+//		else
+//			return getMiddle40Bits();
+//	}
+
+
+//	public long getLeast40Bits(){
+//		return leastSigBits & 0xFFFFFFFFFFL;
+//	}
 		
     /**
      * Creates a {@code UUID} from the string standard representation as

@@ -68,7 +68,7 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 	private final Constructor<ENTITY> copyConstructor;
 
 	@Autowired
-	private MappingManager mappingManager;
+	protected MappingManager mappingManager;
 	
 	@Autowired
 	protected LocalEventBus localEventBus;
@@ -216,6 +216,7 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 		
 	}
 	
+	//TODO маппинг первичных ключей надо делать как в updateCustom
 	public final OptResult<ENTITY> updateWithAssignments(PK id, VoidFunction<Assignments> assignment) throws TException, E {
 		
 		if (id == null)
@@ -295,7 +296,69 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 			throw createNotFoundException(id); 
 		}
 	}
-
+	
+//	private BoundStatement bindPk(final PK id, final BoundStatement bs){
+//		final Object[] pkeys = extractCompaundPk(id);
+//
+//		for (int i=0; i< mapper.primaryKeySize(); i++){
+//			final ColumnMapper<ENTITY> cm = mapper.getPrimaryKeyColumn(i);
+//	        final TypeCodec<Object> customCodec = cm.getCustomCodec();
+//	        if (customCodec != null)
+//	            bs.set(i, pkeys[i], customCodec);
+//	        else
+//	            bs.set(i, pkeys[i], cm.getJavaType());
+//		}
+//		return bs;
+//	}
+//
+//	/**
+//	 * Make update request, no cache validation
+//	 * @param id
+//	 * @param assignment
+//	 * @throws TException
+//	 * @throws E
+//	 */
+//	public final void updateCustom(PK id, VoidFunction<Assignments> assignment) throws TException, E {
+//		
+//		if (id == null)
+//			throw new IllegalArgumentException("id is null");
+//		
+//              	
+//		final Update update = QueryBuilder.update(mapper.getTableName());
+//		final Assignments assignments = update.with();
+//		assignment.apply(assignments);
+//               	
+//		final Update.Where uWhere = update.where();
+//		for (int i=0; i< mapper.primaryKeySize(); i++){
+//			uWhere.and(QueryBuilder.eq(mapper.getPrimaryKeyColumn(i).getColumnNameUnquoted(), QueryBuilder.bindMarker()));
+//		}
+//		
+//		update.setConsistencyLevel(mapper.getWriteConsistency());
+//		
+//		final BoundStatement bs = getSession().prepare(update).bind();
+//
+//		getSession().execute(bindPk(id, bs));
+//		return ;
+//	}
+//	
+//	public final ResultSet selectCustom(PK id, String ...columns){
+//		if (id == null)
+//			throw new IllegalArgumentException("id is null");
+//		
+//		final Object[] pkeys = extractCompaundPk(id);
+//		final Select select = QueryBuilder.select(columns).from(mapper.getTableName()); 
+//
+//		final Select.Where uWhere = select.where();
+//		for (int i=0; i< mapper.primaryKeySize(); i++){
+//			uWhere.and(QueryBuilder.eq(mapper.getPrimaryKeyColumn(i).getColumnNameUnquoted(), QueryBuilder.bindMarker()));
+//		}
+//		select.setConsistencyLevel(mapper.getReadConsistency());
+//		
+//		final BoundStatement bs = getSession().prepare(select).bind();
+//
+//		return getSession().execute(bindPk(id, bs));
+//	}
+	
 	@Override
 	public final OptResult<ENTITY> update(PK id, TFunction<ENTITY, Boolean> mutator, EntityFactory<PK, ENTITY> factory) throws TException, E {
 		

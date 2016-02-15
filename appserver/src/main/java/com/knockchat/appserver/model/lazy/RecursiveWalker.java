@@ -28,7 +28,7 @@ public class RecursiveWalker implements WalkerIF {
 	private final TBaseScanHandler tBaseScanHandler = new TBaseScanHandler(){
 
 		@Override
-		public void apply(Object o) {
+		public void apply(Object parent, Object o) {
 			
 			if (o == null)
 				return;
@@ -40,7 +40,7 @@ public class RecursiveWalker implements WalkerIF {
 				return;
 			}
 			
-			s.scan(o, this, registry);
+			s.scan(parent, o, this, registry);
 		}			
 	};
 	
@@ -80,7 +80,7 @@ public class RecursiveWalker implements WalkerIF {
 		}else{
 			
 			if (o instanceof TBase){				
-				scannerFactory.create((Class)o.getClass(), scenario).scan((TBase)o, tBaseScanHandler, registry);				
+				scannerFactory.create((Class)o.getClass(), scenario).scan(null, (TBase)o, tBaseScanHandler, registry);				
 			}
 			
 		}

@@ -28,6 +28,10 @@ public class OptResult<ENTITY extends DaoEntityIF> {
 		this.isUpdated = isUpdated;
 		this.factory = factory;
 	}
+
+	public static <ENTITY extends DaoEntityIF> OptResult<ENTITY> notUpdated(OptimisticLockModelFactoryIF<?, ENTITY, ?> factory, ENTITY updated){
+		return create(factory, updated, updated, false);
+	}
 	
 	public static <ENTITY extends DaoEntityIF> OptResult<ENTITY> create(OptimisticLockModelFactoryIF<?, ENTITY, ?> factory, ENTITY updated, ENTITY old, boolean isUpdated){
 		return new OptResult<ENTITY>(factory, updated, old, isUpdated);
