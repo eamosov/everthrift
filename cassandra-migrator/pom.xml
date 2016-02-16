@@ -8,14 +8,10 @@
 		<relativePath>../pom.xml</relativePath>
 	</parent>
 
-	<artifactId>knock4j-migrator</artifactId>
+	<artifactId>knock4j-cassandra-migrator</artifactId>
 
 	<modelVersion>4.0.0</modelVersion>
 	<packaging>jar</packaging>
-
-	<properties>
-		<migration.target.package>com.knockchat.migration</migration.target.package>
-	</properties>
 
 	<dependencies>
  	
@@ -30,20 +26,6 @@
 		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-beans</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-jdbc</artifactId>
-		</dependency>
-		
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-tx</artifactId>
-		</dependency>
-		
-		<dependency>
-			<groupId>org.postgresql</groupId>
-			<artifactId>postgresql</artifactId>
 		</dependency>
 
 		<dependency>
@@ -60,31 +42,19 @@
 			<groupId>commons-io</groupId>
 			<artifactId>commons-io</artifactId>
 			<version>2.4</version>
-		</dependency>		
+		</dependency>
 		
+		<dependency>
+			<groupId>com.datastax.cassandra</groupId>
+			<artifactId>cassandra-driver-core</artifactId>
+		</dependency>
+		
+		<dependency>
+		    <groupId>io.smartcat</groupId>
+    		<artifactId>cassandra-migration-tool</artifactId>
+    		<version>3.0.0</version>		
+		</dependency>		
+				
 	</dependencies>
-
-	<build>
-		<plugins>
-
-			<plugin>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-maven-plugin</artifactId>
-				<version>1.1.0.RC1</version>
-				<executions>
-					<execution>
-						<configuration>
-							<mainClass>com.knockchat.sql.migration.Migrator</mainClass>
-							<classifier>with-deps</classifier>
-							<layout>ZIP</layout>
-						</configuration>
-						<goals>
-							<goal>repackage</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-		</plugins>
-	</build>
 
 </project>

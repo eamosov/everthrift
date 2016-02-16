@@ -70,6 +70,7 @@ import com.knockchat.appserver.thrift.cluster.NodeAddress;
 import com.knockchat.appserver.transport.http.BinaryThriftServlet;
 import com.knockchat.appserver.transport.http.JsonThriftServlet;
 import com.knockchat.appserver.transport.tcp.ThriftServer;
+import com.knockchat.cassandra.migrator.CMigrationProcessor;
 import com.knockchat.sql.migration.MigrationProcessor;
 import com.knockchat.utils.NetUtils;
 import com.knockchat.utils.PosAppInitializingBean;
@@ -129,6 +130,11 @@ public class AppserverApplication {
             runMigrator(env.getProperty("migrator.root.package"));
         }
         
+        if (env.getProperty("cassandra.migrator.run").equals("true")) {
+        	runCMigrationProcessor();
+        }
+
+                
         final boolean nothrift = !env.getProperty("nothrift", "false").equalsIgnoreCase("false");
 
         try {
@@ -201,8 +207,33 @@ public class AppserverApplication {
             if (xmlContext != null && xmlContext.isActive())
                 xmlContext.close();
         }
-
     }
+    
+    private void runCMigrationProcessor() {
+    	
+    	log.info("Executing cassandra migrations");
+    	
+        final ClassPathXmlApplicationContext xmlContext = new ClassPathXmlApplicationContext(new String[]{"classpath:cassandra-migration-context.xml"}, false);
+        try {
+            for (final PropertySource p : env.getPropertySources())
+                xmlContext.getEnvironment().getPropertySources().addLast(p);
+            
+            xmlContext.refresh();
+
+            final CMigrationProcessor processor = xmlContext.getBean(CMigrationProcessor.class);
+            if (processor == null) {
+                log.info("Can't find CMigrationProcessor bean");
+                return;
+            }
+            
+            processor.migrate();
+            
+        } finally {
+            if (xmlContext != null && xmlContext.isActive())
+                xmlContext.close();
+        }
+    }
+    
 
     private KeyStore loadJettyKeystore(final String jks, String keystorePassword) throws IOException, NoSuchAlgorithmException, CertificateException, KeyStoreException {
         final InputStream inputStream = context.getResource(jks).getInputStream();

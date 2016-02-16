@@ -368,6 +368,17 @@
 			<groupId>com.knockchat</groupId>
 			<artifactId>knock4j-migrator</artifactId>
 		</dependency>
+		
+		<dependency>
+			<groupId>com.knockchat</groupId>
+			<artifactId>knock4j-cassandra-migrator</artifactId>
+			<exclusions>
+				<exclusion>
+					<groupId>com.datastax.cassandra</groupId>
+					<artifactId>cassandra-driver-core</artifactId>
+				</exclusion>
+			</exclusions>							
+		</dependency>
 
 		<dependency>
 			<groupId>org.mozilla</groupId>
@@ -415,7 +426,7 @@
 			<artifactId>cassandra-driver-core</artifactId>
 			<scope>provided</scope>
 		</dependency>
-		
+				
 		<dependency>
 			<groupId>io.dropwizard.metrics</groupId>
 			<artifactId>metrics-core</artifactId>

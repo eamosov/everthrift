@@ -60,6 +60,12 @@
 				<artifactId>knock4j-migrator</artifactId>
 				<version>0.0.1</version>
 			</dependency>
+			
+			<dependency>
+				<groupId>com.knockchat</groupId>
+				<artifactId>knock4j-cassandra-migrator</artifactId>
+				<version>0.0.1</version>				
+			</dependency>			
 
 			<dependency>
 				<groupId>com.knockchat</groupId>
@@ -412,6 +418,7 @@
 		<module>appserver</module>
 		<module>infonode</module>
 		<module>migrator</module>
+		<module>cassandra-migrator</module>
 		<module>migration-plugin</module>
 		<module>jsvc</module>
 		<module>common-cli</module>
