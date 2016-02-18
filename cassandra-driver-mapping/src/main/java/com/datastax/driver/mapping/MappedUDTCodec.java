@@ -29,10 +29,10 @@ public class MappedUDTCodec<T> extends TypeCodec.AbstractUDTCodec<T> {
     private final Map<String, ColumnMapper<T>> columnMappers;
     private final CodecRegistry codecRegistry;
 
-    public MappedUDTCodec(UserType cqlUserType, Class<T> udtClass, Map<String, ColumnMapper<T>> columnMappers, MappingManager mappingManager) {
+    public MappedUDTCodec(UserType cqlUserType, Class<T> udtClass, Class<T> instanceClass, Map<String, ColumnMapper<T>> columnMappers, MappingManager mappingManager) {
         super(cqlUserType, udtClass);
         this.cqlUserType = cqlUserType;
-        this.udtClass = udtClass;
+        this.udtClass = instanceClass;
         this.columnMappers = columnMappers;
         this.codecRegistry = mappingManager.getSession().getCluster().getConfiguration().getCodecRegistry();
     }

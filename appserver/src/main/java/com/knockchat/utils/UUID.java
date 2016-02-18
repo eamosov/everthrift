@@ -2,6 +2,8 @@ package com.knockchat.utils;
 
 import java.io.Serializable;
 import java.nio.ByteBuffer;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Random;
 
@@ -178,6 +180,24 @@ public class UUID implements Comparable<UUID>, Serializable{
 
 	public static UUID rnd(int space8bit, long low32Bits){
 		return rnd(space8bit, 0, low32Bits);
+	}
+	
+	public static UUID rnd(int space8bit){
+		final long time = System.currentTimeMillis();
+		return new UUID(space8bit, (time >> 32) & 0xFFFFFFFFL, time & 0xFFFFFFFFL, rnd.nextInt(), rnd.nextInt());
+	}
+
+	public static UUID hash(int space8bit, String value){
+		
+	    try {
+	    	final MessageDigest md = MessageDigest.getInstance("SHA-1");
+	    	final ByteBuffer b = ByteBuffer.wrap(md.digest(value.getBytes()));
+	    	final long mostSigBits = (((long)(space8bit & 0xFF)) << 56) | (b.getLong() & 0xFFFFFFFFFFFFFFL);
+	    	final long leastSigBits = b.getLong();
+	    	return new UUID(mostSigBits, leastSigBits);
+	    } catch(NoSuchAlgorithmException e) {
+	        throw new RuntimeException(e);
+	    } 
 	}
 	
 //	/**

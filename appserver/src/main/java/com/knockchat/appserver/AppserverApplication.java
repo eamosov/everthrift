@@ -125,15 +125,14 @@ public class AppserverApplication {
         env.getPropertySources().addLast(new MapPropertySource("thriftScanPathList", Collections.singletonMap("thrift.scan", (Object) scanPathList)));
         env.getPropertySources().addLast(new MapPropertySource("version", Collections.singletonMap("version", (Object) version)));
 
-        if (env.getProperty("migrator.run").equals("true")) {
+        if (env.getProperty("migrator.run", "false").equalsIgnoreCase("true")) {
             log.info("Try find migrations in {}", env.getProperty("migrator.root.package"));
             runMigrator(env.getProperty("migrator.root.package"));
         }
         
-        if (env.getProperty("cassandra.migrator.run").equals("true")) {
+        if (env.getProperty("cassandra.migrator.run", "false").equalsIgnoreCase("true")) {
         	runCMigrationProcessor();
         }
-
                 
         final boolean nothrift = !env.getProperty("nothrift", "false").equalsIgnoreCase("false");
 

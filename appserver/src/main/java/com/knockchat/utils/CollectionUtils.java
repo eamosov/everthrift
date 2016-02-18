@@ -388,4 +388,15 @@ public class CollectionUtils {
 		Iterators.partition(it, size).forEachRemaining(a -> {f.apply(a);});
 	}
 
+	public static boolean equalsIgnoreCase(Collection<String> where, String what){
+		if (where == null || where.isEmpty())
+			return false;
+		
+		for (String w: where){
+			if (w.equalsIgnoreCase(what))
+				return true;
+		}
+		
+		return false;
+	}
 }

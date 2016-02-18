@@ -73,7 +73,7 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 	@Autowired
 	protected LocalEventBus localEventBus;
 	
-	private Mapper<ENTITY> mapper;
+	protected Mapper<ENTITY> mapper;
 	private String sequenceName;
 	private SequenceFactory sequenceFactory;
 	private DLockFactory dLockFactory;
@@ -681,12 +681,20 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 	 * save all not null fields without read
 	 * Method not generates any events
 	 */
-	public void putEntity(ENTITY entity) {
+	public void putEntity(ENTITY entity, boolean _noSaveNulls) {
 		if (entity.getPk() == null)
 			throw new IllegalArgumentException("pk is null");
 		
-		mapper.save(entity, noSaveNulls);
+		if (_noSaveNulls)
+			mapper.save(entity, noSaveNulls);
+		else
+			mapper.save(entity);
+		
 		invalidate((PK)entity.getPk());
+	}
+	
+	public void putEntity(ENTITY entity) {
+		putEntity(entity, true);
 	}
 		
 }

@@ -33,8 +33,8 @@ public class OptResult<ENTITY extends DaoEntityIF> {
 		return create(factory, updated, updated, false);
 	}
 	
-	public static <ENTITY extends DaoEntityIF> OptResult<ENTITY> create(OptimisticLockModelFactoryIF<?, ENTITY, ?> factory, ENTITY updated, ENTITY old, boolean isUpdated){
-		return new OptResult<ENTITY>(factory, updated, old, isUpdated);
+	public static <ENTITY extends DaoEntityIF> OptResult<ENTITY> create(OptimisticLockModelFactoryIF<?, ENTITY, ?> factory, ENTITY afterUpdate, ENTITY beforeUpdate, boolean isUpdated){
+		return new OptResult<ENTITY>(factory, afterUpdate, beforeUpdate, isUpdated);
 	}
 	
 	public boolean isCanceled(){

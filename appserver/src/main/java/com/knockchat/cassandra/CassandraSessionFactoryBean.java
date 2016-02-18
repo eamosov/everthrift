@@ -5,6 +5,9 @@ import org.slf4j.LoggerFactory;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
+import com.knockchat.cassandra.codecs.ByteArrayBlobCodec;
+import com.knockchat.cassandra.codecs.LongTimestampCodec;
+import com.knockchat.cassandra.codecs.StringUuidCodec;
 
 public class CassandraSessionFactoryBean {
 	
@@ -12,7 +15,9 @@ public class CassandraSessionFactoryBean {
 	
 	public static Cluster createCluster(String contactPoint){
 		log.info("Connecting to cassandra at {}", contactPoint);
-		return Cluster.builder().addContactPoint(contactPoint).build();		
+		final Cluster cluster =  Cluster.builder().addContactPoint(contactPoint).build();
+		cluster.getConfiguration().getCodecRegistry().register(LongTimestampCodec.instance, StringUuidCodec.instance, ByteArrayBlobCodec.instance);
+		return cluster;
 	}
 	
     public static Session createSession(Cluster cluster, String keyspace){

@@ -36,10 +36,10 @@ import com.datastax.driver.mapping.annotations.UDT;
 import com.datastax.driver.mapping.annotations.Version;
 import com.google.common.base.CaseFormat;
 import com.google.common.base.Strings;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.reflect.TypeToken;
 import com.knockchat.utils.ClassUtils;
+import com.knockchat.utils.thrift.TBaseHasModel;
 
 public class DbMetadataParser implements EntityParser {
 	
@@ -261,8 +261,8 @@ public class DbMetadataParser implements EntityParser {
 			
 			columnMappers.put(m.getColumnName(), m);
 		}
-
-		return new MappedUDTCodec<T>(userType, udtClass, columnMappers, mappingManager);
+		
+		return new MappedUDTCodec<T>(userType, udtClass, TBaseHasModel.getModel((Class)udtClass) !=null ? (Class)TBaseHasModel.getModel((Class)udtClass) : udtClass, columnMappers, mappingManager);
     }
 	    
 }

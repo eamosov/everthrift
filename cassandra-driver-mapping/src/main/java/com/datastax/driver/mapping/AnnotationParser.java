@@ -196,7 +196,7 @@ public class AnnotationParser implements EntityParser{
             }
         }
         Map<String, ColumnMapper<T>> columnMappers = createFieldMappers(columns, factory, udtClass, mappingManager, null);
-        return new MappedUDTCodec<T>(userType, udtClass, columnMappers, mappingManager);
+        return new MappedUDTCodec<T>(userType, udtClass, udtClass, columnMappers, mappingManager);
     }
 
     private static <T> Map<String, ColumnMapper<T>> createFieldMappers(List<Field> fields, EntityMapper.Factory factory, Class<T> klass, MappingManager mappingManager, AtomicInteger columnCounter) {
