@@ -28,6 +28,7 @@ import com.datastax.driver.core.querybuilder.Select;
 import com.datastax.driver.core.querybuilder.Update;
 import com.datastax.driver.core.querybuilder.Update.Assignments;
 import com.datastax.driver.mapping.ColumnMapper;
+import com.datastax.driver.mapping.EntityMapper.Scenario;
 import com.datastax.driver.mapping.Mapper;
 import com.datastax.driver.mapping.Mapper.Option;
 import com.datastax.driver.mapping.MappingManager;
@@ -698,7 +699,7 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 
 	public void fetchAll(final int batchSize, Consumer<List<ENTITY>> consumer){
 				
-		final Iterator<ENTITY> r = mapper.getAll(Option.fetchSize(batchSize)).iterator();
+		final Iterator<ENTITY> r = mapper.getAll(Option.fetchSize(batchSize), Option.scenario(Scenario.ALL)).iterator();
 			
 		while(r.hasNext()){
 			final List<ENTITY> batch = Lists.newArrayList(Iterators.limit(r, batchSize));
@@ -706,4 +707,8 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 		}
     }
 	
+	@Override
+	public String toString(){
+		return mapper.toString();
+	}
 }

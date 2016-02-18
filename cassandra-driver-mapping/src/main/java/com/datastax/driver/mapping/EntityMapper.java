@@ -18,15 +18,38 @@ package com.datastax.driver.mapping;
 import static com.datastax.driver.core.querybuilder.QueryBuilder.quote;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.datastax.driver.core.ConsistencyLevel;
+import com.google.common.collect.Collections2;
+import com.google.common.collect.ImmutableSet;
 
 public abstract class EntityMapper<T> {
+	
+	public static enum ColumnScenario {
+		COMMON,
+		OPTIONAL
+	}
+	
+	public static enum Scenario {
+		COMMON {
+			@Override
+			boolean accept(ColumnScenario c) {
+				return c == ColumnScenario.COMMON;
+			}
+		},
+		ALL{
+			@Override
+			boolean accept(ColumnScenario c) {
+				return true;
+			}
+		};
+		abstract boolean accept(ColumnScenario c);
+	}
 
     public final Class<T> entityClass;
     private final String keyspace;
@@ -38,7 +61,7 @@ public abstract class EntityMapper<T> {
     public final List<ColumnMapper<T>> partitionKeys = new ArrayList<ColumnMapper<T>>();
     public final List<ColumnMapper<T>> clusteringColumns = new ArrayList<ColumnMapper<T>>();
     public final List<ColumnMapper<T>> regularColumns = new ArrayList<ColumnMapper<T>>();
-    public ColumnMapper<T> versionColumn;
+    private ColumnMapper<T> versionColumn;
     
     private Map<String, ColumnMapper<T>> allColumns = new HashMap<String, ColumnMapper<T>>();
 
@@ -93,8 +116,8 @@ public abstract class EntityMapper<T> {
 
     public abstract T newEntity();
 
-    public Collection<ColumnMapper<T>> allColumns() {
-        return allColumns.values();
+    public Set<ColumnMapper<T>> allColumns(Scenario scenario) {
+        return ImmutableSet.copyOf(Collections2.filter(allColumns.values(), c -> (scenario.accept(c.columnScenario))));
     }
     
     public boolean isVersion(ColumnMapper<?> cm){
@@ -103,6 +126,29 @@ public abstract class EntityMapper<T> {
     
     public ColumnMapper<T> getVersionColumn(){
     	return versionColumn;
+    }
+    
+    @Override
+    public String toString(){
+    	final StringBuilder sb = new StringBuilder();
+    	sb.append(String.format("[EntityMapper %s.%s <-> %s]\n", keyspace, table, entityClass.getCanonicalName()));
+    	sb.append("\twriteConsistency: " + writeConsistency + "\n");
+    	sb.append("\treadConsistency: " + readConsistency + "\n");
+    	if (versionColumn !=null)
+    		sb.append("\tversionColumn: " + versionColumn.getColumnName() + "\n");
+    	
+    	sb.append("\tcolumns mapping:\n");
+    	
+    	for (int i=0; i< this.primaryKeySize(); i++){
+    		ColumnMapper<T> cm = getPrimaryKeyColumn(i);
+    		sb.append(String.format("\t\t%s %s <-> %s (%s)\n", cm.columnScenario, cm.getColumnNameUnquoted(), cm.getFieldName(), cm.getJavaType().toString()));
+    	}
+    	
+    	for (ColumnMapper<T> cm : regularColumns){
+    		sb.append(String.format("\t\t%s %s <-> %s (%s)\n", cm.columnScenario,cm.getColumnNameUnquoted(), cm.getFieldName(), cm.getJavaType().toString()));
+    	}
+    	
+    	return sb.toString();
     }
 
     public interface Factory {

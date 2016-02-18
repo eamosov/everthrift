@@ -22,6 +22,7 @@ import com.datastax.driver.core.UserType;
 import com.datastax.driver.mapping.AnnotationChecks;
 import com.datastax.driver.mapping.ColumnMapper;
 import com.datastax.driver.mapping.EntityMapper;
+import com.datastax.driver.mapping.EntityMapper.ColumnScenario;
 import com.datastax.driver.mapping.EntityMapper.Factory;
 import com.datastax.driver.mapping.EntityParser;
 import com.datastax.driver.mapping.FieldDescriptor;
@@ -30,6 +31,7 @@ import com.datastax.driver.mapping.MappingManager;
 import com.datastax.driver.mapping.annotations.Column;
 import com.datastax.driver.mapping.annotations.Computed;
 import com.datastax.driver.mapping.annotations.Defaults;
+import com.datastax.driver.mapping.annotations.Scenario;
 import com.datastax.driver.mapping.annotations.Table;
 import com.datastax.driver.mapping.annotations.Transient;
 import com.datastax.driver.mapping.annotations.UDT;
@@ -141,7 +143,7 @@ public class DbMetadataParser implements EntityParser {
 			if (javaProp == null)
 				throw new IllegalArgumentException("Coudn't find partition key '" + cm.getName() + "' in java class " + entityClass.getCanonicalName());
 
-			final FieldDescriptor fd = new FieldDescriptor(cm.getName(), javaProp.getName(), ColumnMapper.Kind.PARTITION_KEY, (TypeToken)TypeToken.of(javaProp.getReadMethod().getGenericReturnType()), customCodec(entityClass, javaProp));
+			final FieldDescriptor fd = new FieldDescriptor(cm.getName(), javaProp.getName(), ColumnMapper.Kind.PARTITION_KEY, ColumnScenario.COMMON, (TypeToken)TypeToken.of(javaProp.getReadMethod().getGenericReturnType()), customCodec(entityClass, javaProp));
 			pks.add(factory.createColumnMapper(entityClass, fd, mappingManager, columnCounter));
 			keys.add(javaProp.getName());
 		}
@@ -155,7 +157,7 @@ public class DbMetadataParser implements EntityParser {
 			if (javaProp == null)
 				throw new IllegalArgumentException("Coudn't find partition key '" + cm.getName() + "' in java class " + entityClass.getCanonicalName());
 
-			final FieldDescriptor fd = new FieldDescriptor(cm.getName(), javaProp.getName(), ColumnMapper.Kind.CLUSTERING_COLUMN, (TypeToken)TypeToken.of(javaProp.getReadMethod().getGenericReturnType()), customCodec(entityClass, javaProp));
+			final FieldDescriptor fd = new FieldDescriptor(cm.getName(), javaProp.getName(), ColumnMapper.Kind.CLUSTERING_COLUMN, ColumnScenario.COMMON, (TypeToken)TypeToken.of(javaProp.getReadMethod().getGenericReturnType()), customCodec(entityClass, javaProp));
 			ccs.add(factory.createColumnMapper(entityClass, fd, mappingManager, columnCounter));
 			keys.add(javaProp.getName());
 		}
@@ -192,8 +194,12 @@ public class DbMetadataParser implements EntityParser {
 			
             final TypeToken<Object> fieldType = (TypeToken)TypeToken.of(javaProp.getReadMethod().getGenericReturnType());
             final TypeCodec<Object> customCodec = customCodec(entityClass, javaProp);
+            
+            Scenario scenario = getAnnotation(entityClass, javaProp, Scenario.class);
 
-			final FieldDescriptor fd = new FieldDescriptor(columnMetadata.getName(), javaProp.getName(), isComputed ? ColumnMapper.Kind.COMPUTED : ColumnMapper.Kind.REGULAR, fieldType, customCodec);
+			final FieldDescriptor fd = new FieldDescriptor(columnMetadata.getName(), javaProp.getName(),
+					isComputed ? ColumnMapper.Kind.COMPUTED : ColumnMapper.Kind.REGULAR,
+					scenario == null ? EntityMapper.ColumnScenario.COMMON : scenario.value(), fieldType, customCodec);
 			 
 			final ColumnMapper<T> columnMapper = factory.createColumnMapper(entityClass, fd, mappingManager, columnCounter); 
 			rgs.add(columnMapper);
@@ -211,7 +217,7 @@ public class DbMetadataParser implements EntityParser {
 				versionField = columnMapper;
 			}			
 		}
-
+		
         mapper.addColumns(pks,ccs,rgs);
         mapper.setVersionColumn(versionField);
         
@@ -256,7 +262,7 @@ public class DbMetadataParser implements EntityParser {
             final TypeToken<Object> fieldType = (TypeToken)TypeToken.of(javaProp.getReadMethod().getGenericReturnType());
             final TypeCodec<Object> customCodec = customCodec(udtClass, javaProp);
 
-			final FieldDescriptor fd = new FieldDescriptor(udtFieldName, javaProp.getName(), ColumnMapper.Kind.REGULAR, fieldType, customCodec);            
+			final FieldDescriptor fd = new FieldDescriptor(udtFieldName, javaProp.getName(), ColumnMapper.Kind.REGULAR, EntityMapper.ColumnScenario.COMMON, fieldType, customCodec);            
 			final ColumnMapper<T> m = factory.createColumnMapper(udtClass, fd, mappingManager, null);
 			
 			columnMappers.put(m.getColumnName(), m);

@@ -16,6 +16,7 @@
 package com.datastax.driver.mapping;
 
 import com.datastax.driver.core.*;
+import com.datastax.driver.mapping.EntityMapper.Scenario;
 
 import java.util.*;
 
@@ -42,7 +43,7 @@ public class Result<T> implements Iterable<T> {
 
     private T map(Row row) {
         T entity = mapper.newEntity();
-        for (ColumnMapper<T> cm : mapper.allColumns()) {
+        for (ColumnMapper<T> cm : mapper.allColumns(Scenario.ALL)) {
             String name = cm.getAlias() != null && this.useAlias ? cm.getAlias() : cm.getColumnName();
             if (!row.getColumnDefinitions().contains(name))
                 continue;

@@ -45,6 +45,8 @@ import com.datastax.driver.core.querybuilder.Delete;
 import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Update;
+import com.datastax.driver.mapping.EntityMapper.Scenario;
+import com.datastax.driver.mapping.Mapper.Option;
 import com.datastax.driver.mapping.Mapper.Option.SaveNullFields;
 import com.datastax.driver.mapping.annotations.Accessor;
 import com.datastax.driver.mapping.annotations.Computed;
@@ -84,6 +86,10 @@ public class Mapper<T> {
     
 
     private static final EnumMap<Option.Type, Option> NO_OPTIONS = new EnumMap<Option.Type, Option>(Option.Type.class);
+    
+    {
+    	NO_OPTIONS.put(Option.Type.SCENARIO, Option.scenario(Scenario.COMMON));
+    }
 
     final Function<ResultSet, T> mapOneFunction;
     final Function<ResultSet, T> mapOneFunctionWithoutAliases;
@@ -169,10 +175,6 @@ public class Mapper<T> {
         return stmt;
     }
 
-    PreparedStatement getPreparedQuery(QueryType type, EnumMap<Option.Type, Option> options) {
-        return getPreparedQuery(type, Collections.<ColumnMapper<?>>emptySet(), options);
-    }
-
     /**
      * The {@code TableMetadata} for this mapper.
      *
@@ -235,7 +237,7 @@ public class Mapper<T> {
         Map<ColumnMapper<?>, Object> values = new HashMap<ColumnMapper<?>, Object>();
         boolean saveNullFields = shouldSaveNullFields(options);
 
-        for (ColumnMapper<T> cm : mapper.allColumns()) {
+        for (ColumnMapper<T> cm : mapper.allColumns(((Option.Scenario)options.get(Option.Type.SCENARIO)).getScenario())) {
             Object value = cm.getValue(entity);
             if (cm.kind != ColumnMapper.Kind.COMPUTED && (saveNullFields || value != null)) {
                 values.put(cm, value);
@@ -288,7 +290,7 @@ public class Mapper<T> {
 
         boolean isOptimisticUpdate = options.containsKey(Option.Type.ONLY_IF);
         
-        if (isOptimisticUpdate && mapper.versionColumn == null)
+        if (isOptimisticUpdate && mapper.getVersionColumn() == null)
         	throw new RuntimeException("ONLY_IF may be used only with versioned entities");
     		
         Map<ColumnMapper<T>, Object> values = new HashMap<ColumnMapper<T>, Object>();
@@ -298,7 +300,7 @@ public class Mapper<T> {
         ColumnMapper<T> updatedAtColumn = null;
         Long updatedAtValue = null;
         
-        for (ColumnMapper<T> cm : mapper.allColumns()) {
+        for (ColumnMapper<T> cm : mapper.allColumns(((Option.Scenario)options.get(Option.Type.SCENARIO)).getScenario())) {
             final Object value = cm.getValue(entity);
             
             if (cm.getColumnNameUnquoted().equalsIgnoreCase("updated_at"))
@@ -363,7 +365,7 @@ public class Mapper<T> {
         }
         
         if (isOptimisticUpdate){
-            setObject(bs, i++, mapper.versionColumn.getValue(entity), mapper.versionColumn);
+            setObject(bs, i++, mapper.getVersionColumn().getValue(entity), mapper.getVersionColumn());
         }        
 
         if (mapper.writeConsistency != null)
@@ -480,11 +482,11 @@ public class Mapper<T> {
     	final boolean applied = all.get(0).getBool(0);
     	if (applied){
     		//TODO не очень красивый хак. Правильнее было бы как-то получать точно обновленное значение из запроса, а не вычислять его заново 
-    		if (mapper.versionColumn !=null){
-    			mapper.versionColumn.setValue(entity, inc(mapper.versionColumn.getValue(entity)));
+    		if (mapper.getVersionColumn() !=null){
+    			mapper.getVersionColumn().setValue(entity, inc(mapper.getVersionColumn().getValue(entity)));
     		}
-    	}else if (mapper.versionColumn !=null && rs.getColumnDefinitions().contains(mapper.versionColumn.getColumnName())){
-    		throw new VersionException(all.get(0).getObject(mapper.versionColumn.getColumnName()));
+    	}else if (mapper.getVersionColumn() !=null && rs.getColumnDefinitions().contains(mapper.getVersionColumn().getColumnName())){
+    		throw new VersionException(all.get(0).getObject(mapper.getVersionColumn().getColumnName()));
     	}    	    	
     	    	
     	return applied;
@@ -537,7 +539,7 @@ public class Mapper<T> {
         if (primaryKeys.size() != mapper.primaryKeySize())
             throw new IllegalArgumentException(String.format("Invalid number of PRIMARY KEY columns provided, %d expected but got %d", mapper.primaryKeySize(), primaryKeys.size()));
 
-        BoundStatement bs = getPreparedQuery(QueryType.GET, options).bind();
+        BoundStatement bs = getPreparedQuery(QueryType.GET, (Set)mapper.allColumns(((Option.Scenario)options.get(Option.Type.SCENARIO)).getScenario()), options).bind();
         int i = 0;
         for (Object value : primaryKeys) {
             ColumnMapper<T> column = mapper.getPrimaryKeyColumn(i);
@@ -563,7 +565,7 @@ public class Mapper<T> {
     private Statement getAllQuery(EnumMap<Option.Type, Option> options) {
 
 
-        BoundStatement bs = getPreparedQuery(QueryType.GET_ALL, options).bind();
+        BoundStatement bs = getPreparedQuery(QueryType.GET_ALL, (Set)mapper.allColumns(((Option.Scenario)options.get(Option.Type.SCENARIO)).getScenario()), options).bind();
         int i = 0;
 
         if (mapper.readConsistency != null)
@@ -739,7 +741,7 @@ public class Mapper<T> {
         if (primaryKey.size() != mapper.primaryKeySize())
             throw new IllegalArgumentException(String.format("Invalid number of PRIMARY KEY columns provided, %d expected but got %d", mapper.primaryKeySize(), primaryKey.size()));
 
-        BoundStatement bs = getPreparedQuery(QueryType.DEL, options).bind();
+        BoundStatement bs = getPreparedQuery(QueryType.DEL, Collections.emptySet(), options).bind();
 
         if (mapper.writeConsistency != null)
             bs.setConsistencyLevel(mapper.writeConsistency);
@@ -1001,7 +1003,7 @@ public class Mapper<T> {
      */
     public static abstract class Option {
 
-        enum Type {TTL, TIMESTAMP, CL, TRACING, SAVE_NULL_FIELDS, IF_NOT_EXISTS, IF_EXISTS, ONLY_IF, FETCH_SIZE}
+        enum Type {TTL, TIMESTAMP, CL, TRACING, SAVE_NULL_FIELDS, IF_NOT_EXISTS, IF_EXISTS, ONLY_IF, FETCH_SIZE, SCENARIO}
 
         final Type type;
 
@@ -1091,6 +1093,9 @@ public class Mapper<T> {
             return new FetchSize(fetchSize);
         }
 
+        public static Option scenario(EntityMapper.Scenario scenario){
+        	return new Scenario(scenario);
+        }
 
         public Type getType() {
             return this.type;
@@ -1471,6 +1476,51 @@ public class Mapper<T> {
 			}        	
         }
         
+        static class Scenario extends Option {
+        	
+        	private EntityMapper.Scenario scenario;
+
+        	Scenario(EntityMapper.Scenario scenario) {
+				super(Type.SCENARIO);
+				this.scenario = scenario;
+			}
+        	
+        	public EntityMapper.Scenario getScenario(){
+        		return scenario;
+        	}
+
+			@Override
+			void appendTo(Insert insert) {
+				throw new UnsupportedOperationException("shouldn't be called");
+			}
+
+			@Override
+			void appendTo(Delete.Options usings) {
+				throw new UnsupportedOperationException("shouldn't be called");				
+			}
+
+			@Override
+			void appendTo(Update update) {
+				throw new UnsupportedOperationException("shouldn't be called");
+			}
+
+			@Override
+			void addToPreparedStatement(BoundStatement bs, int i) {
+				
+			}
+
+			@Override
+			void checkValidFor(QueryType qt, MappingManager manager) throws IllegalArgumentException {
+								
+			}
+
+			@Override
+			boolean isIncludedInQuery() {
+				return false;
+			}        	
+        }
+        
+        
     }
 
     private static class MapperQueryKey {
@@ -1508,5 +1558,10 @@ public class Mapper<T> {
         public int hashCode() {
             return Objects.hashCode(queryType, optionTypes, columns);
         }
+    }
+    
+    @Override
+    public String toString(){
+    	return mapper.toString();
     }
 }

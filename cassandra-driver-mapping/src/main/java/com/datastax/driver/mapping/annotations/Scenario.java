@@ -20,6 +20,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import com.datastax.driver.mapping.EntityMapper;
+
 /**
  * Whenever this annotation is added on a field, the field will not be mapped
  * to any column (neither during reads nor writes).
@@ -30,5 +32,6 @@ import java.lang.annotation.Target;
  */
 @Target({ElementType.FIELD, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
-public @interface Transient {
+public @interface Scenario {
+	EntityMapper.ColumnScenario value() default EntityMapper.ColumnScenario.COMMON;
 }

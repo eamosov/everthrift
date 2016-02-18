@@ -32,6 +32,7 @@ import com.datastax.driver.core.ConsistencyLevel;
 import com.datastax.driver.core.Metadata;
 import com.datastax.driver.core.TypeCodec;
 import com.datastax.driver.core.UserType;
+import com.datastax.driver.mapping.EntityMapper.ColumnScenario;
 import com.datastax.driver.mapping.MethodMapper.ParamMapper;
 import com.datastax.driver.mapping.annotations.Accessor;
 import com.datastax.driver.mapping.annotations.ClusteringColumn;
@@ -291,7 +292,7 @@ public class AnnotationParser implements EntityParser{
     }
     
 	private static FieldDescriptor fieldDescriptor(Field field){
-		return new FieldDescriptor(AnnotationParser.columnName(field), field.getName(), AnnotationParser.kind(field), (TypeToken<Object>) TypeToken.of(field.getGenericType()), AnnotationParser.customCodec(field));
+		return new FieldDescriptor(AnnotationParser.columnName(field), field.getName(), AnnotationParser.kind(field), ColumnScenario.COMMON, (TypeToken<Object>) TypeToken.of(field.getGenericType()), AnnotationParser.customCodec(field));
     }    
 
     private static Class<? extends TypeCodec<?>> getCodecClass(Field field) {

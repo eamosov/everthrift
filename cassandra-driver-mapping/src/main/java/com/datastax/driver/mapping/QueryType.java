@@ -101,7 +101,7 @@ class QueryType {
                     where.and(eq(mapper.getPrimaryKeyColumn(i).getColumnName(), bindMarker()));
                 
                 if (options.containsKey(Option.Type.ONLY_IF)){
-                	update.onlyIf(eq(mapper.versionColumn.getColumnName(), bindMarker()));
+                	update.onlyIf(eq(mapper.getVersionColumn().getColumnName(), bindMarker()));
                 }
                 
                 for (Mapper.Option opt : options.values()) {
@@ -115,7 +115,7 @@ class QueryType {
             }
             case GET: {
                 Select.Selection selection = select();
-                for (ColumnMapper cm : mapper.allColumns()) {
+                for (ColumnMapper cm : columns) {
                     Select.SelectionOrAlias column = (cm.kind == ColumnMapper.Kind.COMPUTED)
                             ? ((Select.SelectionOrAlias) selection).raw(cm.getColumnName())
                             : selection.column(cm.getColumnName());
@@ -142,7 +142,7 @@ class QueryType {
             }
             case GET_ALL: {
                 Select.Selection selection = select();
-                for (ColumnMapper cm : mapper.allColumns()) {
+                for (ColumnMapper cm : columns) {
                     Select.SelectionOrAlias column = (cm.kind == ColumnMapper.Kind.COMPUTED)
                             ? ((Select.SelectionOrAlias) selection).raw(cm.getColumnName())
                             : selection.column(cm.getColumnName());

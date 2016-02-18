@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.datastax.driver.core.Metadata;
 import com.datastax.driver.core.TypeCodec;
+import com.datastax.driver.mapping.EntityMapper.ColumnScenario;
 import com.google.common.reflect.TypeToken;
 
 public abstract class ColumnMapper<T> {
@@ -36,6 +37,7 @@ public abstract class ColumnMapper<T> {
     protected final TypeToken<Object> fieldType;
     protected final Kind kind;
     protected final TypeCodec<Object> customCodec;
+    protected final ColumnScenario columnScenario;
 
     protected ColumnMapper(FieldDescriptor field, AtomicInteger columnCounter) {
         this.columnName = field.getColumnName();
@@ -46,6 +48,7 @@ public abstract class ColumnMapper<T> {
         this.fieldType = field.getFieldType();
         this.kind = field.getKind();
         this.customCodec = field.getCustomCodec();
+        this.columnScenario = field.getColumnScenario();
     }
 
     public abstract Object getValue(T entity);

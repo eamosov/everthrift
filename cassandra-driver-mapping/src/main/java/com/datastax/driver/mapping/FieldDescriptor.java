@@ -1,9 +1,8 @@
 package com.datastax.driver.mapping;
 
-import java.lang.reflect.Field;
-
 import com.datastax.driver.core.TypeCodec;
 import com.datastax.driver.mapping.ColumnMapper.Kind;
+import com.datastax.driver.mapping.EntityMapper.ColumnScenario;
 import com.google.common.reflect.TypeToken;
 
 public class FieldDescriptor {
@@ -13,19 +12,21 @@ public class FieldDescriptor {
 	private Kind kind;
 	private TypeToken<Object> fieldType;
 	private TypeCodec<Object> customCodec;
+	private ColumnScenario columnScenario;
 
     public static String newAlias(FieldDescriptor field, int columnNumber) {
         return "col" + columnNumber;
 
     }
     
-    public FieldDescriptor(String columnName, String fieldName, Kind kind, TypeToken<Object> fieldType, TypeCodec<Object> customCodec) {
+    public FieldDescriptor(String columnName, String fieldName, Kind kind, ColumnScenario columnScenario, TypeToken<Object> fieldType, TypeCodec<Object> customCodec) {
 		super();
 		this.columnName = columnName;
 		this.fieldName = fieldName;
 		this.kind = kind;
 		this.fieldType = fieldType;
 		this.customCodec = customCodec;
+		this.columnScenario = columnScenario;
 	}
 
 	public String getColumnName() {
@@ -66,6 +67,14 @@ public class FieldDescriptor {
 
 	public void setFieldType(TypeToken<Object> fieldType) {
 		this.fieldType = fieldType;
+	}
+
+	public ColumnScenario getColumnScenario() {
+		return columnScenario;
+	}
+
+	public void setColumnScenario(ColumnScenario columnScenario) {
+		this.columnScenario = columnScenario;
 	}
 
 }
