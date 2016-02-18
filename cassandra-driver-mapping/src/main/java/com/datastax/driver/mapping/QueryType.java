@@ -43,7 +43,7 @@ import com.google.common.base.Objects;
 
 class QueryType {
 
-    private enum Kind {SAVE, GET, DEL, SLICE, REVERSED_SLICE, UPDATE}
+    private enum Kind {SAVE, GET, GET_ALL, DEL, SLICE, REVERSED_SLICE, UPDATE}
 
     private final Kind kind;
 
@@ -56,6 +56,7 @@ class QueryType {
     public static final QueryType SAVE = new QueryType(Kind.SAVE);
     public static final QueryType DEL = new QueryType(Kind.DEL);
     public static final QueryType GET = new QueryType(Kind.GET);
+    public static final QueryType GET_ALL = new QueryType(Kind.GET_ALL);
     public static final QueryType UPDATE = new QueryType(Kind.UPDATE);
 
     private QueryType(Kind kind) {
@@ -139,6 +140,30 @@ class QueryType {
                     opt.checkValidFor(QueryType.GET, manager);
                 return select.toString();
             }
+            case GET_ALL: {
+                Select.Selection selection = select();
+                for (ColumnMapper cm : mapper.allColumns()) {
+                    Select.SelectionOrAlias column = (cm.kind == ColumnMapper.Kind.COMPUTED)
+                            ? ((Select.SelectionOrAlias) selection).raw(cm.getColumnName())
+                            : selection.column(cm.getColumnName());
+
+                    if (cm.getAlias() == null) {
+                        selection = column;
+                    } else {
+                        selection = column.as(cm.getAlias());
+                    }
+                }
+                Select select;
+                if (table == null) {
+                    select = selection.from(mapper.getKeyspace(), mapper.getTable());
+                } else {
+                    select = selection.from(table);
+                }
+
+                for (Mapper.Option opt : options.values())
+                    opt.checkValidFor(QueryType.GET_ALL, manager);
+                return select.toString();
+            }            
             case DEL: {
                 Delete delete = table == null
                         ? delete().all().from(mapper.getKeyspace(), mapper.getTable())

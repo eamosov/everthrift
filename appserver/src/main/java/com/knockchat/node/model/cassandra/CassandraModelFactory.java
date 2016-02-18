@@ -7,6 +7,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
 
 import javax.annotation.PostConstruct;
 
@@ -545,9 +546,7 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 		return mapper.get(extractCompaundPk(id));
 	}
 	
-	public abstract Iterator<PK> getAllIds();
-
-	public final <T> Iterator<T> getAll(String fieldName){
+	public final <T> Iterator<T> fetchAll(String fieldName){
 		
 		final Select.Selection select = QueryBuilder.select();
 		
@@ -696,5 +695,15 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 	public void putEntity(ENTITY entity) {
 		putEntity(entity, true);
 	}
-		
+
+	public void fetchAll(final int batchSize, Consumer<List<ENTITY>> consumer){
+				
+		final Iterator<ENTITY> r = mapper.getAll(Option.fetchSize(batchSize)).iterator();
+			
+		while(r.hasNext()){
+			final List<ENTITY> batch = Lists.newArrayList(Iterators.limit(r, batchSize));
+			consumer.accept(batch);
+		}
+    }
+	
 }

@@ -5,16 +5,19 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.thrift.TException;
 import org.hibernate.SessionFactory;
 import org.hibernate.StaleStateException;
+import org.hibernate.criterion.Restrictions;
 import org.springframework.dao.ConcurrencyFailureException;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.google.common.base.Throwables;
+import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.knockchat.appserver.model.CreatedAtIF;
 import com.knockchat.appserver.model.UpdatedAtIF;
@@ -293,6 +296,15 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
 		return r.first;
 	}
 	
+	public void fetchAll(final int batchSize, Consumer<List<ENTITY>> consumer){
+		
+		final List<ENTITY> entities =  getDao().findByCriteria(Restrictions.sqlRestriction("true"), null);
+		
+		for (List<ENTITY> batch : Lists.partition(entities, batchSize))
+			consumer.accept(batch);
+    }
+
+	
 	@Override
 	final public SyncInsertEntityEvent<PK, ENTITY> syncInsertEntityEvent(ENTITY entity){
 		throw new NotImplementedException();
@@ -307,6 +319,7 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
 	final public SyncDeleteEntityEvent<PK, ENTITY> syncDeleteEntityEvent(ENTITY entity){
 		throw new NotImplementedException();
 	}
+	
 	
 	
 }

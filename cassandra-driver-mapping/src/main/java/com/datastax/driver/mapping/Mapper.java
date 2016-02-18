@@ -79,6 +79,7 @@ public class Mapper<T> {
     private volatile EnumMap<Option.Type, Option> defaultSaveOptions;
     private volatile EnumMap<Option.Type, Option> defaultUpdateOptions;
     private volatile EnumMap<Option.Type, Option> defaultGetOptions;
+    private volatile EnumMap<Option.Type, Option> defaultGetAllOptions;
     private volatile EnumMap<Option.Type, Option> defaultDeleteOptions;
     
 
@@ -119,6 +120,7 @@ public class Mapper<T> {
         this.defaultSaveOptions = NO_OPTIONS;
         this.defaultUpdateOptions = NO_OPTIONS;
         this.defaultGetOptions = NO_OPTIONS;
+        this.defaultGetAllOptions = NO_OPTIONS;
         this.defaultDeleteOptions = NO_OPTIONS;
     }
 
@@ -558,6 +560,34 @@ public class Mapper<T> {
         return bs;
     }
 
+    private Statement getAllQuery(EnumMap<Option.Type, Option> options) {
+
+
+        BoundStatement bs = getPreparedQuery(QueryType.GET_ALL, options).bind();
+        int i = 0;
+
+        if (mapper.readConsistency != null)
+            bs.setConsistencyLevel(mapper.readConsistency);
+
+        for (Option opt : options.values()) {
+            opt.checkValidFor(QueryType.GET_ALL, manager);
+            opt.addToPreparedStatement(bs, i);
+            if (opt.isIncludedInQuery())
+                i++;
+        }
+        return bs;
+    }
+    
+    public Statement getAllQuery(Option... _options) {
+        EnumMap<Option.Type, Option> options = new EnumMap<Option.Type, Option>(defaultGetAllOptions);
+
+        for (Option o : _options) {
+        	options.put(o.type, o);
+        }
+        return getAllQuery(options);
+    }
+    
+
     /**
      * Fetch an entity based on its primary key.
      * <p/>
@@ -591,6 +621,10 @@ public class Mapper<T> {
      */
     public ListenableFuture<T> getAsync(Object... objects) {
         return Futures.transform(session().executeAsync(getQuery(objects)), mapOneFunction);
+    }
+    
+    public Result<T> getAll(Option... options) {
+        return mapAliased(session().execute(getAllQuery(options)));
     }
 
     /**
@@ -894,6 +928,16 @@ public class Mapper<T> {
     public void resetDefaultGetOptions() {
         this.defaultGetOptions = NO_OPTIONS;
     }
+    
+    public void setDefaultGetAllOptions(Option... options) {
+        this.defaultGetAllOptions = toMap(options);
+
+    }
+
+    public void resetDefaultGetAllOptions() {
+        this.defaultGetAllOptions = NO_OPTIONS;
+    }
+
 
     /**
      * Set the default delete {@link Option} for this object mapper, that will be used
@@ -957,7 +1001,7 @@ public class Mapper<T> {
      */
     public static abstract class Option {
 
-        enum Type {TTL, TIMESTAMP, CL, TRACING, SAVE_NULL_FIELDS, IF_NOT_EXISTS, IF_EXISTS, ONLY_IF}
+        enum Type {TTL, TIMESTAMP, CL, TRACING, SAVE_NULL_FIELDS, IF_NOT_EXISTS, IF_EXISTS, ONLY_IF, FETCH_SIZE}
 
         final Type type;
 
@@ -1042,6 +1086,11 @@ public class Mapper<T> {
         public static Option onlyIf(){
         	return OnlyIf.instance;
         }
+        
+        public static Option fetchSize(int fetchSize) {
+            return new FetchSize(fetchSize);
+        }
+
 
         public Type getType() {
             return this.type;
@@ -1374,6 +1423,46 @@ public class Mapper<T> {
 			@Override
 			void checkValidFor(QueryType qt, MappingManager manager) throws IllegalArgumentException {
 				checkArgument(qt == QueryType.UPDATE, "ONLY_IF option is only allowed in update queries");				
+			}
+
+			@Override
+			boolean isIncludedInQuery() {
+				return false;
+			}        	
+        }
+        
+        static class FetchSize extends Option {
+        	
+        	private int fetchSize;
+
+        	FetchSize(int fetchSize) {
+				super(Type.FETCH_SIZE);
+				this.fetchSize = fetchSize;
+			}
+
+			@Override
+			void appendTo(Insert insert) {
+				throw new UnsupportedOperationException("shouldn't be called");
+			}
+
+			@Override
+			void appendTo(Delete.Options usings) {
+				throw new UnsupportedOperationException("shouldn't be called");				
+			}
+
+			@Override
+			void appendTo(Update update) {
+				throw new UnsupportedOperationException("shouldn't be called");
+			}
+
+			@Override
+			void addToPreparedStatement(BoundStatement bs, int i) {
+				bs.setFetchSize(fetchSize);
+			}
+
+			@Override
+			void checkValidFor(QueryType qt, MappingManager manager) throws IllegalArgumentException {
+				checkArgument(qt == QueryType.GET_ALL, "FETCH_SIZE option is only allowed in GET_ALL queries");				
 			}
 
 			@Override
