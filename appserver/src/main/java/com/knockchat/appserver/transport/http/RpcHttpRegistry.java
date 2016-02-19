@@ -2,13 +2,10 @@ package com.knockchat.appserver.transport.http;
 
 import java.util.ArrayList;
 
-import org.springframework.stereotype.Component;
-
 import com.knockchat.appserver.AppserverApplication;
 import com.knockchat.appserver.controller.ThriftControllerRegistry;
 import com.knockchat.appserver.thrift.cluster.NodeControllers;
 
-@Component
 public class RpcHttpRegistry extends ThriftControllerRegistry{
 
 	public RpcHttpRegistry() {

@@ -2,9 +2,7 @@ package com.knockchat.appserver.controller;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
-import java.util.Collections;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
@@ -36,8 +34,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.knockchat.appserver.cluster.JgroupsMessageDispatcher;
-import com.knockchat.appserver.cluster.thrift.JGroupsThrift;
+import com.knockchat.appserver.cluster.MulticastThriftTransport;
 import com.knockchat.appserver.monitoring.RpsServlet;
 import com.knockchat.appserver.monitoring.RpsServlet.DsName;
 import com.knockchat.appserver.transport.asynctcp.RpcAsyncTcp;
@@ -66,14 +63,11 @@ public class ThriftProcessor implements TProcessor{
 	
 	private final ThriftControllerRegistry registry;
 	
-	@Autowired
-	private JGroupsThrift jGroupsThrift;
-	
 	@Resource
 	private  ThreadPoolTaskExecutor myExecutor;
 	
 	@Autowired
-	private JgroupsMessageDispatcher jgroupsMessageDispatcher;
+	private MulticastThriftTransport clusterThriftTransport;
 	
 	@Autowired
 	protected ApplicationContext applicationContext;
@@ -83,11 +77,14 @@ public class ThriftProcessor implements TProcessor{
 	
 	private final TProtocolFactory protocolFactory;
 	
+	public static ThriftProcessor create(ApplicationContext context, ThriftControllerRegistry registry, TProtocolFactory protocolFactory){
+		return context.getBean(ThriftProcessor.class, registry, protocolFactory);
+	}
+	
 	public ThriftProcessor(ThriftControllerRegistry registry, TProtocolFactory protocolFactory){
 		this.registry = registry;
 		this.protocolFactory = protocolFactory;
-	}
-	
+	}	
 	
 	public boolean processOnOpen(MessageWrapper in, ThriftClient thriftClient){	
 		for (Class<ConnectionStateHandler> cls: registry.getStateHandlers()){
@@ -150,7 +147,7 @@ public class ThriftProcessor implements TProcessor{
 			
 			final Logger log = LoggerFactory.getLogger(controllerInfo.getControllerCls());
 			logStart(log, thriftClient, msg.name, in.getSessionId(), args);									
-			final ThriftController controller = controllerInfo.makeController(args, new MessageWrapper(null).copyAttributes(in), logEntry, msg.seqid, thriftClient, registry.getType(), this.protocolFactory);
+			final ThriftController controller = controllerInfo.makeController(args, new MessageWrapper(null).copyAttributes(in), logEntry, msg.seqid, thriftClient, registry.getType(), this.protocolFactory, true);
 			
 			try{
 				final Object ret = controller.handle(args);
@@ -181,9 +178,8 @@ public class ThriftProcessor implements TProcessor{
 			@Override
 			public Map<Address, Object> call() {
 				try {
-					final Set<Address> me = Collections.singleton(jgroupsMessageDispatcher.getLocalAddress());
 					final InvocationInfo ii = new InvocationInfo(msg.name, args, ctrl.getControllerCls().getConstructor());
-					final Map<Address, Object> clusterResults = jGroupsThrift.thriftCall(null, me, ann.timeout(), msg.seqid, ann.value(), ii);
+					final Map<Address, Object> clusterResults = clusterThriftTransport.thriftCall(false, ann.timeout(), msg.seqid, ann.value(), ii);
 					log.debug("Cluster results:{}", clusterResults);
 					return clusterResults;
 				} catch (TException | NoSuchMethodException | SecurityException e) {
@@ -307,7 +303,7 @@ public class ThriftProcessor implements TProcessor{
 			
 			final LogEntry logEntry = new LogEntry(msg.name);
 			
-			final ThriftController controller = controllerInfo.makeController(args, attributes, logEntry, msg.seqid, thriftClient, registry.getType(), this.protocolFactory);			
+			final ThriftController controller = controllerInfo.makeController(args, attributes, logEntry, msg.seqid, thriftClient, registry.getType(), this.protocolFactory, false);			
 			
 			/*
 			 * TODO т.к. текущий метов обрабатывает только @RpcSyncTcp контроллеры, то циклический вызовов не получится,

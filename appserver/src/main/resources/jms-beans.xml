@@ -15,29 +15,26 @@
 		http://www.springframework.org/schema/cache http://www.springframework.org/schema/cache/spring-cache.xsd
 		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task.xsd">
 
-  <context:property-placeholder />
+    <!-- a pooling based JMS provider -->
+    <bean id="jmsFactory" class="org.apache.activemq.pool.PooledConnectionFactory" destroy-method="stop">
+        <property name="connectionFactory">
+            <bean class="org.apache.activemq.ActiveMQConnectionFactory">
+				<property name="redeliveryPolicy">
+                    <bean class="org.apache.activemq.RedeliveryPolicy">
+                        <property name="initialRedeliveryDelay" value="${jms.redelivery.init.delay}"/>
+                        <property name="maximumRedeliveries" value="${jms.redelivery.count}"/>
+                        <property name="useExponentialBackOff" value="true"/>
+                    </bean>
+                </property>
+                <property name="brokerURL" value="${activemq.url}"/>
+            </bean>
+        </property>
+    </bean>
 
-  <task:executor id="myExecutor" pool-size="2-1048576" keep-alive="10" queue-capacity="0"/>  
-  <task:scheduler id="myScheduler" pool-size="10"/>
-  <task:annotation-driven executor="myExecutor" scheduler="myScheduler"/>
+    <!-- Spring JMS Template -->
+    <bean id="myJmsTemplate" class="org.springframework.jms.core.JmsTemplate">
+        <!--<property name="defaultDestinationName" value="${jms.destination}"/>-->
+        <property name="connectionFactory" ref="jmsFactory"/>
+    </bean>
 
-  <int:poller id="defaultPoller" default="true" receive-timeout="5000" fixed-rate="1"/>
-	    
-  <bean id="tBinaryProtocol" class="org.apache.thrift.protocol.TBinaryProtocol.Factory"></bean>  
-  <bean id="tZlibTransport" class="org.apache.thrift.transport.TKnockZlibTransport.Factory"></bean>  
-    
-  <context:mbean-server/>
-  <context:mbean-export registration="ignoreExisting" server="mbeanServer"/>
-
-  <bean id="jmxServerConnector" class="org.springframework.jmx.support.ConnectorServerFactoryBean">
-   	<property name="threaded" value="true"/>
-   	<property name="daemon" value="true"/>
-   	<property name="server" ref="mbeanServer"/>
-   	<property name="serviceUrl" value="${jmx.serviceUrl}"/>
-  </bean>	
-
-  <bean class="org.springframework.jmx.support.MBeanServerFactoryBean">
-       <property name="locateExistingServerIfPossible" value="true" />
-  </bean>
-				    	
 </beans>

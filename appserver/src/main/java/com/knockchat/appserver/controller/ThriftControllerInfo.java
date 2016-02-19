@@ -89,10 +89,10 @@ public class ThriftControllerInfo {
 		}		
 	}
 	
-	public ThriftController makeController(TBase args, MessageWrapper attributes, LogEntry logEntry, int seqId, ThriftClient thriftClient, Class<? extends Annotation> registryAnn, TProtocolFactory protocolFactory) throws TException{
+	public ThriftController makeController(TBase args, MessageWrapper attributes, LogEntry logEntry, int seqId, ThriftClient thriftClient, Class<? extends Annotation> registryAnn, TProtocolFactory protocolFactory, boolean allowAsyncAnswer) throws TException{
 		
 		final ThriftController ctrl = context.getBean(controllerCls);
-		ctrl.setup(args, this, attributes, logEntry, seqId, thriftClient, registryAnn, protocolFactory);
+		ctrl.setup(args, this, attributes, logEntry, seqId, thriftClient, registryAnn, protocolFactory, allowAsyncAnswer);
 		return ctrl;
 	}
 

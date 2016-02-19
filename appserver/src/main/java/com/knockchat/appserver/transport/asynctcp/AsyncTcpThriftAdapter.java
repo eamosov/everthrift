@@ -1,5 +1,7 @@
 package com.knockchat.appserver.transport.asynctcp;
 
+import javax.annotation.Resource;
+
 import org.apache.thrift.protocol.TProtocolFactory;
 import org.apache.thrift.transport.TMemoryBuffer;
 import org.apache.thrift.transport.TMemoryInputTransport;
@@ -15,26 +17,26 @@ import org.springframework.messaging.support.ChannelInterceptor;
 
 import com.knockchat.appserver.controller.MessageWrapper;
 import com.knockchat.appserver.controller.ThriftProcessor;
-import com.knockchat.appserver.controller.ThriftProcessorFactory;
 
 public class AsyncTcpThriftAdapter implements InitializingBean, ChannelInterceptor{
 	
 	public static Logger log = LoggerFactory.getLogger(AsyncTcpThriftAdapter.class);
 	
 	@Autowired
-	private ApplicationContext applicationContext;
+	private ApplicationContext context;
 	
 	@Autowired
 	private RpcAsyncTcpRegistry registry;
 	
-	@Autowired
-	private ThriftProcessorFactory tpf;
+	@Resource
+	private MessageChannel outChannel;
+	
 	private ThriftProcessor tp;
 	
 	private final TProtocolFactory protocolFactory;
 	
 	public AsyncTcpThriftAdapter(TProtocolFactory protocolFactory){
-		this.protocolFactory = protocolFactory;
+		this.protocolFactory = protocolFactory;		
 	}
 	
 	public Object handle(Message m){
@@ -42,7 +44,7 @@ public class AsyncTcpThriftAdapter implements InitializingBean, ChannelIntercept
 		log.debug("{}, adapter={}, processor={}", new Object[]{m, this, tp});
 		
 		try{
-			return tp.process(new MessageWrapper(new TMemoryInputTransport((byte[])m.getPayload())).setMessageHeaders(m.getHeaders()).setOutChannel(applicationContext.getBean("outChannel", MessageChannel.class)), null);
+			return tp.process(new MessageWrapper(new TMemoryInputTransport((byte[])m.getPayload())).setMessageHeaders(m.getHeaders()).setOutChannel(outChannel), null);
 		} catch (Exception e) {
 			log.error("Exception while execution thrift processor:", e);
 			return null;
@@ -51,7 +53,7 @@ public class AsyncTcpThriftAdapter implements InitializingBean, ChannelIntercept
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
-		tp = tpf.getThriftProcessor(registry, protocolFactory);		
+		tp = ThriftProcessor.create(context, registry, protocolFactory);		
 	}
 
 	@Override

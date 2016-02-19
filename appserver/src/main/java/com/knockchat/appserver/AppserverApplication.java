@@ -53,6 +53,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.core.env.Environment;
 import org.springframework.core.env.MapPropertySource;
 import org.springframework.core.env.PropertySource;
 import org.springframework.core.env.SimpleCommandLinePropertySource;
@@ -65,6 +66,14 @@ import org.springframework.web.servlet.DispatcherServlet;
 import org.springframework.web.servlet.handler.AbstractHandlerMapping;
 
 import com.google.common.base.Throwables;
+import com.knockchat.appserver.configs.AsyncTcpThrift;
+import com.knockchat.appserver.configs.Config;
+import com.knockchat.appserver.configs.Http;
+import com.knockchat.appserver.configs.JGroups;
+import com.knockchat.appserver.configs.Jms;
+import com.knockchat.appserver.configs.LoopbackJGroups;
+import com.knockchat.appserver.configs.LoopbackJms;
+import com.knockchat.appserver.configs.TcpThrift;
 import com.knockchat.appserver.monitoring.RpsServlet;
 import com.knockchat.appserver.thrift.cluster.NodeAddress;
 import com.knockchat.appserver.transport.http.BinaryThriftServlet;
@@ -88,7 +97,6 @@ public class AppserverApplication {
     private final List<String> scanPathList = new ArrayList<String>();
     @SuppressWarnings("rawtypes")
     private final List<PropertySource> propertySourceList = new ArrayList<PropertySource>();
-    private ThriftServer thriftServer;
     private Server jettyServer;
     public NodeAddress jettyAddress;
 
@@ -104,6 +112,31 @@ public class AppserverApplication {
         env = context.getEnvironment();
 
         scanPathList.add("com.knockchat.appserver");
+    }
+    
+
+    private boolean isJettyEnabled(){
+    	return !env.getProperty("jetty", "false").equalsIgnoreCase("false");
+    }
+
+    private boolean isThriftEnabled(){
+    	return !env.getProperty("thrift", "false").equalsIgnoreCase("false");
+    }
+
+    private boolean isAsyncThriftEnabled(){
+    	return !env.getProperty("thrift.async", "false").equalsIgnoreCase("false");
+    }
+
+    public static boolean isJGroupsEnabled(Environment env){
+    	return !env.getProperty("jgroups", "false").equalsIgnoreCase("false");
+    }
+
+    private boolean isJGroupsEnabled(){
+    	return isJGroupsEnabled(env);
+    }
+
+    private boolean isJmsEnabled(){
+    	return !env.getProperty("jms", "false").equalsIgnoreCase("false");
     }
 
     @SuppressWarnings("rawtypes")
@@ -137,8 +170,8 @@ public class AppserverApplication {
         final boolean nothrift = !env.getProperty("nothrift", "false").equalsIgnoreCase("false");
 
         try {
-            if (env.getProperty("listen.port").equals("0"))
-                addProperty("listen.port", SocketUtils.findAvailableServerSocket());
+            if (env.getProperty("thrift.async.port").equals("0"))
+                addProperty("thrift.async.port", SocketUtils.findAvailableServerSocket());
 
             if (!nothrift && env.getProperty("thrift.port").equals("0"))
                 addProperties("thrift.port", SocketUtils.findAvailableServerSocket());
@@ -146,14 +179,31 @@ public class AppserverApplication {
         } catch (IOException e1) {
             throw new RuntimeException(e1);
         }
-
-        log.info("Try listen {}:{}", env.getProperty("listen.host"), env.getProperty("listen.port"));
         
-        System.setProperty("multicast.bind_addr", env.getProperty("multicast.bind_addr"));
+        System.setProperty("jgroups.multicast.bind_addr", env.getProperty("jgroups.multicast.bind_addr"));
 
         context.register(Config.class);
-        context.registerShutdownHook();
+        
+        if (isAsyncThriftEnabled())
+        	context.register(AsyncTcpThrift.class);
+        
+        if (isThriftEnabled())
+        	context.register(TcpThrift.class);
 
+        if (isJGroupsEnabled())
+        	context.register(JGroups.class);
+        else        
+        	context.register(LoopbackJGroups.class);
+        
+        if (isJmsEnabled())
+        	context.register(Jms.class);
+        else
+        	context.register(LoopbackJms.class);
+        
+        if (isJettyEnabled()) {
+        	context.register(Http.class);
+        }
+        
         context.refresh();
 
         if (webContextConfigLocation == null)
@@ -163,15 +213,9 @@ public class AppserverApplication {
                 throw new RuntimeException(e);
             }
 
-        if (!nothrift){
-        	thriftServer = context.getBean(ThriftServer.class);
-        	thriftServer.setPort(Integer.parseInt(env.getProperty("thrift.port")));
-        	thriftServer.setHost(env.getProperty("thrift.host"));
-        }
-
         initialized = true;
 
-        if (env.getProperty("jetty") != null) {
+        if (isJettyEnabled()) {
             initJetty();
         }
         
@@ -368,10 +412,6 @@ public class AppserverApplication {
     }
 
     public synchronized void start() {
-    	
-    	if (thriftServer !=null)
-    		thriftServer.start();
-
         try {
             if (jettyServer != null)
                 jettyServer.start();
@@ -393,9 +433,6 @@ public class AppserverApplication {
             throw new RuntimeException(e);
         }
 
-        if (thriftServer !=null)
-        	thriftServer.destroy();
-        
         context.close();
     }
 

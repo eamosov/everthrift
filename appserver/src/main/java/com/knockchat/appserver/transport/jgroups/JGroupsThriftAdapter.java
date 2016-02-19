@@ -9,13 +9,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
-import org.springframework.stereotype.Component;
 
 import com.knockchat.appserver.controller.MessageWrapper;
 import com.knockchat.appserver.controller.ThriftProcessor;
-import com.knockchat.appserver.controller.ThriftProcessorFactory;
 
-@Component("jGroupsThriftAdapter")
 public class JGroupsThriftAdapter implements InitializingBean{
 	
 	public static Logger log = LoggerFactory.getLogger(JGroupsThriftAdapter.class);
@@ -28,8 +25,6 @@ public class JGroupsThriftAdapter implements InitializingBean{
 	@Autowired
 	private RpcJGroupsRegistry rpcJGroupsRegistry;
 	
-	@Autowired
-	private ThriftProcessorFactory thriftProcessorFactory;
 	private ThriftProcessor thriftProcessor;
 	
 	public Object handleIn(Message<MessageWrapper> m){
@@ -70,7 +65,7 @@ public class JGroupsThriftAdapter implements InitializingBean{
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
-		thriftProcessor = thriftProcessorFactory.getThriftProcessor(rpcJGroupsRegistry, new TBinaryProtocol.Factory());		
+		thriftProcessor = ThriftProcessor.create(applicationContext, rpcJGroupsRegistry, new TBinaryProtocol.Factory());		
 	}
 
 }

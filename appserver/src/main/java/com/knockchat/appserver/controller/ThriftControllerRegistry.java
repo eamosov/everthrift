@@ -26,7 +26,7 @@ import com.knockchat.appserver.thrift.cluster.NodeControllers;
 
 public abstract class ThriftControllerRegistry implements InitializingBean{
 	
-	public static final Logger log = LoggerFactory.getLogger(ThriftControllerRegistry.class);
+	public final Logger log = LoggerFactory.getLogger(this.getClass());
 	
 	@Autowired
 	protected ApplicationContext applicationContext;
