@@ -34,7 +34,6 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.knockchat.appserver.model.lazy.LazyLoadManager;
-import com.knockchat.appserver.transport.http.RpcHttp;
 import com.knockchat.utils.ExecutionStats;
 import com.knockchat.utils.Pair;
 import com.knockchat.utils.thrift.ThriftClient;
@@ -63,6 +62,8 @@ public abstract class ThriftController<ArgsType extends TBase, ResultType> {
 	
 	protected Class<? extends Annotation> registryAnn;
 	protected TProtocolFactory protocolFactory;
+	protected boolean allowAsyncAnswer;
+
 	
 	/**
 	 * Флаг, показывающий был лио отправлен какой-либо ответ (результат или
@@ -78,7 +79,7 @@ public abstract class ThriftController<ArgsType extends TBase, ResultType> {
 		return "";
 	}
 		
-	public void setup (ArgsType args, ThriftControllerInfo info, MessageWrapper attributes, LogEntry logEntry, int seqId, ThriftClient thriftClient, Class<? extends Annotation> registryAnn, TProtocolFactory protocolFactory){
+	public void setup (ArgsType args, ThriftControllerInfo info, MessageWrapper attributes, LogEntry logEntry, int seqId, ThriftClient thriftClient, Class<? extends Annotation> registryAnn, TProtocolFactory protocolFactory, boolean allowAsyncAnswer){
 		this.args = args;
 		this.info = info;
 		this.logEntry = logEntry;
@@ -88,6 +89,7 @@ public abstract class ThriftController<ArgsType extends TBase, ResultType> {
 		this.protocolFactory = protocolFactory;
 		this.attributes = attributes;		
 		this.startNanos = System.nanoTime();
+		this.allowAsyncAnswer = allowAsyncAnswer;
 		
 		try{
 			this.ds = context.getBean(DataSource.class);
@@ -133,7 +135,7 @@ public abstract class ThriftController<ArgsType extends TBase, ResultType> {
 	
 	protected ResultType waitForAnswer(ListenableFuture<ResultType> lf) throws TApplicationException{
 		
-		if (this.registryAnn == RpcHttp.class){
+		if (!allowAsyncAnswer){
 			ResultType result;
 			try {
 				result = lf.get();

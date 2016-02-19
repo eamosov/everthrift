@@ -20,6 +20,7 @@ import org.apache.thrift.TException;
 import org.jgroups.Address;
 import org.jgroups.MembershipListener;
 import org.jgroups.View;
+import org.jgroups.blocks.ResponseMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
@@ -40,16 +41,16 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.TreeMultimap;
 import com.google.gson.Gson;
-import com.knockchat.appserver.cluster.JgroupsMessageDispatcher;
+import com.knockchat.appserver.cluster.MulticastThriftTransport;
 import com.knockchat.appserver.cluster.NodeControllersModel;
 import com.knockchat.appserver.cluster.NodeListModel;
-import com.knockchat.appserver.cluster.thrift.JGroupsThrift;
 import com.knockchat.appserver.thrift.cluster.ClusterConfiguration;
 import com.knockchat.appserver.thrift.cluster.ClusterService;
 import com.knockchat.appserver.thrift.cluster.Node;
 import com.knockchat.appserver.thrift.cluster.NodeControllers;
 import com.knockchat.appserver.thrift.cluster.NodeList;
 import com.knockchat.appserver.thrift.cluster.VersionnedService;
+import com.knockchat.appserver.transport.jgroups.JgroupsMessageDispatcher;
 import com.knockchat.utils.GsonSerializer;
 import com.knockchat.utils.Pair;
 
@@ -62,10 +63,7 @@ public class ScanConfigurationTask implements InitializingBean, DisposableBean, 
     private static final String DELIM = ":";
 
     @Autowired
-    private JgroupsMessageDispatcher jgroupsMessageDispatcher;
-
-    @Autowired
-    private JGroupsThrift jGroupsThrift;
+    private MulticastThriftTransport clusterThriftTransport;
 
     @Autowired
     private ApplicationContext applicationContext;
@@ -102,7 +100,7 @@ public class ScanConfigurationTask implements InitializingBean, DisposableBean, 
 
     public Pair<List<NodeControllersModel>, List<Node>> clusterServiceGetConfiguration() throws TException {
 
-        final Map<Address, Node> clusterAnswer = jGroupsThrift.thriftCall(null, 500, 0, onIfaceAsAsync(ClusterService.Iface.class).getNodeConfiguration());
+        final Map<Address, Node> clusterAnswer = clusterThriftTransport.thriftCall(true, 500, 0, ResponseMode.GET_ALL, onIfaceAsAsync(ClusterService.Iface.class).getNodeConfiguration());
 
         final List<NodeControllersModel> ret = new ArrayList<NodeControllersModel>();
         final List<Node> nodes = Lists.newArrayList();
@@ -245,12 +243,14 @@ public class ScanConfigurationTask implements InitializingBean, DisposableBean, 
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        jgroupsMessageDispatcher.addMembershipListener(this);
+    	if (clusterThriftTransport instanceof JgroupsMessageDispatcher)
+    		((JgroupsMessageDispatcher)clusterThriftTransport).addMembershipListener(this);
     }
 
     @Override
     public void destroy() throws Exception {
-        jgroupsMessageDispatcher.removeMembershipListener(this);
+    	if (clusterThriftTransport instanceof JgroupsMessageDispatcher)
+    		((JgroupsMessageDispatcher)clusterThriftTransport).removeMembershipListener(this);
     }
 
     @Override

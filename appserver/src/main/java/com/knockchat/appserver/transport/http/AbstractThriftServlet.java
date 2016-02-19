@@ -17,10 +17,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 
 import com.knockchat.appserver.controller.MessageWrapper;
 import com.knockchat.appserver.controller.ThriftProcessor;
-import com.knockchat.appserver.controller.ThriftProcessorFactory;
 
 public abstract class AbstractThriftServlet extends HttpServlet implements InitializingBean {
 	
@@ -29,7 +29,7 @@ public abstract class AbstractThriftServlet extends HttpServlet implements Initi
 	private static final Logger log = LoggerFactory.getLogger(AbstractThriftServlet.class);
 	
 	@Autowired
-	private ThriftProcessorFactory tpf;
+	private ApplicationContext context;
 	
 	@Autowired
 	private RpcHttpRegistry registry;
@@ -86,7 +86,7 @@ public abstract class AbstractThriftServlet extends HttpServlet implements Initi
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
-        tp = tpf.getThriftProcessor(registry, getProtocolFactory());	
+        tp = ThriftProcessor.create(context, registry, getProtocolFactory());	
 	}
 
 

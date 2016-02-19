@@ -47,7 +47,6 @@ import com.google.common.util.concurrent.SettableFuture;
 import com.knockchat.appserver.controller.MessageWrapper;
 import com.knockchat.appserver.controller.MessageWrapper.WebsocketContentType;
 import com.knockchat.appserver.controller.ThriftProcessor;
-import com.knockchat.appserver.controller.ThriftProcessorFactory;
 import com.knockchat.appserver.transport.AsyncRegister;
 import com.knockchat.utils.thrift.AbstractThriftClient;
 import com.knockchat.utils.thrift.InvocationInfo;
@@ -85,13 +84,10 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
 	private ListeningScheduledExecutorService listeningScheduledExecutorService;
 	
 	@Autowired
-	private ApplicationContext applicationContext;
+	private ApplicationContext context;
 	
 	@Autowired
 	private RpcWebsocketRegistry rpcWebsocketRegistry;
-	
-	@Autowired
-	private ThriftProcessorFactory tpf;
 	
 	private ThriftProcessor tp;
 	
@@ -341,7 +337,7 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
-		tp = tpf.getThriftProcessor(rpcWebsocketRegistry, protocolFactory);
+		tp =ThriftProcessor.create(context, rpcWebsocketRegistry, protocolFactory);
 	}
 		
 	private MessageWrapper handleIn(Message<MessageWrapper> m, MessageChannel outChannel){

@@ -1,12 +1,14 @@
-package com.knockchat.appserver;
+package com.knockchat.appserver.configs;
 
 import org.apache.thrift.protocol.TProtocolFactory;
-import org.jgroups.JChannel;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.support.NoOpCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.ImportResource;
 import org.springframework.context.annotation.Scope;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -20,14 +22,8 @@ import com.knockchat.appserver.controller.ThriftProcessor;
 
 @Configuration
 @ImportResource("classpath:app-context.xml")
-//@EnableJpaRepositories(basePackages={"com.knockchat"})
-@ComponentScan("com.knockchat")
+@ComponentScan(value="com.knockchat", excludeFilters=@ComponentScan.Filter(type=FilterType.ASPECTJ, pattern="com.knockchat.appserver.configs.*"))
 public class Config {
-        
-    @Bean
-    public JChannel yocluster() throws Exception{
-    	return new JChannel("jgroups.xml");
-    }
         
     @Bean
     public ListeningExecutorService listeningExecutorService(@Qualifier("myExecutor") ThreadPoolTaskExecutor myExecutor){
@@ -43,6 +39,5 @@ public class Config {
     @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
     public ThriftProcessor thriftProcessor(ThriftControllerRegistry registry, TProtocolFactory protocolFactory) {
         return new ThriftProcessor(registry, protocolFactory);
-    }
-
+    }    
 }

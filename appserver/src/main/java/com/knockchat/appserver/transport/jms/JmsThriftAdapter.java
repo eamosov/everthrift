@@ -21,40 +21,32 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Scope;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.jms.listener.AbstractMessageListenerContainer;
 import org.springframework.jms.listener.DefaultMessageListenerContainer;
 import org.springframework.jms.listener.SessionAwareMessageListener;
 import org.springframework.jms.support.converter.MessageConversionException;
 import org.springframework.jms.support.converter.MessageConverter;
-import org.springframework.stereotype.Component;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.knockchat.appserver.cluster.QueryThriftTransport;
 import com.knockchat.appserver.controller.ThriftControllerInfo;
 import com.knockchat.appserver.controller.ThriftProcessor;
-import com.knockchat.appserver.controller.ThriftProcessorFactory;
 import com.knockchat.utils.thrift.InvocationCallback;
 import com.knockchat.utils.thrift.InvocationInfo;
 import com.knockchat.utils.thrift.NullResult;
 import com.knockchat.utils.thrift.ServiceIfaceProxy;
 import com.knockchat.utils.thrift.ThriftProxyFactory;
 
-@Component
-@Configuration
-public class JmsThriftAdapter implements InitializingBean, DisposableBean{
+public class JmsThriftAdapter implements InitializingBean, DisposableBean, QueryThriftTransport{
 	
 	private final static Logger log = LoggerFactory.getLogger(JmsThriftAdapter.class);
 	
 	private JmsTemplate jmsTemplate;
     
-    @Autowired
-    private ConnectionFactory jmsConnectionFactory;
+    private final ConnectionFactory jmsConnectionFactory;
     
     @Autowired
     private ApplicationContext context;
@@ -62,8 +54,6 @@ public class JmsThriftAdapter implements InitializingBean, DisposableBean{
 	@Autowired
 	private RpcJmsRegistry rpcJmsRegistry;
 
-	@Autowired
-	private ThriftProcessorFactory thriftProcessorFactory;
 	private ThriftProcessor thriftProcessor;
 
     private final TProtocolFactory binaryProtocolFactory = new TBinaryProtocol.Factory();
@@ -153,6 +143,10 @@ public class JmsThriftAdapter implements InitializingBean, DisposableBean{
 		}};
 
 	
+	public JmsThriftAdapter(ConnectionFactory jmsConnectionFactory){
+		this.jmsConnectionFactory = jmsConnectionFactory;
+	}
+	
 	private JMSException asJMSException(Exception e){
 		
 		if (e instanceof JMSException)
@@ -173,7 +167,8 @@ public class JmsThriftAdapter implements InitializingBean, DisposableBean{
 		return je;
 	}
 		
-	@SuppressWarnings("unchecked")
+	@Override
+	@SuppressWarnings("unchecked")	
 	public <T> T onIface(Class<T> cls){
 		
 		return (T)Proxy.newProxyInstance(ThriftProxyFactory.class.getClassLoader(), new Class[]{cls}, new ServiceIfaceProxy(cls, new InvocationCallback(){
@@ -189,7 +184,7 @@ public class JmsThriftAdapter implements InitializingBean, DisposableBean{
 	@Override
 	public void afterPropertiesSet() throws Exception {
 
-		thriftProcessor = thriftProcessorFactory.getThriftProcessor(rpcJmsRegistry, new TBinaryProtocol.Factory());
+		thriftProcessor = ThriftProcessor.create(context, rpcJmsRegistry, new TBinaryProtocol.Factory());
 		
 		final Set<String> services = Sets.newHashSet();
 		for (ThriftControllerInfo i:rpcJmsRegistry.getControllers().values())
@@ -246,21 +241,7 @@ public class JmsThriftAdapter implements InitializingBean, DisposableBean{
 				return null;
 			}});
 	}
-	
-    @Bean
-    @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)    
-    public DefaultMessageListenerContainer thriftJmsMessageListener(String destination, ConnectionFactory connectionFactory, SessionAwareMessageListener listener){
-    	final DefaultMessageListenerContainer container = new DefaultMessageListenerContainer();
-    	
-    	container.setConnectionFactory(connectionFactory);
-    	container.setDestinationName(destination);
-    	container.setMessageListener(listener);
-    	container.setSessionTransacted(true);    	
-    	container.start();
-    	
-    	return container;
-    }
-	
+		
 	private synchronized DefaultMessageListenerContainer addJmsListener(String queueName){
 		DefaultMessageListenerContainer l  = (DefaultMessageListenerContainer)context.getBean("thriftJmsMessageListener", queueName, jmsConnectionFactory, listener);        
 		listeners.add(l);
