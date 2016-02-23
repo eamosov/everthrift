@@ -40,7 +40,11 @@ public class LongTimestamp {
 	public static long round100sec(long timestamp){
 		return timestamp / 100000 * 100000;
 	}
-	
+
+	public static long roundSec(long timestamp){
+		return timestamp / 1000 * 1000;
+	}
+
 	public static long toSecs(long timestamp){
 		return timestamp/1000;
 	}
