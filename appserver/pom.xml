@@ -168,11 +168,10 @@
         </dependency>
                 
 		<dependency>
-			<groupId>org.springframework.data</groupId>
-			<artifactId>spring-data-jpa</artifactId>
-			<version>1.9.0.RC1</version>
-		</dependency>
-
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-oxm</artifactId>
+		</dependency>			
+                
 		<dependency>
 			<groupId>org.jgroups</groupId>
 			<artifactId>jgroups</artifactId>
@@ -182,12 +181,24 @@
 			<groupId>net.sf.ehcache</groupId>
 			<artifactId>ehcache-jgroupsreplication</artifactId>
 			<version>1.8ea</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>slf4j-api</artifactId>
+				</exclusion>
+			</exclusions>			
 		</dependency>
 
 		<dependency>
 			<groupId>net.sf.ehcache</groupId>
 			<artifactId>ehcache</artifactId>
 			<version>2.10.1</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>slf4j-api</artifactId>
+				</exclusion>
+			</exclusions>						
 		</dependency>
 
 		<dependency>
@@ -283,6 +294,11 @@
 			<artifactId>websocket-server</artifactId>
 			<version>${jetty.version}</version>
 		</dependency>
+		
+		<dependency>
+			<groupId>commons-lang</groupId>
+			<artifactId>commons-lang</artifactId>		
+		</dependency>
 
 		<dependency>
 			<groupId>org.jminix</groupId>
@@ -293,7 +309,19 @@
 				<exclusion>
             		<groupId>commons-beanutils</groupId>
             		<artifactId>commons-beanutils</artifactId>
-        		</exclusion>			
+        		</exclusion>
+				<exclusion>
+					<groupId>commons-lang</groupId>
+					<artifactId>commons-lang</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>commons-logging</groupId>
+					<artifactId>commons-logging</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.jgroups</groupId>
+					<artifactId>jgroups</artifactId>
+				</exclusion>												
 			</exclusions>        			
 		</dependency>
 
@@ -366,17 +394,25 @@
 			<artifactId>rhino</artifactId>
 			<version>1.7.7</version>
 		</dependency>
-		 
-   		<dependency>
-       		<groupId>org.springframework.data</groupId>
-       		<artifactId>spring-data-mongodb</artifactId>
-       		<version>1.8.0.RC1</version>
-   		</dependency>
-		 
+		 		 
 		<dependency>
 			<groupId>org.springframework.data</groupId>
 			<artifactId>spring-data-commons</artifactId>
-			<version>1.11.0.RC1</version>
+			<version>1.11.4.RELEASE</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.springframework</groupId>
+					<artifactId>spring-core</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.springframework</groupId>
+					<artifactId>spring-beans</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>slf4j-api</artifactId>
+				</exclusion>								
+			</exclusions>  						
 		</dependency>
 
 		<dependency>
