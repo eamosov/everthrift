@@ -180,7 +180,8 @@ public class AppserverApplication {
             throw new RuntimeException(e1);
         }
         
-        System.setProperty("jgroups.multicast.bind_addr", env.getProperty("jgroups.multicast.bind_addr"));
+        if (env.getProperty("jgroups.multicast.bind_addr") !=null)
+        	System.setProperty("jgroups.multicast.bind_addr", env.getProperty("jgroups.multicast.bind_addr"));
 
         context.register(Config.class);
         

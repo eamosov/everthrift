@@ -52,7 +52,13 @@
 		<dependency>
 		    <groupId>io.smartcat</groupId>
     		<artifactId>cassandra-migration-tool</artifactId>
-    		<version>3.0.0</version>		
+    		<version>3.0.0</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>slf4j-api</artifactId>
+				</exclusion>
+			</exclusions>    				
 		</dependency>		
 				
 	</dependencies>
