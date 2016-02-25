@@ -237,7 +237,6 @@ public class JmsThriftAdapter implements InitializingBean, DisposableBean, Query
 
 			@Override
 			public Object fromMessage(Message message) throws JMSException, MessageConversionException {
-				// TODO Auto-generated method stub
 				return null;
 			}});
 	}

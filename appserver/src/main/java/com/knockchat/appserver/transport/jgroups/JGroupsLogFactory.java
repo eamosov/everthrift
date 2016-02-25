@@ -15,7 +15,6 @@ public class JGroupsLogFactory implements CustomLogFactory {
 
 	@Override
 	public Log getLog(String category) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
