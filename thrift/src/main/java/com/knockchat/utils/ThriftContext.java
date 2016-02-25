@@ -206,7 +206,6 @@ public class ThriftContext implements Closeable{
 			}
 
 			public void onConnectError() {
-				// TODO Auto-generated method stub
 				
 			}});
 	}

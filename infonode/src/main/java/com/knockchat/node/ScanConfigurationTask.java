@@ -265,13 +265,11 @@ public class ScanConfigurationTask implements InitializingBean, DisposableBean, 
 
     @Override
     public void block() {
-        // TODO Auto-generated method stub
 
     }
 
     @Override
     public void unblock() {
-        // TODO Auto-generated method stub
 
     }
 
