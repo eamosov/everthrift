@@ -12,6 +12,7 @@ import org.hibernate.criterion.Projections;
 import org.hibernate.criterion.Restrictions;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -28,19 +29,18 @@ import net.sf.ehcache.Cache;
 public class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY extends DaoEntityIF> extends AbstractCachedModelFactory<PK, ENTITY> implements InitializingBean, RwModelFactoryIF<PK, ENTITY> {
 		
     @Autowired
-    protected List<SessionFactory> sessionFactories;
-    
     protected SessionFactory sessionFactory;
 
     @Autowired
-    protected ListeningExecutorService listeningExecutorService;
+    @Qualifier("listeningSyncQueueExecutor")
+    private ListeningExecutorService listeningExecutorService;
 
     private final AbstractDao<PK, ENTITY> dao;
     protected final Class<ENTITY> entityClass;
     
     final RwModelFactoryHelper<PK, ENTITY> helper;
     
-    protected AbstractPgSqlModelFactory(Cache cache, Class<ENTITY> entityClass, ListeningExecutorService listeningExecutorService, List<SessionFactory> sessionFactories) {
+    protected AbstractPgSqlModelFactory(Cache cache, Class<ENTITY> entityClass, ListeningExecutorService listeningExecutorService, SessionFactory sessionFactory) {
     	super(cache);
     	
     	this.entityClass = entityClass;     	
@@ -58,7 +58,7 @@ public class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY extends D
 			}};
 			
 		this.listeningExecutorService = listeningExecutorService;
-		this.sessionFactories = sessionFactories;
+		this.sessionFactory = sessionFactory;
 		_afterPropertiesSet();
     }
         
@@ -82,16 +82,7 @@ public class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY extends D
     }
     
     private void _afterPropertiesSet(){
-    	
-        for (SessionFactory factory : sessionFactories)
-            if (factory.getClassMetadata(this.entityClass) != null){
-            	sessionFactory = factory;
-            	break;
-            }
-
-        if (sessionFactory == null)
-        	throw new RuntimeException("Cound't find SessionFactory for class " + this.entityClass.getSimpleName());
-        	            
+    	        	            
         dao.setSessionFactory(sessionFactory);            
         dao.setListeningExecutorService(listeningExecutorService);    	
     }
