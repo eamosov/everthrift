@@ -52,8 +52,8 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
     
     
     
-    public OptimisticLockPgSqlModelFactory(Cache cache, Class<ENTITY> entityClass, ListeningExecutorService listeningExecutorService, List<SessionFactory> sessionFactories, LocalEventBus localEventBus) {
-		super(cache, entityClass, listeningExecutorService, sessionFactories, localEventBus);
+    public OptimisticLockPgSqlModelFactory(Cache cache, Class<ENTITY> entityClass, ListeningExecutorService listeningExecutorService, SessionFactory sessionFactory, LocalEventBus localEventBus) {
+		super(cache, entityClass, listeningExecutorService, sessionFactory, localEventBus);
 	}
 
 	@Override

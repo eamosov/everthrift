@@ -7,8 +7,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 
-import javax.annotation.Resource;
-
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.thrift.TApplicationException;
 import org.apache.thrift.TBase;
@@ -29,8 +27,9 @@ import org.jgroups.blocks.ResponseMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.core.task.AsyncTaskExecutor;
 
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -63,8 +62,9 @@ public class ThriftProcessor implements TProcessor{
 	
 	private final ThriftControllerRegistry registry;
 	
-	@Resource
-	private  ThreadPoolTaskExecutor myExecutor;
+	@Qualifier("callerRunsBoundQueueExecutor")
+	@Autowired
+	private  AsyncTaskExecutor executor;
 	
 	@Autowired
 	private MulticastThriftTransport clusterThriftTransport;
@@ -188,7 +188,7 @@ public class ThriftProcessor implements TProcessor{
 			}};
 			
 		if (ann.value() == ResponseMode.GET_NONE){
-			return myExecutor.submit(task);
+			return executor.submit(task);
 		}else{
 			final FutureTask<Map<Address, Object>> ret = new FutureTask<Map<Address, Object>>(task);
 			ret.run();

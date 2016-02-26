@@ -1,7 +1,6 @@
 package com.knockchat.node.model.pgsql;
 
 import java.io.Serializable;
-import java.util.List;
 
 import org.apache.thrift.TException;
 import org.hibernate.SessionFactory;
@@ -21,8 +20,8 @@ public class PgSqlModelFactory<PK extends Serializable, ENTITY extends DaoEntity
 		super(cacheName, entityClass);
 	}
 
-	public PgSqlModelFactory(Cache cache, Class<ENTITY> entityClass, ListeningExecutorService listeningExecutorService, List<SessionFactory> sessionFactories, LocalEventBus localEventBus) {
-		super(cache, entityClass, listeningExecutorService, sessionFactories, localEventBus);
+	public PgSqlModelFactory(Cache cache, Class<ENTITY> entityClass, ListeningExecutorService listeningExecutorService, SessionFactory sessionFactory, LocalEventBus localEventBus) {
+		super(cache, entityClass, listeningExecutorService, sessionFactory, localEventBus);
 	}
 	
 	@Override

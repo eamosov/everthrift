@@ -19,8 +19,8 @@ public class LocalEventBus implements InitializingBean{
 	
 	private static final Logger log = LoggerFactory.getLogger(LocalEventBus.class);
 
+	@Qualifier("callerRunsBoundQueueExecutor")
 	@Autowired
-	@Qualifier("myExecutor")
 	private Executor executor;
 
     private EventBus eventBus;

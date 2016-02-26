@@ -15,6 +15,7 @@ import org.hibernate.criterion.Order;
 import org.hibernate.criterion.Projections;
 import org.hibernate.criterion.Restrictions;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.knockchat.hibernate.dao.AbstractDao;
@@ -29,12 +30,11 @@ import net.sf.ehcache.Cache;
 public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY extends DaoEntityIF, E extends TException> extends AbstractCachedModelFactory<PK, ENTITY> implements RwModelFactoryIF<PK, ENTITY, E> {
 		
     @Autowired
-    protected List<SessionFactory> sessionFactories;
-    
     protected SessionFactory sessionFactory;
 
     @Autowired
-    protected ListeningExecutorService listeningExecutorService;
+    @Qualifier("listeningSyncQueueExecutor")
+    private ListeningExecutorService listeningExecutorService;
     
 	@Autowired
 	protected LocalEventBus localEventBus;
@@ -47,7 +47,7 @@ public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY 
 //    
     protected abstract E createNotFoundException(PK id);
     
-    protected AbstractPgSqlModelFactory(Cache cache, Class<ENTITY> entityClass, ListeningExecutorService listeningExecutorService, List<SessionFactory> sessionFactories, LocalEventBus localEventBus) {
+    protected AbstractPgSqlModelFactory(Cache cache, Class<ENTITY> entityClass, ListeningExecutorService listeningExecutorService, SessionFactory sessionFactory, LocalEventBus localEventBus) {
     	super(cache);
     	
     	this.entityClass = entityClass;     	
@@ -65,8 +65,8 @@ public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY 
 //			}};
 			
 		this.listeningExecutorService = listeningExecutorService;
-		this.sessionFactories = sessionFactories;
 		this.localEventBus = localEventBus;
+		this.sessionFactory = sessionFactory;
 		_afterPropertiesSet();
     }
         
@@ -90,16 +90,7 @@ public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY 
     }
     
     private void _afterPropertiesSet(){
-    	
-        for (SessionFactory factory : sessionFactories)
-            if (factory.getClassMetadata(this.entityClass) != null){
-            	sessionFactory = factory;
-            	break;
-            }
-
-        if (sessionFactory == null)
-        	throw new RuntimeException("Cound't find SessionFactory for class " + this.entityClass.getSimpleName());
-        	            
+    	        	            
         dao.setSessionFactory(sessionFactory);            
         dao.setListeningExecutorService(listeningExecutorService);
         

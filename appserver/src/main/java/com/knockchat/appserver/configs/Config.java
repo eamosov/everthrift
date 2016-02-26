@@ -3,8 +3,6 @@ package com.knockchat.appserver.configs;
 import org.apache.thrift.protocol.TProtocolFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
-import org.springframework.cache.CacheManager;
-import org.springframework.cache.support.NoOpCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -26,13 +24,23 @@ import com.knockchat.appserver.controller.ThriftProcessor;
 public class Config {
         
     @Bean
-    public ListeningExecutorService listeningExecutorService(@Qualifier("myExecutor") ThreadPoolTaskExecutor myExecutor){
-    	return MoreExecutors.listeningDecorator(myExecutor.getThreadPoolExecutor());
+    public ListeningExecutorService listeningSyncQueueExecutor(@Qualifier("syncQueueExecutor") ThreadPoolTaskExecutor executor){
+    	return MoreExecutors.listeningDecorator(executor.getThreadPoolExecutor());
     }
 
     @Bean
-    public ListeningScheduledExecutorService listeningScheduledExecutorService(@Qualifier("myScheduler") ThreadPoolTaskScheduler myScheduler){
-    	return MoreExecutors.listeningDecorator(myScheduler.getScheduledThreadPoolExecutor());
+    public ListeningExecutorService listeningCallerRunsBoundQueueExecutor(@Qualifier("callerRunsBoundQueueExecutor") ThreadPoolTaskExecutor executor){
+    	return MoreExecutors.listeningDecorator(executor.getThreadPoolExecutor());
+    }
+
+    @Bean
+    public ListeningExecutorService listeningAbortBoundQueueExecutor(@Qualifier("abortBoundQueueExecutor") ThreadPoolTaskExecutor executor){
+    	return MoreExecutors.listeningDecorator(executor.getThreadPoolExecutor());
+    }
+    
+    @Bean
+    public ListeningScheduledExecutorService listeningScheduledExecutorService(@Qualifier("myScheduler") ThreadPoolTaskScheduler scheduler){
+    	return MoreExecutors.listeningDecorator(scheduler.getScheduledThreadPoolExecutor());
     }
     
     @Bean
