@@ -32,7 +32,7 @@ public class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY extends D
     protected SessionFactory sessionFactory;
 
     @Autowired
-    @Qualifier("listeningSyncQueueExecutor")
+    @Qualifier("listeningCallerRunsBoundQueueExecutor")
     private ListeningExecutorService listeningExecutorService;
 
     private final AbstractDao<PK, ENTITY> dao;
