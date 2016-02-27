@@ -54,6 +54,19 @@ import com.knockchat.utils.thrift.SessionIF;
 import com.knockchat.utils.thrift.ThriftClient;
 import com.knockchat.utils.thrift.ThriftClientFactory;
 
+/*
+ * 
+ * 1) Jetty слушает http-websocket и вызывает handleBinaryMessage в потоке Jetty
+ * 2) В handleBinaryMessage сообщение отправляется в канал inWebsocketChannel
+ * 3) В канале сообщения обрабатываются на Executor'е wsExecutor
+ * 4) Ответ передается в DIRECT канал outWebsocketChannel   
+ * 5) Из канала outWebsocketChannel сообщения отправляются обратно в Jetty
+ * 
+ * Т.о. входящий пакет читается в потоке Jetty а затем вся обработка происходит в wsExecutor
+ * 
+ * @author fluder
+ *
+ */
 public class WebsocketThriftHandler extends AbstractWebSocketHandler implements WebSocketHandler, ThriftClientFactory, InitializingBean {
 	
 	private static final Logger log = LoggerFactory.getLogger(WebsocketThriftHandler.class);

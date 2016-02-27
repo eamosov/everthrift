@@ -2,7 +2,11 @@ package com.knockchat.appserver.cluster;
 
 import java.lang.reflect.Proxy;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -39,7 +43,24 @@ public class LocalQueryThriftTransport implements QueryThriftTransport {
 	
 	private final TProtocolFactory binary = new TBinaryProtocol.Factory();
 	
-	private ExecutorService executor = Executors.newSingleThreadExecutor();
+	private final ExecutorService executor;
+	
+	public LocalQueryThriftTransport(){
+		
+		executor  = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(), new ThreadFactory() {
+			
+	        private final AtomicInteger threadNumber = new AtomicInteger(1);
+
+	        public Thread newThread(Runnable r) {
+	            Thread t = new Thread(r, "LocalQueryThriftTransport-" + threadNumber.getAndIncrement());
+	            if (t.isDaemon())
+	                t.setDaemon(false);
+	            if (t.getPriority() != Thread.NORM_PRIORITY)
+	                t.setPriority(Thread.NORM_PRIORITY);
+	            return t;
+	        }
+	    });
+	}
 
 	@SuppressWarnings("unchecked")
 	@Override

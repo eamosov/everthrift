@@ -18,8 +18,8 @@
   <context:property-placeholder />
 
   <task:executor id="syncQueueExecutor" pool-size="2-1048576" keep-alive="10" queue-capacity="0"/>
-  <task:executor id="callerRunsBoundQueueExecutor" pool-size="10-20" keep-alive="2" queue-capacity="200" rejection-policy="CALLER_RUNS"/>
-  <task:executor id="abortBoundQueueExecutor" pool-size="10-20" keep-alive="2" queue-capacity="200" rejection-policy="ABORT"/>
+  <task:executor id="callerRunsBoundQueueExecutor" pool-size="5-10" keep-alive="2" queue-capacity="200" rejection-policy="CALLER_RUNS"/>
+  <task:executor id="abortBoundQueueExecutor" pool-size="5-10" keep-alive="2" queue-capacity="200" rejection-policy="ABORT"/>
     
   <task:scheduler id="myScheduler" pool-size="10"/>
   <task:annotation-driven executor="syncQueueExecutor" scheduler="myScheduler"/>
