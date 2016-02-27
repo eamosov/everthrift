@@ -129,38 +129,43 @@ public abstract class ThriftController<ArgsType extends TBase, ResultType> {
 		throw new AsyncAnswer();		
 	}
 	
-	protected void waitForAnswerSuccess(ResultType result){
-		
-	}
-	
-	protected ResultType waitForAnswer(ListenableFuture<ResultType> lf) throws TApplicationException{
+	protected ResultType waitForAnswer(ListenableFuture<ResultType> lf) throws TException{
 		
 		if (!allowAsyncAnswer){
-			ResultType result;
 			try {
-				result = lf.get();
-			} catch (InterruptedException | ExecutionException e) {
-				throw new TApplicationException(e.getMessage());
+				return lf.get();
+			} catch (InterruptedException e) {
+				throw new TApplicationException(TApplicationException.INTERNAL_ERROR, e.getMessage());
+			} catch (ExecutionException e) {
+				final Throwable t = e.getCause();
+				
+				if (t instanceof TException){
+					throw (TException)t;
+				}else if (t.getCause() instanceof TException){
+					throw (TException)t.getCause();
+				}else{
+					throw new TApplicationException(t.getMessage());
+				}						
 			}
-			waitForAnswerSuccess(result);
-			return result;
+
 		}else{
 			Futures.addCallback(lf, new FutureCallback<ResultType>(){
 
 				@Override
 				public void onSuccess(ResultType result) {
-					waitForAnswerSuccess(result);
 					ThriftController.this.sendAnswer(result);				
 				}
 
 				@Override
 				public void onFailure(Throwable t) {
 					
-					if (t instanceof TException)
+					if (t instanceof TException){
 						sendException((TException)t);
-					else
-						log.error("FutureCallback.onFailure", t);
-						
+					}else if (t.getCause() instanceof TException){
+						sendException((TException)t.getCause());
+					}else{
+						sendException(new TApplicationException(t.getMessage()));
+					}						
 				}});
 			
 			throw new AsyncAnswer();
