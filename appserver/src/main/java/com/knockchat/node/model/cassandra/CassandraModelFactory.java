@@ -235,8 +235,8 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 
 	            final Number versionBefore;
 
-				if (count == 0 && cache != null){
-					final Element e = cache.get(id);
+				if (count == 0 && getCache() != null){
+					final Element e = getCache().get(id);
 					if (e != null && e.getObjectValue() != null){
 						versionBefore = (Number)versionColumn.getValue((ENTITY)e.getObjectValue());
 					}else{

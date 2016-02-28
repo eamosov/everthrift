@@ -23,9 +23,9 @@ import net.sf.ehcache.loader.CacheLoader;
 public abstract class AbstractCachedModelFactory<PK,ENTITY> extends RoModelFactoryImpl<PK, ENTITY>{
 	
 	@Autowired
-	protected CacheManager cm;
+	private CacheManager cm;
 	
-	protected Cache cache;
+	private Cache cache;
 	
 	protected final String cacheName;	
 		
@@ -234,11 +234,7 @@ public abstract class AbstractCachedModelFactory<PK,ENTITY> extends RoModelFacto
         if (cache!=null)
             cache.removeAll(ids);
     }
-	
-	public Cache getCache(){
-		return cache;
-	}
-			
+				
     protected abstract Map<PK, ENTITY> fetchEntityByIdAsMap(Collection<PK> ids);
     protected abstract ENTITY fetchEntityById(PK id);
 			
@@ -288,4 +284,20 @@ public abstract class AbstractCachedModelFactory<PK,ENTITY> extends RoModelFacto
 			r.run();	
 		}		
 	}
+	
+	final public CacheManager getCm() {
+		return cm;
+	}
+
+	final public void setCm(CacheManager cm) {
+		this.cm = cm;
+	}
+
+	final public Cache getCache(){
+		return cache;
+	}
+
+	final public void setCache(Cache cache) {
+		this.cache = cache;
+	}	
 }

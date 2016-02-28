@@ -39,7 +39,7 @@ public interface TBaseModel<T extends TBase<T,F>, F extends TFieldIdEnum> extend
 		return  ((buf[3] & 0xff) << 24) | ((buf[2] & 0xff) << 16) | ((buf[1] & 0xff) <<  8) | ((buf[0] & 0xff));
 	}
 
-	static byte[] toByteArray(TBase tBase){
+	public static byte[] toByteArray(TBase tBase){
 		try{
 			final AutoExpandingBufferWriteTransport t = new AutoExpandingBufferWriteTransport(1024, 1.5);
 			tBase.write(new TCompactProtocol(t));
@@ -66,7 +66,7 @@ public interface TBaseModel<T extends TBase<T,F>, F extends TFieldIdEnum> extend
 		return toByteArray(this);
 	}
 	
-	static void fromByteArray(TBase tBase, byte []_data){
+	public static void fromByteArray(TBase tBase, byte []_data){
 		try{
 			final int decompressedLength = decodeFrameSize(_data);
 			final byte[] restored = new byte[decompressedLength];
