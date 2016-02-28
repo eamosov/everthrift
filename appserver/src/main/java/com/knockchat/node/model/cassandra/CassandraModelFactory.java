@@ -482,7 +482,7 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 		
 		return _delete(e);
 	}
-
+	
 	@Override
 	public final OptResult<ENTITY> optInsert(ENTITY e) {
 				
@@ -697,6 +697,28 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 		putEntity(entity, true);
 	}
 
+	/**
+	 * Unsafely assume insert without check for update. Use only with uniq (random) PK
+	 * @param e
+	 * @return
+	 */
+	public final OptResult<ENTITY> fastInsert(ENTITY e) {
+		final long now = System.currentTimeMillis();
+		
+		if (e instanceof CreatedAtIF && (((CreatedAtIF)e).getCreatedAt() == 0))
+        	((CreatedAtIF)e).setCreatedAt(now);
+        
+        if (e instanceof UpdatedAtIF)
+        	((UpdatedAtIF) e).setUpdatedAt(now);
+	
+        putEntity(e, false);
+		final OptResult<ENTITY> r = OptResult.create(this, e, null, true); 
+
+		localEventBus.post(syncInsertEntityEvent(r));
+		localEventBus.postAsync(asyncInsertEntityEvent(e));		
+		return r;        
+	}
+	
 	public void fetchAll(final int batchSize, Consumer<List<ENTITY>> consumer){
 				
 		final Iterator<ENTITY> r = mapper.getAll(Option.fetchSize(batchSize), Option.scenario(Scenario.ALL)).iterator();
