@@ -35,8 +35,8 @@ public interface TBaseModel<T extends TBase<T,F>, F extends TFieldIdEnum> extend
 		buf[0] = (byte)(0xff & (frameSize));
 	}
 
-	static int decodeFrameSize(final byte[] buf) {
-		return  ((buf[3] & 0xff) << 24) | ((buf[2] & 0xff) << 16) | ((buf[1] & 0xff) <<  8) | ((buf[0] & 0xff));
+	static int decodeFrameSize(final byte[] buf, int offset) {
+		return  ((buf[offset+3] & 0xff) << 24) | ((buf[offset+2] & 0xff) << 16) | ((buf[offset+1] & 0xff) <<  8) | ((buf[offset+0] & 0xff));
 	}
 
 	public static byte[] toByteArray(TBase tBase){
@@ -67,34 +67,38 @@ public interface TBaseModel<T extends TBase<T,F>, F extends TFieldIdEnum> extend
 	}
 	
 	public static void fromByteArray(TBase tBase, byte []_data){
+		fromByteArray(tBase, _data, 0);
+	}
+	
+	public static void fromByteArray(TBase tBase, byte []_data, int offset){
+		
+		final int decompressedLength = decodeFrameSize(_data, offset);
+
 		try{
-			final int decompressedLength = decodeFrameSize(_data);
 			final byte[] restored = new byte[decompressedLength];
-			final int compressedLength2 = decompressor.decompress(_data, 4, restored, 0, decompressedLength);
-			
-			log.debug("fromByteArray: compressedLength={} decompressedLength={}", _data.length-4, decompressedLength);
-			
-			if (compressedLength2 != _data.length - 4)
-				throw new TException("Decompress LZ4 error: compressedLength=" + (_data.length - 4) + " compressedLength2=" + compressedLength2);
-			
+			decompressor.decompress(_data, offset + 4, restored, 0, decompressedLength);									
 			tBase.read(new TCompactProtocol(new TMemoryInputTransport(restored)));					
-		}catch (TException e){
+		}catch (Exception e){
+			log.error("fromByteArray: _data.length={}, offset={}, decompressedLength={}, _data={}", _data.length, offset, decompressedLength, _data);
 			throw Throwables.propagate(e);
 		}
-	}	
-
+	}
+	
 	default void fromByteArray(byte []_data){
-		fromByteArray(this, _data);
-	}	
+		fromByteArray(this, _data, 0);
+	}
 
+	default void fromByteArray(byte []_data, int offset){
+		fromByteArray(this, _data, offset);
+	}	
 
 	default byte[] write(){
 		return toByteArray();
 	}
 	
-	default void read(byte[] in){
+	default void read(byte[] in, int offset){
 		clear();
-		fromByteArray(in);
+		fromByteArray(in, offset);
 	}
 
 	default void writeExternal(final ObjectOutput out) throws IOException {
@@ -110,7 +114,7 @@ public interface TBaseModel<T extends TBase<T,F>, F extends TFieldIdEnum> extend
     	in.readFully(_data, 0, l);
     	
 		clear();
-		fromByteArray(_data);			
+		fromByteArray(_data, 0);			
 	}
 	
 }

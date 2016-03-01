@@ -25,7 +25,7 @@ public interface TBaseLazyModel<T extends TBase<T,F>, F extends TFieldIdEnum> ex
 		if (log.isTraceEnabled())
 			log.trace("unpack object {} to new object {}", System.identityHashCode(this), System.identityHashCode(other));
 
-		other.fromByteArray(bytes);
+		other.fromByteArray(bytes, 0);
 		return other;		
 	}
 
@@ -71,7 +71,7 @@ public interface TBaseLazyModel<T extends TBase<T,F>, F extends TFieldIdEnum> ex
 				log.debug("Unpack object {} of type {}", System.identityHashCode(this), this.getClass().getSimpleName());
 	    	  
 			setThriftData(null);
-			fromByteArray(bytes);
+			fromByteArray(bytes, 0);
 		}					
 	}
 

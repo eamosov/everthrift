@@ -59,7 +59,7 @@ public class TBaseModelCodec<T extends TBaseModel<?,?>> extends TypeCodec<T> {
 
 		try {
 			final T entity = (T)(((Class)javaType.getRawType()).newInstance());
-			entity.read(bytes.array());
+			entity.read(bytes.array(), bytes.arrayOffset() + bytes.position());
 			return entity;
 		} catch (InstantiationException | IllegalAccessException e) {
 			throw new InvalidTypeException("", e);

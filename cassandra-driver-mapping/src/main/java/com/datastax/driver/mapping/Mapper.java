@@ -276,6 +276,8 @@ public class Mapper<T> {
        		return (Integer) value + 1;
        	}else if (value instanceof Long){
        		return (Long) value + 1;
+       	}else if (value == null){
+       		return 1;
        	}else{
        		throw new RuntimeException("invalid type for version column: " + value.getClass().getCanonicalName());
        	}    	

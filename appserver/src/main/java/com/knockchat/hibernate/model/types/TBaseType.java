@@ -75,7 +75,7 @@ public abstract class TBaseType implements UserType {
 				
 		try {
 			final TBaseModel o = init.newInstance();
-			o.read(bytes);
+			o.read(bytes, 0);
 			return o;
 		} catch (Exception e) {		
 			if (e instanceof RuntimeException)
@@ -123,7 +123,7 @@ public abstract class TBaseType implements UserType {
 		if (cached instanceof byte[]){
 			try {
 				final TBaseModel o = init.newInstance();
-				o.read((byte[])cached);
+				o.read((byte[])cached, 0);
 				return o;
 			} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
 				throw new HibernateException(e);

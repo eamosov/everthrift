@@ -1,6 +1,7 @@
 package com.knockchat.cassandra.codecs;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.ProtocolVersion;
@@ -33,7 +34,12 @@ public class ByteArrayBlobCodec extends TypeCodec<byte[]> {
 
     @Override
     public byte[] deserialize(ByteBuffer bytes, ProtocolVersion protocolVersion) {
-        return bytes == null ? null : bytes.array();
+    	if (bytes == null)
+    		return null;
+    	
+    	final byte[] array = bytes.array();
+        final int arrayOffset = bytes.arrayOffset();
+        return Arrays.copyOfRange(array, arrayOffset + bytes.position(), arrayOffset + bytes.limit());
     }
 
 }
