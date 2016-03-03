@@ -8,4 +8,6 @@ public interface Registry {
 	 void clear();
 	 
 	 int load();
+	 
+	 Object[] getArgs();
 }

@@ -18,8 +18,11 @@ public class RegistryImpl implements Registry {
 	
 	private final ArrayListMultimap<LazyLoader<?>, Object> loadList = ArrayListMultimap.create();
 	private final Set<Object> uniqSet = new ReferenceOpenHashSet<Object>();
+	
+	private Object[] args;
 
-	public RegistryImpl() {
+	public RegistryImpl(Object[] args) {
+		this.args = args;
 	}
 
 	@Override
@@ -54,6 +57,11 @@ public class RegistryImpl implements Registry {
 			}
 		}
 		return nLoaded;
+	}
+
+	@Override
+	public Object[] getArgs() {
+		return args;
 	}
 
 }

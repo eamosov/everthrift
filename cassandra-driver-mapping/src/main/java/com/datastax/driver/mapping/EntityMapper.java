@@ -88,7 +88,7 @@ public abstract class EntityMapper<T> {
     public ColumnMapper<T> getColumnByFieldName(final String fieldName){
     	return allColumns.get(fieldName);
     }
-    
+        
     public ColumnMapper<T> getPrimaryKeyColumn(int i) {
         return i < partitionKeys.size() ? partitionKeys.get(i) : clusteringColumns.get(i - partitionKeys.size());
     }

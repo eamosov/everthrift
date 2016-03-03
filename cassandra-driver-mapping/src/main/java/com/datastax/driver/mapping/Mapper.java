@@ -146,6 +146,10 @@ public class Mapper<T> {
     	return mapper.getColumnByFieldName(fieldName);
     }
     
+    public Set<ColumnMapper<T>> allColumns(Scenario scenario) {
+    	return mapper.allColumns(scenario);
+    }
+    
     public String getTableName(){
     	return mapper.getTable();
     }

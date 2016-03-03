@@ -46,15 +46,19 @@ public class LazyLoadManager {
 				
 		return nAllLoaded;
 	}
-	
+
 	public static <T> T load(final String scenario, int maxIterations, final T o){
+		return load(scenario, maxIterations, o, new Object[]{});
+	}
+	
+	public static <T> T load(final String scenario, int maxIterations, final T o, Object ... args){
 		
 		if (o == null ||
 			(o instanceof Collection && ((Collection)o).isEmpty()) ||
 			(o instanceof Map && ((Map)o).isEmpty()))
 			return o;
 		
-		final Registry r = new RegistryImpl();
+		final Registry r = new RegistryImpl(args);
 		final WalkerIF walker = new RecursiveWalker(r, scenario);
 		load(maxIterations, o, r, walker);
 		return o;
