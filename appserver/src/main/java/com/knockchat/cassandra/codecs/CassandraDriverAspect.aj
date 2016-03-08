@@ -26,39 +26,39 @@ public aspect CassandraDriverAspect {
 		return ret !=null ? ret : MoreCodecRegistry.INSTANCE.lookupCodec(cqlType, javaType.getRawType());
 	}
 	
-	@SuppressWarnings({ "unchecked", "rawtypes" })
-	Object around(Session sessionManager, Statement statement): this(sessionManager) && execution(public ResultSetFuture Session+.executeAsync(Statement)) && args(statement){
-		
-		final long start = System.currentTimeMillis();
-		final ResultSetFuture ret =  (ResultSetFuture)proceed(sessionManager, statement);
-				
-		if (log.isDebugEnabled()){
-			
-			Futures.addCallback(ret, new FutureCallback(){
-
-				@Override
-				public void onSuccess(Object result) {
-					
-					final long millis = System.currentTimeMillis() - start;
-					if (statement instanceof BoundStatement){			
-						final List args = new ArrayList();				
-						for (int i=0; i<((BoundStatement)statement).preparedStatement().getVariables().size(); i++ ){
-							args.add(((BoundStatement)statement).getObject(i));
-						}				
-						log.debug("Executing query '{}' with args {} in {} millis", ((BoundStatement)statement).preparedStatement().getQueryString(), args, millis);
-					}else{
-						log.debug("Executing query '{}' in {} millis", statement, millis);
-					}										
-				}
-
-				@Override
-				public void onFailure(Throwable t) {
-					// TODO Auto-generated method stub
-					
-				}});
-			
-		}
-		return ret;
-	}
+//	@SuppressWarnings({ "unchecked", "rawtypes" })
+//	Object around(Session sessionManager, Statement statement): this(sessionManager) && execution(public ResultSetFuture Session+.executeAsync(Statement)) && args(statement){
+//		
+//		final long start = System.currentTimeMillis();
+//		final ResultSetFuture ret =  (ResultSetFuture)proceed(sessionManager, statement);
+//				
+//		if (log.isDebugEnabled()){
+//			
+//			Futures.addCallback(ret, new FutureCallback(){
+//
+//				@Override
+//				public void onSuccess(Object result) {
+//					
+//					final long millis = System.currentTimeMillis() - start;
+//					if (statement instanceof BoundStatement){			
+//						final List args = new ArrayList();				
+//						for (int i=0; i<((BoundStatement)statement).preparedStatement().getVariables().size(); i++ ){
+//							args.add(((BoundStatement)statement).getObject(i));
+//						}				
+//						log.debug("Executing query '{}' with args {} in {} millis", ((BoundStatement)statement).preparedStatement().getQueryString(), args, millis);
+//					}else{
+//						log.debug("Executing query '{}' in {} millis", statement, millis);
+//					}										
+//				}
+//
+//				@Override
+//				public void onFailure(Throwable t) {
+//					// TODO Auto-generated method stub
+//					
+//				}});
+//			
+//		}
+//		return ret;
+//	}
 
 }

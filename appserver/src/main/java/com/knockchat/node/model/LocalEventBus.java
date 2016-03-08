@@ -64,5 +64,13 @@ public class LocalEventBus implements InitializingBean{
 	public void postAsync(Object event){
 		asyncEventBus.post(event);
 	}
+
+	public Executor getExecutor() {
+		return executor;
+	}
+
+	public void setExecutor(Executor executor) {
+		this.executor = executor;
+	}
 	
 }

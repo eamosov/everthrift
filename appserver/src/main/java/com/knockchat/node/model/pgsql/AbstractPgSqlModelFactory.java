@@ -159,8 +159,7 @@ public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY 
 		dao.delete(_e);
     	_invalidateEhCache(pk);
     	
-    	localEventBus.post(syncDeleteEntityEvent(_e));
-    	localEventBus.postAsync(asyncDeleteEntityEvent(_e));
+    	localEventBus.postAsync(deleteEntityEvent(_e));
     }
         
     public final AbstractDao<PK, ENTITY> getDao(){

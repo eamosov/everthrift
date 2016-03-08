@@ -5,11 +5,6 @@ import java.util.Random;
 import org.apache.thrift.TException;
 
 import com.knockchat.hibernate.dao.DaoEntityIF;
-import com.knockchat.node.model.events.DeleteEntityEvent.SyncDeleteEntityEvent;
-import com.knockchat.node.model.events.InsertEntityEvent.AsyncInsertEntityEvent;
-import com.knockchat.node.model.events.InsertEntityEvent.SyncInsertEntityEvent;
-import com.knockchat.node.model.events.UpdateEntityEvent.AsyncUpdateEntityEvent;
-import com.knockchat.node.model.events.UpdateEntityEvent.SyncUpdateEntityEvent;
 import com.knockchat.node.model.pgsql.OptimisticUpdateFailException;
 import com.knockchat.utils.thrift.TFunction;
 
@@ -59,16 +54,4 @@ public interface OptimisticLockModelFactoryIF<PK, ENTITY extends DaoEntityIF, E 
 
 		return updated;
 	}
-
-	default SyncInsertEntityEvent<PK, ENTITY> syncInsertEntityEvent(OptResult<ENTITY> optResult){
-		return new SyncInsertEntityEvent<PK, ENTITY>(this, optResult);
-	}
-
-	default SyncUpdateEntityEvent<PK, ENTITY> syncUpdateEntityEvent(OptResult<ENTITY> optResult){
-		return new SyncUpdateEntityEvent<PK, ENTITY>(this, optResult);
-	}
-
-	default SyncDeleteEntityEvent<PK, ENTITY> syncDeleteEntityEvent(OptResult<ENTITY> optResult){
-		return new SyncDeleteEntityEvent<PK, ENTITY>(this, optResult);
-	}	
 }

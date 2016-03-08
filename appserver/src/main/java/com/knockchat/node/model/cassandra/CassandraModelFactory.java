@@ -2,7 +2,10 @@ package com.knockchat.node.model.cassandra;
 
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -11,7 +14,7 @@ import java.util.function.Consumer;
 
 import javax.annotation.PostConstruct;
 
-import org.apache.commons.lang.NotImplementedException;
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.thrift.TException;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -23,6 +26,7 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.Statement;
 import com.datastax.driver.core.TypeCodec;
+import com.datastax.driver.core.querybuilder.Assignment;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import com.datastax.driver.core.querybuilder.Update;
@@ -32,7 +36,7 @@ import com.datastax.driver.mapping.EntityMapper.Scenario;
 import com.datastax.driver.mapping.Mapper;
 import com.datastax.driver.mapping.Mapper.Option;
 import com.datastax.driver.mapping.MappingManager;
-import com.datastax.driver.mapping.VersionException;
+import com.datastax.driver.mapping.NotModifiedException;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
@@ -40,33 +44,24 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.knockchat.appserver.model.CreatedAtIF;
 import com.knockchat.appserver.model.Unique;
-import com.knockchat.appserver.model.UpdatedAtIF;
 import com.knockchat.cassandra.DLock;
 import com.knockchat.cassandra.DLockFactory;
-import com.knockchat.cassandra.SequenceFactory;
 import com.knockchat.hibernate.dao.DaoEntityIF;
 import com.knockchat.node.model.AbstractCachedModelFactory;
-import com.knockchat.node.model.EntityFactory;
 import com.knockchat.node.model.EntityNotFoundException;
 import com.knockchat.node.model.LocalEventBus;
-import com.knockchat.node.model.OptResult;
-import com.knockchat.node.model.OptimisticLockModelFactoryIF;
+import com.knockchat.node.model.RwModelFactoryIF;
 import com.knockchat.node.model.UniqueException;
-import com.knockchat.node.model.events.DeleteEntityEvent.SyncDeleteEntityEvent;
-import com.knockchat.node.model.events.InsertEntityEvent.SyncInsertEntityEvent;
-import com.knockchat.node.model.events.UpdateEntityEvent.SyncUpdateEntityEvent;
 import com.knockchat.utils.Pair;
 import com.knockchat.utils.VoidFunction;
 import com.knockchat.utils.thrift.TFunction;
 
 import net.sf.ehcache.Cache;
-import net.sf.ehcache.Element;
 
-public abstract class CassandraModelFactory<PK extends Serializable,ENTITY extends DaoEntityIF, E extends TException> extends AbstractCachedModelFactory<PK, ENTITY> implements OptimisticLockModelFactoryIF<PK, ENTITY, E>{
+public abstract class CassandraModelFactory<PK extends Serializable,ENTITY extends DaoEntityIF, E extends TException> extends AbstractCachedModelFactory<PK, ENTITY> implements RwModelFactoryIF<PK, ENTITY, E> {
 
-	private final Class<ENTITY> entityClass;
+	private final Class<ENTITY> entityClass;	
 	private final Constructor<ENTITY> copyConstructor;
 
 	@Autowired
@@ -76,39 +71,34 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 	protected LocalEventBus localEventBus;
 	
 	protected Mapper<ENTITY> mapper;
-	private String sequenceName;
-	private SequenceFactory sequenceFactory;
 	private DLockFactory dLockFactory;
 	
 	private final static Option noSaveNulls = Option.saveNullFields(false);
-
+		
+	private final List<Pair<ColumnMapper<ENTITY>, PreparedStatement>> uniqueColumns = Lists.newArrayList();
 	
 	protected abstract E createNotFoundException(PK id);
 	
-	private final List<Pair<ColumnMapper<ENTITY>, PreparedStatement>> uniqueColumns = Lists.newArrayList();
+	private volatile Map<String, PreparedStatement> preparedQueries = Collections.emptyMap();	
 			
 	public CassandraModelFactory(Cache cache, Class<ENTITY> entityClass) {
 		super(cache);
 		this.entityClass  = entityClass;
-		
 		try {
-			copyConstructor = this.entityClass.getConstructor(this.entityClass);
+			copyConstructor = getEntityClass().getConstructor(getEntityClass());
 		} catch (NoSuchMethodException | SecurityException e) {
 			throw new RuntimeException(e);
-		}
-		
+		}				
 	}
 	
 	public CassandraModelFactory(String cacheName, Class<ENTITY> entityClass) {
 		super(cacheName);
 		this.entityClass  = entityClass;
-		
 		try {
-			copyConstructor = this.entityClass.getConstructor(this.entityClass);
+			copyConstructor = getEntityClass().getConstructor(getEntityClass());
 		} catch (NoSuchMethodException | SecurityException e) {
 			throw new RuntimeException(e);
-		}
-		
+		}				
 	}
 	
 	public final void setMappingManager(MappingManager mappingManager){
@@ -121,7 +111,7 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 		this.localEventBus.register(this);
 	}
 	
-	private void initMapping(){
+	protected void initMapping(){
 	
 		dLockFactory  = new DLockFactory(mappingManager.getSession());
 		mapper = mappingManager.mapper(this.entityClass);
@@ -140,58 +130,13 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 			}
 			final PreparedStatement ps = mappingManager.getSession().prepare(query.toString());						
 			uniqueColumns.add(Pair.create(cm, ps));
-		}
-		
-		if (sequenceName == null){
-			sequenceFactory = null;
-		}else{
-			sequenceFactory = new SequenceFactory(mappingManager.getSession(), "sequences", sequenceName);
-		}
+		}		
 	}
 	
 	
-	public final void setPkSequenceName(String sequenceName){
-		this.sequenceName = sequenceName;
-		
-		if (sequenceName == null){
-			sequenceFactory = null;
-		}else if (mappingManager !=null){
-			sequenceFactory = new SequenceFactory(mappingManager.getSession(), "sequences", sequenceName);
-		}
-	}
-
-	@Override
-	public final ENTITY insertEntity(ENTITY e) {
-		return optInsert(e).afterUpdate;
-	}
-
-	@Override
-	public final void deleteEntity(ENTITY e) {
-		_delete(e);
-	}
-
 	@Override
 	public final Class<ENTITY> getEntityClass() {
 		return entityClass;
-	}
-
-	@Override
-	public final OptResult<ENTITY> updateUnchecked(PK id, TFunction<ENTITY, Boolean> mutator) {
-		return updateUnchecked(id, mutator, null);
-	}
-
-	@Override
-	public final OptResult<ENTITY> updateUnchecked(PK id, TFunction<ENTITY, Boolean> mutator, EntityFactory<PK, ENTITY> factory) {
-		try {
-			return update(id, mutator, factory);
-		} catch (TException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	@Override
-	public final OptResult<ENTITY> update(PK id, TFunction<ENTITY, Boolean> mutator) throws TException, E {
-		return update(id, mutator, null);
 	}
 	
 	protected Object[] extractCompaundPk(PK id){
@@ -217,311 +162,38 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
         	return (Number)row.get(0, versionColumn.getJavaType());					
 		
 	}
-	
-	//TODO маппинг первичных ключей надо делать как в updateCustom
-	public final OptResult<ENTITY> updateWithAssignments(PK id, VoidFunction<Assignments> assignment) throws TException, E {
 		
-		if (id == null)
-			throw new IllegalArgumentException("id is null");
-		
-		if (mapper.getVersionColumn() == null)
-			throw new IllegalArgumentException("version not configured");
-		
-		try {
-			final OptResult<ENTITY> optResult = OptimisticLockModelFactoryIF.optimisticUpdate((count) -> {
-
-				final ColumnMapper<ENTITY> versionColumn = mapper.getVersionColumn();
-				final Object[] pkeys = extractCompaundPk(id);
-
-	            final Number versionBefore;
-
-				if (count == 0 && getCache() != null){
-					final Element e = getCache().get(id);
-					if (e != null && e.getObjectValue() != null){
-						versionBefore = (Number)versionColumn.getValue((ENTITY)e.getObjectValue());
-					}else{
-						versionBefore = fetchCurrentVersion(id, pkeys, versionColumn);
-					}
-				}else{
-					versionBefore = fetchCurrentVersion(id, pkeys, versionColumn);				
-				}				
-	            	            
-	            final Number versionAfter;
-               	if (versionBefore instanceof Integer){
-               		versionAfter = (Integer) versionBefore + 1;
-               	}else if (versionBefore instanceof Long){
-               		versionAfter = (Long) versionBefore + 1;
-               	}else{
-               		throw new RuntimeException("invalid type for version column: " + versionBefore.getClass().getCanonicalName());
-               	}
-               	
-               	final Update update = QueryBuilder.update(mapper.getTableName());
-               	final Assignments assignments = update.with();
-               	assignments.and(QueryBuilder.set(versionColumn.getColumnNameUnquoted(), versionAfter));
-               	assignment.apply(assignments);
-               	update.onlyIf(QueryBuilder.eq(versionColumn.getColumnNameUnquoted(), versionBefore));
-               	
-               	final Update.Where uWhere = update.where();
-				for (int i=0; i< mapper.primaryKeySize(); i++){
-					uWhere.and(QueryBuilder.eq(mapper.getPrimaryKeyColumn(i).getColumnNameUnquoted(), pkeys[i]));
-				}
-               	
-				final ResultSet rs = getSession().execute(update);
-               	
-               	if (!rs.wasApplied())
-               		return null;
-               	
-   				invalidate(id);
-
-				try {
-					final ENTITY beforeUpdate = getEntityClass().newInstance();
-	               	beforeUpdate.setPk(id);
-	               	versionColumn.setValue(beforeUpdate, versionBefore);
-	               	
-	               	final ENTITY afterUpdate = getEntityClass().newInstance();
-	               	afterUpdate.setPk(id);
-	               	versionColumn.setValue(afterUpdate, versionAfter);
-	               	
-	               	return OptResult.create(CassandraModelFactory.this, afterUpdate, beforeUpdate, true);					
-				} catch (Exception e) {
-					throw Throwables.propagate(e);
-				}
-			});
-						
-			if (optResult.isUpdated){
-				localEventBus.post(syncUpdateEntityEvent(optResult));
-				localEventBus.postAsync(asyncUpdateEntityEvent(optResult.beforeUpdate, optResult.afterUpdate));
-			}
-			
-			return optResult;
-		} catch (EntityNotFoundException e) {
-			throw createNotFoundException(id); 
-		}
-	}
-	
-//	private BoundStatement bindPk(final PK id, final BoundStatement bs){
-//		final Object[] pkeys = extractCompaundPk(id);
-//
-//		for (int i=0; i< mapper.primaryKeySize(); i++){
-//			final ColumnMapper<ENTITY> cm = mapper.getPrimaryKeyColumn(i);
-//	        final TypeCodec<Object> customCodec = cm.getCustomCodec();
-//	        if (customCodec != null)
-//	            bs.set(i, pkeys[i], customCodec);
-//	        else
-//	            bs.set(i, pkeys[i], cm.getJavaType());
-//		}
-//		return bs;
-//	}
-//
-//	/**
-//	 * Make update request, no cache validation
-//	 * @param id
-//	 * @param assignment
-//	 * @throws TException
-//	 * @throws E
-//	 */
-//	public final void updateCustom(PK id, VoidFunction<Assignments> assignment) throws TException, E {
+	/**
+	 * select * from table where pk0= partKey[0] and pk1=partKey[1] and ... and cc in (clusterKeys)
+	 * @param partKey
+	 * @param clusterKeys
+	 * @param scenario
+	 * @return
+	 */
+//	public Map<PK, ENTITY> fetchEntityIn(Object[] partKey, List<Object> clusterKeys, Scenario scenario) {
 //		
-//		if (id == null)
-//			throw new IllegalArgumentException("id is null");
+//		Select.Selection selection = QueryBuilder.select();
 //		
-//              	
-//		final Update update = QueryBuilder.update(mapper.getTableName());
-//		final Assignments assignments = update.with();
-//		assignment.apply(assignments);
-//               	
-//		final Update.Where uWhere = update.where();
-//		for (int i=0; i< mapper.primaryKeySize(); i++){
-//			uWhere.and(QueryBuilder.eq(mapper.getPrimaryKeyColumn(i).getColumnNameUnquoted(), QueryBuilder.bindMarker()));
+//		for (ColumnMapper<ENTITY> cm : mapper.allColumns(scenario)){
+//			selection = selection.column(cm.getColumnName());
 //		}
 //		
-//		update.setConsistencyLevel(mapper.getWriteConsistency());
-//		
-//		final BoundStatement bs = getSession().prepare(update).bind();
+//		final Select select = selection.from(mapper.getTableName());
+//		final Select.Where where = select.where();
 //
-//		getSession().execute(bindPk(id, bs));
-//		return ;
+//		for (int i=0; i<mapper.primaryKeySize()-1; i++)
+//			where.and(QueryBuilder.eq(mapper.getPrimaryKeyColumn(i).getColumnName(), partKey[i]));
+//		
+//		where.and(QueryBuilder.in(mapper.getPrimaryKeyColumn(mapper.primaryKeySize()-1).getColumnName(), clusterKeys));		
+//		where.setConsistencyLevel(mapper.getReadConsistency());
+//		
+//		final Map<PK, ENTITY> ret = Maps.newHashMap();
+//		mapper.map(getSession().execute(select)).forEach( e -> {
+//			ret.put((PK)e.getPk(), e);
+//		});
+//		
+//		return ret;
 //	}
-//	
-//	public final ResultSet selectCustom(PK id, String ...columns){
-//		if (id == null)
-//			throw new IllegalArgumentException("id is null");
-//		
-//		final Object[] pkeys = extractCompaundPk(id);
-//		final Select select = QueryBuilder.select(columns).from(mapper.getTableName()); 
-//
-//		final Select.Where uWhere = select.where();
-//		for (int i=0; i< mapper.primaryKeySize(); i++){
-//			uWhere.and(QueryBuilder.eq(mapper.getPrimaryKeyColumn(i).getColumnNameUnquoted(), QueryBuilder.bindMarker()));
-//		}
-//		select.setConsistencyLevel(mapper.getReadConsistency());
-//		
-//		final BoundStatement bs = getSession().prepare(select).bind();
-//
-//		return getSession().execute(bindPk(id, bs));
-//	}
-	
-	@Override
-	public final OptResult<ENTITY> update(PK id, TFunction<ENTITY, Boolean> mutator, EntityFactory<PK, ENTITY> factory) throws TException, E {
-		
-		if (id == null)
-			throw new IllegalArgumentException("id is null");
-		
-		try {
-			final OptResult<ENTITY> ret = OptimisticLockModelFactoryIF.optimisticUpdate((count) -> {
-				
-				final long now = System.currentTimeMillis();
-				
-				ENTITY e;
-				
-				if (count == 0)
-					e = findEntityById(id);
-				else
-					e = fetchEntityById(id);
-				
-				final ENTITY orig;
-				
-				if (e == null){
-					if (factory == null)
-						throw new EntityNotFoundException(id);
-					
-					e = factory.create(id);
-					
-					if (e instanceof CreatedAtIF && (((CreatedAtIF)e).getCreatedAt() == 0))
-			        	((CreatedAtIF)e).setCreatedAt(now);
-			        					
-					orig = null;
-				}else{
-					try {
-						orig = copyConstructor.newInstance(e);
-					} catch (Exception e1) {
-						throw new RuntimeException(e1);
-					}
-				}
-				
-				final boolean needUpdate = mutator.apply(e);
-				if (needUpdate == false)
-					return OptResult.create(CassandraModelFactory.this, e, orig, false);
-				
-				
-//		        if (e instanceof UpdatedAtIF)
-//		        	((UpdatedAtIF) e).setUpdatedAt(now);
-
-	        	if (orig == null){
-	        		
-	        		final DLock lock = this.assertUnique(null, e);
-	        		final boolean saved;
-	        		try{
-	        			saved = mapper.save(e, Option.ifNotExist());			
-	        		}finally{
-	        			if (lock !=null)
-	        				lock.unlock();
-	        		}
-
-	        		if (saved){
-	        			invalidate(id);
-	        			return OptResult.create(CassandraModelFactory.this, e, null, true);
-	        		}else{
-			        	if (count == 0)
-			        		invalidate(id);
-	        			return null;
-	        		}
-	        	}else{
-	        		try{
-	        			
-	        			final DLock lock = this.assertUnique(orig, e);
-	        			final boolean updated;
-		        		try{
-		        			updated = mapper.update(e, orig, Option.onlyIf());			
-		        		}finally{
-		        			if (lock !=null)
-		        				lock.unlock();
-		        		}
-	        			
-	        			if (updated)
-	        				invalidate(id);
-	        			
-	        			return OptResult.create(CassandraModelFactory.this, e, orig, updated);
-	        		}catch(VersionException ve){
-	        			
-			        	if (count == 0)
-			        		invalidate(id);
-			        	
-			        	return null;
-			        }
-	        	}
-			});
-			
-			if (ret.isUpdated){
-				localEventBus.post(syncUpdateEntityEvent(ret));
-				localEventBus.postAsync(asyncUpdateEntityEvent(ret.beforeUpdate, ret.afterUpdate));
-			}
-			
-			return ret;
-		} catch (EntityNotFoundException e) {
-			throw createNotFoundException(id);
-		}				
-	}
-
-	private OptResult<ENTITY> _delete(ENTITY e){				
-		mapper.delete(e);
-		invalidate((PK)e.getPk());
-		final OptResult<ENTITY> r= OptResult.create(this, null, e, true);; 
-		localEventBus.post(syncDeleteEntityEvent(r));
-		localEventBus.postAsync(asyncDeleteEntityEvent(e));		
-		return r;
-	}
-
-	@Override
-	public final OptResult<ENTITY> delete(PK id) throws E {
-		
-		final ENTITY e = findEntityById(id);
-		
-		if (e == null)
-			throw createNotFoundException(id);
-		
-		return _delete(e);
-	}
-	
-	@Override
-	public final OptResult<ENTITY> optInsert(ENTITY e) {
-				
-		final long now = System.currentTimeMillis();
-		
-		if (e.getPk() == null){
-			if (sequenceFactory !=null)
-				e.setPk(sequenceFactory.nextId());
-			else
-				throw new IllegalArgumentException("PK is null:" + e.toString());
-		}
-        
-		if (e instanceof CreatedAtIF && (((CreatedAtIF)e).getCreatedAt() == 0))
-        	((CreatedAtIF)e).setCreatedAt(now);
-        
-        if (e instanceof UpdatedAtIF)
-        	((UpdatedAtIF) e).setUpdatedAt(now);
-
-		final DLock lock = this.assertUnique(null, e);
-		final boolean saved;
-		try{
-			saved = mapper.save(e, Option.ifNotExist());			
-		}finally{
-			if (lock !=null)
-				lock.unlock();
-		}
-        
-		invalidate((PK)e.getPk());
-				
-		if (saved == false)
-			throw new UniqueException(null, true, null);
-		
-		final OptResult<ENTITY> r = OptResult.create(this, e, null, true); 
-
-		localEventBus.post(syncInsertEntityEvent(r));
-		localEventBus.postAsync(asyncInsertEntityEvent(e));
-		
-		return r;
-	}
 
 	@Override
 	final protected Map<PK, ENTITY> fetchEntityByIdAsMap(Collection<PK> _ids) {
@@ -582,7 +254,7 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 		}				
 	}
 	
-	private DLock assertUnique(ENTITY from, ENTITY to){
+	protected DLock assertUnique(ENTITY from, ENTITY to){
 		
 		if (uniqueColumns.isEmpty())
 			return null;
@@ -656,26 +328,6 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 			throw new RuntimeException("multiple results");
 		return ret.isEmpty() ? null : ret.get(0);
 	}
-
-	@Override
-	final public SyncInsertEntityEvent<PK, ENTITY> syncInsertEntityEvent(ENTITY entity){
-		throw new NotImplementedException();
-	}
-	
-	@Override
-	final public SyncUpdateEntityEvent<PK, ENTITY> syncUpdateEntityEvent(ENTITY before, ENTITY after){
-		throw new NotImplementedException();
-	}
-
-	@Override
-	final public SyncDeleteEntityEvent<PK, ENTITY> syncDeleteEntityEvent(ENTITY entity){
-		throw new NotImplementedException();
-	}
-
-	@Override
-	public ENTITY updateEntity(ENTITY e) throws UniqueException {
-		throw new NotImplementedException();
-	}
 	
 	/*
 	 * save all not null fields without read
@@ -696,28 +348,6 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 	public void putEntity(ENTITY entity) {
 		putEntity(entity, true);
 	}
-
-	/**
-	 * Unsafely assume insert without check for update. Use only with uniq (random) PK
-	 * @param e
-	 * @return
-	 */
-	public final OptResult<ENTITY> fastInsert(ENTITY e) {
-		final long now = System.currentTimeMillis();
-		
-		if (e instanceof CreatedAtIF && (((CreatedAtIF)e).getCreatedAt() == 0))
-        	((CreatedAtIF)e).setCreatedAt(now);
-        
-        if (e instanceof UpdatedAtIF)
-        	((UpdatedAtIF) e).setUpdatedAt(now);
-	
-        putEntity(e, false);
-		final OptResult<ENTITY> r = OptResult.create(this, e, null, true); 
-
-		localEventBus.post(syncInsertEntityEvent(r));
-		localEventBus.postAsync(asyncInsertEntityEvent(e));		
-		return r;        
-	}
 	
 	public void fetchAll(final int batchSize, Consumer<List<ENTITY>> consumer){
 				
@@ -733,4 +363,153 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 	public String toString(){
 		return mapper.toString();
 	}
+
+	@Override
+	public ENTITY insertEntity(ENTITY e) throws UniqueException {
+		putEntity(e, false);
+		
+    	localEventBus.postAsync(insertEntityEvent(e));		
+		return e;
+	}
+
+	@Override
+	public ENTITY updateEntity(ENTITY e) throws UniqueException {
+		putEntity(e, true);
+		
+		localEventBus.postAsync(updateEntityEvent(null, e));
+		
+		return e;
+	}
+	
+	@Override
+	public void deleteEntity(ENTITY e) {
+		mapper.delete(extractCompaundPk((PK)e.getPk()));
+	}
+	
+	public ENTITY copy(ENTITY e){
+		try {
+			return copyConstructor.newInstance(e);
+		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e1) {
+			throw new RuntimeException(e1);
+		}		
+	}
+	
+	public Statement insertQuery(final ENTITY e, Option ... options){
+		return mapper.saveQuery(e, options);
+	}
+	
+	public Statement deleteQuery(final PK pk, Option ... options){
+		return mapper.deleteQuery(ArrayUtils.addAll(extractCompaundPk(pk), options));
+	}
+	
+	public Statement updateQuery(final ENTITY beforeUpdate, final ENTITY updateable, TFunction<ENTITY, Boolean> mutator, Option... options) throws TException{
+		
+		if (!(mutator.apply(updateable)))
+			return null;		
+		try{
+			return mapper.updateQuery(updateable, beforeUpdate, options);
+		}catch(NotModifiedException e1){
+			return null;
+		}
+	}
+		
+	public final Statement customUpdateQuery(PK id, Assignment ...assignment) throws TException, E {
+	
+		if (id == null)
+			throw new IllegalArgumentException("id is null");
+	          	
+		final Update update = QueryBuilder.update(mapper.getTableName());
+		final Assignments assignments = update.with();
+		
+		for (Assignment a: assignment){
+			assignments.and(a);
+		}
+           	
+		final Update.Where uWhere = update.where();
+		for (int i=0; i< mapper.primaryKeySize(); i++){
+			uWhere.and(QueryBuilder.eq(mapper.getPrimaryKeyColumn(i).getColumnNameUnquoted(), QueryBuilder.bindMarker()));
+		}
+	
+		update.setConsistencyLevel(mapper.getWriteConsistency());
+		final String queryString = update.getQueryString();
+	
+		final BoundStatement bs = getPreparedQuery(queryString).bind();
+		
+		final Object[] pkeys = extractCompaundPk(id);
+
+		for (int i=0; i< mapper.primaryKeySize(); i++){
+			final ColumnMapper<ENTITY> cm = mapper.getPrimaryKeyColumn(i);
+			final TypeCodec<Object> customCodec = cm.getCustomCodec();
+			if (customCodec != null)
+				bs.set(i, pkeys[i], customCodec);
+			else
+				bs.set(i, pkeys[i], cm.getJavaType());
+		}
+		
+		return bs;
+	}
+	
+	
+//	public OptResult<ENTITY> update(PK id, TFunction<ENTITY, Boolean> mutator) throws TException, E, VersionException {
+//		
+//		if (id == null)
+//			throw new IllegalArgumentException("id is null");
+//						
+//		final long now = System.currentTimeMillis();
+//				
+//		final ENTITY e = findEntityById(id);
+//		
+//		if (e == null)
+//			throw createNotFoundException(id);
+//		
+//		final Statement st = updateQuery(e, mutator);
+//		if (st == null)
+//			return OptResult.create(null, e, orig, false);
+//								
+//		final DLock lock = this.assertUnique(orig, e);
+//		try{
+//			getSession().execute(st);			
+//		}finally{
+//			if (lock !=null)
+//				lock.unlock();
+//		}
+//        			
+//		invalidate(id);
+//        			
+//		final OptResult<ENTITY> ret = OptResult.create(null, e, orig, updated);
+//
+//		if (ret.isUpdated){
+//			localEventBus.post(syncUpdateEntityEvent(ret.beforeUpdate, ret.afterUpdate));
+//			localEventBus.postAsync(asyncUpdateEntityEvent(ret.beforeUpdate, ret.afterUpdate));
+//		}
+//		
+//		return ret;
+//	}
+
+	public Constructor<ENTITY> getCopyConstructor() {
+		return copyConstructor;
+	}
+	
+	public Update update(){
+		return QueryBuilder.update(mapper.getTableName());
+	}
+	
+    protected PreparedStatement getPreparedQuery(String queryString) {
+
+        PreparedStatement stmt = preparedQueries.get(queryString);
+        if (stmt == null) {
+            synchronized (preparedQueries) {
+                stmt = preparedQueries.get(queryString);
+                if (stmt == null){
+                    log.debug("Preparing query {}", queryString);
+                    stmt = getSession().prepare(queryString);
+                    final Map<String, PreparedStatement> newQueries = new HashMap<String, PreparedStatement>(preparedQueries);
+                    newQueries.put(queryString, stmt);
+                    preparedQueries = newQueries;
+                }
+            }
+        }
+        return stmt;
+    }
+	
 }

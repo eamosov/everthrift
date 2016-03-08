@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import org.apache.commons.lang.NotImplementedException;
 import org.apache.thrift.TException;
 import org.hibernate.SessionFactory;
 import org.hibernate.StaleStateException;
@@ -28,9 +27,6 @@ import com.knockchat.node.model.LocalEventBus;
 import com.knockchat.node.model.OptResult;
 import com.knockchat.node.model.OptimisticLockModelFactoryIF;
 import com.knockchat.node.model.UniqueException;
-import com.knockchat.node.model.events.DeleteEntityEvent.SyncDeleteEntityEvent;
-import com.knockchat.node.model.events.InsertEntityEvent.SyncInsertEntityEvent;
-import com.knockchat.node.model.events.UpdateEntityEvent.SyncUpdateEntityEvent;
 import com.knockchat.utils.LongTimestamp;
 import com.knockchat.utils.Pair;
 import com.knockchat.utils.thrift.TFunction;
@@ -122,8 +118,7 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
 				});
 
     		final OptResult<ENTITY> r = OptResult.create(this, null, deleted, true); 
-        	localEventBus.post(syncDeleteEntityEvent(r));
-        	localEventBus.postAsync(asyncDeleteEntityEvent(deleted));    		
+        	localEventBus.postAsync(deleteEntityEvent(deleted));    		
     		return r;
 		} catch (EntityNotFoundException e) {
 			throw createNotFoundException(id); 
@@ -160,8 +155,7 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
 		_invalidateEhCache((PK)inserted.getPk());
 		
 		final OptResult<ENTITY> r = OptResult.create(this, inserted, null, true); 
-    	localEventBus.post(syncInsertEntityEvent(r));
-    	localEventBus.postAsync(asyncInsertEntityEvent(inserted));    	
+    	localEventBus.postAsync(insertEntityEvent(inserted));    	
     	return r;
     }
 
@@ -210,8 +204,7 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
 		if (ret.isUpdated){
 			_invalidateEhCache(id);
 			
-	    	localEventBus.post(syncUpdateEntityEvent(ret));
-	    	localEventBus.postAsync(asyncUpdateEntityEvent(ret.beforeUpdate, ret.afterUpdate));			
+	    	localEventBus.postAsync(updateEntityEvent(ret.beforeUpdate, ret.afterUpdate));			
 		}
 
 		return ret;
@@ -290,8 +283,7 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
 		final OptResult<ENTITY> ret = new OptResult<ENTITY>(this, r.first, before, true); 
 
 		if (r.second){
-	    	localEventBus.post(syncUpdateEntityEvent(ret));
-	    	localEventBus.postAsync(asyncUpdateEntityEvent(before, r.first));			
+	    	localEventBus.postAsync(updateEntityEvent(before, r.first));			
 		}
 		return r.first;
 	}
@@ -303,24 +295,5 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
 		for (List<ENTITY> batch : Lists.partition(entities, batchSize))
 			consumer.accept(batch);
     }
-
-	
-	@Override
-	final public SyncInsertEntityEvent<PK, ENTITY> syncInsertEntityEvent(ENTITY entity){
-		throw new NotImplementedException();
-	}
-	
-	@Override
-	final public SyncUpdateEntityEvent<PK, ENTITY> syncUpdateEntityEvent(ENTITY before, ENTITY after){
-		throw new NotImplementedException();
-	}
-
-	@Override
-	final public SyncDeleteEntityEvent<PK, ENTITY> syncDeleteEntityEvent(ENTITY entity){
-		throw new NotImplementedException();
-	}
-	
-	
-	
 }
 

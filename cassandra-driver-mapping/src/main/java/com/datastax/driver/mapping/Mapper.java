@@ -46,7 +46,6 @@ import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Update;
 import com.datastax.driver.mapping.EntityMapper.Scenario;
-import com.datastax.driver.mapping.Mapper.Option;
 import com.datastax.driver.mapping.Mapper.Option.SaveNullFields;
 import com.datastax.driver.mapping.annotations.Accessor;
 import com.datastax.driver.mapping.annotations.Computed;
@@ -54,6 +53,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Functions;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
@@ -304,7 +304,8 @@ public class Mapper<T> {
         int nUpdatedFields =0;
         
         ColumnMapper<T> updatedAtColumn = null;
-        Long updatedAtValue = null;
+        final Option.UpdatedAt updatedAtOption = (Option.UpdatedAt)options.get(Option.Type.UPDATED_AT);
+        final long updatedAtValue = updatedAtOption == null ? System.currentTimeMillis() : updatedAtOption.getValue();
         
         for (ColumnMapper<T> cm : mapper.allColumns(((Option.Scenario)options.get(Option.Type.SCENARIO)).getScenario())) {
             final Object value = cm.getValue(entity);
@@ -334,7 +335,6 @@ public class Mapper<T> {
                 	}                	
                 }else if (cm.kind == ColumnMapper.Kind.REGULAR){
                 	if (cm == updatedAtColumn){
-                		updatedAtValue = System.currentTimeMillis(); 
                 		values.put(cm, updatedAtValue);
                 	}else if (!Objects.equal(value, origValue)){
                 		values.put(cm, value);
@@ -391,12 +391,17 @@ public class Mapper<T> {
         return option == null || option.saveNullFields;
     }
 
-    private static void setObject(BoundStatement bs, int i, Object value, ColumnMapper<?> mapper) {
-        TypeCodec<Object> customCodec = mapper.getCustomCodec();
-        if (customCodec != null)
-            bs.set(i, value, customCodec);
-        else
-            bs.set(i, value, mapper.getJavaType());
+    private void setObject(BoundStatement bs, int i, Object value, ColumnMapper<?> mapper) {
+    	try{
+            TypeCodec<Object> customCodec = mapper.getCustomCodec();
+            if (customCodec != null)
+                bs.set(i, value, customCodec);
+            else
+                bs.set(i, value, mapper.getJavaType());    		
+    	}catch (Exception e){
+    		logger.error(String.format("Error setting %s.%s, query='%s', i=%d, value=%s", getTableName(), mapper.getColumnNameUnquoted(), bs.preparedStatement().getQueryString(), i, value), e);
+    		throw Throwables.propagate(e);
+    	}
     }
     
     private boolean isApplied(ResultSet rs){
@@ -1009,7 +1014,7 @@ public class Mapper<T> {
      */
     public static abstract class Option {
 
-        enum Type {TTL, TIMESTAMP, CL, TRACING, SAVE_NULL_FIELDS, IF_NOT_EXISTS, IF_EXISTS, ONLY_IF, FETCH_SIZE, SCENARIO}
+        enum Type {TTL, TIMESTAMP, CL, TRACING, SAVE_NULL_FIELDS, IF_NOT_EXISTS, IF_EXISTS, ONLY_IF, FETCH_SIZE, SCENARIO, UPDATED_AT}
 
         final Type type;
 
@@ -1101,6 +1106,10 @@ public class Mapper<T> {
 
         public static Option scenario(EntityMapper.Scenario scenario){
         	return new Scenario(scenario);
+        }
+        
+        public static Option updatedAt(long value){
+        	return new UpdatedAt(value);
         }
 
         public Type getType() {
@@ -1526,6 +1535,49 @@ public class Mapper<T> {
 			}        	
         }
         
+        static class UpdatedAt extends Option {
+        	
+        	final long updatedAt;
+
+        	UpdatedAt(long updatedAt) {
+				super(Type.UPDATED_AT);
+				this.updatedAt = updatedAt;
+			}
+        	
+        	public long getValue(){
+        		return updatedAt;
+        	}
+
+			@Override
+			void appendTo(Insert insert) {
+				throw new UnsupportedOperationException("shouldn't be called");
+			}
+
+			@Override
+			void appendTo(Delete.Options usings) {
+				throw new UnsupportedOperationException("shouldn't be called");				
+			}
+
+			@Override
+			void appendTo(Update update) {
+				throw new UnsupportedOperationException("shouldn't be called");
+			}
+
+			@Override
+			void addToPreparedStatement(BoundStatement bs, int i) {
+				
+			}
+
+			@Override
+			void checkValidFor(QueryType qt, MappingManager manager) throws IllegalArgumentException {
+				checkArgument(qt == QueryType.UPDATE, "UpdatedAt option is only allowed in update queries");					
+			}
+
+			@Override
+			boolean isIncludedInQuery() {
+				return false;
+			}        	
+        }
         
     }
 

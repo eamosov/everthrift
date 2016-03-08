@@ -65,10 +65,7 @@ public class ThriftProcessor implements TProcessor{
 	@Qualifier("callerRunsBoundQueueExecutor")
 	@Autowired
 	private  AsyncTaskExecutor executor;
-	
-	@Autowired
-	private MulticastThriftTransport clusterThriftTransport;
-	
+		
 	@Autowired
 	protected ApplicationContext applicationContext;
 	
@@ -179,7 +176,7 @@ public class ThriftProcessor implements TProcessor{
 			public Map<Address, Object> call() {
 				try {
 					final InvocationInfo ii = new InvocationInfo(msg.name, args, ctrl.getControllerCls().getConstructor());
-					final Map<Address, Object> clusterResults = clusterThriftTransport.thriftCall(false, ann.timeout(), msg.seqid, ann.value(), ii);
+					final Map<Address, Object> clusterResults = applicationContext.getBean(MulticastThriftTransport.class).thriftCall(false, ann.timeout(), msg.seqid, ann.value(), ii);
 					log.debug("Cluster results:{}", clusterResults);
 					return clusterResults;
 				} catch (TException | NoSuchMethodException | SecurityException e) {
