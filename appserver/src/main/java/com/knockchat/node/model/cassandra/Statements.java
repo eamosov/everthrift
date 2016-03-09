@@ -27,7 +27,6 @@ import com.knockchat.node.model.events.InsertEntityEvent;
 import com.knockchat.node.model.events.UpdateEntityEvent;
 import com.knockchat.utils.thrift.TFunction;
 
-//TODO  batch / no batch
 public class Statements {
 	
 	

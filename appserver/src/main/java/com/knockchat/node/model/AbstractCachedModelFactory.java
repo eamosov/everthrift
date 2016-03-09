@@ -267,7 +267,7 @@ public abstract class AbstractCachedModelFactory<PK,ENTITY> extends RoModelFacto
 			}else{
 				return fetchEntityByIdAsMap(ids);
 			}
-		}
+		}				
 		
 		return (Map)cache.getAllWithLoader(ids, _loader);
     }
@@ -299,5 +299,6 @@ public abstract class AbstractCachedModelFactory<PK,ENTITY> extends RoModelFacto
 
 	final public void setCache(Cache cache) {
 		this.cache = cache;
+		_afterPropertiesSet();
 	}	
 }

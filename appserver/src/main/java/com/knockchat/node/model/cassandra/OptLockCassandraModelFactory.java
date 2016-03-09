@@ -118,7 +118,6 @@ public abstract class OptLockCassandraModelFactory<PK extends Serializable,ENTIT
 		
 	}
 	
-	//TODO маппинг первичных ключей надо делать как в updateCustom
 	public final OptResult<ENTITY> updateWithAssignments(PK id, VoidFunction<Assignments> assignment) throws TException, E {
 		
 		if (id == null)

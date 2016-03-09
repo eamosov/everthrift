@@ -22,6 +22,7 @@ import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.ConsistencyLevel;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.Statement;
@@ -38,6 +39,7 @@ import com.datastax.driver.mapping.Mapper.Option;
 import com.datastax.driver.mapping.MappingManager;
 import com.datastax.driver.mapping.NotModifiedException;
 import com.google.common.base.Throwables;
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
@@ -54,7 +56,6 @@ import com.knockchat.node.model.LocalEventBus;
 import com.knockchat.node.model.RwModelFactoryIF;
 import com.knockchat.node.model.UniqueException;
 import com.knockchat.utils.Pair;
-import com.knockchat.utils.VoidFunction;
 import com.knockchat.utils.thrift.TFunction;
 
 import net.sf.ehcache.Cache;
@@ -162,6 +163,87 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
         	return (Number)row.get(0, versionColumn.getJavaType());					
 		
 	}
+	
+	private static class KK{
+		private final Object[] kk;
+
+		private KK(Object[] kk) {
+			super();
+			this.kk = kk;
+		}
+		
+	    public static int hashCode(Object a[]) {
+	        if (a == null)
+	            return 0;
+
+	        int result = 1;
+
+	        for (int i=0; i<a.length-1; i++)
+	            result = 31 * result + (a[i] == null ? 0 : a[i].hashCode());
+
+	        return result;
+	    }
+
+	    private static boolean equals(Object[] a, Object[] a2) {
+	        if (a==a2)
+	            return true;
+	        if (a==null || a2==null)
+	            return false;
+
+	        if (a2.length != a.length)
+	            return false;
+
+	        for (int i=0; i<a.length-1; i++) {
+	            Object o1 = a[i];
+	            Object o2 = a2[i];
+	            if (!(o1==null ? o2==null : o1.equals(o2)))
+	                return false;
+	        }
+
+	        return true;
+	    }
+	    
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + hashCode(kk);
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			KK other = (KK) obj;
+			if (!equals(kk, other.kk))
+				return false;
+			return true;
+		}		
+	}
+	
+	private ListenableFuture<List<ResultSet>> fetchEntityIn(Collection<PK> ids, Scenario scenario) {
+		
+		final ArrayListMultimap<KK, Object> mm = ArrayListMultimap.create();
+		
+		for (PK id: ids){
+			final Object[] pk = extractCompaundPk(id);
+			mm.put(new KK(pk), pk[pk.length-1]);
+		}
+		
+		final List<ListenableFuture<ResultSet>> lfs = Lists.newArrayList();
+		
+		for (Map.Entry<KK, Collection<Object>> e : mm.asMap().entrySet()){
+			lfs.add(fetchEntityIn(e.getKey().kk, (List)e.getValue(), scenario));
+		}
+		
+		return Futures.allAsList(lfs);
+	}
 		
 	/**
 	 * select * from table where pk0= partKey[0] and pk1=partKey[1] and ... and cc in (clusterKeys)
@@ -170,48 +252,93 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 	 * @param scenario
 	 * @return
 	 */
-//	public Map<PK, ENTITY> fetchEntityIn(Object[] partKey, List<Object> clusterKeys, Scenario scenario) {
-//		
-//		Select.Selection selection = QueryBuilder.select();
-//		
-//		for (ColumnMapper<ENTITY> cm : mapper.allColumns(scenario)){
-//			selection = selection.column(cm.getColumnName());
-//		}
-//		
-//		final Select select = selection.from(mapper.getTableName());
-//		final Select.Where where = select.where();
-//
-//		for (int i=0; i<mapper.primaryKeySize()-1; i++)
-//			where.and(QueryBuilder.eq(mapper.getPrimaryKeyColumn(i).getColumnName(), partKey[i]));
-//		
-//		where.and(QueryBuilder.in(mapper.getPrimaryKeyColumn(mapper.primaryKeySize()-1).getColumnName(), clusterKeys));		
-//		where.setConsistencyLevel(mapper.getReadConsistency());
-//		
+	private ResultSetFuture fetchEntityIn(Object[] partKey, List<Object> clusterKeys, Scenario scenario) {
+		
+		//System.out.println("partKey=" + partKey + "");
+		
+		Select.Selection selection = QueryBuilder.select();
+		
+		for (ColumnMapper<ENTITY> cm : mapper.allColumns(scenario)){
+			selection = selection.column(cm.getColumnName());
+		}
+		
+		final Select select = selection.from(mapper.getTableName());
+		final Select.Where where = select.where();
+		
+		final List<ColumnMapper<ENTITY>> pks = Lists.newArrayList();
+
+		for (int i=0; i<mapper.primaryKeySize()-1; i++){
+			final ColumnMapper<ENTITY> cm = mapper.getPrimaryKeyColumn(i);
+			pks.add(cm);
+			where.and(QueryBuilder.eq(cm.getColumnName(), /*partKey[i]*/ QueryBuilder.bindMarker()));
+		}
+		
+		final ColumnMapper<ENTITY> kk = mapper.getPrimaryKeyColumn(mapper.primaryKeySize()-1); 
+		
+		where.and(QueryBuilder.in(kk.getColumnName(), /*clusterKeys*/ QueryBuilder.bindMarker()));		
+		//where.setConsistencyLevel(mapper.getReadConsistency());
+		
+		final PreparedStatement ps = getPreparedQuery(select.getQueryString());
+		
+		//System.out.println(ps.getQueryString());
+		final BoundStatement bs = ps.bind();
+			
+		int i;
+		for (i=0; i< pks.size(); i++){
+			final ColumnMapper<ENTITY> cm = pks.get(i);
+            final TypeCodec<Object> customCodec = cm.getCustomCodec();
+            if (customCodec != null)
+                bs.set(i, partKey[i], customCodec);
+            else
+                bs.set(i, partKey[i], cm.getJavaType());
+		}
+		
+        if (kk.getCustomCodec() !=null)
+        	throw new RuntimeException("custom codecs not supported here. Need for proper implementation");
+        
+        bs.setList(i, clusterKeys, kk.getJavaType());
+		bs.setConsistencyLevel(mapper.getReadConsistency());
+		
+		return getSession().executeAsync(bs);
+		
 //		final Map<PK, ENTITY> ret = Maps.newHashMap();
-//		mapper.map(getSession().execute(select)).forEach( e -> {
+//		mapper.map(getSession().execute(bs)).forEach( e -> {
 //			ret.put((PK)e.getPk(), e);
 //		});
 //		
 //		return ret;
-//	}
+	}
 
 	@Override
 	final protected Map<PK, ENTITY> fetchEntityByIdAsMap(Collection<PK> _ids) {
 		
-		final List<PK> ids = ImmutableList.copyOf(_ids);
-		final List<ListenableFuture<ENTITY>> ff = Lists.transform(ids, pk -> (mapper.getAsync(extractCompaundPk(pk))));
-		
 		try {
-			final List<ENTITY> ee =  Futures.successfulAsList(ff).get();
-			final Map<PK, ENTITY> ret = Maps.newHashMap();
-			for (int i=0; i< ids.size(); i++){
-				ret.put(ids.get(i), ee.get(i));
-			}
-			return ret;
-			
+// нельзя использовать IN из-за "Cannot restrict clustering columns by IN relations when a collection is selected by the query"
+//			if (mapper.primaryKeySize() >  1){
+//				
+//				final Map<PK, ENTITY> ret = Maps.newHashMap();
+//				for (ResultSet rs: fetchEntityIn(_ids, Scenario.COMMON).get()){
+//					if (rs ==null)
+//						continue;
+//					
+//					for (ENTITY e: mapper.map(rs).all())
+//						ret.put((PK)e.getPk(), e);
+//				}
+//				return ret;				
+//			}else{
+				final List<PK> ids = ImmutableList.copyOf(_ids);
+				final List<ListenableFuture<ENTITY>> ff = Lists.transform(ids, pk -> (mapper.getAsync(extractCompaundPk(pk))));
+				
+				final List<ENTITY> ee =  Futures.successfulAsList(ff).get();
+				final Map<PK, ENTITY> ret = Maps.newHashMap();
+				for (int i=0; i< ids.size(); i++){
+					ret.put(ids.get(i), ee.get(i));
+				}
+				return ret;					
+//			}					
 		} catch (InterruptedException | ExecutionException e) {
 			throw new RuntimeException(e);
-		}		
+		}					
 	}
 
 	@Override
