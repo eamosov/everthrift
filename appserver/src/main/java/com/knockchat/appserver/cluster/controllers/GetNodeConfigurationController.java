@@ -17,7 +17,6 @@ import com.knockchat.appserver.thrift.cluster.NodeControllers;
 import com.knockchat.appserver.transport.asynctcp.RpcAsyncTcp;
 import com.knockchat.appserver.transport.jgroups.RpcJGroups;
 import com.knockchat.appserver.transport.tcp.RpcSyncTcp;
-import com.knockchat.utils.NetUtils;
 
 @RpcJGroups
 @RpcSyncTcp
@@ -48,7 +47,7 @@ public class GetNodeConfigurationController extends ThriftController<ClusterServ
 		
 		return new Node(nc,
 				AppserverApplication.INSTANCE.env.getProperty("node.name"), 				
-				(cs !=null && cs.getObject().getAddress() !=null) ? new NodeAddress(NetUtils.localToPublic(cs.getObject().getAddress().getHost()), cs.getObject().getAddress().getPort()) : null,
+				(cs !=null && cs.getObject().getAddress() !=null) ? new NodeAddress(cs.getObject().getAddress().getHost(), cs.getObject().getAddress().getPort()) : null,
 				AppserverApplication.INSTANCE.jettyAddress);
 	}	
 }

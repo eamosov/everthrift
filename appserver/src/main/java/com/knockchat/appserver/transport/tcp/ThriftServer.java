@@ -22,7 +22,6 @@ import org.springframework.context.ApplicationContext;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.knockchat.appserver.controller.ThriftProcessor;
-import com.knockchat.utils.NetUtils;
 
 public class ThriftServer{
 	
@@ -77,10 +76,6 @@ public class ThriftServer{
 			trans = new TServerSocket(new InetSocketAddress(host, port));
 		} catch (TTransportException e) {
 			throw new RuntimeException(e);
-		}
-		
-		if (trans.getServerSocket().getInetAddress().isAnyLocalAddress()){
-			this.host = NetUtils.getFirstPublicHostAddress();
 		}
 		
 		final SynchronousQueue<Runnable> executorQueue = new SynchronousQueue<Runnable>();

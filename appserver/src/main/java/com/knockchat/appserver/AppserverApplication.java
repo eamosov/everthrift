@@ -78,10 +78,8 @@ import com.knockchat.appserver.monitoring.RpsServlet;
 import com.knockchat.appserver.thrift.cluster.NodeAddress;
 import com.knockchat.appserver.transport.http.BinaryThriftServlet;
 import com.knockchat.appserver.transport.http.JsonThriftServlet;
-import com.knockchat.appserver.transport.tcp.ThriftServer;
 import com.knockchat.cassandra.migrator.CMigrationProcessor;
 import com.knockchat.sql.migration.MigrationProcessor;
-import com.knockchat.utils.NetUtils;
 import com.knockchat.utils.PosAppInitializingBean;
 import com.knockchat.utils.SocketUtils;
 
@@ -361,7 +359,7 @@ public class AppserverApplication {
             }
         }
 
-        jettyAddress = new NodeAddress(NetUtils.localToPublic(host), port);
+        jettyAddress = new NodeAddress(host, port);
 
         //final ServletContextHandler jettyContext = new ServletContextHandler(ServletContextHandler.SESSIONS);
         final WebAppContext jettyContext = new WebAppContext();
