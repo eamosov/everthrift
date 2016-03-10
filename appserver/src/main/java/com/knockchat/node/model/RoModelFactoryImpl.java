@@ -196,7 +196,7 @@ public abstract class RoModelFactoryImpl<PK, ENTITY>  implements RoModelFactoryI
             int i = 0;
             for (Object j : s)
                 i++;
-            log.debug("loading {} entities", i);
+            log.trace("loading {} entities", i);
         }
 
         return joinByIds(s, _getEntityId, _setEntity);
