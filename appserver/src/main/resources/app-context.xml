@@ -17,12 +17,11 @@
 
   <context:property-placeholder />
 
-  <task:executor id="syncQueueExecutor" pool-size="2-1048576" keep-alive="10" queue-capacity="0"/>
-  <task:executor id="callerRunsBoundQueueExecutor" pool-size="5-10" keep-alive="2" queue-capacity="200" rejection-policy="CALLER_RUNS"/>
-  <task:executor id="abortBoundQueueExecutor" pool-size="5-10" keep-alive="2" queue-capacity="200" rejection-policy="ABORT"/>
+  <task:executor id="callerRunsBoundQueueExecutor" pool-size="5-20" keep-alive="5" queue-capacity="200" rejection-policy="CALLER_RUNS"/>
+  <task:executor id="unboundQueueExecutor" pool-size="10" />
     
   <task:scheduler id="myScheduler" pool-size="10"/>
-  <task:annotation-driven executor="syncQueueExecutor" scheduler="myScheduler"/>
+  <task:annotation-driven executor="callerRunsBoundQueueExecutor" scheduler="myScheduler"/>
 
   <int:poller id="defaultPoller" default="true" receive-timeout="5000" fixed-rate="1"/>
 	    

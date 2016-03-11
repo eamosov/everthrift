@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.apache.commons.lang.WordUtils;
 import org.apache.thrift.TBase;
 import org.apache.thrift.TFieldIdEnum;
 import org.apache.thrift.meta_data.FieldMetaData;
@@ -14,7 +15,6 @@ import org.apache.thrift.meta_data.ListMetaData;
 import org.apache.thrift.meta_data.MapMetaData;
 import org.apache.thrift.meta_data.SetMetaData;
 import org.apache.thrift.meta_data.StructMetaData;
-import org.apache.velocity.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -296,7 +296,7 @@ public class TBaseScannerFactory {
 									
 					final PropertyInfo pi = new PropertyInfo();
 					pi.name = e.getKey().getFieldName();
-					pi.getterName = "get" + StringUtils.capitalizeFirstLetter(pi.name);
+					pi.getterName = "get" + WordUtils.capitalize(pi.name);
 
 					if (v instanceof StructMetaData){
 

@@ -9,7 +9,7 @@ import java.io.ObjectOutputStream;
 import java.lang.reflect.Field;
 import java.util.Map;
 
-import org.apache.commons.collections.iterators.ArrayIterator;
+import org.jgroups.util.ArrayIterator;
 import org.springframework.beans.BeanUtils;
 
 import com.google.common.collect.Maps;

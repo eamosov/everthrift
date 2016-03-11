@@ -8,9 +8,9 @@ import java.util.Map;
 import java.util.RandomAccess;
 import java.util.Set;
 
-import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.CollectionUtils;
 
 import com.google.common.base.Function;
 import com.google.common.base.Predicates;

@@ -24,20 +24,10 @@ import com.knockchat.appserver.controller.ThriftProcessor;
 public class Config {
         
     @Bean
-    public ListeningExecutorService listeningSyncQueueExecutor(@Qualifier("syncQueueExecutor") ThreadPoolTaskExecutor executor){
-    	return MoreExecutors.listeningDecorator(executor.getThreadPoolExecutor());
-    }
-
-    @Bean
     public ListeningExecutorService listeningCallerRunsBoundQueueExecutor(@Qualifier("callerRunsBoundQueueExecutor") ThreadPoolTaskExecutor executor){
     	return MoreExecutors.listeningDecorator(executor.getThreadPoolExecutor());
     }
 
-    @Bean
-    public ListeningExecutorService listeningAbortBoundQueueExecutor(@Qualifier("abortBoundQueueExecutor") ThreadPoolTaskExecutor executor){
-    	return MoreExecutors.listeningDecorator(executor.getThreadPoolExecutor());
-    }
-    
     @Bean
     public ListeningScheduledExecutorService listeningScheduledExecutorService(@Qualifier("myScheduler") ThreadPoolTaskScheduler scheduler){
     	return MoreExecutors.listeningDecorator(scheduler.getScheduledThreadPoolExecutor());
