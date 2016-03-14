@@ -1,5 +1,8 @@
 package com.knockchat.cassandra.migrator;
 
+import java.util.Comparator;
+import java.util.List;
+
 import javax.annotation.PostConstruct;
 
 import org.slf4j.Logger;
@@ -15,6 +18,9 @@ import org.springframework.core.type.filter.AssignableTypeFilter;
 import org.springframework.util.ClassUtils;
 
 import com.datastax.driver.core.Session;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+import com.google.common.primitives.Ints;
 
 import io.smartcat.migration.Migration;
 import io.smartcat.migration.MigrationEngine;
@@ -34,6 +40,7 @@ public class CMigrationProcessor {
     private String basePackage;
     
 	private final MigrationResources resources = new MigrationResources();
+	private final List<Migration> migrations = Lists.newArrayList();
 
 	private void findMigrations(String basePackage) {
 		
@@ -55,7 +62,7 @@ public class CMigrationProcessor {
            	if (migration == null)
            		throw new RuntimeException("cound't get bean:" + cls.getSimpleName());
 
-            resources.addMigration(migration);
+           	migrations.add(migration);
         }
 		
 	}
@@ -66,6 +73,13 @@ public class CMigrationProcessor {
     }
     
     public boolean migrate(){
+    	migrations.sort(new Comparator<Migration>(){
+
+			@Override
+			public int compare(Migration o1, Migration o2) {
+				return Ints.compare(o1.getVersion(), o2.getVersion());
+			}});
+    	resources.addMigrations(Sets.newLinkedHashSet(migrations));
         return  MigrationEngine.withSession(session).migrate(resources);
     }
 
