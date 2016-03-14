@@ -39,6 +39,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.knockchat.appserver.model.CreatedAtIF;
 import com.knockchat.appserver.model.UpdatedAtIF;
 import com.knockchat.node.model.UniqueException;
+import com.knockchat.utils.LongTimestamp;
 import com.knockchat.utils.Pair;
 
 
@@ -170,7 +171,7 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
             if (log.isDebugEnabled())
             	log.debug("save tx={}: {}", session.getTransaction().getStatus(), e);
             
-            final long now = System.currentTimeMillis();
+            final long now = LongTimestamp.now();
             
     		if (e instanceof CreatedAtIF && (((CreatedAtIF)e).getCreatedAt() == 0))
             	((CreatedAtIF)e).setCreatedAt(now);

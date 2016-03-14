@@ -36,6 +36,7 @@ import com.datastax.driver.mapping.ColumnMapper;
 import com.datastax.driver.mapping.EntityMapper.Scenario;
 import com.datastax.driver.mapping.Mapper;
 import com.datastax.driver.mapping.Mapper.Option;
+import com.datastax.driver.mapping.Mapper.UpdateQuery;
 import com.datastax.driver.mapping.MappingManager;
 import com.datastax.driver.mapping.NotModifiedException;
 import com.google.common.base.Throwables;
@@ -529,12 +530,12 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 		return mapper.deleteQuery(ArrayUtils.addAll(extractCompaundPk(pk), options));
 	}
 	
-	public Statement updateQuery(final ENTITY beforeUpdate, final ENTITY updateable, TFunction<ENTITY, Boolean> mutator, Option... options) throws TException{
+	public UpdateQuery updateQuery(final ENTITY beforeUpdate, final ENTITY afterUpdate, TFunction<ENTITY, Boolean> mutator, Option... options) throws TException{
 		
-		if (!(mutator.apply(updateable)))
+		if (!(mutator.apply(afterUpdate)))
 			return null;		
 		try{
-			return mapper.updateQuery(updateable, beforeUpdate, options);
+			return mapper.updateQuery(beforeUpdate, afterUpdate, options);
 		}catch(NotModifiedException e1){
 			return null;
 		}
@@ -576,43 +577,6 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 		return bs;
 	}
 	
-	
-//	public OptResult<ENTITY> update(PK id, TFunction<ENTITY, Boolean> mutator) throws TException, E, VersionException {
-//		
-//		if (id == null)
-//			throw new IllegalArgumentException("id is null");
-//						
-//		final long now = System.currentTimeMillis();
-//				
-//		final ENTITY e = findEntityById(id);
-//		
-//		if (e == null)
-//			throw createNotFoundException(id);
-//		
-//		final Statement st = updateQuery(e, mutator);
-//		if (st == null)
-//			return OptResult.create(null, e, orig, false);
-//								
-//		final DLock lock = this.assertUnique(orig, e);
-//		try{
-//			getSession().execute(st);			
-//		}finally{
-//			if (lock !=null)
-//				lock.unlock();
-//		}
-//        			
-//		invalidate(id);
-//        			
-//		final OptResult<ENTITY> ret = OptResult.create(null, e, orig, updated);
-//
-//		if (ret.isUpdated){
-//			localEventBus.post(syncUpdateEntityEvent(ret.beforeUpdate, ret.afterUpdate));
-//			localEventBus.postAsync(asyncUpdateEntityEvent(ret.beforeUpdate, ret.afterUpdate));
-//		}
-//		
-//		return ret;
-//	}
-
 	public Constructor<ENTITY> getCopyConstructor() {
 		return copyConstructor;
 	}
@@ -638,5 +602,4 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
         }
         return stmt;
     }
-	
 }

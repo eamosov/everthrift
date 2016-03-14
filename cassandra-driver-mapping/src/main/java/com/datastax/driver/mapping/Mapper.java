@@ -20,12 +20,15 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,6 +48,7 @@ import com.datastax.driver.core.querybuilder.Delete;
 import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Update;
+import com.datastax.driver.core.querybuilder.Update.Assignments;
 import com.datastax.driver.mapping.EntityMapper.Scenario;
 import com.datastax.driver.mapping.Mapper.Option.SaveNullFields;
 import com.datastax.driver.mapping.annotations.Accessor;
@@ -158,6 +162,10 @@ public class Mapper<T> {
     	return mapper.getVersionColumn();
     }
 
+    public ColumnMapper<T> getUpdatedAtColumn(){
+    	return mapper.getUpdatedAtColumn();
+    }
+
     PreparedStatement getPreparedQuery(QueryType type, Set<ColumnMapper<?>> columns, EnumMap<Option.Type, Option> options) {
 
         MapperQueryKey pqk = new MapperQueryKey(type, columns, options);
@@ -267,12 +275,12 @@ public class Mapper<T> {
         return bs;
     }
     
-    public Statement updateQuery(T entity, Option... options) throws NotModifiedException {
-        return updateQuery(entity, null, toMapWithDefaults(options, this.defaultUpdateOptions));
+    public UpdateQuery updateQuery(T entity, Option... options) throws NotModifiedException {
+        return updateQuery(null, entity, toMapWithDefaults(options, this.defaultUpdateOptions));
     }
 
-    public Statement updateQuery(T entity, T original, Option... options) throws NotModifiedException {
-        return updateQuery(entity, original, toMapWithDefaults(options, this.defaultUpdateOptions));
+    public UpdateQuery updateQuery(T beforeUpdate, T afterUpdate, Option... options) throws NotModifiedException {
+        return updateQuery(beforeUpdate, afterUpdate, toMapWithDefaults(options, this.defaultUpdateOptions));
     }
     
     private Number inc(Object value){
@@ -286,10 +294,27 @@ public class Mapper<T> {
        		throw new RuntimeException("invalid type for version column: " + value.getClass().getCanonicalName());
        	}    	
     }
-
-    private Statement updateQuery(T entity, T original, EnumMap<Option.Type, Option> options) throws NotModifiedException {
+    
+    public static class UpdateQuery{
+    	public final Statement statement;
+    	public final Map<ColumnMapper, Object> specialValues; // version and updatedAt 
     	
-    	if (entity == original)
+		UpdateQuery(Statement statement, Map<ColumnMapper, Object> specialValues) {
+			super();
+			this.statement = statement;
+			this.specialValues = specialValues;
+		}
+		
+		public void applySpecialValues(Object entity){
+			for (Entry<ColumnMapper, Object> e: specialValues.entrySet()){
+				e.getKey().setValue(entity, e.getValue());
+			}
+		}
+    }
+
+    private UpdateQuery updateQuery(T beforeUpdate, T afterUpdate, EnumMap<Option.Type, Option> options) throws NotModifiedException {
+    	
+    	if (afterUpdate == beforeUpdate)
     		throw new IllegalArgumentException();
     	
         boolean saveNullFields = shouldSaveNullFields(options);
@@ -299,44 +324,50 @@ public class Mapper<T> {
         if (isOptimisticUpdate && mapper.getVersionColumn() == null)
         	throw new RuntimeException("ONLY_IF may be used only with versioned entities");
     		
-        Map<ColumnMapper<T>, Object> values = new HashMap<ColumnMapper<T>, Object>();
+        final Map<ColumnMapper<T>, Object> values = new HashMap<ColumnMapper<T>, Object>();
+        final Map<ColumnMapper<T>, Object> specialValues = new HashMap<ColumnMapper<T>, Object>();
 
         int nUpdatedFields =0;
         
-        ColumnMapper<T> updatedAtColumn = null;
         final Option.UpdatedAt updatedAtOption = (Option.UpdatedAt)options.get(Option.Type.UPDATED_AT);
-        final long updatedAtValue = updatedAtOption == null ? System.currentTimeMillis() : updatedAtOption.getValue();
+        
+        if (updatedAtOption !=null && mapper.getUpdatedAtColumn() == null)
+        	throw new RuntimeException("Option.UpdatedAt needs updatedAtColumn");
+        
+        Object versionBefore = null;
         
         for (ColumnMapper<T> cm : mapper.allColumns(((Option.Scenario)options.get(Option.Type.SCENARIO)).getScenario())) {
-            final Object value = cm.getValue(entity);
+            final Object value = cm.getValue(afterUpdate);            
             
-            if (cm.getColumnNameUnquoted().equalsIgnoreCase("updated_at"))
-            	updatedAtColumn = cm;
-            
-            if (original == null){
+            if (beforeUpdate == null){
                 if (cm.kind == ColumnMapper.Kind.REGULAR && (saveNullFields || value != null)) {
                     values.put(cm, value);
                     nUpdatedFields++;
                 }
             }else{
-                final Object origValue = cm.getValue(original);
+                final Object origValue = cm.getValue(beforeUpdate);
                 
-                if (mapper.isVersion(cm)){
+                if (mapper.isVersion(cm) && isOptimisticUpdate){
+                	                		
+                	if (!Objects.equal(value, origValue))
+                		throw new IllegalArgumentException("entity and original must have the same version");
+            		
+                	versionBefore = origValue;
                 	
-                	if (isOptimisticUpdate){
-                		
-                    	if (!Objects.equal(value, origValue))
-                    		throw new IllegalArgumentException("entity and original must have the same version");
-                		
-                    	values.put(cm, value);
-                	}else if  (!Objects.equal(value, origValue)){
-                		values.put(cm, value);
-                		nUpdatedFields++;
-                	}                	
+                	final Object _value;
+                	if (mapper.isUpdatedAt(cm))
+                		_value = updatedAtOption !=null ? updatedAtOption.getValue() :  System.currentTimeMillis();
+                	else
+                		_value = inc(value);
+
+            		values.put(cm, _value);
+                	specialValues.put(cm, _value);
+                }else if (mapper.isUpdatedAt(cm)){
+                	final Object _value = updatedAtOption !=null ? updatedAtOption.getValue() :  System.currentTimeMillis();
+                	values.put(cm, _value);
+                	specialValues.put(cm, _value);
                 }else if (cm.kind == ColumnMapper.Kind.REGULAR){
-                	if (cm == updatedAtColumn){
-                		values.put(cm, updatedAtValue);
-                	}else if (!Objects.equal(value, origValue)){
+                	if (!Objects.equal(value, origValue)){
                 		values.put(cm, value);
                 		nUpdatedFields++;
                 	}
@@ -349,29 +380,20 @@ public class Mapper<T> {
         if (nUpdatedFields == 0)
         	throw new NotModifiedException();
         
-        if (updatedAtColumn !=null)
-        	updatedAtColumn.setValue(entity, updatedAtValue);
-
-        BoundStatement bs = getPreparedQuery(QueryType.UPDATE, (Set)values.keySet(), options).bind();
+        final BoundStatement bs = getPreparedQuery(QueryType.UPDATE, (Set)values.keySet(), options).bind();
         int i = 0;
-        for (Map.Entry<ColumnMapper<T>, Object> entry : values.entrySet()) {
-            final ColumnMapper<T> mapper = entry.getKey();
-            Object value = entry.getValue();
-            
-            if (this.mapper.isVersion(mapper) && isOptimisticUpdate){
-            	value = inc(value);
-            }
-           	setObject(bs, i++, value, mapper);
+        for (Map.Entry<ColumnMapper<T>, Object> entry : values.entrySet()) {            
+           	setObject(bs, i++, entry.getValue(), entry.getKey());
         }
         
         for (int j = 0; j < mapper.primaryKeySize(); j++){
         	ColumnMapper<T> cm = mapper.getPrimaryKeyColumn(j);
-        	Object value = cm.getValue(entity);
+        	Object value = cm.getValue(afterUpdate);
         	setObject(bs, i++, value, cm);
         }
         
         if (isOptimisticUpdate){
-            setObject(bs, i++, mapper.getVersionColumn().getValue(entity), mapper.getVersionColumn());
+            setObject(bs, i++, versionBefore, mapper.getVersionColumn());
         }        
 
         if (mapper.writeConsistency != null)
@@ -382,9 +404,47 @@ public class Mapper<T> {
             opt.addToPreparedStatement(bs, i++);
         }
         
-        return bs;
+        return new UpdateQuery(bs, (Map)specialValues);
     }
     
+    public Statement updateQuery(Consumer<Assignments> assignment, Object ...objects ){
+        List<Object> pks = new ArrayList<Object>();
+        EnumMap<Option.Type, Option> options = new EnumMap<Option.Type, Option>(defaultUpdateOptions);
+
+        for (Object o : objects) {
+            if (o instanceof Option) {
+                Option option = (Option) o;
+                options.put(option.type, option);
+            } else {
+                pks.add(o);
+            }
+        }
+    	return updateQuery(assignment, pks, options);
+    }
+    
+    private Statement updateQuery(Consumer<Assignments> assignment, List<Object> pks, EnumMap<Option.Type, Option> options){
+    	    		
+        final Option.UpdatedAt updatedAtOption = (Option.UpdatedAt)options.get(Option.Type.UPDATED_AT);
+        
+        if (updatedAtOption !=null && mapper.getUpdatedAtColumn() == null)
+        	throw new RuntimeException("Option.UpdatedAt needs updatedAtColumn");
+        
+		final Update update = QueryBuilder.update(mapper.getTable());
+		final Assignments assignments = update.with();
+		
+		if (mapper.getUpdatedAtColumn() !=null){
+			assignments.and(QueryBuilder.set(mapper.getUpdatedAtColumn().getColumnName(), new Date(updatedAtOption !=null ? updatedAtOption.getValue() : System.currentTimeMillis())));
+		}
+		
+		assignment.accept(assignments);
+		
+       	final Update.Where uWhere = update.where();
+		for (int i=0; i< mapper.primaryKeySize(); i++){
+			uWhere.and(QueryBuilder.eq(mapper.getPrimaryKeyColumn(i).getColumnNameUnquoted(), pks.get(i)));
+		}
+		
+		return update;
+    }
     
     private static boolean shouldSaveNullFields(EnumMap<Option.Type, Option> options) {
         SaveNullFields option = (SaveNullFields) options.get(SAVE_NULL_FIELDS);
@@ -474,28 +534,30 @@ public class Mapper<T> {
     }
     
     public boolean update(T entity) throws VersionException {
-    	return update(entity, null);
+    	return update(null, entity);
     }
 
-    public boolean update(T entity, T original, Option... options) throws VersionException {
+    public boolean update(T beforeUpdate, T afterUpdate, Option... options) throws VersionException {
     	final ResultSet rs;
+    	final UpdateQuery uq;
 		try {
-			rs = session().execute(updateQuery(entity, original, options));
+			uq = updateQuery(beforeUpdate, afterUpdate, options);
 		} catch (NotModifiedException e) {
 			logger.debug("NotModifiedException");
 			return false;
 		}
+		
+		rs = session().execute(uq.statement);
     	
     	final List<Row> all = rs.all();
-    	if (all.isEmpty()) //no optimistic locking
+    	if (all.isEmpty()){ //no optimistic locking
+    		uq.applySpecialValues(afterUpdate);
     		return true;
+    	}
     	
     	final boolean applied = all.get(0).getBool(0);
     	if (applied){
-    		//TODO не очень красивый хак. Правильнее было бы как-то получать точно обновленное значение из запроса, а не вычислять его заново 
-    		if (mapper.getVersionColumn() !=null){
-    			mapper.getVersionColumn().setValue(entity, inc(mapper.getVersionColumn().getValue(entity)));
-    		}
+    		uq.applySpecialValues(afterUpdate);
     	}else if (mapper.getVersionColumn() !=null && rs.getColumnDefinitions().contains(mapper.getVersionColumn().getColumnName())){
     		throw new VersionException(all.get(0).getObject(mapper.getVersionColumn().getColumnName()));
     	}    	    	
@@ -1432,7 +1494,7 @@ public class Mapper<T> {
 
 			@Override
 			void appendTo(Update update) {
-				throw new UnsupportedOperationException("shouldn't be called");
+				
 			}
 
 			@Override
@@ -1447,7 +1509,7 @@ public class Mapper<T> {
 
 			@Override
 			boolean isIncludedInQuery() {
-				return false;
+				return true;
 			}        	
         }
         

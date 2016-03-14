@@ -99,7 +99,8 @@ class QueryType {
                 Update.Where where = update.where();
                 for (int i = 0; i < mapper.primaryKeySize(); i++)
                     where.and(eq(mapper.getPrimaryKeyColumn(i).getColumnName(), bindMarker()));
-                
+                                
+                //TODO логика должна быть внутри appendTo, но там нет доступа к mapper.getVersionColumn()
                 if (options.containsKey(Option.Type.ONLY_IF)){
                 	update.onlyIf(eq(mapper.getVersionColumn().getColumnName(), bindMarker()));
                 }

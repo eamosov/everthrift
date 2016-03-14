@@ -130,6 +130,7 @@ public class DbMetadataParser implements EntityParser {
 		final List<ColumnMapper<T>> ccs = new ArrayList<ColumnMapper<T>>();
 		final List<ColumnMapper<T>> rgs = new ArrayList<ColumnMapper<T>>();
 		ColumnMapper<T> versionField = null;
+		ColumnMapper<T> updatedAtField = null;
 		final AtomicInteger columnCounter = mappingManager.isCassandraV1 ? null : new AtomicInteger(0);
 		
 		final Set<String> keys = new HashSet<String>();
@@ -215,11 +216,16 @@ public class DbMetadataParser implements EntityParser {
 				versionField = columnMapper;
 			}else if (table.version().equalsIgnoreCase(javaProp.getName())){
 				versionField = columnMapper;
-			}			
+			}
+			
+			if (javaProp.getName().equals("updatedAt")){
+				updatedAtField = columnMapper;
+			}
 		}
 		
         mapper.addColumns(pks,ccs,rgs);
         mapper.setVersionColumn(versionField);
+        mapper.setUpdatedAtColumn(updatedAtField);
         
         return mapper;		
 	}

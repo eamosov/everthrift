@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
+import java.util.function.Consumer;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.thrift.TException;
@@ -12,7 +13,10 @@ import com.datastax.driver.core.BatchStatement;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.Statement;
+import com.datastax.driver.core.querybuilder.Update.Assignments;
 import com.datastax.driver.mapping.Mapper.Option;
+import com.datastax.driver.mapping.Mapper.UpdateQuery;
+import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
@@ -21,15 +25,16 @@ import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.knockchat.appserver.model.UpdatedAtIF;
 import com.knockchat.hibernate.dao.DaoEntityIF;
 import com.knockchat.node.model.events.DeleteEntityEvent;
 import com.knockchat.node.model.events.InsertEntityEvent;
 import com.knockchat.node.model.events.UpdateEntityEvent;
+import com.knockchat.utils.LongTimestamp;
 import com.knockchat.utils.thrift.TFunction;
 
 public class Statements {
-	
-	
+		
 	private List<Statement> statements = Lists.newArrayList();
 	
 	@SuppressWarnings({ "rawtypes"})
@@ -45,7 +50,7 @@ public class Statements {
 	Statements(CassandraFactories cassandraFactories, Session session){
 		this.cassandraFactories = cassandraFactories;
 		this.session = session;
-		this.timestamp = System.currentTimeMillis() * 1000;
+		this.timestamp = LongTimestamp.nowMicros();
 	}
 	
 	@SuppressWarnings({ "rawtypes", "unchecked" })
@@ -61,16 +66,58 @@ public class Statements {
 		}		
 	}
 	
+	public <PK extends Serializable,ENTITY extends DaoEntityIF & UpdatedAtIF, E extends TException> void update(CassandraModelFactory<PK, ENTITY, E> factory, PK pk, Consumer<Assignments> assignment){
+		
+		final Statement s = factory.mapper.updateQuery(assignment, ArrayUtils.add(factory.extractCompaundPk(pk), Option.updatedAt(timestamp/1000)));
+		
+		statements.add(s);
+		invalidates.put(factory, pk);
+		
+		final ENTITY afterUpdate;
+		try {
+			afterUpdate = factory.getEntityClass().newInstance();
+		} catch (InstantiationException | IllegalAccessException e) {
+			throw Throwables.propagate(e);
+		}
+		
+		afterUpdate.setPk(pk);
+		afterUpdate.setUpdatedAt(timestamp/1000);
+		
+		final ENTITY beforeUpdate;
+		try {
+			beforeUpdate = factory.getEntityClass().newInstance();
+		} catch (InstantiationException | IllegalAccessException e) {
+			throw Throwables.propagate(e);
+		}
+		
+		beforeUpdate.setPk(pk);
+		
+		
+		final UpdateEntityEvent<PK, ENTITY> event = factory.updateEntityEvent(beforeUpdate, afterUpdate);
+		
+		callbacks.add(()->{
+			factory.localEventBus.postAsync(event);
+		});
+		
+		if (autoCommit)
+			commit();
+	}
+	
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public <ENTITY extends DaoEntityIF> ENTITY update(ENTITY e, TFunction<ENTITY, Boolean> mutator, Option... options) throws TException{
-		final CassandraModelFactory f = of(e);
-		final ENTITY orig = (ENTITY)f.copy(e);
-		addStatement(f, f.updateQuery(orig, e, mutator, ArrayUtils.add(options, Option.updatedAt(timestamp/1000))), e);
+		final CassandraModelFactory factory = of(e);
+		final ENTITY beforeUpdate = (ENTITY)factory.copy(e);
 		
-		final ENTITY copy = (ENTITY)f.copy(e);
-		final UpdateEntityEvent event = f.updateEntityEvent(orig, copy);
+		final UpdateQuery uq = factory.updateQuery(beforeUpdate, e, mutator, ArrayUtils.add(options, Option.updatedAt(timestamp/1000)));
+		if (uq == null)
+			return e;
+		
+		addStatement(factory, uq.statement, e);
+		
+		final UpdateEntityEvent event = factory.updateEntityEvent(beforeUpdate, (ENTITY)factory.copy(e));
 		callbacks.add(()->{
-			f.localEventBus.postAsync(event);
+			uq.applySpecialValues(e);
+			factory.localEventBus.postAsync(event);
 		});
 		
 		if (autoCommit)

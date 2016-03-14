@@ -62,6 +62,7 @@ public abstract class EntityMapper<T> {
     public final List<ColumnMapper<T>> clusteringColumns = new ArrayList<ColumnMapper<T>>();
     public final List<ColumnMapper<T>> regularColumns = new ArrayList<ColumnMapper<T>>();
     private ColumnMapper<T> versionColumn;
+    private ColumnMapper<T> updatedAtColumn;
     
     private Map<String, ColumnMapper<T>> allColumns = new HashMap<String, ColumnMapper<T>>();
 
@@ -114,14 +115,27 @@ public abstract class EntityMapper<T> {
     	versionColumn = v;
     }
 
+    public void setUpdatedAtColumn(ColumnMapper<T> v) {
+    	updatedAtColumn = v;
+    }
+
     public abstract T newEntity();
 
     public Set<ColumnMapper<T>> allColumns(Scenario scenario) {
         return ImmutableSet.copyOf(Collections2.filter(allColumns.values(), c -> (scenario.accept(c.columnScenario))));
     }
     
-    public boolean isVersion(ColumnMapper<?> cm){
-    	return versionColumn !=null && versionColumn.getColumnNameUnquoted().equals(cm.getColumnNameUnquoted());	
+    public boolean isVersion(ColumnMapper<?> cm){    	
+    	return versionColumn !=null && cm == versionColumn;	
+    }
+    
+    public boolean isUpdatedAt(ColumnMapper<?> cm){
+    	return updatedAtColumn !=null && cm == updatedAtColumn;	
+    }
+
+    
+    public ColumnMapper<T> getUpdatedAtColumn(){
+    	return updatedAtColumn;
     }
     
     public ColumnMapper<T> getVersionColumn(){

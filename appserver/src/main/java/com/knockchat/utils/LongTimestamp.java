@@ -8,6 +8,9 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 
+import com.datastax.driver.core.AtomicMonotonicTimestampGenerator;
+import com.datastax.driver.core.TimestampGenerator;
+
 public class LongTimestamp {
 	
 	public final static long MIN = 60L * 1000L;
@@ -28,9 +31,15 @@ public class LongTimestamp {
 		
 	public static final DateTimeFormatter formatterDateTime = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.nx");
 	public static final DateTimeFormatter formatterDate = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+	
+	public static final TimestampGenerator tg = new AtomicMonotonicTimestampGenerator();
 
 	public static long now(){
-		return System.currentTimeMillis();
+		return nowMicros() / 1000;
+	}
+	
+	public static long nowMicros(){
+		return tg.next();
 	}
 
 	public static long fromSecs(long secs){
