@@ -82,6 +82,7 @@ import com.knockchat.cassandra.migrator.CMigrationProcessor;
 import com.knockchat.sql.migration.MigrationProcessor;
 import com.knockchat.utils.PosAppInitializingBean;
 import com.knockchat.utils.SocketUtils;
+import com.knockchat.utils.thrift.MetaDataMapBuilder;
 
 public class AppserverApplication {
 
@@ -180,6 +181,14 @@ public class AppserverApplication {
         
         if (env.getProperty("jgroups.multicast.bind_addr") !=null)
         	System.setProperty("jgroups.multicast.bind_addr", env.getProperty("jgroups.multicast.bind_addr"));
+
+        if (env.getProperty("tbase.root") !=null){
+    		final MetaDataMapBuilder mdb = new MetaDataMapBuilder();
+
+        	for (String root : env.getProperty("tbase.root").split(",")){
+        		mdb.build(root);		
+        	}
+        }
 
         context.register(Config.class);
         
