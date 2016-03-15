@@ -64,6 +64,19 @@ public class CassandraFactories implements PosAppInitializingBean{
 		return ret;
 	}
 
+	public void execute(TVoidFunction<Statements> run) throws TException{
+		Statements s = begin().setBatch(false);
+		run.apply(s);
+		s.commit();
+	}
+	
+	public <E> E execute(TFunction<Statements, E> run) throws TException{
+		Statements s = begin().setBatch(false);		
+		final E ret = run.apply(s); 
+		s.commit();
+		return ret;
+	}
+
 	@Override
 	public void afterAppInitizlized() throws Exception {
 		for (CassandraModelFactory f: ctx.getBeansOfType(CassandraModelFactory.class).values())
