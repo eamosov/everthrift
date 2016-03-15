@@ -538,12 +538,6 @@
 		</dependency>
 
 		<dependency>
-			<groupId>com.datastax.cassandra</groupId>
-			<artifactId>cassandra-driver-core</artifactId>
-			<scope>provided</scope>
-		</dependency>
-				
-		<dependency>
 			<groupId>io.dropwizard.metrics</groupId>
 			<artifactId>metrics-core</artifactId>
 			<version>3.1.2</version>
@@ -560,6 +554,12 @@
 			<artifactId>cassandra-driver-mapping</artifactId>
 		</dependency>
 
-	</dependencies>
+		<dependency>
+			<groupId>com.datastax.cassandra</groupId>
+			<artifactId>cassandra-driver-core</artifactId>
+			<scope>provided</scope>
+		</dependency>			
 
+	</dependencies>
+	
 </project>
