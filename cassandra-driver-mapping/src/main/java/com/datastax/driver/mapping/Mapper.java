@@ -443,6 +443,8 @@ public class Mapper<T> {
 			uWhere.and(QueryBuilder.eq(mapper.getPrimaryKeyColumn(i).getColumnNameUnquoted(), pks.get(i)));
 		}
 		
+		update.setConsistencyLevel(getWriteConsistency());
+		
 		return update;
     }
     
