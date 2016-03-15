@@ -199,7 +199,6 @@ public class AppserverApplication {
         else
         	context.register(LoopbackJms.class);
         
-        //TODO без Jetty пока не работает 
         if (isJettyEnabled()) {
         	context.register(Http.class);
         }

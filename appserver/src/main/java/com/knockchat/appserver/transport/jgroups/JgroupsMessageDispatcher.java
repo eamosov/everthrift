@@ -59,6 +59,7 @@ public class JgroupsMessageDispatcher implements AsyncRequestHandler, Initializi
 	private MessageChannel inJGroupsChannel;
 
 	public JgroupsMessageDispatcher(JChannel cluster){
+		log.info("Using {} as MulticastThriftTransport", this.getClass().getSimpleName());
 		this.cluster = cluster;
 	}
 

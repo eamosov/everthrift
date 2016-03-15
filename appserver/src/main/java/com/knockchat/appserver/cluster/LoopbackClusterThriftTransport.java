@@ -18,6 +18,8 @@ import org.apache.thrift.protocol.TProtocolFactory;
 import org.apache.thrift.transport.TMemoryBuffer;
 import org.jgroups.Address;
 import org.jgroups.blocks.ResponseMode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 
@@ -28,6 +30,8 @@ import com.knockchat.utils.thrift.InvocationInfoThreadHolder;
 
 public class LoopbackClusterThriftTransport implements MulticastThriftTransport {
 
+	private static final Logger log = LoggerFactory.getLogger(LoopbackClusterThriftTransport.class);
+	
 	@Autowired
 	private ApplicationContext applicationContext;
 	
@@ -37,6 +41,10 @@ public class LoopbackClusterThriftTransport implements MulticastThriftTransport 
 	private TProcessor thriftProcessor;
 	
 	private final TProtocolFactory binary = new TBinaryProtocol.Factory();
+
+	public LoopbackClusterThriftTransport() {
+		log.info("Using {} as MulticastThriftTransport", this.getClass().getSimpleName());
+	}
 
 	@Override
 	public <T> Map<Address, T> thriftCall(boolean loopBack, int timeout, int seqId, ResponseMode responseMode, InvocationInfo ii) throws TException {

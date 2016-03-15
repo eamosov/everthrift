@@ -84,7 +84,6 @@ public class PersistMBeanInterceptor implements MethodInterceptor, InitializingB
 				methodCall = clazz.getClass().getMethod(SET_METHOD + convertMethodName(propertyKey), parameterTypes);
 				methodCall.invoke(clazz, invokeParam);
 			} catch (NoSuchMethodException nsme) {
-				nsme.printStackTrace();
 			} catch (InvocationTargetException ite) {
 				ite.printStackTrace();
 			} catch (IllegalAccessException iae) {

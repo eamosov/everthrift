@@ -2,6 +2,7 @@ package com.knockchat.appserver.configs;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.ImportResource;
 
 import com.knockchat.appserver.transport.http.BinaryThriftServlet;
 import com.knockchat.appserver.transport.http.JsonThriftServlet;
@@ -9,6 +10,7 @@ import com.knockchat.appserver.transport.http.RpcHttpRegistry;
 import com.knockchat.appserver.transport.websocket.RpcWebsocketRegistry;
 
 @Configuration
+@ImportResource("classpath:websocket-beans.xml")
 public class Http {
 
 	@Bean
