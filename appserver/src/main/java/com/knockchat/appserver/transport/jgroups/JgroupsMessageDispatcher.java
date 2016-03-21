@@ -6,6 +6,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 import javax.annotation.Resource;
 
@@ -24,6 +26,7 @@ import org.jgroups.blocks.MessageDispatcher;
 import org.jgroups.blocks.RequestOptions;
 import org.jgroups.blocks.Response;
 import org.jgroups.blocks.ResponseMode;
+import org.jgroups.util.FutureListener;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
 import org.slf4j.Logger;
@@ -36,6 +39,8 @@ import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.scheduling.annotation.Scheduled;
 
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.SettableFuture;
 import com.knockchat.appserver.cluster.MulticastThriftTransport;
 import com.knockchat.appserver.controller.MessageWrapper;
 import com.knockchat.utils.thrift.InvocationInfo;
@@ -148,16 +153,16 @@ public class JgroupsMessageDispatcher implements AsyncRequestHandler, Initializi
 	private final TProtocolFactory binaryProtocolFactory = new TBinaryProtocol.Factory();
 	
 	@Override
-	public <T> Map<Address, T> thriftCall(boolean loopBack, int timeout, int seqId, ResponseMode responseMode, final InvocationInfo ii) throws TException{
+	public <T> ListenableFuture<Map<Address, T>> thriftCall(boolean loopBack, int timeout, int seqId, ResponseMode responseMode, final InvocationInfo ii) throws TException{
 		return thriftCall(null, loopBack ? null : Collections.singleton(getLocalAddress()), timeout,  seqId, responseMode, ii);
 	}
 
 	@Override
-	public <T> Map<Address, T> thriftCall(boolean loopBack, int timeout, int seqId, ResponseMode responseMode, T methodCall) throws TException{
+	public <T> ListenableFuture<Map<Address, T>> thriftCall(boolean loopBack, int timeout, int seqId, ResponseMode responseMode, T methodCall) throws TException{
 		return thriftCall(null, loopBack ? null : Collections.singleton(getLocalAddress()), timeout,  seqId, responseMode, InvocationInfoThreadHolder.getInvocationInfo());
 	}
 
-	public <T> Map<Address, T> thriftCall(Collection<Address> dest, int timeout, int seqId, T methodCall) throws TException{
+	public <T> ListenableFuture<Map<Address, T>> thriftCall(Collection<Address> dest, int timeout, int seqId, T methodCall) throws TException{
 		final InvocationInfo info = InvocationInfoThreadHolder.getInvocationInfo();
 		if (info == null)
 			throw new TException("info is NULL");
@@ -169,7 +174,7 @@ public class JgroupsMessageDispatcher implements AsyncRequestHandler, Initializi
 //		return thriftCall(null, null, timeout, seqId, responseMode, tInfo);
 //	}
 	
-	public <T> Map<Address, T> thriftCall(Collection<Address> dest, Collection<Address> exclusionList, int timeout, int seqId, ResponseMode responseMode, InvocationInfo tInfo) throws TException{
+	public <T> ListenableFuture<Map<Address, T>> thriftCall(Collection<Address> dest, Collection<Address> exclusionList, int timeout, int seqId, ResponseMode responseMode, InvocationInfo tInfo) throws TException{
 		
 				
 		final Message msg = new Message();
@@ -181,46 +186,56 @@ public class JgroupsMessageDispatcher implements AsyncRequestHandler, Initializi
 			options.setExclusionList(exclusionList.toArray(new Address[exclusionList.size()]));
 		}
 		
-		RspList<MessageWrapper> resp;
+		final SettableFuture<Map<Address, T>> f = SettableFuture.create();
+		
 		try {
-			resp = disp.castMessage(dest, msg, options);
-		} catch (Exception e) {
-			log.error("Exception in getConfiguration", e);
-			return null;
-		}
-		
-		log.trace("RspList:{}", resp);
+			disp.castMessageWithFuture(dest, msg, options, new FutureListener<RspList<MessageWrapper>>(){
 
-		if (responseMode == ResponseMode.GET_NONE){
-			return null;
-		}
-		
-		final Map<Address, T> ret = new HashMap<Address, T>();		
-		
-		for (Rsp<MessageWrapper>responce: resp){
-			if (responce.getValue() !=null){
-				
-				try{
-					
-					final T success = (T)tInfo.setReply(responce.getValue().getTTransport(), binaryProtocolFactory);					
-					ret.put(responce.getSender(), success);
-					
-				} catch (TApplicationException e) {
-					if (e.getType() == TApplicationException.UNKNOWN_METHOD){
-						log.debug("UNKNOWN_METHOD from {}:{}", responce.getSender(), e.getMessage());
-					}else{
-						log.error("Exception while reading thrift answer from " + responce.getSender(), e);
+				@Override
+				public void futureDone(Future<RspList<MessageWrapper>> future) {
+
+					RspList<MessageWrapper> resp;
+					try {
+						resp = future.get();
+					} catch (InterruptedException | ExecutionException e1) {
+						f.setException(e1);
+						return;
 					}
-				} catch (Exception e) {
-					log.error("Exception while reading thrift answer from " + responce.getSender(), e);
-				}
-				
-			}else{
-				log.warn("null responce from {}", responce.getSender());
-			}
+					
+					log.trace("RspList:{}", resp);
+
+					final Map<Address, T> ret = new HashMap<Address, T>();		
+					
+					for (Rsp<MessageWrapper>responce: resp){
+						if (responce.getValue() !=null){
+							
+							try{
+								
+								final T success = (T)tInfo.setReply(responce.getValue().getTTransport(), binaryProtocolFactory);					
+								ret.put(responce.getSender(), success);
+								
+							} catch (TApplicationException e) {
+								if (e.getType() == TApplicationException.UNKNOWN_METHOD){
+									log.debug("UNKNOWN_METHOD from {}:{}", responce.getSender(), e.getMessage());
+								}else{
+									log.error("Exception while reading thrift answer from " + responce.getSender(), e);
+								}
+							} catch (Exception e) {
+								log.error("Exception while reading thrift answer from " + responce.getSender(), e);
+							}
+							
+						}else{
+							log.warn("null responce from {}", responce.getSender());
+						}
+					}
+					
+					f.set(ret);					
+				}});
+		} catch (Exception e) {
+			f.setException(e);
 		}
 		
-		return ret;
+		return f;
 	}
 
 }

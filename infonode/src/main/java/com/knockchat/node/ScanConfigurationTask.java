@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.annotation.PreDestroy;
@@ -100,7 +101,12 @@ public class ScanConfigurationTask implements InitializingBean, DisposableBean, 
 
     public Pair<List<NodeControllersModel>, List<Node>> clusterServiceGetConfiguration() throws TException {
 
-        final Map<Address, Node> clusterAnswer = clusterThriftTransport.thriftCall(true, 500, 0, ResponseMode.GET_ALL, onIfaceAsAsync(ClusterService.Iface.class).getNodeConfiguration());
+        Map<Address, Node> clusterAnswer;
+		try {
+			clusterAnswer = clusterThriftTransport.thriftCall(true, 500, 0, ResponseMode.GET_ALL, onIfaceAsAsync(ClusterService.Iface.class).getNodeConfiguration()).get();
+		} catch (InterruptedException | ExecutionException e) {
+			return Pair.create(Collections.emptyList(), Collections.emptyList());
+		}
 
         final List<NodeControllersModel> ret = new ArrayList<NodeControllersModel>();
         final List<Node> nodes = Lists.newArrayList();

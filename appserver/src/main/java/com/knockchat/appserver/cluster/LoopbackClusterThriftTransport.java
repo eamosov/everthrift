@@ -23,6 +23,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.knockchat.appserver.controller.ThriftProcessor;
 import com.knockchat.appserver.transport.jgroups.RpcJGroupsRegistry;
 import com.knockchat.utils.thrift.InvocationInfo;
@@ -47,9 +49,9 @@ public class LoopbackClusterThriftTransport implements MulticastThriftTransport 
 	}
 
 	@Override
-	public <T> Map<Address, T> thriftCall(boolean loopBack, int timeout, int seqId, ResponseMode responseMode, InvocationInfo ii) throws TException {
+	public <T> ListenableFuture<Map<Address, T>> thriftCall(boolean loopBack, int timeout, int seqId, ResponseMode responseMode, InvocationInfo ii) throws TException {
 		if (loopBack == false)
-			return Collections.emptyMap();
+			return Futures.immediateFuture(Collections.emptyMap());
 		
 		final TMemoryBuffer in = ii.buildCall(seqId, binary);
 		final TProtocol inP = binary.getProtocol(in);
@@ -57,7 +59,7 @@ public class LoopbackClusterThriftTransport implements MulticastThriftTransport 
 		final TProtocol outP = binary.getProtocol(out);
 		
 		thriftProcessor.process(inP, outP);
-		return Collections.singletonMap(new Address(){
+		return Futures.immediateFuture(Collections.singletonMap(new Address(){
 
 			@Override
 			public void writeTo(DataOutput out) throws Exception {
@@ -83,11 +85,11 @@ public class LoopbackClusterThriftTransport implements MulticastThriftTransport 
 			@Override
 			public int size() {
 				return 0;
-			}}, (T)ii.setReply(out, binary));
+			}}, (T)ii.setReply(out, binary)));
 	}
 
 	@Override
-	public <T> Map<Address, T> thriftCall(boolean loopBack, int timeout, int seqId, ResponseMode responseMode, T methodCall) throws TException {
+	public <T> ListenableFuture<Map<Address, T>> thriftCall(boolean loopBack, int timeout, int seqId, ResponseMode responseMode, T methodCall) throws TException {
 		return thriftCall(loopBack, timeout, seqId, responseMode, InvocationInfoThreadHolder.getInvocationInfo());
 	}
 

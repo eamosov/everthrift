@@ -4,6 +4,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 
@@ -26,11 +27,13 @@ import org.jgroups.Address;
 import org.jgroups.blocks.ResponseMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.task.AsyncTaskExecutor;
 
+import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.knockchat.appserver.cluster.MulticastThriftTransport;
@@ -169,28 +172,30 @@ public class ThriftProcessor implements TProcessor{
 		}
 	}
 	
-	private Future<Map<Address, Object>> castThriftMessage(final RpcClustered ann, final ThriftControllerInfo ctrl, final TMessage msg, final TBase args){
-		final Callable<Map<Address, Object>> task = new Callable<Map<Address, Object>>(){
-
-			@Override
-			public Map<Address, Object> call() {
-				try {
-					final InvocationInfo ii = new InvocationInfo(msg.name, args, ctrl.getControllerCls().getConstructor());
-					final Map<Address, Object> clusterResults = applicationContext.getBean(MulticastThriftTransport.class).thriftCall(false, ann.timeout(), msg.seqid, ann.value(), ii);
-					log.debug("Cluster results:{}", clusterResults);
-					return clusterResults;
-				} catch (TException | NoSuchMethodException | SecurityException e) {
-					throw new RuntimeException(e);
-				}
-			}};
+	private void castThriftMessage(final RpcClustered ann, final ThriftControllerInfo ctrl, final TMessage msg, final TBase args){
+		final InvocationInfo ii;
+		try {
+			ii = new InvocationInfo(msg.name, args, ctrl.getControllerCls().getConstructor());
+		} catch (NoSuchMethodException | SecurityException e) {
+			throw Throwables.propagate(e);
+		}
+		
+		ListenableFuture<Map<Address, Object>> clusterResults;
+		try {
+			clusterResults = applicationContext.getBean(MulticastThriftTransport.class).thriftCall(false, ann.timeout(), msg.seqid, ann.value(), ii);
+		} catch (BeansException | TException e) {
+			throw Throwables.propagate(e);
+		}
 			
 		if (ann.value() == ResponseMode.GET_NONE){
-			return executor.submit(task);
-		}else{
-			final FutureTask<Map<Address, Object>> ret = new FutureTask<Map<Address, Object>>(task);
-			ret.run();
-			return ret;
-		}		
+			return;
+		}
+		
+		try {
+			clusterResults.get();
+		} catch (InterruptedException | ExecutionException e) {
+			throw Throwables.propagate(e);
+		}
 	}
 
 	@Override
