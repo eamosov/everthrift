@@ -55,8 +55,6 @@ public class BaseThriftClient implements AutoCloseable{
 	}
 
 	private final TProtocol protocol;
-	public final HostPort hostPort;
-	public final Transports type;
 
 //	public Client( TProtocol protocol, HostPort hostPort ) {
 //		this.protocol = protocol;
@@ -82,11 +80,27 @@ public class BaseThriftClient implements AutoCloseable{
 			return t;
 		}});
 	
+	public static BaseThriftClient httpClient(String url) throws TTransportException{
+		return new BaseThriftClient(url);
+	}
+	
+	private BaseThriftClient(String url) throws TTransportException {
+		final TTransport transport = new THttpClient(url);
+		protocol = new TBinaryProtocol(transport);
+		protocol.getTransport().open();
+	}
+
+	public static BaseThriftClient zlibWsClient(String url, TProcessor processor) throws TTransportException, URISyntaxException{
+		return new BaseThriftClient(url, processor);
+	}
+
+	private BaseThriftClient(String url, TProcessor processor) throws TTransportException, URISyntaxException {
+		final TTransport transport = new TWsTransport(new URI(url), 5000, processor, new  TBinaryProtocol.Factory(), new TKnockZlibTransport.Factory(), null, executor);
+		protocol = new TBinaryProtocol(new TKnockZlibTransport(transport));
+		protocol.getTransport().open();
+	}	
 	
 	public BaseThriftClient(HostPort hostPort, Transports proto, TProcessor processor) throws TTransportException {
-		
-		this.hostPort = hostPort;
-		this.type = proto;
 		
 		TTransport transport=null;
 		
