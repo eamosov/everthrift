@@ -28,7 +28,7 @@ public class DateCodec<T> extends TypeCodec<T> {
 
 		@Override
 		public boolean accepts(DataType cqlType) {
-			return cqlType.equals(DataType.date());
+			return cqlType.equals(DataType.timestamp());
 		}
 
 		@SuppressWarnings({ "unchecked", "rawtypes" })
@@ -104,14 +104,12 @@ public class DateCodec<T> extends TypeCodec<T> {
         if (value == null)
             return null;
         
-        final int unsigned;
-		try {
-			unsigned = CodecUtils.fromSignedToUnsignedInt((int)TimeUnit.MILLISECONDS.toDays(toDate(value).getTime()));
+        ByteBuffer bb = ByteBuffer.allocate(8);
+        try {
+			bb.putLong(0, toDate(value).getTime());
 		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-			throw new InvalidTypeException("serialize error", e);
+			throw new InvalidTypeException("Coudn't serialize Date", e);
 		}
-        ByteBuffer bb = ByteBuffer.allocate(4);
-        bb.putInt(0, unsigned);
         return bb;
 	}
 
@@ -121,14 +119,13 @@ public class DateCodec<T> extends TypeCodec<T> {
         if (bytes == null || bytes.remaining() == 0)
             return null;
         
-        if (bytes.remaining() != 4)
-            throw new InvalidTypeException("Invalid 32-bits integer value, expecting 4 bytes but got " + bytes.remaining());
+        if (bytes.remaining() != 8)
+            throw new InvalidTypeException("Invalid 64-bits long value, expecting 8 bytes but got " + bytes.remaining());
 
-        final int unsigned =  bytes.getInt(bytes.position());
         try {
-			return fromDate(new Date(TimeUnit.DAYS.toMillis(CodecUtils.fromUnsignedToSignedInt(unsigned))));
+			return fromDate(new Date(bytes.getLong(bytes.position())));
 		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-			throw new InvalidTypeException("deserialize error", e);
+			throw new InvalidTypeException("Coudn't deserialize Date", e);
 		}
 	}
 
