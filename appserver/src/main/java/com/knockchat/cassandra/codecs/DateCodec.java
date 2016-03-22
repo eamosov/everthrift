@@ -48,7 +48,7 @@ public class DateCodec<T> extends TypeCodec<T> {
 	final PropertyDescriptor date;
 
 	protected DateCodec(Class<T> javaClass) {
-		super(DataType.date(), javaClass);
+		super(DataType.timestamp(), javaClass);
 		
 		final PropertyDescriptor props[] = getDateProps(javaClass);
 		year = props[0];
