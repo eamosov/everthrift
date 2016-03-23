@@ -7,6 +7,7 @@ import java.util.RandomAccess;
 import org.apache.thrift.TBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.ClassUtils;
 
 import com.knockchat.utils.thrift.scanner.TBaseScanHandler;
 import com.knockchat.utils.thrift.scanner.TBaseScanner;
@@ -33,7 +34,11 @@ public class RecursiveWalker implements WalkerIF {
 			if (o == null)
 				return;
 			
-			final TBaseScanner s = scannerFactory.create(o.getClass(), scenario);
+			final Class cls = o.getClass();
+			if (ClassUtils.isPrimitiveOrWrapper(cls) || cls.getCanonicalName().startsWith("java.lang."))
+				return;
+			
+			final TBaseScanner s = scannerFactory.create(cls, scenario);
 			
 			if (s == null){
 				log.error("Coudn't get TBaseScanner for class={} and scenario={}", o.getClass().getSimpleName(), scenario);
