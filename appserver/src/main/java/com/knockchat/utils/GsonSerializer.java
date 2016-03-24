@@ -87,16 +87,15 @@ public class GsonSerializer {
 		@Override
 		public T deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
 			
-			if (!TBase.class.isAssignableFrom((Class)typeOfT))
-				throw new JsonParseException("can not deserialize class " +  typeOfT.getClass().getSimpleName());
 			
-			final TBase o;
+			final Object o;
+			Class objCls;
 			try {
-				final Class m = TBaseHasModel.getModel((Class)typeOfT);
-				if (m == null)
-					o = (TBase)((Class)typeOfT).newInstance();
-				else
-					o = (TBase)m.newInstance();
+				
+				if ((objCls = TBaseHasModel.getModel((Class)typeOfT)) == null)
+					objCls = (Class)typeOfT;
+				
+				o = objCls.newInstance();
 			} catch (InstantiationException | IllegalAccessException e1) {
 				throw new JsonParseException(e1);
 			}
@@ -115,9 +114,9 @@ public class GsonSerializer {
 				
 				final Field f;
 				try {
-					f = ClassUtils.getDeclaredField((Class)typeOfT, e.getKey());
+					f = ClassUtils.getDeclaredField((Class)objCls, e.getKey());
 				} catch (SecurityException | NoSuchFieldException e1) {
-					throw new JsonParseException("class " + ((Class)typeOfT).getSimpleName(), e1);
+					throw new JsonParseException("class " + ((Class)objCls).getSimpleName(), e1);
 				}
 						
 				try {

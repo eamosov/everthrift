@@ -11,12 +11,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import javax.annotation.PostConstruct;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.thrift.TException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.CollectionUtils;
 
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.ConsistencyLevel;
@@ -60,6 +62,7 @@ import com.knockchat.utils.Pair;
 import com.knockchat.utils.thrift.TFunction;
 
 import net.sf.ehcache.Cache;
+import net.sf.ehcache.Element;
 
 public abstract class CassandraModelFactory<PK extends Serializable,ENTITY extends DaoEntityIF, E extends TException> extends AbstractCachedModelFactory<PK, ENTITY> implements RwModelFactoryIF<PK, ENTITY, E> {
 
@@ -314,32 +317,26 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 	final protected Map<PK, ENTITY> fetchEntityByIdAsMap(Collection<PK> _ids) {
 		
 		try {
-// нельзя использовать IN из-за "Cannot restrict clustering columns by IN relations when a collection is selected by the query"
-//			if (mapper.primaryKeySize() >  1){
-//				
-//				final Map<PK, ENTITY> ret = Maps.newHashMap();
-//				for (ResultSet rs: fetchEntityIn(_ids, Scenario.COMMON).get()){
-//					if (rs ==null)
-//						continue;
-//					
-//					for (ENTITY e: mapper.map(rs).all())
-//						ret.put((PK)e.getPk(), e);
-//				}
-//				return ret;				
-//			}else{
-				final List<PK> ids = ImmutableList.copyOf(_ids);
-				final List<ListenableFuture<ENTITY>> ff = Lists.transform(ids, pk -> (mapper.getAsync(extractCompaundPk(pk))));
-				
-				final List<ENTITY> ee =  Futures.successfulAsList(ff).get();
-				final Map<PK, ENTITY> ret = Maps.newHashMap();
-				for (int i=0; i< ids.size(); i++){
-					ret.put(ids.get(i), ee.get(i));
-				}
-				return ret;					
-//			}					
+			return fetchEntityByIdAsMapAsync(_ids).get();
 		} catch (InterruptedException | ExecutionException e) {
 			throw new RuntimeException(e);
 		}					
+	}
+
+	final protected ListenableFuture<Map<PK, ENTITY>> fetchEntityByIdAsMapAsync(Collection<PK> _ids) {
+		
+		final List<PK> ids = ImmutableList.copyOf(_ids);
+				
+		final List<ListenableFuture<ENTITY>> ff = ids.parallelStream().map(pk -> (mapper.getAsync(extractCompaundPk(pk)))).collect(Collectors.toList());
+		
+		return Futures.transform(Futures.allAsList(ff), (List<ENTITY> ee) -> {
+			
+			final Map<PK, ENTITY> ret = Maps.newHashMap();
+			for (int i=0; i< ids.size(); i++){
+				ret.put(ids.get(i), ee.get(i));
+			}
+			return ret;			
+		});
 	}
 
 	@Override
@@ -602,4 +599,39 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
         }
         return stmt;
     }
+    
+    final public ListenableFuture<Map<PK, ENTITY>> findEntityByIdAsMapAsync(Collection<PK> ids){
+		if (CollectionUtils.isEmpty(ids))
+			return Futures.immediateFuture(Collections.emptyMap());
+		
+		if (getCache() == null){
+			return fetchEntityByIdAsMapAsync(ids);
+		}
+		
+		final Map<Object, Element> cached = getCache().getAll(ids);
+		final Map<PK, ENTITY> ret = Maps.newHashMap();
+		final List<PK> keysToLoad = Lists.newArrayList();
+		
+		for (Map.Entry<Object, Element> e: cached.entrySet()){
+			if (e.getValue() !=null){
+				ret.put((PK)e.getKey(), (ENTITY)e.getValue().getObjectValue());
+			}else{
+				keysToLoad.add((PK)e.getKey());	
+			}
+		}
+		
+		final List<ListenableFuture<ENTITY>> ff = keysToLoad.parallelStream().map(pk -> (mapper.getAsync(extractCompaundPk(pk)))).collect(Collectors.toList());		
+		
+		return Futures.transform(Futures.allAsList(ff), (List<ENTITY> ee) -> {
+			
+			for (int i=0; i< keysToLoad.size(); i++){
+				final PK key = keysToLoad.get(i); 
+				final ENTITY value = ee.get(i);
+				getCache().put(new Element(key, value));		
+				ret.put(key, value);
+			}
+			return ret;			
+		});		
+    }
+
 }

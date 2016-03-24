@@ -144,6 +144,7 @@ public abstract class ThriftController<ArgsType extends TBase, ResultType> {
 				}else if (t.getCause() instanceof TException){
 					throw (TException)t.getCause();
 				}else{
+					log.error("Exception", e);
 					throw new TApplicationException(t.getMessage());
 				}						
 			}
@@ -164,6 +165,7 @@ public abstract class ThriftController<ArgsType extends TBase, ResultType> {
 					}else if (t.getCause() instanceof TException){
 						sendException((TException)t.getCause());
 					}else{
+						log.error("Exception", t);
 						sendException(new TApplicationException(t.getMessage()));
 					}						
 				}});
