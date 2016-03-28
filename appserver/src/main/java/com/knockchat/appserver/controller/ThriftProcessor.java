@@ -359,7 +359,7 @@ public class ThriftProcessor implements TProcessor{
 		if(log.isWarnEnabled() || logControllerStart.isWarnEnabled()){
 			final Logger _l = log.isWarnEnabled() ? log : logControllerStart;
 			final SessionIF session = thriftClient !=null ? thriftClient.getSession() : null;
-			_l.warn("user:{} ip:{} No controllerCls for method:{} correlationId:{}", session != null ? session.getCredentials() : null, thriftClient.getClientIp(), method, correlationId);
+			_l.warn("user:{} ip:{} No controllerCls for method:{} correlationId:{}", session != null ? session.getCredentials() : null, thriftClient !=null ? thriftClient.getClientIp(): null, method, correlationId);
 		}		
 	}
 	

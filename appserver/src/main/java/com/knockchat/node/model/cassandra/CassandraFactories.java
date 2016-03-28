@@ -21,7 +21,7 @@ public class CassandraFactories implements PosAppInitializingBean{
 	@Autowired
 	private ApplicationContext ctx;
 	
-	@Autowired
+	@Autowired(required=false)
 	private Session session;
 	
 	private Map<Class, CassandraModelFactory> factories = Maps.newHashMap();

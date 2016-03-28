@@ -22,7 +22,7 @@ import net.sf.ehcache.loader.CacheLoader;
 
 public abstract class AbstractCachedModelFactory<PK,ENTITY> extends RoModelFactoryImpl<PK, ENTITY>{
 	
-	@Autowired
+	@Autowired(required=false)
 	private CacheManager cm;
 	
 	private Cache cache;
