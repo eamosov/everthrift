@@ -30,7 +30,7 @@ public abstract class RoModelFactoryImpl<PK, ENTITY>  implements RoModelFactoryI
 		
 	}
 
-	private static interface MultiLoader<K,V> {
+	protected static interface MultiLoader<K,V> {
 
 		public Map<K, V> findByIds(Collection<K> ids);
 	}

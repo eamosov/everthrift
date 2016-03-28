@@ -24,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageHeaders;
@@ -33,6 +34,7 @@ import org.springframework.transaction.TransactionStatus;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
 import com.knockchat.appserver.model.lazy.LazyLoadManager;
 import com.knockchat.utils.ExecutionStats;
 import com.knockchat.utils.Pair;
@@ -64,6 +66,9 @@ public abstract class ThriftController<ArgsType extends TBase, ResultType> {
 	protected TProtocolFactory protocolFactory;
 	protected boolean allowAsyncAnswer;
 
+	@Autowired
+	@Qualifier("listeningCallerRunsBoundQueueExecutor")
+	private ListeningExecutorService executor;
 	
 	/**
 	 * Флаг, показывающий был лио отправлен какой-либо ответ (результат или
@@ -168,7 +173,7 @@ public abstract class ThriftController<ArgsType extends TBase, ResultType> {
 						log.error("Exception", t);
 						sendException(new TApplicationException(t.getMessage()));
 					}						
-				}});
+				}}, executor);
 			
 			throw new AsyncAnswer();
 		}										
