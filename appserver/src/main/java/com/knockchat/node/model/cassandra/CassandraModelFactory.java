@@ -620,15 +620,24 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 			}
 		}
 		
-		final List<ListenableFuture<ENTITY>> ff = keysToLoad.parallelStream().map(pk -> (mapper.getAsync(extractCompaundPk(pk)))).collect(Collectors.toList());		
-		
+		final List<ListenableFuture<ENTITY>> ff = keysToLoad.parallelStream().map(pk -> (mapper.getAsync(extractCompaundPk(pk)))).collect(Collectors.toList());
+						
 		return Futures.transform(Futures.allAsList(ff), (List<ENTITY> ee) -> {
 			
 			for (int i=0; i< keysToLoad.size(); i++){
 				final PK key = keysToLoad.get(i); 
 				final ENTITY value = ee.get(i);
-				getCache().put(new Element(key, value));		
-				ret.put(key, value);
+				final Element toPut = new Element(key, value);
+				getCache().put(toPut);
+				
+				if (getCache().getCacheConfiguration().isCopyOnWrite()){
+					ret.put(key, value);
+				}else if (getCache().getCacheConfiguration().isCopyOnRead()){
+					final Element copy = getCache().getCacheConfiguration().getCopyStrategy().copyForRead(toPut, getClass().getClassLoader());
+					ret.put(key, (ENTITY)copy.getObjectValue());
+				}else{
+					ret.put(key, value);					
+				}								
 			}
 			return ret;			
 		});		
