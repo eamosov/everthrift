@@ -81,8 +81,14 @@ public class MigrationProcessor{
         boolean byName = !migrationNames.isEmpty();
         ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
         scanner.addIncludeFilter(new AnnotationTypeFilter(Migration.class));
-        final List<String> l = context.getEnvironment().getProperty("root.packages", List.class);
-        for (String s : l) {
+        final String root = context.getEnvironment().getProperty("sqlmigrator.root");
+        
+        if (root ==null)
+        	throw new RuntimeException("sqlmigrator.root is NULL");
+        
+        for (String s : root.split(",")) {
+        	ConsoleUtils.printString("Scanning " + s + "\n");
+        	
             Map<String, AbstractMigration> migrationsByName = scanMigrationClasses(scanner, s);
             if (byName) {
                 for (String name : migrationNames)

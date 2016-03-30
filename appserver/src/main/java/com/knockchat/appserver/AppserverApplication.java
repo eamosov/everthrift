@@ -162,9 +162,8 @@ public class AppserverApplication {
         env.getPropertySources().addLast(new MapPropertySource("thriftScanPathList", Collections.singletonMap("thrift.scan", (Object) scanPathList)));
         env.getPropertySources().addLast(new MapPropertySource("version", Collections.singletonMap("version", (Object) version)));
 
-        if (env.getProperty("migrator.run", "false").equalsIgnoreCase("true")) {
-            log.info("Try find migrations in {}", env.getProperty("migrator.root.package"));
-            runMigrator(env.getProperty("migrator.root.package"));
+        if (env.getProperty("sqlmigrator.run", "false").equalsIgnoreCase("true")) {
+            runSqlMigrator();
         }
         
         if (env.getProperty("cassandra.migrator.run", "false").equalsIgnoreCase("true")) {
@@ -240,12 +239,12 @@ public class AppserverApplication {
 			}
     }
 
-    private void runMigrator(String rootPackage) {
+    private void runSqlMigrator() {
         final ClassPathXmlApplicationContext xmlContext = new ClassPathXmlApplicationContext(new String[]{"migration-context.xml"}, false);
         try {
             for (final PropertySource p : env.getPropertySources())
                 xmlContext.getEnvironment().getPropertySources().addLast(p);
-            xmlContext.getEnvironment().getPropertySources().addFirst(new MapPropertySource("root.packages", Collections.singletonMap("root.packages", (Object) Arrays.asList(rootPackage))));
+            
             xmlContext.refresh();
 
             final MigrationProcessor processor = xmlContext.getBean(MigrationProcessor.class);

@@ -6,6 +6,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.support.AbstractXmlApplicationContext;
@@ -41,8 +46,10 @@ public class Migrator {
      *             --name="name1, name2..." (name - Name of Migration)
      *             --up/--down (default: -up)
      *             --root.packages="x.y.z, a.b.c ..."
+     * @throws IOException 
+     * @throws ParseException 
      **/
-    public static void main(String[] args) {
+    public static void main(String[] args) throws ParseException, IOException {
         initContext(args);
         context.refresh();
         if (env.getProperty("help")!=null){
@@ -68,12 +75,18 @@ public class Migrator {
         }
     }
 
-    private static void initContext(String[] args){
+    private static void initContext(String[] args) throws ParseException, IOException{
+    	
+		DefaultParser parser = new DefaultParser();
+		
+		Options opts = new Options();
+		opts.addOption(Option.builder().type(String.class).longOpt("sqlmigrator.config").hasArg().build());		
+		final CommandLine cl = parser.parse(opts, args, true);
+		    	
         context = new ClassPathXmlApplicationContext(new String[]{"classpath:migration-context.xml"},false);
         context.registerShutdownHook();
         env = context.getEnvironment();
-        env.getPropertySources().addFirst(new SimpleCommandLinePropertySource(args));
-        env.getPropertySources().addLast(new MapPropertySource("scan.packages", Collections.singletonMap("root.packages", (Object) Arrays.asList("com.knockchat.sql.migration"))));
+        
         final Resource resource = context.getResource("classpath:application.properties");
         try {
             env.getPropertySources().addLast(new ResourcePropertySource(resource));
@@ -81,13 +94,13 @@ public class Migrator {
             e.printStackTrace();
         }
         
-        final Resource resource2 = context.getResource("classpath:php.properties");
-        try {
-            env.getPropertySources().addFirst(new ResourcePropertySource(resource2));
-        } catch (IOException e) {
-            e.printStackTrace();
+        if (cl.getOptionValue("sqlmigrator.config") !=null){
+        	for (String config: cl.getOptionValue("sqlmigrator.config").split(",")){
+                env.getPropertySources().addFirst(new ResourcePropertySource(context.getResource(config)));        		
+        	}
         }
         
+        env.getPropertySources().addFirst(new SimpleCommandLinePropertySource(cl.getArgs()));
     }
 
     public static AbstractXmlApplicationContext getContext() {
@@ -108,7 +121,8 @@ public class Migrator {
         ConsoleUtils.printString("\t--help \tThis help. \n");
         ConsoleUtils.printString("\t--force \tForce execute migrations \n");
         ConsoleUtils.printString("\t--name \tList of migrations to execute \n");
-        ConsoleUtils.printString("\t--root.packages \tcomma separated list of packages to scan \n");
+        ConsoleUtils.printString("\t--sqlmigrator.root \tcomma separated list of packages to scan \n");
+        ConsoleUtils.printString("\t--sqlmigrator.config \tadditional configuration file \n");
         ConsoleUtils.printString("\t--up/--down \tUp or Down migration (default:up) \n");
         ConsoleUtils.printString("\t\t\tExample: \n");
         ConsoleUtils.printString("\tjava -Dloader.path=\"lib, x.jar, y.jar, ./php.properties\" -jar migrator-0.0.1-with-deps.jar --name=\"Migartion1\" " +
