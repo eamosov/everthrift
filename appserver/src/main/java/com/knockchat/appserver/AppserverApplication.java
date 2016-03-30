@@ -137,6 +137,11 @@ public class AppserverApplication {
     private boolean isJmsEnabled(){
     	return !env.getProperty("jms", "false").equalsIgnoreCase("false");
     }
+    
+    private boolean isJMinixEnabled(){
+    	return !env.getProperty("jminix", "false").equalsIgnoreCase("false");
+    }
+
 
     @SuppressWarnings("rawtypes")
     public synchronized void init(String[] args, String version) {
@@ -382,7 +387,7 @@ public class AppserverApplication {
         jettyContext.setConfigurationClasses(WebAppContext.getDefaultConfigurationClasses());
         jettyServer.setHandler(jettyContext);
 
-        if (env.getProperty("jminix") != null) {
+        if (isJMinixEnabled()) {
             final MiniConsoleServlet jminix = new MiniConsoleServlet();
             jettyContext.addServlet(new ServletHolder(jminix), "/jmx/*");
         }
