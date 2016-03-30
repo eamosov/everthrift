@@ -16,7 +16,12 @@ public class CassandraSessionFactoryBean {
 	
 	public static Cluster createCluster(String contactPoint){
 		log.info("Connecting to cassandra at {}", contactPoint);
-		final Cluster cluster =  Cluster.builder().addContactPoint(contactPoint).build();
+		
+		final Cluster.Builder builder = Cluster.builder();
+		for (String host: contactPoint.split(",")){
+			builder.addContactPoint(host);
+		}
+		final Cluster cluster =  builder.build();
 		cluster.getConfiguration().getCodecRegistry().register(LongTimestampCodec.instance, StringUuidCodec.instance, ByteArrayBlobCodec.instance);
 		
 		final QueryLogger queryLogger = QueryLogger.builder().withConstantThreshold(50).withMaxQueryStringLength(-1).build();
