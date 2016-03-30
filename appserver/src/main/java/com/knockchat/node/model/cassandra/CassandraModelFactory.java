@@ -47,6 +47,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.knockchat.appserver.model.Unique;
@@ -454,24 +455,51 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 		return ret.isEmpty() ? null : ret.get(0);
 	}
 	
+	public void putEntity(ENTITY entity) {
+		putEntity(entity, true);
+	}
+	
+	public void putEntity(ENTITY entity, boolean _noSaveNulls) {
+		try {
+			putEntityAsync(entity, _noSaveNulls).get();
+		} catch (ExecutionException e) {
+			throw Throwables.propagate(e.getCause());
+		} catch (InterruptedException e) {
+			throw new RuntimeException(e);
+		}
+	}
+	
 	/*
 	 * save all not null fields without read
 	 * Method not generates any events
 	 */
-	public void putEntity(ENTITY entity, boolean _noSaveNulls) {
+	public ListenableFuture<Boolean> putEntityAsync(ENTITY entity, boolean _noSaveNulls) {
 		if (entity.getPk() == null)
 			throw new IllegalArgumentException("pk is null");
 		
+		final ListenableFuture<Boolean> f;
 		if (_noSaveNulls)
-			mapper.save(entity, noSaveNulls);
+			f = mapper.saveAsync(entity, noSaveNulls);
 		else
-			mapper.save(entity);
+			f = mapper.saveAsync(entity);
 		
-		invalidate((PK)entity.getPk());
+		Futures.addCallback(f, new FutureCallback<Boolean>(){
+
+			@Override
+			public void onSuccess(Boolean result) {
+				invalidate((PK)entity.getPk());
+			}
+
+			@Override
+			public void onFailure(Throwable t) {
+				log.error("putEntityAsync", t);
+			}});
+		
+		return f;				
 	}
 	
-	public void putEntity(ENTITY entity) {
-		putEntity(entity, true);
+	public void putEntityAsync(ENTITY entity) {
+		putEntityAsync(entity, true);
 	}
 	
 	public void fetchAll(final int batchSize, Consumer<List<ENTITY>> consumer){
