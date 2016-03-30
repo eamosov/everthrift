@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.QueryLogger;
 import com.datastax.driver.core.Session;
 
 public class CassandraSessionFactoryBean {
@@ -12,7 +13,16 @@ public class CassandraSessionFactoryBean {
 	
 	public static Cluster createCluster(String contactPoint){
 		log.info("Connecting to cassandra at {}", contactPoint);
-		return Cluster.builder().addContactPoint(contactPoint).build();		
+		
+		final Cluster.Builder builder = Cluster.builder();
+		for (String host: contactPoint.split(",")){
+			builder.addContactPoint(host);
+		}
+		final Cluster cluster =  builder.build();
+		
+		final QueryLogger queryLogger = QueryLogger.builder().withConstantThreshold(50).withMaxQueryStringLength(-1).build();
+		cluster.register(queryLogger);
+		return cluster;
 	}
 	
     public static Session createSession(Cluster cluster, String keyspace){
