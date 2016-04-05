@@ -82,9 +82,7 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
 		final SettableFuture<Void> closeFuture = SettableFuture.create();
 		
 		private AtomicReference<SessionIF> userSessionObject = new AtomicReference<SessionIF>();
-				
-		private WebsocketContentType lastContentType = WebsocketContentType.BINARY;
-		
+						
 		public SessionData(WebSocketSession session) {
 			super();
 			this.session = session;
@@ -108,6 +106,8 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
 	private final TProtocolFactory protocolFactory;
 	
 	private TTransportFactory transportFactory = new TTransportFactory();
+	
+	private WebsocketContentType contentType = WebsocketContentType.BINARY;
 	
 	public WebsocketThriftHandler(final TProtocolFactory protocolFactory, final SubscribableChannel inWebsocketChannel, final SubscribableChannel outWebsocketChannel){
 		this.protocolFactory = protocolFactory;
@@ -153,11 +153,7 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
 			log.trace("thrift message: {}", msg);
 			
 			final String sessionId = getSessionId(session);
-			
-			final SessionData sd = sessionRegistry.get(sessionId);
-			if (sd!=null)
-				sd.lastContentType = WebsocketContentType.BINARY;
-			
+						
 			final TMemoryInputTransport copy = new TMemoryInputTransport(unwrapped.getBuffer(), 0, unwrapped.getBufferPosition() + unwrapped.getBytesRemainingInBuffer());
 			
 			if (msg.type == TMessageType.EXCEPTION || msg.type == TMessageType.REPLY){
@@ -194,9 +190,6 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
 		log.trace("thrift message: {}", msg);
 		
 		final String sessionId = getSessionId(session);
-		final SessionData sd = sessionRegistry.get(sessionId);
-		if (sd!=null)
-			sd.lastContentType = WebsocketContentType.TEXT;
 		
 		final TMemoryInputTransport unwrapped = new TMemoryInputTransport(in.getBuffer(), 0, in.getBufferPosition() + in.getBytesRemainingInBuffer());
 		
@@ -290,7 +283,7 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
 		
 		sd.async.put(seqId, tInfo, timeout);
 		try{
-			write(sd, sd.lastContentType, tInfo.buildCall(seqId, protocolFactory));
+			write(sd, this.contentType, tInfo.buildCall(seqId, protocolFactory));
 		}catch(TException e){
 			sd.async.pop(seqId);
 			throw e;
@@ -388,10 +381,13 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
 		}		
 	}
 	
-	private void write(SessionData sd, WebsocketContentType contentType, TMemoryBuffer payload) throws TTransportException{
+	private void write(SessionData sd, WebsocketContentType _contentType, TMemoryBuffer payload) throws TTransportException{
 		try{
-			if (contentType == null || contentType == WebsocketContentType.BINARY){
-				
+			if (_contentType == null)
+				_contentType = this.contentType;
+			
+			switch(_contentType){
+			case BINARY:
 				if (!transportFactory.getClass().equals(TTransportFactory.class)){
 					final TMemoryBuffer wrapped = new TMemoryBuffer(payload.length());
 					try(
@@ -404,14 +400,11 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
 					}
 				}					
 				
-				((JettyWebSocketSession)sd.session).getNativeSession().getRemote().sendBytesByFuture(payload.getByteBuffer());
-				
-			}else if (contentType == WebsocketContentType.TEXT){
-				
+				((JettyWebSocketSession)sd.session).getNativeSession().getRemote().sendBytesByFuture(payload.getByteBuffer());				
+				break;
+			case TEXT:
 				((JettyWebSocketSession)sd.session).getNativeSession().getRemote().sendStringByFuture(new String(payload.getArray(), 0, payload.length(), UTF_8));
-				
-			}else{
-				log.error("Invalid CONTENT_TYPE:{}", contentType);
+				break;
 			}
 		}catch(WebSocketException e){
 			log.debug("WebSocketException", e);
@@ -452,6 +445,14 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
 
 	public void setTransportFactory(TTransportFactory transportFactory) {
 		this.transportFactory = transportFactory;
+	}
+
+	public String getContentType() {
+		return contentType.name();
+	}
+
+	public void setContentType(String contentType) {
+		this.contentType = WebsocketContentType.valueOf(contentType);
 	}	
 	
 }
