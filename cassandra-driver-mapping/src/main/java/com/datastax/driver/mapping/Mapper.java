@@ -1053,9 +1053,17 @@ public class Mapper<T> {
     public ConsistencyLevel getReadConsistency(){
     	return mapper.readConsistency;
     }
+    
+    public void setReadConsistency(ConsistencyLevel level){
+    	mapper.readConsistency = level;
+    }
 
     public ConsistencyLevel getWriteConsistency(){
     	return mapper.writeConsistency;
+    }
+
+    public void setWriteConsistency(ConsistencyLevel level){
+    	mapper.writeConsistency = level;
     }
 
     /**

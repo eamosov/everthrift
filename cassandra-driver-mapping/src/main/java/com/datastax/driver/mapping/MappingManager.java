@@ -122,6 +122,15 @@ public class MappingManager {
     public <T> Mapper<T> mapper(Class<T> klass) {
         return getMapper(klass);
     }
+    
+    /**
+     * Always creates new mapper
+     * @param klass
+     * @return
+     */
+    public <T> Mapper<T> newMapper(Class<T> klass){
+        return new Mapper<T>(this, klass, entityParser.parseEntity(klass, factory, this));    	
+    }
 
     /**
      * Creates a {@code TypeCodec} for the provided class (that must be annotated by
@@ -164,8 +173,7 @@ public class MappingManager {
             synchronized (mappers) {
                 mapper = (Mapper<T>) mappers.get(klass);
                 if (mapper == null) {
-                    EntityMapper<T> entityMapper = entityParser.parseEntity(klass, factory, this);
-                    mapper = new Mapper<T>(this, klass, entityMapper);
+                    mapper = newMapper(klass);
                     Map<Class<?>, Mapper<?>> newMappers = new HashMap<Class<?>, Mapper<?>>(mappers);
                     newMappers.put(klass, mapper);
                     mappers = newMappers;

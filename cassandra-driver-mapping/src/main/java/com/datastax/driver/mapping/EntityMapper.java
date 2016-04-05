@@ -55,8 +55,8 @@ public abstract class EntityMapper<T> {
     private final String keyspace;
     private final String table;
 
-    public final ConsistencyLevel writeConsistency;
-    public final ConsistencyLevel readConsistency;
+    protected ConsistencyLevel writeConsistency;
+    protected ConsistencyLevel readConsistency;
 
     public final List<ColumnMapper<T>> partitionKeys = new ArrayList<ColumnMapper<T>>();
     public final List<ColumnMapper<T>> clusteringColumns = new ArrayList<ColumnMapper<T>>();
