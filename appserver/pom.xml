@@ -564,6 +564,16 @@
 			<artifactId>cassandra-driver-core</artifactId>
 			<scope>provided</scope>
 		</dependency>
+		
+		<dependency>
+			<groupId>org.apache.httpcomponents</groupId>
+			<artifactId>httpcore</artifactId>
+		</dependency>
+		
+		<dependency>
+			<groupId>org.apache.httpcomponents</groupId>
+			<artifactId>httpasyncclient</artifactId>
+		</dependency>
 <!-- 		
 		<dependency>
 			<groupId>org.apache.cassandra</groupId>

@@ -12,7 +12,6 @@
 		<thrift.version>26.01.16</thrift.version>
 		<spring.version>4.2.3.RELEASE</spring.version>
 		<github.global.server>github</github.global.server>
-		<httpclient.version>4.5.1</httpclient.version>
 		<slf4j.version>1.7.16</slf4j.version>
 		<logback.version>1.1.5</logback.version>
 	</properties>
@@ -240,13 +239,35 @@
 
 			<dependency>
 				<groupId>org.apache.httpcomponents</groupId>
+				<artifactId>httpcore</artifactId>
+				<version>4.4.4</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.apache.httpcomponents</groupId>
+				<artifactId>httpasyncclient</artifactId>
+				<version>4.1.1</version>
+				<exclusions>
+					<exclusion>
+						<groupId>org.apache.httpcomponents</groupId>
+						<artifactId>httpcore</artifactId>					
+					</exclusion>
+				</exclusions>				
+			</dependency>
+		
+			<dependency>
+				<groupId>org.apache.httpcomponents</groupId>
 				<artifactId>httpclient</artifactId>
-				<version>${httpclient.version}</version>
+				<version>4.5.1</version>
 				<exclusions>
 					<exclusion>
 						<groupId>commons-codec</groupId>
 						<artifactId>commons-codec</artifactId>					
 					</exclusion>
+					<exclusion>
+						<groupId>org.apache.httpcomponents</groupId>
+						<artifactId>httpcore</artifactId>					
+					</exclusion>					
 				</exclusions>
 			</dependency>
 			
