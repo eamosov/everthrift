@@ -325,7 +325,7 @@ public class ThriftProcessor implements TProcessor{
 				
 				ret = controller.handle(args);				
 				controller.serializeAnswer(ret, out);
-				return out;
+				return ret;
 			}catch (Exception e){
 				if (e instanceof AsyncAnswer){
 					log.error("Processor interface not support AsyncAnswer, controllerCls");					
