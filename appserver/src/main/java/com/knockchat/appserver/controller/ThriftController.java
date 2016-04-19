@@ -134,7 +134,7 @@ public abstract class ThriftController<ArgsType extends TBase, ResultType> {
 		throw new AsyncAnswer();		
 	}
 	
-	protected ResultType waitForAnswer(ListenableFuture<ResultType> lf) throws TException{
+	protected ResultType waitForAnswer(ListenableFuture<? extends ResultType> lf) throws TException{
 		
 		if (!allowAsyncAnswer){
 			try {
