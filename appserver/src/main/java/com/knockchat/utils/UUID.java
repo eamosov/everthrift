@@ -149,7 +149,13 @@ public class UUID implements Comparable<UUID>, Serializable{
     	leastSigBits = ((low32Bits & 0xFF) << 56) | ((millis48Bits & 0xFFFFFFFFFFFFL) << 8) | (rnd8Bits & 0xFF);
     	asString = null;
     }
-        
+
+    public UUID(int space8bit, long hi32Bits, long low32Bits, long seq56Bits){    	
+    	mostSigBits = (((long)(space8bit & 0xFF)) << 56) | ((hi32Bits & 0xFFFFFFFFL) << 24) | ((low32Bits >> 8) & 0xFFFFFFL);
+    	leastSigBits = ((low32Bits & 0xFF) << 56) | (seq56Bits & 0xFFFFFFFFFFFFFFL);
+    	asString = null;
+    }
+
 	public int getSpace8bit(){
 		return (int)((mostSigBits >> 56) & 0xFF);
 	}
@@ -170,7 +176,7 @@ public class UUID implements Comparable<UUID>, Serializable{
 		return (int)(leastSigBits & 0xFF);
 	}
 	
-	public long getSeqBits(){
+	public long getSeq56Bits(){
 		return leastSigBits & 0xFFFFFFFFFFFFFFL;
 	}
 
