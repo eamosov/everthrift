@@ -12,7 +12,6 @@ import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.usertype.UserType;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.knockchat.sql.SqlUtils;
 

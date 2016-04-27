@@ -48,6 +48,6 @@ public class GetNodeConfigurationController extends ThriftController<ClusterServ
 		return new Node(nc,
 				AppserverApplication.INSTANCE.env.getProperty("node.name"), 				
 				(cs !=null && cs.getObject().getAddress() !=null) ? new NodeAddress(cs.getObject().getAddress().getHost(), cs.getObject().getAddress().getPort()) : null,
-				AppserverApplication.INSTANCE.jettyAddress);
+				null);
 	}	
 }

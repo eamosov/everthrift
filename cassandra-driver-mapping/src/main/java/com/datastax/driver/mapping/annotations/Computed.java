@@ -16,12 +16,12 @@
 package com.datastax.driver.mapping.annotations;
 
 
-import com.datastax.driver.mapping.Mapper;
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+
+import com.datastax.driver.mapping.Mapper;
 
 /**
  * Annotates a "computed" field, which gets filled from a CQL expression in the SELECT query

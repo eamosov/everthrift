@@ -3,10 +3,7 @@ package com.knockchat.appserver.controller;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.util.Map;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.FutureTask;
 
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.thrift.TApplicationException;
@@ -37,8 +34,8 @@ import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.knockchat.appserver.cluster.MulticastThriftTransport;
-import com.knockchat.appserver.monitoring.RpsServlet;
-import com.knockchat.appserver.monitoring.RpsServlet.DsName;
+import com.knockchat.appserver.monitoring.RpsServletIF;
+import com.knockchat.appserver.monitoring.RpsServletIF.DsName;
 import com.knockchat.appserver.transport.asynctcp.RpcAsyncTcp;
 import com.knockchat.appserver.transport.http.RpcHttp;
 import com.knockchat.appserver.transport.jgroups.RpcJGroups;
@@ -72,8 +69,8 @@ public class ThriftProcessor implements TProcessor{
 	@Autowired
 	protected ApplicationContext applicationContext;
 	
-	@Autowired
-	private RpsServlet rpsServlet;
+	@Autowired(required=false)
+	private RpsServletIF rpsServlet;
 	
 	private final TProtocolFactory protocolFactory;
 	
@@ -100,16 +97,18 @@ public class ThriftProcessor implements TProcessor{
 		
 		final Class<? extends Annotation> type = registry.getType();
 		
-		if (type == RpcSyncTcp.class || type == RpcAsyncTcp.class)
-			rpsServlet.incThrift(DsName.THRIFT_TCP);
-		else if (type == RpcHttp.class)
-			rpsServlet.incThrift(DsName.THRIFT_HTTP);
-		else if (type == RpcJGroups.class)
-			rpsServlet.incThrift(DsName.THRIFT_JGROUPS);
-		else if (type == RpcJms.class)
-			rpsServlet.incThrift(DsName.THRIFT_JMS);
-		else if (type == RpcWebsocket.class)
-			rpsServlet.incThrift(DsName.THRIFT_WS);
+		if (rpsServlet !=null){
+			if (type == RpcSyncTcp.class || type == RpcAsyncTcp.class)
+				rpsServlet.incThrift(DsName.THRIFT_TCP);
+			else if (type == RpcHttp.class)
+				rpsServlet.incThrift(DsName.THRIFT_HTTP);
+			else if (type == RpcJGroups.class)
+				rpsServlet.incThrift(DsName.THRIFT_JGROUPS);
+			else if (type == RpcJms.class)
+				rpsServlet.incThrift(DsName.THRIFT_JMS);
+			else if (type == RpcWebsocket.class)
+				rpsServlet.incThrift(DsName.THRIFT_WS);			
+		}		
 	}
 					
 	public MessageWrapper process(MessageWrapper in, ThriftClient thriftClient) throws TException{

@@ -39,6 +39,8 @@ import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.scheduling.annotation.Scheduled;
 
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
 import com.knockchat.appserver.cluster.MulticastThriftTransport;
@@ -59,6 +61,8 @@ public class JgroupsMessageDispatcher implements AsyncRequestHandler, Initializi
 	private MessageDispatcher  disp;
 	
 	private List<MembershipListener> membershipListeners = new ArrayList<MembershipListener>();
+	
+	private SettableFuture<?> viewAccepted = SettableFuture.create();
 	
 	@Resource
 	private MessageChannel inJGroupsChannel;
@@ -103,7 +107,7 @@ public class JgroupsMessageDispatcher implements AsyncRequestHandler, Initializi
 	public void afterPropertiesSet() throws Exception {
 		log.info("Starting JgroupsMessageDispatcher");
 		
-		disp=new MessageDispatcher(cluster, null, null, this);
+		disp=new MessageDispatcher(cluster, null, this, this);
 		disp.asyncDispatching(true);
 
 		cluster.connect(applicationContext.getEnvironment().getProperty("jgroups.cluster.name"));
@@ -119,6 +123,10 @@ public class JgroupsMessageDispatcher implements AsyncRequestHandler, Initializi
 
 	@Override
 	public synchronized void viewAccepted(View new_view) {
+		
+		if (!this.viewAccepted.isDone())
+			this.viewAccepted.set(null);
+		
 		for(MembershipListener m: membershipListeners){
 			m.viewAccepted(new_view);
 		}		
@@ -170,13 +178,21 @@ public class JgroupsMessageDispatcher implements AsyncRequestHandler, Initializi
 		return thriftCall(dest, null, timeout, seqId, ResponseMode.GET_ALL, info);
 	}
 	
-//	public <T> Map<Address, T> thriftCall(int timeout, int seqId, ResponseMode responseMode, InvocationInfo tInfo) throws TException{
-//		return thriftCall(null, null, timeout, seqId, responseMode, tInfo);
-//	}
-	
-	public <T> ListenableFuture<Map<Address, T>> thriftCall(Collection<Address> dest, Collection<Address> exclusionList, int timeout, int seqId, ResponseMode responseMode, InvocationInfo tInfo) throws TException{
+	@Override
+	public <T> ListenableFuture<T> thriftCall(Address destination, int timeout, int seqId, T methodCall) throws TException {
+
+		final InvocationInfo info = InvocationInfoThreadHolder.getInvocationInfo();
+		if (info == null)
+			throw new TException("info is NULL");
+
+		final ListenableFuture<Map<Address, T>> ret = thriftCall(Collections.singleton(destination), null, timeout, seqId, ResponseMode.GET_ALL, info);
 		
-				
+		return Futures.transform(ret, (Map<Address, T> m) -> (m.get(destination)));
+	}
+	
+	
+	private <T> ListenableFuture<Map<Address, T>> _thriftCall(Collection<Address> dest, Collection<Address> exclusionList, int timeout, int seqId, ResponseMode responseMode, InvocationInfo tInfo) throws TException{
+		
 		final Message msg = new Message();
 		msg.setObject(new MessageWrapper(tInfo.buildCall(seqId, binaryProtocolFactory)));
 				
@@ -235,7 +251,40 @@ public class JgroupsMessageDispatcher implements AsyncRequestHandler, Initializi
 			f.setException(e);
 		}
 		
-		return f;
+		return f;		
+	}
+	
+	public <T> ListenableFuture<Map<Address, T>> thriftCall(Collection<Address> dest, Collection<Address> exclusionList, int timeout, int seqId, ResponseMode responseMode, InvocationInfo tInfo) throws TException{
+
+		final SettableFuture<Map<Address, T>> ret = SettableFuture.create();
+		
+		Futures.addCallback(viewAccepted, new FutureCallback<Object>(){
+
+			@Override
+			public void onSuccess(Object result) {
+
+				try {
+					Futures.addCallback(_thriftCall(dest, exclusionList, timeout, seqId, responseMode, tInfo), new FutureCallback<Map<Address, T>>(){
+
+						@Override
+						public void onSuccess(Map<Address, T> result) {
+							ret.set(result);						
+						}
+
+						@Override
+						public void onFailure(Throwable t) {
+							ret.setException(t);						
+						}});
+				} catch (TException e) {
+					ret.setException(e);
+				}
+			}
+
+			@Override
+			public void onFailure(Throwable t) {
+			}});
+		
+		return ret;
 	}
 
 }

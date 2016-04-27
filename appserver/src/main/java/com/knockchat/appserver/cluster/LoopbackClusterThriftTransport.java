@@ -10,6 +10,7 @@ import java.util.Map;
 
 import javax.annotation.PostConstruct;
 
+import org.apache.commons.lang.NotImplementedException;
 import org.apache.thrift.TException;
 import org.apache.thrift.TProcessor;
 import org.apache.thrift.protocol.TBinaryProtocol;
@@ -104,5 +105,10 @@ public class LoopbackClusterThriftTransport implements MulticastThriftTransport 
 
 	public void setThriftProcessor(TProcessor thriftProcessor) {
 		this.thriftProcessor = thriftProcessor;
+	}
+
+	@Override
+	public <T> ListenableFuture<T> thriftCall(Address destination, int timeout, int seqId, T methodCall) throws TException {
+		throw new NotImplementedException();
 	}
 }

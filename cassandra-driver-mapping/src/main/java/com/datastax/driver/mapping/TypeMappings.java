@@ -15,15 +15,15 @@
  */
 package com.datastax.driver.mapping;
 
-import com.datastax.driver.mapping.annotations.UDT;
-import com.google.common.collect.Sets;
-
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import com.datastax.driver.mapping.annotations.UDT;
+import com.google.common.collect.Sets;
 
 /**
  * Utility methods to determine which CQL type we expect for a given Java field type.

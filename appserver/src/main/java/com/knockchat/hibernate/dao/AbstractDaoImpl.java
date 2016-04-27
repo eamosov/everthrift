@@ -37,8 +37,8 @@ import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.knockchat.appserver.model.CreatedAtIF;
+import com.knockchat.appserver.model.UniqueException;
 import com.knockchat.appserver.model.UpdatedAtIF;
-import com.knockchat.node.model.UniqueException;
 import com.knockchat.utils.LongTimestamp;
 import com.knockchat.utils.Pair;
 

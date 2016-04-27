@@ -4,10 +4,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jmx.export.annotation.ManagedOperation;
 import org.springframework.jmx.export.annotation.ManagedResource;
-import org.springframework.stereotype.Component;
 
 @ManagedResource(objectName="bean:name=ThriftController")
-@Component
 public class ThriftControllerJmx {
 	
 	private static final Logger log = LoggerFactory.getLogger(ThriftControllerJmx.class); 

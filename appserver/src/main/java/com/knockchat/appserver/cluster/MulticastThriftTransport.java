@@ -12,6 +12,5 @@ import com.knockchat.utils.thrift.InvocationInfo;
 public interface MulticastThriftTransport {
 	public <T> ListenableFuture<Map<Address, T>> thriftCall(boolean loopBack, int timeout, int seqId, ResponseMode responseMode,  final InvocationInfo ii) throws TException;
 	public <T> ListenableFuture<Map<Address, T>> thriftCall(boolean loopBack, int timeout, int seqId, ResponseMode responseMode,  T methodCall) throws TException;
-	
-	//public <T> Map<Address, T> thriftCall(int timeout, int seqId, ResponseMode responseMode, InvocationInfo tInfo) throws TException;
+	public <T> ListenableFuture<T> thriftCall(Address destination, int timeout, int seqId, T methodCall) throws TException;
 }

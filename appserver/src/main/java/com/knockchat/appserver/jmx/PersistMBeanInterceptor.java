@@ -12,21 +12,14 @@ import javax.management.AttributeList;
 
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
-import org.springframework.beans.factory.InitializingBean;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Scope;
 import org.springframework.jmx.export.annotation.ManagedResource;
-import org.springframework.stereotype.Component;
 
-@Component(value = "persistMbeanInterceptor")
-@Scope(value = "prototype")
-public class PersistMBeanInterceptor implements MethodInterceptor, InitializingBean {
+public class PersistMBeanInterceptor implements MethodInterceptor{
 
-	@Autowired
-	private ApplicationPropertiesModelFactory propertiesModelFactory;
+	private final ApplicationPropertiesModelFactory propertiesModelFactory;
 
-	private Object clazzObj;
-	private String persistencaName;
+	private final Object clazzObj;
+	private final String persistencaName;
 	protected static final String GET_METHOD = "get";
 	protected static final String IS_METHOD = "is";
 	protected static final String SET_METHOD = "set";
@@ -37,9 +30,12 @@ public class PersistMBeanInterceptor implements MethodInterceptor, InitializingB
 	private static final String SET_ATTRIBUTE = "setAttribute";
 	private static final String SET_ATTRIBUTES = "setAttributes";
 
-	public PersistMBeanInterceptor(Object obj) {
+	public PersistMBeanInterceptor(Object obj, ApplicationPropertiesModelFactory propertiesModelFactory) {
 		this.clazzObj = obj;
 		this.persistencaName = this.clazzObj.getClass().getAnnotation(ManagedResource.class).persistName();
+		this.propertiesModelFactory = propertiesModelFactory;
+		
+		this.load(clazzObj);
 	}
 
 	@Override
@@ -133,10 +129,4 @@ public class PersistMBeanInterceptor implements MethodInterceptor, InitializingB
 		
 		propertiesModelFactory.updateEntity(m);
 	}
-
-	@Override
-	public void afterPropertiesSet() throws Exception {
-		this.load(clazzObj);
-	}
-
 }

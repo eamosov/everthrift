@@ -15,16 +15,25 @@
  */
 package com.datastax.driver.mapping;
 
-import com.datastax.driver.core.*;
-import com.google.common.collect.Sets;
-import com.google.common.reflect.TypeToken;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Set;
+
+import com.datastax.driver.core.BoundStatement;
+import com.datastax.driver.core.ColumnDefinitions;
+import com.datastax.driver.core.ConsistencyLevel;
+import com.datastax.driver.core.PreparedStatement;
+import com.datastax.driver.core.ProtocolVersion;
+import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.ResultSetFuture;
+import com.datastax.driver.core.Session;
+import com.datastax.driver.core.Statement;
+import com.datastax.driver.core.TypeCodec;
+import com.google.common.collect.Sets;
+import com.google.common.reflect.TypeToken;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 
 // TODO: we probably should make that an abstract class and move some bit in a "ReflexionMethodMapper"
 // subclass for consistency with the rest, but we can see to that later

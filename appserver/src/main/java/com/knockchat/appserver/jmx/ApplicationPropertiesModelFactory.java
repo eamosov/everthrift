@@ -4,7 +4,7 @@ import java.util.List;
 
 import org.hibernate.criterion.Restrictions;
 
-import com.knockchat.node.model.pgsql.PgSqlModelFactory;
+import com.knockchat.appserver.model.pgsql.PgSqlModelFactory;
 
 public class ApplicationPropertiesModelFactory extends PgSqlModelFactory<String, ApplicationPropertiesModel> {
 

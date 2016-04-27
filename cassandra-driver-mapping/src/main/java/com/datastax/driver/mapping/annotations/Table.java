@@ -15,12 +15,12 @@
  */
 package com.datastax.driver.mapping.annotations;
 
-import com.datastax.driver.mapping.Mapper;
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+
+import com.datastax.driver.mapping.Mapper;
 
 /**
  * Defines to which table a class must be mapped to.

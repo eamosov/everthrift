@@ -38,6 +38,7 @@ import java.util.TreeSet;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.thrift.TBase;
+import org.springframework.beans.CachedIntrospectionResults;
 import org.springframework.util.ObjectUtils;
 
 /**

@@ -22,11 +22,11 @@ import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocolFactory;
 import org.apache.thrift.transport.AutoExpandingBufferWriteTransport;
 import org.apache.thrift.transport.THttpClient;
+import org.apache.thrift.transport.TKnockZlibTransport;
 import org.apache.thrift.transport.TMemoryBuffer;
 import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportException;
 import org.apache.thrift.transport.TTransportFactory;
-import org.apache.thrift.transport.TKnockZlibTransport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

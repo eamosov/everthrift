@@ -15,10 +15,18 @@
  */
 package com.datastax.driver.mapping;
 
-import com.datastax.driver.core.*;
-import com.datastax.driver.mapping.EntityMapper.Scenario;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
-import java.util.*;
+import com.datastax.driver.core.ExecutionInfo;
+import com.datastax.driver.core.ProtocolVersion;
+import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.Row;
+import com.datastax.driver.core.TypeCodec;
+import com.datastax.driver.mapping.EntityMapper.Scenario;
 
 /**
  * A {@code ResultSet} mapped to an entity class.

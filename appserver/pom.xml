@@ -11,8 +11,6 @@
 	</parent>
 
 	<properties>
-		<jetty.version>9.2.10.v20150310</jetty.version>
-		<jackson.version>1.9.13</jackson.version>
 		<migration.target.package>com.knockchat.migration</migration.target.package>
 		<github.global.server>github</github.global.server>
 	</properties>
@@ -147,27 +145,7 @@
 
 		<dependency>
 			<groupId>org.springframework</groupId>
-			<artifactId>spring-context-support</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>org.springframework</groupId>
 			<artifactId>spring-context</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-web</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-webmvc</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-websocket</artifactId>
 		</dependency>
 
 		<dependency>
@@ -175,11 +153,6 @@
 			<artifactId>spring-aspects</artifactId>
 		</dependency>
 
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-oxm</artifactId>
-		</dependency>			
-                
 		<dependency>
 			<groupId>org.jgroups</groupId>
 			<artifactId>jgroups</artifactId>
@@ -194,7 +167,7 @@
 					<groupId>org.slf4j</groupId>
 					<artifactId>slf4j-api</artifactId>
 				</exclusion>
-			</exclusions>			
+			</exclusions>
 		</dependency>
 
 		<dependency>
@@ -206,12 +179,12 @@
 					<groupId>org.slf4j</groupId>
 					<artifactId>slf4j-api</artifactId>
 				</exclusion>
-			</exclusions>						
+			</exclusions>
 		</dependency>
 
 		<dependency>
 			<groupId>org.hibernate</groupId>
-			<artifactId>hibernate-entitymanager</artifactId>
+			<artifactId>hibernate-core</artifactId>
 			<version>5.0.0.Final</version>
 		</dependency>
 
@@ -225,12 +198,6 @@
 					<artifactId>ehcache-core</artifactId>
 				</exclusion>
 			</exclusions>
-		</dependency>
-
-		<dependency>
-			<groupId>org.ow2.asm</groupId>
-			<artifactId>asm</artifactId>
-			<version>5.0.4</version>
 		</dependency>
 
 		<dependency><!-- PostgreSQL for testing -->
@@ -250,172 +217,25 @@
 		</dependency>
 
 		<dependency>
-			<groupId>org.eclipse.jetty</groupId>
-			<artifactId>jetty-webapp</artifactId>
-			<version>${jetty.version}</version>
-		</dependency>
-
-		<dependency>
-			<groupId>org.eclipse.jetty</groupId>
-			<artifactId>jetty-jsp</artifactId>
-			<version>${jetty.version}</version>
-		</dependency>
-
-		<dependency>
-			<groupId>org.eclipse.jetty</groupId>
-			<artifactId>jetty-server</artifactId>
-			<version>${jetty.version}</version>
-		</dependency>
-
-		<dependency>
-			<groupId>org.eclipse.jetty</groupId>
-			<artifactId>jetty-servlet</artifactId>
-			<version>${jetty.version}</version>
-		</dependency>
-
-		<dependency>
-			<groupId>org.eclipse.jetty</groupId>
-			<artifactId>jetty-jmx</artifactId>
-			<version>${jetty.version}</version>
-		</dependency>
-
-		<dependency>
-			<groupId>org.eclipse.jetty.websocket</groupId>
-			<artifactId>websocket-server</artifactId>
-			<version>${jetty.version}</version>
-		</dependency>
-		
-		<dependency><!-- Apache Commons DbUtils -->
-			<groupId>commons-dbutils</groupId>
-			<artifactId>commons-dbutils</artifactId>
-			<version>1.6</version>
-		</dependency>
-
-		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
 			<version>3.4</version>
 		</dependency>
 
 		<dependency>
-			<groupId>commons-daemon</groupId>
-			<artifactId>commons-daemon</artifactId>
-		</dependency>
-		
-		<dependency>
 			<groupId>commons-lang</groupId>
-			<artifactId>commons-lang</artifactId>		
+			<artifactId>commons-lang</artifactId>
 		</dependency>
 
 		<dependency>
-			<groupId>commons-collections</groupId>
-			<artifactId>commons-collections</artifactId>
-			<version>3.2.2</version>		
-		</dependency>
-
-		<dependency>		
 			<groupId>commons-logging</groupId>
 			<artifactId>commons-logging</artifactId>
 			<version>1.2</version>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>commons-codec</groupId>
 			<artifactId>commons-codec</artifactId>
-		</dependency>					
-		
-		<dependency>
-			<groupId>commons-beanutils</groupId>
-			<artifactId>commons-beanutils</artifactId>
-			<version>1.9.2</version>
-			
-			<exclusions>
-				<exclusion>
-					<groupId>commons-collections</groupId>
-					<artifactId>commons-collections</artifactId>
-				</exclusion>
-				
-				<exclusion>
-					<groupId>commons-logging</groupId>
-					<artifactId>commons-logging</artifactId>
-				</exclusion>
-				
-			</exclusions>
-		</dependency>
-
-		<dependency>		
-			<groupId>commons-digester</groupId>
-			<artifactId>commons-digester</artifactId>
-			<version>1.8.1</version>
-			
-			<exclusions>
-				<exclusion>
-					<groupId>commons-logging</groupId>
-					<artifactId>commons-logging</artifactId>
-				</exclusion>
-				
-				<exclusion>
-					<groupId>commons-beanutils</groupId>
-					<artifactId>commons-beanutils</artifactId>
-				</exclusion>
-				
-			</exclusions>
-		</dependency>
-		
-		<dependency>
-			<groupId>org.apache.velocity</groupId>
-			<artifactId>velocity</artifactId>
-			<version>1.7</version>
-			<exclusions>
-				<exclusion>
-					<groupId>commons-collections</groupId>
-					<artifactId>commons-collections</artifactId>
-				</exclusion>
-				
-				<exclusion>
-					<groupId>commons-lang</groupId>
-					<artifactId>commons-lang</artifactId>		
-				</exclusion>
-			</exclusions>
-		</dependency>		
-
-		<dependency>
-			<groupId>org.jminix</groupId>
-			<artifactId>jminix</artifactId>
-			<version>1.2.0</version>
-
-			<exclusions>
-				<exclusion>
-            		<groupId>commons-beanutils</groupId>
-            		<artifactId>commons-beanutils</artifactId>
-        		</exclusion>
-				<exclusion>
-					<groupId>commons-lang</groupId>
-					<artifactId>commons-lang</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>commons-logging</groupId>
-					<artifactId>commons-logging</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>org.jgroups</groupId>
-					<artifactId>jgroups</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>commons-collections</groupId>
-					<artifactId>commons-collections</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>org.apache.velocity</groupId>
-					<artifactId>velocity</artifactId>
-				</exclusion>																												
-			</exclusions>        			
-		</dependency>
-
-		<dependency>
-			<groupId>javax.servlet</groupId>
-			<artifactId>javax.servlet-api</artifactId>
-			<version>3.1.0</version>
 		</dependency>
 
 		<dependency>
@@ -455,8 +275,23 @@
 		</dependency>
 
 		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-messaging</artifactId>
+		</dependency>
+
+		<dependency>
 			<groupId>org.aspectj</groupId>
 			<artifactId>aspectjrt</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>aopalliance</groupId>
+			<artifactId>aopalliance</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.aspectj</groupId>
+			<artifactId>aspectjweaver</artifactId>
 		</dependency>
 
 		<dependency>
@@ -475,7 +310,7 @@
 			<groupId>com.knockchat</groupId>
 			<artifactId>knock4j-migrator</artifactId>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>com.knockchat</groupId>
 			<artifactId>knock4j-cassandra-migrator</artifactId>
@@ -484,33 +319,13 @@
 					<groupId>com.datastax.cassandra</groupId>
 					<artifactId>cassandra-driver-core</artifactId>
 				</exclusion>
-			</exclusions>							
+			</exclusions>
 		</dependency>
 
 		<dependency>
 			<groupId>org.mozilla</groupId>
 			<artifactId>rhino</artifactId>
 			<version>1.7.7</version>
-		</dependency>
-		
-		<dependency>
-			<groupId>org.springframework.data</groupId>
-			<artifactId>spring-data-commons</artifactId>
-			<version>1.11.4.RELEASE</version>
-			<exclusions>
-				<exclusion>
-					<groupId>org.springframework</groupId>
-					<artifactId>spring-core</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>org.springframework</groupId>
-					<artifactId>spring-beans</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>org.slf4j</groupId>
-					<artifactId>slf4j-api</artifactId>
-				</exclusion>								
-			</exclusions>  						
 		</dependency>
 
 		<dependency>
@@ -537,12 +352,6 @@
 		</dependency>
 
 		<dependency>
-			<groupId>org.rrd4j</groupId>
-			<artifactId>rrd4j</artifactId>
-			<version>2.2.1</version>
-		</dependency>
-
-		<dependency>
 			<groupId>io.dropwizard.metrics</groupId>
 			<artifactId>metrics-core</artifactId>
 			<version>3.1.2</version>
@@ -550,8 +359,8 @@
 				<exclusion>
 					<groupId>org.slf4j</groupId>
 					<artifactId>slf4j-api</artifactId>
-				</exclusion>								
-			</exclusions>  									
+				</exclusion>
+			</exclusions>
 		</dependency>
 
 		<dependency>
@@ -564,32 +373,28 @@
 			<artifactId>cassandra-driver-core</artifactId>
 			<scope>provided</scope>
 		</dependency>
-		
+
 		<dependency>
-			<groupId>org.apache.httpcomponents</groupId>
-			<artifactId>httpcore</artifactId>
-		</dependency>
-		
-		<dependency>
-			<groupId>org.apache.httpcomponents</groupId>
-			<artifactId>httpasyncclient</artifactId>
-		</dependency>
-<!-- 		
-		<dependency>
-			<groupId>org.apache.cassandra</groupId>
-			<artifactId>cassandra-all</artifactId>
+			<groupId>net.jpountz.lz4</groupId>
+			<artifactId>lz4</artifactId>
 		</dependency>
 
 		<dependency>
-			<groupId>org.apache.hadoop</groupId>
-			<artifactId>hadoop-mapreduce-client-core</artifactId>
+			<groupId>org.javassist</groupId>
+			<artifactId>javassist</artifactId>
+			<version>3.18.1-GA</version>
 		</dependency>
-		
+
 		<dependency>
-			<groupId>org.apache.hadoop</groupId>
-			<artifactId>hadoop-common</artifactId>		
+			<groupId>org.apache</groupId>
+			<artifactId>thrift</artifactId>
 		</dependency>
- -->		
+
+		<dependency>
+			<groupId>commons-io</groupId>
+			<artifactId>commons-io</artifactId>
+		</dependency>
+
 	</dependencies>
-	
+
 </project>

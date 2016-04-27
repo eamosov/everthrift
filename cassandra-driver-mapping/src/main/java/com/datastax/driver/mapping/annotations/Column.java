@@ -15,12 +15,12 @@
  */
 package com.datastax.driver.mapping.annotations;
 
-import com.datastax.driver.core.TypeCodec;
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+
+import com.datastax.driver.core.TypeCodec;
 
 /**
  * Annotation that allows to specify the name of the CQL column to which the

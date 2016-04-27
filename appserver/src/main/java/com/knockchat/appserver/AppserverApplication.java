@@ -18,7 +18,6 @@ package com.knockchat.appserver;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.management.ManagementFactory;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -28,25 +27,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ArrayBlockingQueue;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.jmx.MBeanContainer;
-import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpConnectionFactory;
-import org.eclipse.jetty.server.SecureRequestCustomizer;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.webapp.WebAppContext;
-import org.jminix.console.servlet.MiniConsoleServlet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -58,28 +39,18 @@ import org.springframework.core.env.PropertySource;
 import org.springframework.core.env.SimpleCommandLinePropertySource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.ResourcePropertySource;
-import org.springframework.web.context.support.XmlWebApplicationContext;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsProcessor;
-import org.springframework.web.servlet.DispatcherServlet;
-import org.springframework.web.servlet.handler.AbstractHandlerMapping;
 
 import com.google.common.base.Throwables;
+import com.google.common.collect.Lists;
 import com.knockchat.appserver.configs.AsyncTcpThrift;
 import com.knockchat.appserver.configs.Config;
-import com.knockchat.appserver.configs.Http;
 import com.knockchat.appserver.configs.JGroups;
 import com.knockchat.appserver.configs.Jms;
 import com.knockchat.appserver.configs.LoopbackJGroups;
 import com.knockchat.appserver.configs.LoopbackJms;
 import com.knockchat.appserver.configs.TcpThrift;
-import com.knockchat.appserver.monitoring.RpsServlet;
-import com.knockchat.appserver.thrift.cluster.NodeAddress;
-import com.knockchat.appserver.transport.http.BinaryThriftServlet;
-import com.knockchat.appserver.transport.http.JsonThriftServlet;
 import com.knockchat.cassandra.migrator.CMigrationProcessor;
 import com.knockchat.sql.migration.MigrationProcessor;
-import com.knockchat.utils.PosAppInitializingBean;
 import com.knockchat.utils.SocketUtils;
 import com.knockchat.utils.thrift.MetaDataMapBuilder;
 
@@ -95,12 +66,11 @@ public class AppserverApplication {
     private final List<String> scanPathList = new ArrayList<String>();
     @SuppressWarnings("rawtypes")
     private final List<PropertySource> propertySourceList = new ArrayList<PropertySource>();
-    private Server jettyServer;
-    public NodeAddress jettyAddress;
 
     private boolean initialized = false;
 
-    private String webContextConfigLocation;
+    
+    private List<Class> annotatedClasses = Lists.newArrayList(Config.class);
 
     private AppserverApplication() {
 
@@ -137,10 +107,6 @@ public class AppserverApplication {
     	return !env.getProperty("jms", "false").equalsIgnoreCase("false");
     }
     
-    private boolean isJMinixEnabled(){
-    	return !env.getProperty("jminix", "false").equalsIgnoreCase("false");
-    }
-
 
     @SuppressWarnings("rawtypes")
     public synchronized void init(String[] args, String version) {
@@ -193,7 +159,7 @@ public class AppserverApplication {
         	}
         }
 
-        context.register(Config.class);
+        context.register(annotatedClasses.toArray(new Class[annotatedClasses.size()]));
         
         if (isAsyncThriftEnabled())
         	context.register(AsyncTcpThrift.class);
@@ -212,30 +178,15 @@ public class AppserverApplication {
         	context.register(LoopbackJms.class);
         
         if (isJettyEnabled()) {
-        	context.register(Http.class);
+        	try {
+				context.register(Class.forName("com.knockchat.appserver.configs.Http"));
+			} catch (ClassNotFoundException e) {
+				throw Throwables.propagate(e);
+			}
         }
         
         context.refresh();
-
-        if (webContextConfigLocation == null)
-            try {
-                webContextConfigLocation = context.getResource("/web-context.xml").getURL().toString();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-
-        initialized = true;
-
-        if (isJettyEnabled()) {
-            initJetty();
-        }
-        
-        for (PosAppInitializingBean bean :context.getBeansOfType(PosAppInitializingBean.class).values())
-			try {
-				bean.afterAppInitizlized();
-			} catch (Exception e) {
-				throw new RuntimeException(e);
-			}
+        initialized = true;        
     }
 
     private void runSqlMigrator() {
@@ -304,149 +255,18 @@ public class AppserverApplication {
         return keyStore;
     }
 
-    private void initJetty() {
-
-        final String host = env.getProperty("jetty.host");
-        final int port = Integer.parseInt(env.getProperty("jetty.port"));
-        final int sslPort = Integer.parseInt(env.getProperty("jetty.ssl.port", "443"));
-
-        log.info("Starting jetty server on {}:{}", host, port);
-
-        final int capacity = Integer.parseInt(env.getProperty("jetty.capacity", "6000"));
-        final int maxThreads = Integer.parseInt(env.getProperty("jetty.maxThreads", "10"));
-        final int minThreads = Integer.parseInt(env.getProperty("jetty.minThreads", "10"));
-        final int idleTimeout = Integer.parseInt(env.getProperty("jetty.idleTimeout", "60000"));
-
-        final ArrayBlockingQueue<Runnable> queue = new ArrayBlockingQueue<Runnable>(capacity);
-
-        final QueuedThreadPool threadPool = new QueuedThreadPool(maxThreads, minThreads, idleTimeout, queue);
-        threadPool.setName("jetty");
-
-        jettyServer = new Server(threadPool);
-        
-        final MBeanContainer mbContainer=new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
-        jettyServer.addEventListener(mbContainer);
-        jettyServer.addBean(mbContainer);
-        
-        // Register loggers as MBeans
-        jettyServer.addBean(Log.getLog());
-
-        final HttpConfiguration http_config = new HttpConfiguration();
-        http_config.setSecureScheme("https");
-        http_config.setSecurePort(sslPort);
-        http_config.setOutputBufferSize(32768);
-        http_config.setRequestHeaderSize(8192);
-        http_config.setResponseHeaderSize(8192);
-        http_config.setSendServerVersion(true);
-        http_config.setSendDateHeader(false);
-
-        final ServerConnector http = new ServerConnector(jettyServer, new HttpConnectionFactory(http_config));
-        http.setHost(host);
-        http.setPort(port);
-        jettyServer.addConnector(http);
-
-        final String pkcs12 = env.getProperty("jetty.ssl.jks.path");
-        if (pkcs12 != null) {
-
-            try {
-                final KeyStore keyStore = loadJettyKeystore(pkcs12, env.getProperty("jetty.ssl.jks.pass"));
-
-                final SslContextFactory contextFactory = new SslContextFactory();
-
-                contextFactory.setKeyStorePassword(env.getProperty("jetty.ssl.jks.pass"));
-                contextFactory.setTrustStorePassword(env.getProperty("jetty.ssl.jks.pass"));
-                contextFactory.setKeyStore(keyStore);
-                contextFactory.setTrustStore(keyStore);
-
-                final HttpConfiguration https_config = new HttpConfiguration(http_config);
-                https_config.addCustomizer(new SecureRequestCustomizer());
-
-                final ServerConnector https = new ServerConnector(jettyServer, new SslConnectionFactory(contextFactory, HttpVersion.HTTP_1_1.toString()), new HttpConnectionFactory(https_config));
-                https.setHost(host);
-                https.setPort(sslPort);
-                jettyServer.addConnector(https);
-            } catch (NoSuchAlgorithmException | CertificateException | KeyStoreException | IOException e) {
-
-                throw new RuntimeException(e);
-            }
-        }
-
-        jettyAddress = new NodeAddress(host, port);
-
-        //final ServletContextHandler jettyContext = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        final WebAppContext jettyContext = new WebAppContext();
-        jettyContext.setContextPath("/");
-        jettyContext.setResourceBase("webapp");
-        try {
-            jettyContext.setDescriptor(context.getResource("/WEB-INF/web.xml").getURL().toString());
-        } catch (IOException e) {
-            log.error("Coudn't load web.xml", e);
-        }
-        jettyContext.setConfigurationClasses(WebAppContext.getDefaultConfigurationClasses());
-        jettyServer.setHandler(jettyContext);
-
-        if (isJMinixEnabled()) {
-            final MiniConsoleServlet jminix = new MiniConsoleServlet();
-            jettyContext.addServlet(new ServletHolder(jminix), "/jmx/*");
-        }
-        
-        final JsonThriftServlet jsonThriftServlet = context.getBean(JsonThriftServlet.class);
-        jettyContext.addServlet(new ServletHolder(jsonThriftServlet), "/TJSON");
-
-        final BinaryThriftServlet binaryThriftServlet = context.getBean(BinaryThriftServlet.class);
-        jettyContext.addServlet(new ServletHolder(binaryThriftServlet), "/TBINARY");
-                
-        final RpsServlet rpsServlet = context.getBean(RpsServlet.class);
-        jettyContext.addServlet(new ServletHolder(rpsServlet), "/rps");
-
-        //final AnnotationConfigWebApplicationContext springWebApplicationContext = new AnnotationConfigWebApplicationContext();
-        final XmlWebApplicationContext springWebApplicationContext = new XmlWebApplicationContext();
-        springWebApplicationContext.setParent(context);
-        springWebApplicationContext.setConfigLocation(webContextConfigLocation);
-        //springWebApplicationContext.register(ServletConfig.class);
-
-        final DispatcherServlet dispatcherServlet = new DispatcherServlet(springWebApplicationContext);
-        jettyContext.addServlet(new ServletHolder(dispatcherServlet), "/*");
-        
-        springWebApplicationContext.refresh();
-        
-        //hack for disable CORS
-        for (AbstractHandlerMapping m: springWebApplicationContext.getBeansOfType(AbstractHandlerMapping.class).values()){
-        	m.setCorsProcessor(new CorsProcessor(){
-
-				@Override
-				public boolean processRequest(CorsConfiguration configuration, HttpServletRequest request, HttpServletResponse response) throws IOException {					
-					return true;
-				}});
-        }
-			
-    }
-
     public synchronized void start() {
-        try {
-            if (jettyServer != null)
-                jettyServer.start();
-        } catch (RuntimeException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     public synchronized void stop() {
 
-        try {
-            if (jettyServer != null)
-                jettyServer.stop();
-        } catch (RuntimeException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-
         context.close();
     }
 
+    /**
+     * Add path to thrift controllers scan path
+     * @param p
+     */
     public synchronized void addScanPath(String p) {
         scanPathList.add(p);
     }
@@ -465,6 +285,11 @@ public class AppserverApplication {
 
     public synchronized void addPropertySource(String resourceName) throws IOException {
         addPropertySource(new ResourcePropertySource(AppserverApplication.INSTANCE.context.getResource(resourceName)));
+    }
+    
+    public void registerAnnotatedClasses(Class<?>... annotatedClasses) {
+    	for (Class cls: annotatedClasses)
+    		this.annotatedClasses.add(cls);
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
@@ -507,18 +332,4 @@ public class AppserverApplication {
         System.out.println("Exiting application...bye.");
         System.exit(0);
     }
-
-    public String getWebContextConfigLocation() {
-        return webContextConfigLocation;
-    }
-
-    public void setWebContextConfigLocation(String webContextConfigLocation) {
-        this.webContextConfigLocation = webContextConfigLocation;
-    }
-
-//	public static void main(String[] args) {
-//		INSTANCE.init(args, AppserverApplication.class.getPackage().getImplementationVersion());
-//		INSTANCE.start();
-//		INSTANCE.waitExit();
-//	}
 }

@@ -4,14 +4,17 @@ import java.util.Map;
 
 import javax.management.modelmbean.ModelMBean;
 
-import org.aopalliance.intercept.MethodInterceptor;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.ListableBeanFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jmx.export.MBeanExportException;
 import org.springframework.jmx.export.annotation.AnnotationMBeanExporter;
 
 public class PersistanceMbeanExporter extends AnnotationMBeanExporter {
+
+	@Autowired
+	private ApplicationPropertiesModelFactory propertiesModelFactory;
 
     public PersistanceMbeanExporter() {
         super();
@@ -38,7 +41,7 @@ public class PersistanceMbeanExporter extends AnnotationMBeanExporter {
             return wrapper;
         }
         ProxyFactory factory = new ProxyFactory(wrapper);
-        factory.addAdvice((MethodInterceptor)this.beanFactory.getBean("persistMbeanInterceptor",bean));
+        factory.addAdvice(new PersistMBeanInterceptor(bean, propertiesModelFactory));
         return factory.getProxy();
     }
 

@@ -15,10 +15,14 @@
  */
 package com.datastax.driver.mapping;
 
-import com.datastax.driver.core.*;
-
 import java.nio.ByteBuffer;
 import java.util.Map;
+
+import com.datastax.driver.core.CodecRegistry;
+import com.datastax.driver.core.Metadata;
+import com.datastax.driver.core.ProtocolVersion;
+import com.datastax.driver.core.TypeCodec;
+import com.datastax.driver.core.UserType;
 
 /**
  * Serializes a class annotated with {@code @UDT} to the corresponding CQL user-defined type.

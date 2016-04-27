@@ -15,12 +15,12 @@
  */
 package com.datastax.driver.mapping.annotations;
 
-import com.datastax.driver.core.DataType;
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+
+import com.datastax.driver.core.DataType;
 
 /**
  * Specifies that the field decorated with this annotation maps to a CQL type that is {@link DataType#isFrozen() frozen},

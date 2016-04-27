@@ -15,11 +15,11 @@
  */
 package com.datastax.driver.mapping;
 
-import com.datastax.driver.mapping.annotations.Computed;
-import com.datastax.driver.mapping.annotations.Table;
-
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+
+import com.datastax.driver.mapping.annotations.Computed;
+import com.datastax.driver.mapping.annotations.Table;
 
 /**
  * Various checks on mapping annotations.

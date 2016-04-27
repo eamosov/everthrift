@@ -15,12 +15,12 @@
  */
 package com.datastax.driver.mapping.annotations;
 
-import com.datastax.driver.core.Configuration;
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+
+import com.datastax.driver.core.Configuration;
 
 /**
  * Query parameters to use in the (generated) implementation of a method of an {@link Accessor}
