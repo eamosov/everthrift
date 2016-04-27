@@ -29,7 +29,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.support.GenericMessage;
-import org.springframework.transaction.TransactionStatus;
 
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
@@ -49,7 +48,6 @@ public abstract class ThriftController<ArgsType extends TBase, ResultType> {
 	protected LogEntry logEntry;
 	protected int seqId;
 	protected DataSource ds;
-	protected TransactionStatus transactionStatus;
 	protected ThriftClient thriftClient;
 	protected MessageWrapper attributes;
 	protected boolean loadLazyRelations = true;
@@ -124,10 +122,6 @@ public abstract class ThriftController<ArgsType extends TBase, ResultType> {
 		} catch (TException e) {
 			return e;
 		}		
-	}
-	
-	protected void setTransactionStatus(TransactionStatus transactionStatus){
-		this.transactionStatus = transactionStatus;
 	}
 	
 	protected ResultType waitForAnswer(){

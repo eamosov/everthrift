@@ -59,7 +59,7 @@ public class ThriftTraversal {
 	
 	public static <T extends TBase> Set<T> visitChildsOfType(final Object obj, final Class<T> type, final Function<T, Void> visitHandler){
 		final Set<T> visited = new ReferenceOpenHashSet<T>();
-		visitChildsOfType(visited, obj, type, Utils.getRootThriftClass(type).first, visitHandler);
+		visitChildsOfType(visited, obj, type, ThriftUtils.getRootThriftClass(type).first, visitHandler);
 		return visited;
 	}
 			
@@ -90,7 +90,7 @@ public class ThriftTraversal {
 		
 		if (obj instanceof TBase){
 			
-			final ThriftTraversal node = getNode(Utils.getRootThriftClass((Class)obj.getClass()).first);
+			final ThriftTraversal node = getNode((Class)ThriftUtils.getRootThriftClass((Class)obj.getClass()).first);
 			
 			final List<TFieldIdEnum> _l = node.getChildsOfType(thriftBaseType);
 			

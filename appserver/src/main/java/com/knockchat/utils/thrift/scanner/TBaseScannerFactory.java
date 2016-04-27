@@ -22,7 +22,7 @@ import com.google.common.collect.Maps;
 import com.knockchat.appserver.model.lazy.LazyAccessor;
 import com.knockchat.appserver.model.lazy.LazyMethod;
 import com.knockchat.appserver.model.lazy.Registry;
-import com.knockchat.utils.thrift.Utils;
+import com.knockchat.utils.thrift.ThriftUtils;
 
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
@@ -283,7 +283,7 @@ public class TBaseScannerFactory {
 		final Map<String, PropertyInfo> props = Maps.newHashMap();
 								
 		if (TBase.class.isAssignableFrom(cls)){
-			final Map<? extends TFieldIdEnum, FieldMetaData> md = Utils.getRootThriftClass(cls).second;
+			final Map<? extends TFieldIdEnum, FieldMetaData> md = (Map)ThriftUtils.getRootThriftClass(cls).second;
 			
 			for (Entry<? extends TFieldIdEnum, FieldMetaData> e:md.entrySet()){
 				final FieldValueMetaData v = e.getValue().valueMetaData;

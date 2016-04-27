@@ -208,9 +208,10 @@
 		<module>parent</module>
 		<module>services</module>
 		<module>thrift</module>
-		<module>cassandra-driver-mapping</module>
 		<module>appserver</module>
 		<module>appserver-jetty</module>
+		<module>appserver-sql</module>
+		<module>appserver-cassandra</module>
 		<module>migrator</module>
 		<module>cassandra-migrator</module>
 		<module>migration-plugin</module>

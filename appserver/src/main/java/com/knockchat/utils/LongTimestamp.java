@@ -8,8 +8,8 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 
-import com.datastax.driver.core.AtomicMonotonicTimestampGenerator;
-import com.datastax.driver.core.TimestampGenerator;
+import com.knockchat.utils.tg.AtomicMonotonicTimestampGenerator;
+import com.knockchat.utils.tg.TimestampGenerator;
 
 public class LongTimestamp {
 	

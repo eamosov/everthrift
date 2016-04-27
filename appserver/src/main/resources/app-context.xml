@@ -24,10 +24,7 @@
   <task:annotation-driven executor="callerRunsBoundQueueExecutor" scheduler="myScheduler"/>
 
   <int:poller id="defaultPoller" default="true" receive-timeout="5000" fixed-rate="1"/>
-	    
-  <bean id="tBinaryProtocol" class="org.apache.thrift.protocol.TBinaryProtocol.Factory"></bean>  
-  <bean id="tZlibTransport" class="org.apache.thrift.transport.TKnockZlibTransport.Factory"></bean>  
-    
+
   <context:mbean-server/>
   <context:mbean-export registration="ignoreExisting" server="mbeanServer"/>
 
@@ -41,5 +38,5 @@
   <bean class="org.springframework.jmx.support.MBeanServerFactoryBean">
        <property name="locateExistingServerIfPossible" value="true" />
   </bean>
-				    	
+  				    	
 </beans>

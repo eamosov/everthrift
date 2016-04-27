@@ -8,8 +8,6 @@ import java.util.Map;
 import javax.annotation.PostConstruct;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.support.TransactionSynchronizationAdapter;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.CollectionUtils;
 
 import net.sf.ehcache.Cache;
@@ -271,20 +269,7 @@ public abstract class AbstractCachedModelFactory<PK,ENTITY> extends RoModelFacto
 		
 		return (Map)cache.getAllWithLoader(ids, _loader);
     }
-    
-	public static void doAfterCommit(Runnable r){
-		if (TransactionSynchronizationManager.isActualTransactionActive()) {
-			TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronizationAdapter(){
-				@Override
-				public void afterCommit() {
-					r.run();
-				}
-			});
-		}else{
-			r.run();	
-		}		
-	}
-	
+    	
 	final public CacheManager getCm() {
 		return cm;
 	}

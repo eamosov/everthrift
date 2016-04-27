@@ -35,9 +35,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.thrift.TBase;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.CachedIntrospectionResults;
 import org.springframework.util.ObjectUtils;
 
@@ -77,7 +77,7 @@ import org.springframework.util.ObjectUtils;
  */
 class ThriftBeanInfo implements BeanInfo {
 
-	private static final Log logger = LogFactory.getLog(ThriftBeanInfo.class);
+	private static final Logger logger = LoggerFactory.getLogger(ThriftBeanInfo.class);
 
 	private final BeanInfo delegate;
 

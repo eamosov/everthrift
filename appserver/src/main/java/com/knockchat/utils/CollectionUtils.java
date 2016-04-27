@@ -3,13 +3,10 @@ package com.knockchat.utils;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.Map;
-import java.util.Map.Entry;
 
 import org.apache.commons.lang.StringUtils;
 
@@ -21,11 +18,6 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-
-import gnu.trove.TLongCollection;
-import gnu.trove.map.TLongObjectMap;
-import gnu.trove.map.hash.TLongObjectHashMap;
-import gnu.trove.procedure.TLongProcedure;
 
 public class CollectionUtils {
 	
@@ -177,49 +169,11 @@ public class CollectionUtils {
 		else
 			return collection.contains(element);
 	}
-	
-	public static boolean isEmpty(TLongCollection c){
-		return c==null || c.isEmpty();
-	}
-	
+		
 	public static <T> boolean isEmpty(Collection<T> c){
 		return c==null || c.isEmpty();
 	}
-
-	public static List<Long> asList(TLongCollection c){
-		if (c==null || c.isEmpty())
-			return Collections.emptyList();
 		
-    	final List<Long> _ids = Lists.newArrayListWithCapacity(c.size());
-    	c.forEach(new TLongProcedure(){
-
-			@Override
-			public boolean execute(long value) {
-				_ids.add(value);
-				return true;
-			}});
-    	
-    	return _ids;
-	}
-	
-	public static <T> TLongObjectMap<T> asTLongObjectMap(Map<Long, T> m){
-		final TLongObjectMap<T> r;
-		
-		if (m == null)
-			return null;
-		
-		if (!m.isEmpty()){
-			r = new TLongObjectHashMap<T>(m.size());
-		
-			for (Entry<Long, T> e: m.entrySet())
-				r.put(e.getKey(), e.getValue());
-		}else{
-			r = new TLongObjectHashMap<T>();
-		}
-		
-		return r; 
-	}
-	
 	public static <T> void optimisticFilter(List<T> input, Predicate<? super T> p){
 		
 		if (input == null || input.isEmpty())

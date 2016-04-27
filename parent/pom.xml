@@ -71,12 +71,6 @@
 			</dependency>
 
 			<dependency>
-				<groupId>com.knockchat</groupId>
-				<artifactId>cassandra-driver-mapping</artifactId>
-				<version>0.0.1</version>
-			</dependency>
-
-			<dependency>
 				<groupId>org.springframework</groupId>
 				<artifactId>spring-core</artifactId>
 				<version>${spring.version}</version>
@@ -334,6 +328,7 @@
 				<version>3.0.0</version>
 			</dependency>
 
+<!-- 
 			<dependency>
 				<groupId>org.apache.cassandra</groupId>
 				<artifactId>cassandra-all</artifactId>
@@ -469,7 +464,7 @@
 
 				</exclusions>
 			</dependency>
-
+ -->
 			<dependency>
 				<groupId>net.jpountz.lz4</groupId>
 				<artifactId>lz4</artifactId>
@@ -491,6 +486,18 @@
 			<dependency>
 				<groupId>com.knockchat</groupId>
 				<artifactId>knock4j-appserver-jetty</artifactId>
+				<version>${knock4j-appserver.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>com.knockchat</groupId>
+				<artifactId>knock4j-appserver-sql</artifactId>
+				<version>${knock4j-appserver.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>com.knockchat</groupId>
+				<artifactId>knock4j-appserver-cassandra</artifactId>
 				<version>${knock4j-appserver.version}</version>
 			</dependency>
 

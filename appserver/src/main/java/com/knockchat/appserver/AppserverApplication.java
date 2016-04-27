@@ -43,7 +43,7 @@ import org.springframework.core.io.support.ResourcePropertySource;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.knockchat.appserver.configs.AsyncTcpThrift;
-import com.knockchat.appserver.configs.Config;
+import com.knockchat.appserver.configs.AppserverConfig;
 import com.knockchat.appserver.configs.JGroups;
 import com.knockchat.appserver.configs.Jms;
 import com.knockchat.appserver.configs.LoopbackJGroups;
@@ -70,7 +70,7 @@ public class AppserverApplication {
     private boolean initialized = false;
 
     
-    private List<Class> annotatedClasses = Lists.newArrayList(Config.class);
+    private List<Class> annotatedClasses = Lists.newArrayList(AppserverConfig.class);
 
     private AppserverApplication() {
 
@@ -127,11 +127,11 @@ public class AppserverApplication {
         env.getPropertySources().addLast(new MapPropertySource("thriftScanPathList", Collections.singletonMap("thrift.scan", (Object) scanPathList)));
         env.getPropertySources().addLast(new MapPropertySource("version", Collections.singletonMap("version", (Object) version)));
 
-        if (env.getProperty("sqlmigrator.run", "false").equalsIgnoreCase("true")) {
+        if (Boolean.parseBoolean(env.getProperty("sqlmigrator.run", "false"))) {
             runSqlMigrator();
         }
         
-        if (env.getProperty("cassandra.migrator.run", "false").equalsIgnoreCase("true")) {
+        if (Boolean.parseBoolean(env.getProperty("cassandra.migrator.run", "false"))) {
         	runCMigrationProcessor();
         }
                 
@@ -184,6 +184,11 @@ public class AppserverApplication {
 				throw Throwables.propagate(e);
 			}
         }
+        
+        try {
+			context.register(Class.forName("com.knockchat.appserver.model.cassandra.CassandraConfig"));
+		} catch (ClassNotFoundException e) {
+		}
         
         context.refresh();
         initialized = true;        

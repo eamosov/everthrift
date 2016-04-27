@@ -27,7 +27,7 @@ import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import com.google.gson.reflect.TypeToken;
 import com.knockchat.utils.thrift.TBaseHasModel;
-import com.knockchat.utils.thrift.Utils;
+import com.knockchat.utils.thrift.ThriftUtils;
 
 /**
  * @author efreet (Amosov Evgeniy)
@@ -56,7 +56,7 @@ public class GsonSerializer {
 
             final JsonObject jo = new JsonObject();
             
-            final Map<? extends TFieldIdEnum, FieldMetaData> map = Utils.getRootThriftClass(src.getClass()).second;
+            final Map<? extends TFieldIdEnum, FieldMetaData> map = ThriftUtils.getRootThriftClass(src.getClass()).second;
             
             if (map == null) {
                 log.error("coudn't serialize class {}", src.getClass());
@@ -120,7 +120,7 @@ public class GsonSerializer {
 				}
 						
 				try {
-					pd.getWriteMethod().invoke(o, context.deserialize(e.getValue(), f.getGenericType()));
+					pd.getWriteMethod().invoke(o, new Object[]{context.deserialize(e.getValue(), f.getGenericType())});
 				} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e1) {
 					throw new RuntimeException(e1);
 				}

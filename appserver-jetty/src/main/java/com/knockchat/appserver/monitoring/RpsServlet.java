@@ -2,6 +2,7 @@ package com.knockchat.appserver.monitoring;
 
 import java.awt.Color;
 import java.io.IOException;
+import java.util.Base64;
 import java.util.Date;
 
 import javax.annotation.Resource;
@@ -9,7 +10,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.commons.codec.binary.Base64;
 import org.rrd4j.ConsolFun;
 import org.rrd4j.DsType;
 import org.rrd4j.core.RrdBackendFactory;
@@ -25,8 +25,6 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.scheduling.TaskScheduler;
 
 import com.knockchat.utils.LongTimestamp;
-
-import gnu.trove.map.hash.TObjectLongHashMap;
 
 
 public class RpsServlet extends HttpServlet implements InitializingBean, DisposableBean, RpsServletIF{
@@ -46,7 +44,8 @@ public class RpsServlet extends HttpServlet implements InitializingBean, Disposa
 	private RrdDb rrdDb;
 	private Sample sample;
 	
-	private final TObjectLongHashMap<DsName> counters = new TObjectLongHashMap<DsName>();
+	private long counters[] = new long[DsName.values().length];
+	private DsName dsNames[] = new DsName[DsName.values().length];
 		
 	@Resource
 	private TaskScheduler myScheduler;
@@ -65,7 +64,7 @@ public class RpsServlet extends HttpServlet implements InitializingBean, Disposa
 		rrdDef.addArchive(ConsolFun.AVERAGE, 0.5, arch2_step / step, arch2_size / arch2_step);
 
 		for (DsName n : DsName.values()){
-			counters.put(n, 0);
+			dsNames[n.ordinal()] = n;
 			rrdDef.addDatasource(n.dsName, DsType.COUNTER, step * 2, 0, Long.MAX_VALUE);
 		}
 						 
@@ -78,7 +77,9 @@ public class RpsServlet extends HttpServlet implements InitializingBean, Disposa
 	private synchronized void sample(){
 		sample.setTime(System.currentTimeMillis() / 1000);
 		
-		counters.forEachEntry((DsName n, long c) -> { sample.setValue(n.dsName, c) ;return true;});
+		for (int i=0; i< counters.length; i++){
+			sample.setValue(dsNames[i].dsName, counters[i]);
+		}
 				
 		try {
 			sample.update();
@@ -89,7 +90,7 @@ public class RpsServlet extends HttpServlet implements InitializingBean, Disposa
 
 	@Override
 	public void incThrift(DsName dsName){
-		counters.increment(dsName);
+		counters[dsName.ordinal()]++;
 	}
 	
 	@Override
@@ -142,10 +143,10 @@ public class RpsServlet extends HttpServlet implements InitializingBean, Disposa
 
 		long now = LongTimestamp.now();
 		
-		final String min = String.format("<img alt=\"Requests per second %s\" src=\"data:image/png;base64,%s\"/>", dsName.name(), Base64.encodeBase64String(makeGraph(dsName, now - LongTimestamp.MIN * 10, now, 800, 400)));
-		final String hour = String.format("<img alt=\"Requests per second %s\" src=\"data:image/png;base64,%s\"/>", dsName.name(), Base64.encodeBase64String(makeGraph(dsName, now - LongTimestamp.HOUR, now, 800, 400)));
-		final String day = String.format("<img alt=\"Requests per second %s\" src=\"data:image/png;base64,%s\"/>", dsName.name(), Base64.encodeBase64String(makeGraph(dsName, now - LongTimestamp.DAY, now, 800, 400)));
-		final String week = String.format("<img alt=\"Requests per second %s\" src=\"data:image/png;base64,%s\"/>", dsName.name(), Base64.encodeBase64String(makeGraph(dsName, now - LongTimestamp.WEEK, now, 800, 400)));
+		final String min = String.format("<img alt=\"Requests per second %s\" src=\"data:image/png;base64,%s\"/>", dsName.name(), Base64.getEncoder().encodeToString(makeGraph(dsName, now - LongTimestamp.MIN * 10, now, 800, 400)));
+		final String hour = String.format("<img alt=\"Requests per second %s\" src=\"data:image/png;base64,%s\"/>", dsName.name(), Base64.getEncoder().encodeToString(makeGraph(dsName, now - LongTimestamp.HOUR, now, 800, 400)));
+		final String day = String.format("<img alt=\"Requests per second %s\" src=\"data:image/png;base64,%s\"/>", dsName.name(), Base64.getEncoder().encodeToString(makeGraph(dsName, now - LongTimestamp.DAY, now, 800, 400)));
+		final String week = String.format("<img alt=\"Requests per second %s\" src=\"data:image/png;base64,%s\"/>", dsName.name(), Base64.getEncoder().encodeToString(makeGraph(dsName, now - LongTimestamp.WEEK, now, 800, 400)));
 		
 		final StringBuilder body = new StringBuilder();
 		body.append("<html><head><title>" + dsName.name() + "</title></head><body>\n");
