@@ -6,9 +6,6 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-
 import org.apache.thrift.protocol.TProtocolFactory;
 import org.apache.thrift.server.TServer;
 import org.apache.thrift.server.TThreadPoolServer;
@@ -19,11 +16,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.SmartLifecycle;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.knockchat.appserver.controller.ThriftProcessor;
 
-public class ThriftServer{
+public class ThriftServer implements SmartLifecycle{
 	
 	private static final Logger log = LoggerFactory.getLogger(ThriftServer.class);
 	
@@ -48,7 +46,7 @@ public class ThriftServer{
 		this.context = context;
 	}
 	
-	@PostConstruct
+	@Override
 	public synchronized void start(){
 	
 		thread = new Thread(() -> {
@@ -59,11 +57,14 @@ public class ThriftServer{
 		thread.start();
 	}
 	
-	@PreDestroy
-	public synchronized void stop() throws InterruptedException{
+	@Override
+	public synchronized void stop() {
 		if (thread !=null){
 			thread.interrupt();
-			thread.join();
+			try {
+				thread.join();
+			} catch (InterruptedException e) {
+			}
 			thread = null;
 		}
 	}
@@ -104,5 +105,26 @@ public class ThriftServer{
 	
 	public String getHost() {
 		return host;
+	}
+
+	@Override
+	public boolean isRunning() {
+		return thread !=null;
+	}
+
+	@Override
+	public int getPhase() {
+		return 0;
+	}
+
+	@Override
+	public boolean isAutoStartup() {
+		return true;
+	}
+
+	@Override
+	public void stop(Runnable callback) {
+		stop();
+		callback.run();		
 	}	
 }
