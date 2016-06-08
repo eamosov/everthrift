@@ -20,6 +20,74 @@ import com.knockchat.appserver.thrift.cluster.Node;
 import com.knockchat.clustering.thrift.InvocationInfo;
 
 public abstract class ClusterThriftClientImpl implements ClusterThriftClientIF {
+	
+	public static interface TRunnable<T>{
+		T run() throws TException;
+	}
+
+	public static class ReplyImpl<T> implements Reply<T>{
+		private T v;
+		private TException e;
+		
+		public ReplyImpl(TRunnable<T> r){
+			try {
+				v = r.run();
+			} catch (TException e) {
+				this.e = e;
+			}
+		}
+
+		@Override
+		public T get() throws TException {
+			if (e !=null)
+				throw e;
+			else
+				return v;
+		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + ((e == null) ? 0 : e.hashCode());
+			result = prime * result + ((v == null) ? 0 : v.hashCode());
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			ReplyImpl other = (ReplyImpl) obj;
+			if (e == null) {
+				if (other.e != null)
+					return false;
+			} else if (!e.equals(other.e))
+				return false;
+			if (v == null) {
+				if (other.v != null)
+					return false;
+			} else if (!v.equals(other.v))
+				return false;
+			return true;
+		}
+
+		@Override
+		public String toString() {
+			if (e!=null)
+				return e.toString();
+			else if (v !=null)
+				return v.toString();
+			
+			return "<null>";
+		}
+		
+	}
+
 
 	private final Logger log = LoggerFactory.getLogger(this.getClass());
 	
@@ -102,10 +170,10 @@ public abstract class ClusterThriftClientImpl implements ClusterThriftClientIF {
 		log.debug("Try call {} on {}", ii.fullMethodName, a);
 		
 		try {
-			Futures.addCallback(call(Collections.singletonList(a), null, ii, options), new FutureCallback<Map<Address,T>>(){
+			Futures.addCallback(call(Collections.singletonList(a), null, ii, options), new FutureCallback<Map<Address,Reply<T>>>(){
 
 				@Override
-				public void onSuccess(Map<Address,T> result) {
+				public void onSuccess(Map<Address,Reply<T>> result) {
 					if (!result.containsKey(a)){
 						log.debug("Failed call {} on {}", ii.fullMethodName, a);
 						nodeDb.failed(a);
@@ -113,7 +181,11 @@ public abstract class ClusterThriftClientImpl implements ClusterThriftClientIF {
 					}else{
 						log.debug("Success call {} on {}", ii.fullMethodName, a);
 						nodeDb.success(a);
-						f.set(result.get(a));						
+						try {
+							f.set(result.get(a).get());
+						} catch (TException e) {
+							f.setException(e);
+						}						
 					}
 				}
 
@@ -121,7 +193,7 @@ public abstract class ClusterThriftClientImpl implements ClusterThriftClientIF {
 				public void onFailure(Throwable t) {
 					log.debug("Failed call {} on {}", ii.fullMethodName, a);
 					nodeDb.failed(a);
-					_callOne(it, f, ii, options);
+					_callOne(it, f, ii, options);						
 				}			
 			});
 		} catch (TException e) {

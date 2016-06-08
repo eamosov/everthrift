@@ -50,7 +50,7 @@ public class LoopbackThriftClientServerImpl extends ClusterThriftClientImpl {
 	}
 
 	@Override
-	public <T> ListenableFuture<Map<Address, T>> call(Collection<Address> dest, Collection<Address> exclusionList, InvocationInfo tInfo, Options... options) throws TException {
+	public <T> ListenableFuture<Map<Address, Reply<T>>> call(Collection<Address> dest, Collection<Address> exclusionList, InvocationInfo tInfo, Options... options) throws TException {
 		
 		if (isLoopback(options) == false)
 			return Futures.immediateFuture(Collections.emptyMap());
@@ -87,7 +87,7 @@ public class LoopbackThriftClientServerImpl extends ClusterThriftClientImpl {
 			@Override
 			public int size() {
 				return 0;
-			}}, (T)tInfo.setReply(out, binary)));
+			}}, new ReplyImpl<T>( () -> (T)tInfo.setReply(out, binary))));
 	}
 
 	@PostConstruct

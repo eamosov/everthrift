@@ -6,7 +6,6 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import org.apache.thrift.TApplicationException;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocolFactory;
@@ -43,9 +42,9 @@ public abstract class AbstractJgroupsThriftClientImpl extends ClusterThriftClien
 	public Address getLocalAddress(){
 		return getCluster().getAddress();
 	}
-		
+				
 	@SuppressWarnings("rawtypes")
-	private <T> ListenableFuture<Map<Address, T>> _thriftCall(Collection<Address> dest, Collection<Address> exclusionList, boolean loopBack, int timeout, ResponseMode responseMode, InvocationInfo tInfo) throws TException{
+	private <T> ListenableFuture<Map<Address, Reply<T>>> _thriftCall(Collection<Address> dest, Collection<Address> exclusionList, boolean loopBack, int timeout, ResponseMode responseMode, InvocationInfo tInfo) throws TException{
 		
 		final Message msg = new Message();
 		msg.setObject(new MessageWrapper(tInfo.buildCall(0, binaryProtocolFactory)));
@@ -59,7 +58,7 @@ public abstract class AbstractJgroupsThriftClientImpl extends ClusterThriftClien
 			options.setExclusionList(exclusionList.toArray(new Address[exclusionList.size()]));
 		}
 		
-		final SettableFuture<Map<Address, T>> f = SettableFuture.create();
+		final SettableFuture<Map<Address, Reply<T>>> f = SettableFuture.create();
 		
 		log.debug("call {}, dest={}, excl={}, loopback={}, timeout={}, respMode={}", tInfo.fullMethodName, dest, exclusionList, loopBack, timeout, responseMode);
 		
@@ -81,26 +80,11 @@ public abstract class AbstractJgroupsThriftClientImpl extends ClusterThriftClien
 					
 					log.trace("RspList:{}", resp);
 
-					final Map<Address, T> ret = new HashMap<Address, T>();		
+					final Map<Address, Reply<T>> ret = new HashMap<Address, Reply<T>>();		
 					
 					for (Rsp<MessageWrapper>responce: resp){
-						if (responce.getValue() !=null){
-							
-							try{
-								
-								final T success = (T)tInfo.setReply(responce.getValue().getTTransport(), binaryProtocolFactory);					
-								ret.put(responce.getSender(), success);
-								
-							} catch (TApplicationException e) {
-								if (e.getType() == TApplicationException.UNKNOWN_METHOD){
-									log.debug("UNKNOWN_METHOD from {}:{}", responce.getSender(), e.getMessage());
-								}else{
-									log.error("Exception while reading thrift answer from " + responce.getSender(), e);
-								}
-							} catch (Exception e) {
-								log.error("Exception while reading thrift answer from " + responce.getSender(), e);
-							}
-							
+						if (responce.getValue() !=null){							
+							ret.put(responce.getSender(), new ReplyImpl<T>(() -> (T)tInfo.setReply(responce.getValue().getTTransport(), binaryProtocolFactory)));							
 						}else{
 							log.warn("null responce from {}", responce.getSender());
 						}
@@ -115,11 +99,11 @@ public abstract class AbstractJgroupsThriftClientImpl extends ClusterThriftClien
 		return f;		
 	}
 		
-	public <T> ListenableFuture<Map<Address, T>> call(Collection<Address> dest, Collection<Address> exclusionList, InvocationInfo tInfo, Options ... options) throws TException{
+	public <T> ListenableFuture<Map<Address, Reply<T>>> call(Collection<Address> dest, Collection<Address> exclusionList, InvocationInfo tInfo, Options ... options) throws TException{
 		
 		Assert.notNull(tInfo, "tInfo must not be null");
 
-		final SettableFuture<Map<Address, T>> ret = SettableFuture.create();
+		final SettableFuture<Map<Address, Reply<T>>> ret = SettableFuture.create();
 		
 		Futures.addCallback(viewAccepted, new FutureCallback<Object>(){
 
@@ -127,10 +111,10 @@ public abstract class AbstractJgroupsThriftClientImpl extends ClusterThriftClien
 			public void onSuccess(Object result) {
 
 				try {
-					Futures.addCallback(_thriftCall(dest, exclusionList, isLoopback(options), getTimeout(options), getResponseMode(options), tInfo), new FutureCallback<Map<Address, T>>(){
+					Futures.addCallback(_thriftCall(dest, exclusionList, isLoopback(options), getTimeout(options), getResponseMode(options), tInfo), new FutureCallback<Map<Address, Reply<T>>>(){
 
 						@Override
-						public void onSuccess(Map<Address, T> result) {
+						public void onSuccess(Map<Address, Reply<T>> result) {
 							ret.set(result);						
 						}
 

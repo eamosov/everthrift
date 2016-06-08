@@ -44,6 +44,7 @@ import com.knockchat.appserver.transport.websocket.RpcWebsocket;
 import com.knockchat.clustering.MessageWrapper;
 import com.knockchat.clustering.jgroups.ClusterThriftClientIF;
 import com.knockchat.clustering.jgroups.ClusterThriftClientIF.Options;
+import com.knockchat.clustering.jgroups.ClusterThriftClientIF.Reply;
 import com.knockchat.clustering.thrift.InvocationInfo;
 import com.knockchat.utils.thrift.AbstractThriftClient;
 import com.knockchat.utils.thrift.SessionIF;
@@ -181,7 +182,7 @@ public class ThriftProcessor implements TProcessor{
 			throw Throwables.propagate(e);
 		}
 		
-		ListenableFuture<Map<Address, Object>> clusterResults;
+		ListenableFuture<Map<Address, Reply<Object>>> clusterResults;
 		try {
 			clusterResults = applicationContext.getBean(ClusterThriftClientIF.class).call(ii, Options.loopback(false), Options.timeout(ann.timeout()), Options.responseMode(ann.value()));
 		} catch (BeansException | TException e) {

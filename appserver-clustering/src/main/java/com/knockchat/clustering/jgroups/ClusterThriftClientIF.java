@@ -8,12 +8,18 @@ import org.apache.thrift.TException;
 import org.jgroups.Address;
 import org.jgroups.blocks.ResponseMode;
 
+import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.SettableFuture;
 import com.knockchat.clustering.thrift.InvocationInfo;
 import com.knockchat.clustering.thrift.InvocationInfoThreadHolder;
 
 public interface ClusterThriftClientIF {
+	
+	public static interface Reply<T>{
+		T get() throws TException;
+	}
 	
 	public static class Options{
 		private Options(){			
@@ -53,12 +59,12 @@ public interface ClusterThriftClientIF {
 		}
 	}
 	
-	default public <T> ListenableFuture<Map<Address, T>> call(T methodCall, Options ... options) throws TException{
+	default public <T> ListenableFuture<Map<Address, Reply<T>>> call(T methodCall, Options ... options) throws TException{
 		return call(InvocationInfoThreadHolder.getInvocationInfo(), options);
 	}
 
 	@SuppressWarnings("rawtypes")
-	default public <T> ListenableFuture<Map<Address, T>> call(final InvocationInfo ii, Options ... options) throws TException {
+	default public <T> ListenableFuture<Map<Address, Reply<T>>> call(final InvocationInfo ii, Options ... options) throws TException {
 		return call(null, null, ii, options);
 	}		
 	
@@ -68,12 +74,31 @@ public interface ClusterThriftClientIF {
 
 	@SuppressWarnings("rawtypes")
 	default public <T> ListenableFuture<T> call(Address destination, InvocationInfo ii, Options ... options) throws TException {
-		final ListenableFuture<Map<Address, T>> ret = call(Collections.singleton(destination), null, ii, options);		
-		return Futures.transform(ret, (Map<Address, T> m) -> (m.get(destination)));
+		final ListenableFuture<Map<Address, Reply<T>>> ret = call(Collections.singleton(destination), null, ii, options);
+		
+		final SettableFuture<T> s = SettableFuture.create();
+		
+		Futures.addCallback(ret, new FutureCallback<Map<Address, Reply<T>>>(){
+
+			@Override
+			public void onSuccess(Map<Address, Reply<T>> m) {
+				try {
+					s.set(m.get(destination).get());
+				} catch (TException e) {
+					s.setException(e);
+				}				
+			}
+
+			@Override
+			public void onFailure(Throwable t) {
+				s.setException(t);
+			}});
+		
+		return s;
 	}		
 	
 	@SuppressWarnings("rawtypes")
-	public <T> ListenableFuture<Map<Address, T>> call(Collection<Address> dest, Collection<Address> exclusionList, InvocationInfo tInfo, Options ... options) throws TException;
+	public <T> ListenableFuture<Map<Address, Reply<T>>> call(Collection<Address> dest, Collection<Address> exclusionList, InvocationInfo tInfo, Options ... options) throws TException;
 	
 	default public <T> ListenableFuture<T> callOne(T methodCall, Options ... options) throws TException{
 		return callOne(InvocationInfoThreadHolder.getInvocationInfo(), options);
