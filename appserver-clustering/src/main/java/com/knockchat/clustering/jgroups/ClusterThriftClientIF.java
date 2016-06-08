@@ -19,6 +19,14 @@ public interface ClusterThriftClientIF {
 	
 	public static interface Reply<T>{
 		T get() throws TException;
+		
+		default T getUnchecked(){
+			try {
+				return get();
+			} catch (TException e) {
+				throw new RuntimeException(e);
+			}
+		}
 	}
 	
 	public static class Options{

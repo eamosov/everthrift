@@ -55,7 +55,11 @@ public abstract class AbstractJgroupsThriftClientImpl extends ClusterThriftClien
 		final RequestOptions options = new RequestOptions(responseMode, timeout);
 		
 		if (exclusionList!=null){
-			options.setExclusionList(exclusionList.toArray(new Address[exclusionList.size()]));
+			options.setExclusionList(exclusionList.toArray(new Address[exclusionList.size()]));			
+		}
+		
+		if (dest !=null){
+			options.setAnycasting(true);				
 		}
 		
 		final SettableFuture<Map<Address, Reply<T>>> f = SettableFuture.create();
