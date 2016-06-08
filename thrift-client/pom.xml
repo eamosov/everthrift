@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<parent>
+		<artifactId>knock4j</artifactId>
+		<groupId>com.knockchat</groupId>
+		<version>0.0.1</version>
+		<relativePath>../pom.xml</relativePath>
+	</parent>
+	
+	<modelVersion>4.0.0</modelVersion>
+
+	<artifactId>knock4j-thrift-client</artifactId>
+
+	<properties>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache</groupId>
+			<artifactId>thrift</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>com.knockchat</groupId>
+			<artifactId>knock4j-thrift</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>com.knockchat</groupId>
+			<artifactId>knock4j-appserver-clustering</artifactId>
+		</dependency>
+		
+	</dependencies>
+
+</project>

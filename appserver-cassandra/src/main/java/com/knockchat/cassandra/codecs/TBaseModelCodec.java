@@ -9,8 +9,8 @@ import com.datastax.driver.core.ProtocolVersion;
 import com.datastax.driver.core.TypeCodec;
 import com.datastax.driver.core.exceptions.InvalidTypeException;
 import com.google.common.reflect.TypeToken;
-import com.knockchat.utils.thrift.TBaseHasModel;
-import com.knockchat.utils.thrift.TBaseModel;
+import com.knockchat.thrift.TBaseHasModel;
+import com.knockchat.thrift.TBaseModel;
 
 public class TBaseModelCodec<T extends TBaseModel<?,?>> extends TypeCodec<T> {
 	

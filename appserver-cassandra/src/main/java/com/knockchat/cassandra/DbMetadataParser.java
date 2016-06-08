@@ -40,8 +40,8 @@ import com.google.common.base.CaseFormat;
 import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
 import com.google.common.reflect.TypeToken;
+import com.knockchat.thrift.TBaseHasModel;
 import com.knockchat.utils.ClassUtils;
-import com.knockchat.utils.thrift.TBaseHasModel;
 
 public class DbMetadataParser implements EntityParser {
 	

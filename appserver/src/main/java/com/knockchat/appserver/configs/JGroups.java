@@ -6,9 +6,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportResource;
 
-import com.knockchat.appserver.transport.jgroups.JGroupsThriftAdapter;
-import com.knockchat.appserver.transport.jgroups.JgroupsMessageDispatcher;
-import com.knockchat.appserver.transport.jgroups.RpcJGroupsRegistry;
+import com.knockchat.appserver.jgroups.JGroupsThriftAdapter;
+import com.knockchat.appserver.jgroups.JgroupsThriftClientServerImpl;
+import com.knockchat.appserver.jgroups.RpcJGroupsRegistry;
 
 @Configuration
 @ImportResource("classpath:jgroups-beans.xml")
@@ -20,8 +20,8 @@ public class JGroups {
     }
         
     @Bean
-    public JgroupsMessageDispatcher jgroupsMessageDispatcher(@Qualifier("yocluster") JChannel cluster){
-    	return new JgroupsMessageDispatcher(cluster);
+    public JgroupsThriftClientServerImpl jgroupsThriftClientServerImpl(@Qualifier("yocluster") JChannel cluster){
+    	return new JgroupsThriftClientServerImpl(cluster);
     }
 
     @Bean

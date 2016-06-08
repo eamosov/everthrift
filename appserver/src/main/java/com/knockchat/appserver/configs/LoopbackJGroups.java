@@ -3,8 +3,8 @@ package com.knockchat.appserver.configs;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.knockchat.appserver.cluster.LoopbackClusterThriftTransport;
-import com.knockchat.appserver.transport.jgroups.RpcJGroupsRegistry;
+import com.knockchat.appserver.jgroups.LoopbackThriftClientServerImpl;
+import com.knockchat.appserver.jgroups.RpcJGroupsRegistry;
 
 @Configuration
 public class LoopbackJGroups {
@@ -15,7 +15,7 @@ public class LoopbackJGroups {
     }
 
     @Bean
-    public LoopbackClusterThriftTransport loopbackClusterThriftTransport(){
-    	return new LoopbackClusterThriftTransport();
+    public LoopbackThriftClientServerImpl loopbackThriftClientServerImpl(){
+    	return new LoopbackThriftClientServerImpl();
     }
 }

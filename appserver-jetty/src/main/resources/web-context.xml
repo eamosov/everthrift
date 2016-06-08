@@ -16,15 +16,15 @@
 	
 	<mvc:annotation-driven />
 	
-	<bean id="thriftHandler" class="com.knockchat.appserver.transport.websocket.ThriftHandler">
+	<bean id="thriftHandler" class="com.knockchat.jetty.transport.websocket.ThriftHandler">
 		<property name="handler" ref="websocketThriftHandler"/>
 	</bean>
 
-	<bean id="ZlibThriftHandler" class="com.knockchat.appserver.transport.websocket.ThriftHandler">
+	<bean id="ZlibThriftHandler" class="com.knockchat.jetty.transport.websocket.ThriftHandler">
 		<property name="handler" ref="ZlibWebsocketThriftHandler"/>
 	</bean>		
 
-	<bean id="jsThriftHandler" class="com.knockchat.appserver.transport.websocket.ThriftHandler">
+	<bean id="jsThriftHandler" class="com.knockchat.jetty.transport.websocket.ThriftHandler">
 		<property name="handler" ref="JSWebsocketThriftHandler"/>
 	</bean>
 	
@@ -34,7 +34,7 @@
         <websocket:mapping path="/thrift_zlib" handler="ZlibThriftHandler"/>
         <websocket:handshake-handler ref="handshakeHandler"/>
         <websocket:handshake-interceptors>
-        	<bean class="com.knockchat.appserver.transport.websocket.WebsocketHandshakeInterceptor" />
+        	<bean class="com.knockchat.jetty.transport.websocket.WebsocketHandshakeInterceptor" />
         </websocket:handshake-interceptors>                
     </websocket:handlers>        
     

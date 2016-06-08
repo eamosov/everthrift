@@ -5,7 +5,6 @@ import org.apache.thrift.TException;
 import com.knockchat.appserver.model.events.DeleteEntityEvent;
 import com.knockchat.appserver.model.events.InsertEntityEvent;
 import com.knockchat.appserver.model.events.UpdateEntityEvent;
-import com.knockchat.hibernate.dao.DaoEntityIF;
 
 public interface RwModelFactoryIF<PK, ENTITY extends DaoEntityIF, E extends TException> extends RoModelFactoryIF<PK, ENTITY>{		            
         

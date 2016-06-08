@@ -11,6 +11,7 @@ import org.apache.thrift.protocol.TProtocolFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.util.StringUtils;
 
+import com.knockchat.clustering.MessageWrapper;
 import com.knockchat.utils.thrift.ThriftClient;
 
 public class ThriftControllerInfo {

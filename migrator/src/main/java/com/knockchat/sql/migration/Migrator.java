@@ -19,9 +19,9 @@ import org.springframework.core.env.SimpleCommandLinePropertySource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.ResourcePropertySource;
 
-import com.knockchat.utils.ConsoleUtils;
-import com.knockchat.utils.logging.ColorOffConverter;
-import com.knockchat.utils.logging.ColorOnConverter;
+import com.knockchat.sql.migration.logging.ColorOffConverter;
+import com.knockchat.sql.migration.logging.ColorOnConverter;
+import com.knockchat.sql.migration.utils.ConsoleUtils;
 
 import ch.qos.logback.classic.PatternLayout;
 

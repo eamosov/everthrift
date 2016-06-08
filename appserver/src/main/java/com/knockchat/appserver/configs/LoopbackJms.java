@@ -3,8 +3,8 @@ package com.knockchat.appserver.configs;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.knockchat.appserver.cluster.LocalQueryThriftTransport;
-import com.knockchat.appserver.transport.jms.RpcJmsRegistry;
+import com.knockchat.appserver.jms.LocalJmsThriftClientServerImpl;
+import com.knockchat.appserver.jms.RpcJmsRegistry;
 
 @Configuration
 public class LoopbackJms {
@@ -15,8 +15,8 @@ public class LoopbackJms {
 	}
 	
     @Bean
-    public LocalQueryThriftTransport localQueryThriftTransport(){
-    	return new LocalQueryThriftTransport();
+    public LocalJmsThriftClientServerImpl localJmsThriftClientServerImpl(){
+    	return new LocalJmsThriftClientServerImpl();
     }
 
 }

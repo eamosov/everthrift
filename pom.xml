@@ -207,7 +207,8 @@
 	<modules>
 		<module>parent</module>
 		<module>services</module>
-		<module>thrift</module>
+		<module>appserver-clustering</module>
+		<module>thrift</module>						
 		<module>appserver</module>
 		<module>appserver-jetty</module>
 		<module>appserver-sql</module>
@@ -216,5 +217,6 @@
 		<module>cassandra-migrator</module>
 		<module>migration-plugin</module>
 		<module>common-cli</module>
+		<module>thrift-client</module>
 	</modules>
 </project>

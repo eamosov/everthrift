@@ -22,8 +22,6 @@ import org.springframework.context.annotation.ClassPathScanningCandidateComponen
 import org.springframework.core.type.filter.AnnotationTypeFilter;
 import org.springframework.util.ClassUtils;
 
-import com.knockchat.appserver.thrift.cluster.NodeControllers;
-
 public abstract class ThriftControllerRegistry implements InitializingBean{
 	
 	public final Logger log = LoggerFactory.getLogger(this.getClass());
@@ -35,10 +33,7 @@ public abstract class ThriftControllerRegistry implements InitializingBean{
 	private List<Class<ConnectionStateHandler>> stateHandlers =  new CopyOnWriteArrayList<Class<ConnectionStateHandler>>();
 	
 	private final Class<? extends Annotation> annotationType;
-	
-	
-	public abstract NodeControllers getNodeControllers();
-
+		
 	public ThriftControllerRegistry(Class<? extends Annotation> annotationType){
 		//scanThriftControllers(annotationType);
 		this.annotationType = annotationType;

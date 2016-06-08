@@ -181,9 +181,9 @@
 	<dependencies>
 
 		<dependency>
-			<groupId>com.knockchat</groupId>
-			<artifactId>knock4j-thrift</artifactId>
-		</dependency>            
+			<groupId>org.apache</groupId>
+			<artifactId>thrift</artifactId>
+		</dependency>
 
 		<dependency>
 			<groupId>org.slf4j</groupId>

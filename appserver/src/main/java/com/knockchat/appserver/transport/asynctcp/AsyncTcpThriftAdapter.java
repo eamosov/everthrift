@@ -15,8 +15,8 @@ import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.support.ChannelInterceptor;
 
-import com.knockchat.appserver.controller.MessageWrapper;
 import com.knockchat.appserver.controller.ThriftProcessor;
+import com.knockchat.clustering.MessageWrapper;
 
 public class AsyncTcpThriftAdapter implements InitializingBean, ChannelInterceptor{
 	

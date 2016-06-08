@@ -6,6 +6,8 @@ import org.apache.thrift.transport.TTransportException;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.knockchat.clustering.thrift.InvocationInfo;
+import com.knockchat.clustering.thrift.InvocationInfoThreadHolder;
 
 public abstract class AbstractThriftClient<S> extends ThriftClient<S> {
 	

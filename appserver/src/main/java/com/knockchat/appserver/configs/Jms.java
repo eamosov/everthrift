@@ -10,8 +10,8 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.jms.listener.DefaultMessageListenerContainer;
 import org.springframework.jms.listener.SessionAwareMessageListener;
 
-import com.knockchat.appserver.transport.jms.JmsThriftAdapter;
-import com.knockchat.appserver.transport.jms.RpcJmsRegistry;
+import com.knockchat.appserver.jms.JmsThriftClientServerImpl;
+import com.knockchat.appserver.jms.RpcJmsRegistry;
 
 @Configuration
 @ImportResource("classpath:jms-beans.xml")
@@ -37,8 +37,8 @@ public class Jms {
     }
     
     @Bean
-    public JmsThriftAdapter jmsThriftAdapter(ConnectionFactory jmsConnectionFactory){
-    	return new JmsThriftAdapter(jmsConnectionFactory);
+    public JmsThriftClientServerImpl jmsThriftClientServerImpl(ConnectionFactory jmsConnectionFactory){
+    	return new JmsThriftClientServerImpl(jmsConnectionFactory);
     }
 
 }

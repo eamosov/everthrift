@@ -7,7 +7,7 @@ import java.lang.annotation.Target;
 
 import org.jgroups.blocks.ResponseMode;
 
-import com.knockchat.appserver.transport.jgroups.RpcJGroups;
+import com.knockchat.appserver.jgroups.RpcJGroups;
 
 /**
  * Наличие этой аннотации на контроллере приводит к вызову сервиса на всех узлах в кластере

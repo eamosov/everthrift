@@ -155,6 +155,18 @@
 			</dependency>
 
 			<dependency>
+				<groupId>org.springframework</groupId>
+				<artifactId>spring-jms</artifactId>
+				<version>${spring.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.apache.geronimo.specs</groupId>
+				<artifactId>geronimo-jms_1.1_spec</artifactId>
+				<version>1.1.1</version>
+			</dependency>
+
+			<dependency>
 				<groupId>org.springframework.data</groupId>
 				<artifactId>spring-data-commons</artifactId>
 				<version>1.11.4.RELEASE</version>
@@ -479,6 +491,12 @@
 
 			<dependency>
 				<groupId>com.knockchat</groupId>
+				<artifactId>knock4j-thrift-client</artifactId>
+				<version>${knock4j-thrift.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>com.knockchat</groupId>
 				<artifactId>knock4j-appserver</artifactId>
 				<version>${knock4j-appserver.version}</version>
 			</dependency>
@@ -500,7 +518,13 @@
 				<artifactId>knock4j-appserver-cassandra</artifactId>
 				<version>${knock4j-appserver.version}</version>
 			</dependency>
-
+			
+			<dependency>
+				<groupId>com.knockchat</groupId>
+				<artifactId>knock4j-appserver-clustering</artifactId>
+				<version>${knock4j-appserver.version}</version>
+			</dependency>
+			
 			<dependency>
 				<groupId>com.knockchat</groupId>
 				<artifactId>knock4j-services</artifactId>
@@ -567,6 +591,38 @@
 					</exclusion>
 				</exclusions>
 			</dependency>
+			
+			<dependency>
+				<groupId>io.netty</groupId>
+				<artifactId>netty-handler</artifactId>
+				<version>4.1.0.CR6</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.apache.activemq</groupId>
+				<artifactId>activemq-client</artifactId>
+				<version>${activemq.version}</version>
+
+				<exclusions>
+					<exclusion>
+						<groupId>org.slf4j</groupId>
+						<artifactId>slf4j-api</artifactId>
+					</exclusion>
+				</exclusions>
+			</dependency>
+			
+			<dependency>
+				<groupId>org.apache.activemq</groupId>
+				<artifactId>activemq-pool</artifactId>
+				<version>${activemq.version}</version>
+
+				<exclusions>
+					<exclusion>
+						<groupId>org.slf4j</groupId>
+						<artifactId>slf4j-api</artifactId>
+					</exclusion>
+				</exclusions>
+			</dependency>			
 
 		</dependencies>
 	</dependencyManagement>

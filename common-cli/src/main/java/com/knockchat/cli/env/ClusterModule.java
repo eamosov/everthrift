@@ -7,13 +7,11 @@ import java.util.List;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
-import org.apache.thrift.TException;
 import org.apache.thrift.transport.TTransportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.knockchat.appserver.thrift.cluster.ClusterService;
-import com.knockchat.appserver.thrift.cluster.NodeList;
 import com.knockchat.cli.BaseModule;
 import com.knockchat.cli.ThriftUtills;
 
@@ -24,12 +22,6 @@ public class ClusterModule extends BaseModule<ClusterService.Client> {
     public static final String GET_CLUSTER_CONFIGURATION_JSON = "getClusterConfigurationJSON";
     private static final Option module = OptionBuilder.withLongOpt("cluster").withDescription("run cluster service client").withType("cluster").create("c");
     private static final Option[] options = new Option[]{OptionBuilder.withDescription("cluster service: get cluster config(json)").withType("cluster").withLongOpt("cluster-conf").create("gc")};
-
-    public String getClusterConfig() throws TException {
-        NodeList nl = getNodeList(SERVICE_NAME,GET_CLUSTER_CONFIGURATION_JSON);
-        ClusterService.Client client = getClient(nl.getHosts().get(0), nl.getPorts().get(0));
-        return client.getClusterConfigurationJSON();
-    }
 
 
     @Override
@@ -55,7 +47,7 @@ public class ClusterModule extends BaseModule<ClusterService.Client> {
         switch (option) {
             case "gc": {
                 out.println("\n\n");
-                out.print(getClusterConfig());
+                out.print("not implemented");
                 out.println("\n\n");
                 break;
             }

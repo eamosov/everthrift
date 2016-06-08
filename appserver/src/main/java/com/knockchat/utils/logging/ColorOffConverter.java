@@ -1,5 +1,7 @@
 package com.knockchat.utils.logging;
 
+import com.knockchat.sql.migration.logging.ConsoleColorer;
+
 import ch.qos.logback.classic.pattern.ClassicConverter;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 

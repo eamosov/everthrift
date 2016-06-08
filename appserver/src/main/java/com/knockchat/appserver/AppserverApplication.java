@@ -179,14 +179,14 @@ public class AppserverApplication {
         
         if (isJettyEnabled()) {
         	try {
-				context.register(Class.forName("com.knockchat.appserver.configs.Http"));
+				context.register(Class.forName("com.knockchat.jetty.configs.Http"));
 			} catch (ClassNotFoundException e) {
 				throw Throwables.propagate(e);
 			}
         }
         
         try {
-			context.register(Class.forName("com.knockchat.appserver.model.cassandra.CassandraConfig"));
+			context.register(Class.forName("com.knockchat.cassandra.model.CassandraConfig"));
 		} catch (ClassNotFoundException e) {
 		}
         

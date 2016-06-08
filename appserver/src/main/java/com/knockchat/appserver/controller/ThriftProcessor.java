@@ -33,17 +33,19 @@ import org.springframework.core.task.AsyncTaskExecutor;
 import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.knockchat.appserver.cluster.MulticastThriftTransport;
+import com.knockchat.appserver.jgroups.RpcJGroups;
+import com.knockchat.appserver.jms.RpcJms;
 import com.knockchat.appserver.monitoring.RpsServletIF;
 import com.knockchat.appserver.monitoring.RpsServletIF.DsName;
 import com.knockchat.appserver.transport.asynctcp.RpcAsyncTcp;
 import com.knockchat.appserver.transport.http.RpcHttp;
-import com.knockchat.appserver.transport.jgroups.RpcJGroups;
-import com.knockchat.appserver.transport.jms.RpcJms;
 import com.knockchat.appserver.transport.tcp.RpcSyncTcp;
 import com.knockchat.appserver.transport.websocket.RpcWebsocket;
+import com.knockchat.clustering.MessageWrapper;
+import com.knockchat.clustering.jgroups.ClusterThriftClientIF;
+import com.knockchat.clustering.jgroups.ClusterThriftClientIF.Options;
+import com.knockchat.clustering.thrift.InvocationInfo;
 import com.knockchat.utils.thrift.AbstractThriftClient;
-import com.knockchat.utils.thrift.InvocationInfo;
 import com.knockchat.utils.thrift.SessionIF;
 import com.knockchat.utils.thrift.ThriftClient;
 
@@ -181,7 +183,7 @@ public class ThriftProcessor implements TProcessor{
 		
 		ListenableFuture<Map<Address, Object>> clusterResults;
 		try {
-			clusterResults = applicationContext.getBean(MulticastThriftTransport.class).thriftCall(false, ann.timeout(), msg.seqid, ann.value(), ii);
+			clusterResults = applicationContext.getBean(ClusterThriftClientIF.class).call(ii, Options.loopback(false), Options.timeout(ann.timeout()), Options.responseMode(ann.value()));
 		} catch (BeansException | TException e) {
 			throw Throwables.propagate(e);
 		}

@@ -5,7 +5,6 @@ import java.util.Random;
 import org.apache.thrift.TException;
 
 import com.knockchat.appserver.model.pgsql.OptimisticUpdateFailException;
-import com.knockchat.hibernate.dao.DaoEntityIF;
 import com.knockchat.utils.thrift.TFunction;
 
 public interface OptimisticLockModelFactoryIF<PK, ENTITY extends DaoEntityIF, E extends TException> extends RwModelFactoryIF<PK, ENTITY, E> {

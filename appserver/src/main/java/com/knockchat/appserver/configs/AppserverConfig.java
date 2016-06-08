@@ -14,6 +14,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.knockchat.appserver.cluster.controllers.GetNodeConfigurationController;
+import com.knockchat.appserver.cluster.controllers.OnNodeConfigurationController;
 import com.knockchat.appserver.controller.ThriftControllerJmx;
 import com.knockchat.appserver.controller.ThriftControllerRegistry;
 import com.knockchat.appserver.controller.ThriftProcessor;
@@ -57,5 +58,12 @@ public class AppserverConfig {
     @Scope(value=ConfigurableBeanFactory.SCOPE_PROTOTYPE)
     public GetNodeConfigurationController getNodeConfigurationController(){
     	return new GetNodeConfigurationController();
+    }
+
+    @Bean
+    @Scope(value=ConfigurableBeanFactory.SCOPE_PROTOTYPE)
+    public OnNodeConfigurationController getOnNodeConfigurationController(){
+    	return new OnNodeConfigurationController();
     }    
+    
 }

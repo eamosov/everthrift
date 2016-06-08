@@ -4,6 +4,7 @@ import org.apache.thrift.TException;
 
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.knockchat.clustering.thrift.InvocationInfo;
 
 public interface ThriftClientIF {
 	

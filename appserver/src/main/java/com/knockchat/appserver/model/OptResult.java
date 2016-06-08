@@ -8,7 +8,6 @@ import org.springframework.util.CollectionUtils;
 
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
-import com.knockchat.hibernate.dao.DaoEntityIF;
 
 public class OptResult<ENTITY extends DaoEntityIF> {
 	

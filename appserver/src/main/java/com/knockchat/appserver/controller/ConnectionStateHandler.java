@@ -11,6 +11,7 @@ import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 
+import com.knockchat.clustering.MessageWrapper;
 import com.knockchat.utils.thrift.ThriftClient;
 
 public abstract class ConnectionStateHandler {

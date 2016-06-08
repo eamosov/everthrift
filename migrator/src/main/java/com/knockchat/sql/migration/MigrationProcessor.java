@@ -28,7 +28,7 @@ import org.springframework.transaction.support.TransactionCallbackWithoutResult;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.ClassUtils;
 
-import com.knockchat.utils.ConsoleUtils;
+import com.knockchat.sql.migration.utils.ConsoleUtils;
 
 public class MigrationProcessor{
 
