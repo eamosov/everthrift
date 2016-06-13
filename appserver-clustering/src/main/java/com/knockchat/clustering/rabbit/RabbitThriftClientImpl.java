@@ -1,4 +1,4 @@
-package com.knockchat.rabbit;
+package com.knockchat.clustering.rabbit;
 
 import java.lang.reflect.Proxy;
 

@@ -394,6 +394,12 @@
 				<version>${knock4j-appserver.version}</version>
 			</dependency>
 
+		    <dependency>
+    		    <groupId>org.springframework.amqp</groupId>
+        		<artifactId>spring-rabbit</artifactId>
+        		<version>1.6.0.RELEASE</version>
+    		</dependency>
+
 			<dependency>
 				<groupId>com.knockchat</groupId>
 				<artifactId>knock4j-appserver-rabbit</artifactId>

@@ -32,6 +32,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.knockchat.appserver.controller.ThriftControllerInfo;
 import com.knockchat.appserver.controller.ThriftProcessor;
+import com.knockchat.clustering.rabbit.RabbitThriftClientIF;
+import com.knockchat.clustering.rabbit.RabbitThriftClientImpl;
 import com.rabbitmq.client.AMQP.Exchange.DeclareOk;
 import com.rabbitmq.client.Channel;
 
