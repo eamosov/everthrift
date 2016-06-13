@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>com.knockchat</groupId>
+		<artifactId>knock4j</artifactId>
+		<version>0.0.1</version>
+		<relativePath>../pom.xml</relativePath>
+	</parent>
+
+	<artifactId>knock4j-appserver-rabbit</artifactId>
+
+	<packaging>jar</packaging>
+	
+	<dependencies>
+		
+
+		<dependency>
+			<groupId>org.apache</groupId>
+			<artifactId>thrift</artifactId>
+		</dependency>
+		
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>com.knockchat</groupId>
+			<artifactId>knock4j-appserver</artifactId>
+		</dependency>
+		
+	    <dependency>
+    	    <groupId>org.springframework.amqp</groupId>
+        	<artifactId>spring-rabbit</artifactId>
+        	<version>1.6.0.RELEASE</version>
+    	</dependency>
+		
+	</dependencies>
+
+</project>

@@ -13,6 +13,7 @@ import com.knockchat.jetty.JettyServer;
 import com.knockchat.jetty.monitoring.RpsServlet;
 import com.knockchat.jetty.transport.http.BinaryThriftServlet;
 import com.knockchat.jetty.transport.http.JsonThriftServlet;
+import com.knockchat.jetty.transport.http.PlainJsonThriftServlet;
 import com.knockchat.jetty.transport.http.RpcHttpRegistry;
 import com.knockchat.jetty.transport.websocket.RpcWebsocketRegistry;
 import com.knockchat.jetty.transport.websocket.WebsocketThriftHandler;
@@ -39,6 +40,11 @@ public class Http {
 	@Bean
 	public BinaryThriftServlet binaryThriftServlet(){
 		return new BinaryThriftServlet();
+	}
+	
+	@Bean
+	public PlainJsonThriftServlet plainJsonThriftServlet(){
+		return new PlainJsonThriftServlet();
 	}
 	
 	@Bean

@@ -23,7 +23,7 @@ public class OnNodeConfigurationController extends ThriftController<ClusterServi
 
 	@Override
 	protected Void handle() throws TException {		
-		client.setNode((Address)attributes.getAttribute("src"), args.getNode());
+		client.setNode((Address)tps.getAttributes().get("src"), args.getNode());
 		return null;
 	}
 

@@ -1,6 +1,7 @@
 package com.knockchat.appserver.jgroups;
 
 import org.apache.thrift.protocol.TBinaryProtocol;
+import org.apache.thrift.protocol.TProtocolFactory;
 import org.jgroups.blocks.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,6 +11,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 
+import com.knockchat.appserver.controller.DefaultTProtocolSupport;
 import com.knockchat.appserver.controller.ThriftProcessor;
 import com.knockchat.clustering.MessageWrapper;
 
@@ -25,6 +27,8 @@ public class JGroupsThriftAdapter implements InitializingBean{
 	@Autowired
 	private RpcJGroupsRegistry rpcJGroupsRegistry;
 	
+	private final TProtocolFactory protocolFactory = new TBinaryProtocol.Factory();
+	
 	private ThriftProcessor thriftProcessor;
 	
 	public Object handleIn(Message<MessageWrapper> m){
@@ -39,7 +43,7 @@ public class JGroupsThriftAdapter implements InitializingBean{
 			w.setMessageHeaders(m.getHeaders());
 			w.setOutChannel(applicationContext.getBean((String)m.getHeaders().getReplyChannel(), MessageChannel.class));
 			
-			return thriftProcessor.process(w, null);
+			return thriftProcessor.process(new DefaultTProtocolSupport(w, protocolFactory), null);
 		} catch (Exception e) {
 			log.error("Exception while execution thrift processor:", e);
 			return null;
@@ -65,7 +69,7 @@ public class JGroupsThriftAdapter implements InitializingBean{
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
-		thriftProcessor = ThriftProcessor.create(applicationContext, rpcJGroupsRegistry, new TBinaryProtocol.Factory());		
+		thriftProcessor = ThriftProcessor.create(applicationContext, rpcJGroupsRegistry);		
 	}
 
 }

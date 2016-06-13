@@ -211,6 +211,8 @@
 		<module>thrift</module>						
 		<module>appserver</module>
 		<module>appserver-jetty</module>
+		<module>appserver-jms</module>
+		<module>appserver-rabbit</module>
 		<module>appserver-sql</module>
 		<module>appserver-cassandra</module>
 		<module>migrator</module>

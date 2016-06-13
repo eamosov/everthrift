@@ -4,7 +4,6 @@ import java.lang.annotation.Annotation;
 
 import javax.sql.DataSource;
 
-import org.apache.thrift.protocol.TProtocolFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
@@ -27,14 +26,12 @@ public abstract class ConnectionStateHandler {
 	private ApplicationContext context;
 		
 	protected Class<? extends Annotation> registryAnn;
-	protected TProtocolFactory protocolFactory;
 
 	public abstract boolean onOpen();
 	
-	public void setup (MessageWrapper attributes, ThriftClient thriftClient, Class<? extends Annotation> registryAnn, TProtocolFactory protocolFactory){
+	public void setup (MessageWrapper attributes, ThriftClient thriftClient, Class<? extends Annotation> registryAnn){
 		this.thriftClient = thriftClient;
 		this.registryAnn = registryAnn;
-		this.protocolFactory = protocolFactory;
 		this.attributes = attributes;		
 		
 		try{

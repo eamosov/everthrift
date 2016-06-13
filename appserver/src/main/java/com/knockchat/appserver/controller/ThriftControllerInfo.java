@@ -11,7 +11,6 @@ import org.apache.thrift.protocol.TProtocolFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.util.StringUtils;
 
-import com.knockchat.clustering.MessageWrapper;
 import com.knockchat.utils.thrift.ThriftClient;
 
 public class ThriftControllerInfo {
@@ -90,10 +89,10 @@ public class ThriftControllerInfo {
 		}		
 	}
 	
-	public ThriftController makeController(TBase args, MessageWrapper attributes, LogEntry logEntry, int seqId, ThriftClient thriftClient, Class<? extends Annotation> registryAnn, TProtocolFactory protocolFactory, boolean allowAsyncAnswer) throws TException{
+	public ThriftController makeController(TBase args, ThriftProtocolSupportIF tps, LogEntry logEntry, int seqId, ThriftClient thriftClient, Class<? extends Annotation> registryAnn, boolean allowAsyncAnswer) throws TException{
 		
 		final ThriftController ctrl = context.getBean(controllerCls);
-		ctrl.setup(args, this, attributes, logEntry, seqId, thriftClient, registryAnn, protocolFactory, allowAsyncAnswer);
+		ctrl.setup(args, this, tps, logEntry, seqId, thriftClient, registryAnn, allowAsyncAnswer);
 		return ctrl;
 	}
 
@@ -107,5 +106,13 @@ public class ThriftControllerInfo {
 
 	public Class<? extends ThriftController> getControllerCls() {
 		return controllerCls;
+	}
+
+	public Class<? extends TBase> getResultCls() {
+		return resultCls;
+	}
+
+	public Class<? extends TBase> getArgCls() {
+		return argCls;
 	}
 }

@@ -57,9 +57,15 @@ public class MessageWrapper implements Serializable{
 	}
 	
 	public MessageWrapper copyAttributes(MessageWrapper old){
-		this.attributes.putAll(old.attributes);
+		copyAttributes(old.attributes);
+		return this;
+	}
+	
+	public MessageWrapper copyAttributes(Map<String, Object> attributes){
+		this.attributes.putAll(attributes);
 		return this;
 	}	
+	
 	
 	public MessageWrapper setSessionId(String sessionId){
 		attributes.put(SESSION_ID, sessionId);
@@ -150,6 +156,10 @@ public class MessageWrapper implements Serializable{
 	
 	public Object getAttribute(String name){
 		return attributes.get(name);
+	}
+	
+	public Map<String,Object> getAttributes(){
+		return attributes;
 	}
 
 	public Object removeAttribute(String name){

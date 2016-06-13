@@ -92,7 +92,7 @@ public class LoopbackThriftClientServerImpl extends ClusterThriftClientImpl {
 
 	@PostConstruct
 	private void postConstruct(){
-		thriftProcessor = ThriftProcessor.create(applicationContext, rpcJGroupsRegistry, new TBinaryProtocol.Factory());		
+		thriftProcessor = ThriftProcessor.create(applicationContext, rpcJGroupsRegistry);		
 	}
 
 	public TProcessor getThriftProcessor() {

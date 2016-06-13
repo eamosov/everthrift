@@ -387,6 +387,18 @@
 				<artifactId>knock4j-appserver-clustering</artifactId>
 				<version>${knock4j-appserver.version}</version>
 			</dependency>
+
+			<dependency>
+				<groupId>com.knockchat</groupId>
+				<artifactId>knock4j-appserver-jms</artifactId>
+				<version>${knock4j-appserver.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>com.knockchat</groupId>
+				<artifactId>knock4j-appserver-rabbit</artifactId>
+				<version>${knock4j-appserver.version}</version>
+			</dependency>
 			
 			<dependency>
 				<groupId>com.knockchat</groupId>

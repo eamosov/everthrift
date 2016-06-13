@@ -1,6 +1,5 @@
 package com.knockchat.appserver.configs;
 
-import org.apache.thrift.protocol.TProtocolFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Bean;
@@ -40,8 +39,8 @@ public class AppserverConfig {
     
     @Bean
     @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-    public ThriftProcessor thriftProcessor(ThriftControllerRegistry registry, TProtocolFactory protocolFactory) {
-        return new ThriftProcessor(registry, protocolFactory);
+    public ThriftProcessor thriftProcessor(ThriftControllerRegistry registry) {
+        return new ThriftProcessor(registry);
     }
     
     @Bean

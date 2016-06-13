@@ -85,7 +85,7 @@ public class ThriftServer implements SmartLifecycle{
         final TThreadPoolServer.Args args = new TThreadPoolServer.Args(trans).executorService(es);
         args.transportFactory(new TFramedTransport.Factory());
         args.protocolFactory(protocolFactory);
-        final ThriftProcessor tp = ThriftProcessor.create(context, registry, protocolFactory);
+        final ThriftProcessor tp = ThriftProcessor.create(context, registry);
         args.processor(tp);
         server = new TThreadPoolServer(args);
         server.serve();

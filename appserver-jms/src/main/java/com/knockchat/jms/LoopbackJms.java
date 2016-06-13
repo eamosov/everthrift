@@ -1,10 +1,7 @@
-package com.knockchat.appserver.configs;
+package com.knockchat.jms;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import com.knockchat.appserver.jms.LocalJmsThriftClientServerImpl;
-import com.knockchat.appserver.jms.RpcJmsRegistry;
 
 @Configuration
 public class LoopbackJms {

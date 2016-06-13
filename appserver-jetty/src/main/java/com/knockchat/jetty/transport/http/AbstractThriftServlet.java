@@ -1,6 +1,7 @@
 package com.knockchat.jetty.transport.http;
 
 import java.io.IOException;
+import java.util.Map;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -20,6 +21,7 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 
+import com.google.common.collect.Maps;
 import com.knockchat.appserver.controller.ThriftProcessor;
 import com.knockchat.clustering.MessageWrapper;
 
@@ -64,14 +66,15 @@ public abstract class AbstractThriftServlet extends HttpServlet implements Initi
 		final TProtocol out = getProtocolFactory().getProtocol(ot);
 		
 		try {
-			final MessageWrapper mw = new MessageWrapper(null).setHttpRequestParams(request.getParameterMap());
+			final Map<String, Object> attributes = Maps.newHashMap();
+			attributes.put(MessageWrapper.HTTP_REQUEST_PARAMS, request.getParameterMap());
 			final String xRealIp = request.getHeader(MessageWrapper.HTTP_X_REAL_IP);
 			if (xRealIp != null)
-				mw.setAttribute(MessageWrapper.HTTP_X_REAL_IP, xRealIp);
+				attributes.put(MessageWrapper.HTTP_X_REAL_IP, xRealIp);
 			else
-				mw.setAttribute(MessageWrapper.HTTP_X_REAL_IP, request.getRemoteHost() + ":" + request.getRemotePort());
+				attributes.put(MessageWrapper.HTTP_X_REAL_IP, request.getRemoteHost() + ":" + request.getRemotePort());
 			
-			tp.process(in, out, mw);
+			tp.process(in, out, attributes);
 			
 			response.setContentType(getContentType());
 			response.setContentLength(ot.getPos());
@@ -96,7 +99,7 @@ public abstract class AbstractThriftServlet extends HttpServlet implements Initi
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
-        tp = ThriftProcessor.create(context, registry, getProtocolFactory());	
+        tp = ThriftProcessor.create(context, registry);	
 	}
 
 

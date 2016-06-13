@@ -1,4 +1,4 @@
-package com.knockchat.appserver.jms;
+package com.knockchat.jms;
 
 import java.lang.reflect.Proxy;
 import java.util.concurrent.ExecutorService;
@@ -90,7 +90,7 @@ public class LocalJmsThriftClientServerImpl implements JmsThriftClientIF {
 
 	@PostConstruct
 	private void postConstruct(){
-		thriftProcessor = ThriftProcessor.create(applicationContext, rpcJmsRegistry, new TBinaryProtocol.Factory());		
+		thriftProcessor = ThriftProcessor.create(applicationContext, rpcJmsRegistry);		
 	}
 	
 	@PreDestroy

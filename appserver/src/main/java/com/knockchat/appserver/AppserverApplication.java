@@ -42,12 +42,10 @@ import org.springframework.core.io.support.ResourcePropertySource;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
-import com.knockchat.appserver.configs.AsyncTcpThrift;
 import com.knockchat.appserver.configs.AppserverConfig;
+import com.knockchat.appserver.configs.AsyncTcpThrift;
 import com.knockchat.appserver.configs.JGroups;
-import com.knockchat.appserver.configs.Jms;
 import com.knockchat.appserver.configs.LoopbackJGroups;
-import com.knockchat.appserver.configs.LoopbackJms;
 import com.knockchat.appserver.configs.TcpThrift;
 import com.knockchat.cassandra.migrator.CMigrationProcessor;
 import com.knockchat.sql.migration.MigrationProcessor;
@@ -107,6 +105,9 @@ public class AppserverApplication {
     	return !env.getProperty("jms", "false").equalsIgnoreCase("false");
     }
     
+    private boolean isRabbitEnabled(){
+    	return !env.getProperty("rabbit", "false").equalsIgnoreCase("false");
+    }
 
     @SuppressWarnings("rawtypes")
     public synchronized void init(String[] args, String version) {
@@ -172,10 +173,27 @@ public class AppserverApplication {
         else        
         	context.register(LoopbackJGroups.class);
         
-        if (isJmsEnabled())
-        	context.register(Jms.class);
-        else
-        	context.register(LoopbackJms.class);
+        if (isJmsEnabled()){
+        	try {
+        		context.register(Class.forName("com.knockchat.jms.Jms"));
+			} catch (ClassNotFoundException e) {
+				throw Throwables.propagate(e);
+			}        		
+        }else{
+        	try {        	
+        		context.register(Class.forName("com.knockchat.jms.LoopbackJms"));
+			} catch (ClassNotFoundException e) {
+				log.warn("Cound't find LoopbackJms. @RpcJms Service will be disabled.");
+			}        		        	
+        }
+        
+        if (isRabbitEnabled()){
+        	try {
+        		context.register(Class.forName("com.knockchat.rabbit.RabbitConfig"));
+			} catch (ClassNotFoundException e) {
+				throw Throwables.propagate(e);
+			}        		        	
+        }
         
         if (isJettyEnabled()) {
         	try {

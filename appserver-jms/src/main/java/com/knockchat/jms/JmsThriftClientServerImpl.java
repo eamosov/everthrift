@@ -1,4 +1,4 @@
-package com.knockchat.appserver.jms;
+package com.knockchat.jms;
 
 import java.util.List;
 import java.util.Set;
@@ -163,7 +163,7 @@ public class JmsThriftClientServerImpl implements InitializingBean, DisposableBe
 	@Override
 	public void afterPropertiesSet() throws Exception {
 
-		thriftProcessor = ThriftProcessor.create(context, rpcJmsRegistry, new TBinaryProtocol.Factory());
+		thriftProcessor = ThriftProcessor.create(context, rpcJmsRegistry);
 		
 		final Set<String> services = Sets.newHashSet();
 		for (ThriftControllerInfo i:rpcJmsRegistry.getControllers().values())

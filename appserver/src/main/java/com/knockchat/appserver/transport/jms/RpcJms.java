@@ -1,4 +1,4 @@
-package com.knockchat.appserver.jms;
+package com.knockchat.appserver.transport.jms;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

@@ -1,4 +1,4 @@
-package com.knockchat.appserver.configs;
+package com.knockchat.jms;
 
 import javax.jms.ConnectionFactory;
 
@@ -9,9 +9,6 @@ import org.springframework.context.annotation.ImportResource;
 import org.springframework.context.annotation.Scope;
 import org.springframework.jms.listener.DefaultMessageListenerContainer;
 import org.springframework.jms.listener.SessionAwareMessageListener;
-
-import com.knockchat.appserver.jms.JmsThriftClientServerImpl;
-import com.knockchat.appserver.jms.RpcJmsRegistry;
 
 @Configuration
 @ImportResource("classpath:jms-beans.xml")

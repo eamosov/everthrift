@@ -45,6 +45,7 @@ import com.google.common.base.Throwables;
 import com.knockchat.jetty.monitoring.RpsServlet;
 import com.knockchat.jetty.transport.http.BinaryThriftServlet;
 import com.knockchat.jetty.transport.http.JsonThriftServlet;
+import com.knockchat.jetty.transport.http.PlainJsonThriftServlet;
 
 public class JettyServer implements SmartLifecycle {
 	
@@ -59,6 +60,9 @@ public class JettyServer implements SmartLifecycle {
 	
 	@Autowired
 	private BinaryThriftServlet binaryThriftServlet;
+
+	@Autowired
+	private PlainJsonThriftServlet plainJsonThriftServlet;
 	
 	@Autowired
 	private RpsServlet rpsServlet;
@@ -156,7 +160,11 @@ public class JettyServer implements SmartLifecycle {
         }
         
         jettyContext.addServlet(new ServletHolder(jsonThriftServlet), "/TJSON");
-        jettyContext.addServlet(new ServletHolder(binaryThriftServlet), "/TBINARY");                
+        jettyContext.addServlet(new ServletHolder(binaryThriftServlet), "/TBINARY");
+        
+        final ServletHolder plainJsonThriftServletHolder = new ServletHolder(plainJsonThriftServlet);
+        plainJsonThriftServletHolder.setAsyncSupported(true);
+        jettyContext.addServlet(plainJsonThriftServletHolder, "/JSON/*");
         jettyContext.addServlet(new ServletHolder(rpsServlet), "/rps");
 
         springWebApplicationContext = new XmlWebApplicationContext();

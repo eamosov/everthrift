@@ -15,6 +15,7 @@ import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.support.ChannelInterceptor;
 
+import com.knockchat.appserver.controller.DefaultTProtocolSupport;
 import com.knockchat.appserver.controller.ThriftProcessor;
 import com.knockchat.clustering.MessageWrapper;
 
@@ -43,8 +44,8 @@ public class AsyncTcpThriftAdapter implements InitializingBean, ChannelIntercept
 						
 		log.debug("{}, adapter={}, processor={}", new Object[]{m, this, tp});
 		
-		try{
-			return tp.process(new MessageWrapper(new TMemoryInputTransport((byte[])m.getPayload())).setMessageHeaders(m.getHeaders()).setOutChannel(outChannel), null);
+		try{			
+			return tp.process(new DefaultTProtocolSupport(new MessageWrapper(new TMemoryInputTransport((byte[])m.getPayload())).setMessageHeaders(m.getHeaders()).setOutChannel(outChannel), protocolFactory), null);
 		} catch (Exception e) {
 			log.error("Exception while execution thrift processor:", e);
 			return null;
@@ -53,7 +54,7 @@ public class AsyncTcpThriftAdapter implements InitializingBean, ChannelIntercept
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
-		tp = ThriftProcessor.create(context, registry, protocolFactory);		
+		tp = ThriftProcessor.create(context, registry);		
 	}
 
 	@Override
