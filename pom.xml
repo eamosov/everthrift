@@ -13,6 +13,10 @@
 
 	<artifactId>all</artifactId>
 
+        <properties>
+                <github.global.server>github</github.global.server>
+        </properties>
+
 	<build>
 		<plugins>
 
@@ -78,18 +82,16 @@
 			<plugin>
 				<groupId>com.github.github</groupId>
 				<artifactId>site-maven-plugin</artifactId>
-				<version>0.11-SNAPSHOT</version>
-				<inherited>false</inherited>
+				<version>0.12</version>
 				<configuration>
 					<message>Maven artifacts for ${project.version}</message>
-					<noJekyll>true</noJekyll>
 					<outputDirectory>${project.build.directory}/mvn-repo</outputDirectory>
-					<branch>refs/heads/mvn-repo</branch>
+					<branch>refs/heads/gh-pages</branch>
 					<merge>true</merge>
 					<includes>
 						<include>**/*</include>
 					</includes>
-					<repositoryName>thrift</repositoryName>
+					<repositoryName>everthrift</repositoryName>
 					<repositoryOwner>eamosov</repositoryOwner>
 				</configuration>
 				<executions>
