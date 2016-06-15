@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <plugins>
+    <plugin>
+      <name>SQL migration Maven Plugin</name>
+      <prefix>migration-maven-plugin</prefix>
+      <artifactId>maven-migration-plugin</artifactId>
+    </plugin>
+  </plugins>
+</metadata>
