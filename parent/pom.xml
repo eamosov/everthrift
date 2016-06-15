@@ -516,6 +516,36 @@
 		</dependencies>
 	</dependencyManagement>
 
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>com.github.github</groupId>
+				<artifactId>site-maven-plugin</artifactId>
+				<version>0.12</version>
+				<inherited>false</inherited>
+				<configuration>
+					<message>Maven artifacts for ${project.version}</message>
+					<outputDirectory>${project.build.directory}/mvn-repo</outputDirectory>
+					<branch>refs/heads/gh-pages</branch>
+					<merge>true</merge>
+					<includes>
+						<include>**/*</include>
+					</includes>
+					<repositoryName>everthrift</repositoryName>
+					<repositoryOwner>eamosov</repositoryOwner>
+				</configuration>
+				<executions>
+					<execution>
+						<goals>
+							<goal>site</goal>
+						</goals>
+						<phase>deploy</phase>
+					</execution>
+				</executions>			
+			</plugin>
+		</plugins>
+	</build>
+	
 	<distributionManagement>
 		<repository>
 			<id>internal.repo</id>
