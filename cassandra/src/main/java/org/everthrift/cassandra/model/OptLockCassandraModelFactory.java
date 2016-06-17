@@ -12,12 +12,12 @@ import org.everthrift.appserver.model.OptResult;
 import org.everthrift.appserver.model.OptimisticLockModelFactoryIF;
 import org.everthrift.appserver.model.UniqueException;
 import org.everthrift.appserver.model.UpdatedAtIF;
-import org.everthrift.appserver.utils.LongTimestamp;
-import org.everthrift.appserver.utils.thrift.TFunction;
 import org.everthrift.cassandra.DLock;
 import org.everthrift.cassandra.SequenceFactory;
 import org.everthrift.cassandra.com.datastax.driver.mapping.VersionException;
 import org.everthrift.cassandra.com.datastax.driver.mapping.Mapper.Option;
+import org.everthrift.thrift.TFunction;
+import org.everthrift.utils.LongTimestamp;
 
 import net.sf.ehcache.Cache;
 

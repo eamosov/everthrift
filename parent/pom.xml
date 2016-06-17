@@ -22,6 +22,7 @@
 		<jackson.version>2.6.2</jackson.version>
 		<activemq.version>5.13.1</activemq.version>
 		<elasticsearch.version>2.1.0</elasticsearch.version>
+		<netty.version>4.1.0.CR6</netty.version>
 	</properties>
 
 	<dependencyManagement>
@@ -389,6 +390,18 @@
 				<version>${everthrift.version}</version>
 			</dependency>
 
+			<dependency>
+				<groupId>everthrift</groupId>
+				<artifactId>utils</artifactId>
+				<version>${everthrift.version}</version>				
+			</dependency>
+	
+			<dependency>
+				<groupId>everthrift</groupId>
+				<artifactId>cassandra-driver</artifactId>
+				<version>${everthrift.version}</version>
+			</dependency>
+
 		    <dependency>
     		    <groupId>org.springframework.amqp</groupId>
         		<artifactId>spring-rabbit</artifactId>
@@ -478,7 +491,31 @@
 			<dependency>
 				<groupId>io.netty</groupId>
 				<artifactId>netty-handler</artifactId>
-				<version>4.1.0.CR6</version>
+				<version>${netty.version}</version>
+			</dependency>
+			
+			<dependency>
+				<groupId>io.netty</groupId>
+				<artifactId>netty-transport</artifactId>
+				<version>${netty.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>io.netty</groupId>
+				<artifactId>netty-buffer</artifactId>
+				<version>${netty.version}</version>
+			</dependency>
+			
+			<dependency>
+				<groupId>io.netty</groupId>
+				<artifactId>netty-common</artifactId>
+				<version>${netty.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>io.netty</groupId>
+				<artifactId>netty-codec</artifactId>
+				<version>${netty.version}</version>
 			</dependency>
 
 			<dependency>

@@ -90,6 +90,24 @@
 		</dependency>
 		
 		<dependency>
+  			<groupId>org.restlet.jee</groupId>
+  			<artifactId>org.restlet</artifactId>
+  			<version>2.3.4</version>
+		</dependency>
+
+		<dependency>
+  			<groupId>org.restlet.jee</groupId>
+  			<artifactId>org.restlet.ext.velocity</artifactId>
+  			<version>2.3.4</version>
+		</dependency>
+
+		<dependency>
+  			<groupId>org.restlet.jee</groupId>
+  			<artifactId>org.restlet.ext.servlet</artifactId>
+  			<version>2.3.4</version>
+		</dependency>
+		
+		<dependency>
 			<groupId>org.jminix</groupId>
 			<artifactId>jminix</artifactId>
 			<version>1.2.0</version>
@@ -119,6 +137,18 @@
 					<groupId>org.apache.velocity</groupId>
 					<artifactId>velocity</artifactId>
 				</exclusion>
+				<exclusion>
+		  			<groupId>org.restlet.jee</groupId>
+  					<artifactId>org.restlet</artifactId>
+				</exclusion>				
+				<exclusion>
+		  			<groupId>org.restlet.jee</groupId>
+  					<artifactId>org.restlet.ext.velocity</artifactId>
+				</exclusion>				
+				<exclusion>
+		  			<groupId>org.restlet.jee</groupId>
+  					<artifactId>org.restlet.ext.servlet</artifactId>
+				</exclusion>												
 			</exclusions>
 		</dependency>
 
@@ -134,6 +164,10 @@
 			<version>2.2.1</version>
 		</dependency>
 		
+		<dependency>
+			<groupId>commons-io</groupId>
+			<artifactId>commons-io</artifactId>
+		</dependency>		
 	</dependencies>
 
 </project>

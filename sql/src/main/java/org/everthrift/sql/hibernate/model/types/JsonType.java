@@ -9,7 +9,7 @@ import java.sql.Types;
 import java.util.Objects;
 
 import org.apache.thrift.TBase;
-import org.everthrift.appserver.utils.GsonSerializer.TBaseSerializer;
+import org.everthrift.appserver.utils.thrift.GsonSerializer.TBaseSerializer;
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.usertype.UserType;

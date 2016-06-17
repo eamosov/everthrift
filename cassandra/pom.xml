@@ -14,100 +14,46 @@
 
 	<packaging>jar</packaging>
 
-	<build>
-		<plugins>
-
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.3</version>
-
-				<executions>
-					<execution>
-						<id>default-compile</id>
-						<phase>none</phase>
-					</execution>
-				</executions>
-			</plugin>
-
-			<plugin>
-				<groupId>org.codehaus.mojo</groupId>
-				<artifactId>aspectj-maven-plugin</artifactId>
-				<version>1.7</version>
-				<executions>
-					<execution>
-						<goals>
-							<goal>compile</goal>
-							<goal>test-compile</goal>
-						</goals>
-					</execution>
-				</executions>
-
-				<configuration>
-					<showWeaveInfo>false</showWeaveInfo>
-					<source>1.8</source>
-					<target>1.8</target>
-					<Xlint>ignore</Xlint>
-					<complianceLevel>1.8</complianceLevel>
-					<encoding>UTF-8</encoding>
-					<verbose>true</verbose>
-
-					<weaveDependencies>
-						<weaveDependency>
-							<groupId>com.datastax.cassandra</groupId>
-							<artifactId>cassandra-driver-core</artifactId>
-						</weaveDependency>
-					</weaveDependencies>
-
-				</configuration>
-			</plugin>
-
-		</plugins>
-	</build>
-
 	<dependencies>
-	
+					
+		<dependency>
+			<groupId>everthrift</groupId>
+			<artifactId>cassandra-driver</artifactId>
+		</dependency>
+				
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+		</dependency>
+
 		<dependency>
 			<groupId>everthrift</groupId>
 			<artifactId>appserver</artifactId>
 		</dependency>
-	
+
 		<dependency>
-			<groupId>io.dropwizard.metrics</groupId>
-			<artifactId>metrics-core</artifactId>
-			<version>3.1.2</version>
-			<exclusions>
-				<exclusion>
-					<groupId>org.slf4j</groupId>
-					<artifactId>slf4j-api</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-		
-		<dependency>
-			<groupId>io.netty</groupId>
-			<artifactId>netty-handler</artifactId>
-		</dependency>
-			
-		<dependency>
-			<groupId>com.datastax.cassandra</groupId>
-			<artifactId>cassandra-driver-core</artifactId>
-			<scope>provided</scope>		
-		</dependency>
-		
-		<dependency>
-			<groupId>org.aspectj</groupId>
-			<artifactId>aspectjrt</artifactId>
+			<groupId>everthrift</groupId>
+			<artifactId>thrift</artifactId>
 		</dependency>
 
 		<dependency>
-			<groupId>aopalliance</groupId>
-			<artifactId>aopalliance</artifactId>
+			<groupId>org.apache</groupId>
+			<artifactId>thrift</artifactId>
 		</dependency>
 
 		<dependency>
-			<groupId>org.aspectj</groupId>
-			<artifactId>aspectjweaver</artifactId>
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-beans</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-context</artifactId>
 		</dependency>
 		
 	</dependencies>

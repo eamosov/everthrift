@@ -22,7 +22,7 @@ import org.apache.thrift.meta_data.SetMetaData;
 import org.apache.thrift.meta_data.StructMetaData;
 import org.apache.thrift.protocol.TType;
 import org.everthrift.appserver.controller.ThriftControllerInfo;
-import org.everthrift.appserver.utils.Pair;
+import org.everthrift.utils.Pair;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;

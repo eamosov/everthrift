@@ -6,7 +6,7 @@ import java.util.Map;
 
 import org.everthrift.appserver.model.DaoEntityIF;
 import org.everthrift.appserver.model.UniqueException;
-import org.everthrift.appserver.utils.Pair;
+import org.everthrift.utils.Pair;
 import org.hibernate.LockMode;
 import org.hibernate.Query;
 import org.hibernate.SQLQuery;

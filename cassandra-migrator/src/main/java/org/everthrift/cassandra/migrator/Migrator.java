@@ -26,7 +26,7 @@ public class Migrator {
     
     private static final Logger log = LoggerFactory.getLogger(Migrator.class);
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws Exception {
         context = new ClassPathXmlApplicationContext(new String[]{"classpath:cassandra-migration-context.xml"},false);
         context.registerShutdownHook();
         env = context.getEnvironment();
@@ -41,9 +41,11 @@ public class Migrator {
         context.refresh();
         processor = context.getBean(CMigrationProcessor.class);
         
-        processor.migrate();
-
-        context.close();
+        try{
+        	processor.call();
+        }finally{
+        	context.close();
+        }        
 	}
 
 }

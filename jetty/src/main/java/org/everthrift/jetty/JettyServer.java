@@ -2,7 +2,6 @@ package org.everthrift.jetty;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.management.ManagementFactory;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -11,6 +10,8 @@ import java.util.concurrent.ArrayBlockingQueue;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import javax.annotation.Resource;
+import javax.management.MBeanServer;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -67,6 +68,9 @@ public class JettyServer implements SmartLifecycle {
 	@Autowired
 	private RpsServlet rpsServlet;
 	
+	@Resource
+	private MBeanServer mbeanServer;
+	
 	private final Logger log = LoggerFactory.getLogger(JettyServer.class);
 	
 	private Server jettyServer;
@@ -100,7 +104,7 @@ public class JettyServer implements SmartLifecycle {
 
         jettyServer = new Server(threadPool);
         
-        final MBeanContainer mbContainer=new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
+        final MBeanContainer mbContainer=new MBeanContainer(mbeanServer);
         jettyServer.addEventListener(mbContainer);
         jettyServer.addBean(mbContainer);
         

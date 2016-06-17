@@ -27,16 +27,15 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 
 import org.everthrift.appserver.configs.AppserverConfig;
 import org.everthrift.appserver.configs.AsyncTcpThrift;
 import org.everthrift.appserver.configs.JGroups;
 import org.everthrift.appserver.configs.LoopbackJGroups;
 import org.everthrift.appserver.configs.TcpThrift;
-import org.everthrift.appserver.utils.SocketUtils;
-import org.everthrift.appserver.utils.thrift.MetaDataMapBuilder;
-import org.everthrift.cassandra.migrator.CMigrationProcessor;
-import org.everthrift.sql.migration.MigrationProcessor;
+import org.everthrift.thrift.MetaDataMapBuilder;
+import org.everthrift.utils.SocketUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -129,11 +128,19 @@ public class AppserverApplication {
         env.getPropertySources().addLast(new MapPropertySource("version", Collections.singletonMap("version", (Object) version)));
 
         if (Boolean.parseBoolean(env.getProperty("sqlmigrator.run", "false"))) {
-            runSqlMigrator();
+            try {
+				runSqlMigrator();
+			} catch (Exception e) {
+				throw Throwables.propagate(e);
+			}
         }
         
         if (Boolean.parseBoolean(env.getProperty("cassandra.migrator.run", "false"))) {
-        	runCMigrationProcessor();
+        	try {
+				runCMigrationProcessor();
+			} catch (Exception e) {
+				throw Throwables.propagate(e);
+			}
         }
                 
         final boolean nothrift = !env.getProperty("nothrift", "false").equalsIgnoreCase("false");
@@ -212,54 +219,39 @@ public class AppserverApplication {
         initialized = true;        
     }
 
-    private void runSqlMigrator() {
-        final ClassPathXmlApplicationContext xmlContext = new ClassPathXmlApplicationContext(new String[]{"migration-context.xml"}, false);
+    private Object runCallable(String xmlConfig, String className) throws Exception {
+    	
+    	final Class<Callable> proc =  (Class)Class.forName(className);
+    	
+        final ClassPathXmlApplicationContext xmlContext = new ClassPathXmlApplicationContext(new String[]{xmlConfig}, false);
         try {
             for (final PropertySource p : env.getPropertySources())
                 xmlContext.getEnvironment().getPropertySources().addLast(p);
             
             xmlContext.refresh();
 
-            final MigrationProcessor processor = xmlContext.getBean(MigrationProcessor.class);
-            if (processor == null) {
-                log.info("Can't find Migration processor bean");
-                return;
-            }
-            final Map<String, MigrationProcessor.Result> results = processor.process(true, Collections.EMPTY_LIST, false);
-            for (final Map.Entry<String, MigrationProcessor.Result> entry : results.entrySet())
-                if (entry.getValue().equals(MigrationProcessor.Result.FAIL)) {
-                    log.error("Filed to execute migration: {} ", entry.getKey());
-                    throw Throwables.propagate(entry.getValue().getException());
-                }
+            final Callable processor = xmlContext.getBean(proc);
+            if (processor == null) 
+                throw new RuntimeException("Can't find Migration processor bean");
+            
+            return processor.call();
         } finally {
             if (xmlContext != null && xmlContext.isActive())
                 xmlContext.close();
         }
     }
+
+    private void runSqlMigrator() throws Exception {
+    	log.info("Executing SQL migrations");
+    	
+    	runCallable("migration-context.xml", "org.everthrift.sql.migration.MigrationProcessor");
+    }
     
-    private void runCMigrationProcessor() {
+    private void runCMigrationProcessor() throws Exception {
     	
     	log.info("Executing cassandra migrations");
     	
-        final ClassPathXmlApplicationContext xmlContext = new ClassPathXmlApplicationContext(new String[]{"classpath:cassandra-migration-context.xml"}, false);
-        try {
-            for (final PropertySource p : env.getPropertySources())
-                xmlContext.getEnvironment().getPropertySources().addLast(p);
-            
-            xmlContext.refresh();
-
-            final CMigrationProcessor processor = xmlContext.getBean(CMigrationProcessor.class);
-            if (processor == null) {
-                log.info("Can't find CMigrationProcessor bean");
-                return;
-            }
-            
-            processor.migrate();
-            
-        } finally {
-            if (xmlContext != null && xmlContext.isActive())
-                xmlContext.close();
-        }
+    	runCallable("classpath:cassandra-migration-context.xml", "org.everthrift.cassandra.migrator.CMigrationProcessor");
     }
     
 

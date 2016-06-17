@@ -6,7 +6,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.thrift.TBase;
 import org.apache.thrift.TFieldIdEnum;
 import org.apache.thrift.meta_data.FieldMetaData;
-import org.everthrift.appserver.utils.Pair;
+import org.everthrift.utils.Pair;
 
 import it.unimi.dsi.fastutil.objects.Reference2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;

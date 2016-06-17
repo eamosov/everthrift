@@ -2,6 +2,7 @@ package org.everthrift.cassandra.migrator;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.Callable;
 
 import javax.annotation.PostConstruct;
 
@@ -25,15 +26,15 @@ import io.smartcat.migration.Migration;
 import io.smartcat.migration.MigrationEngine;
 import io.smartcat.migration.MigrationResources;
 
-public class CMigrationProcessor {
+public class CMigrationProcessor implements Callable<Boolean>{
 	
 	private static final Logger log = LoggerFactory.getLogger(CMigrationProcessor.class);
 	
     @Autowired
     private ConfigurableApplicationContext context;
     
-    @Autowired
     private Session session;
+    private String schemaVersionCf = "schema_version";
     
     private String basePackage = "org.everthrift.cas.migration";
     
@@ -78,7 +79,8 @@ public class CMigrationProcessor {
 		findMigrations(basePackage);
     }
     
-    public boolean migrate(){
+	@Override
+	public Boolean call() throws Exception {
     	migrations.sort(new Comparator<Migration>(){
 
 			@Override
@@ -86,7 +88,7 @@ public class CMigrationProcessor {
 				return Ints.compare(o1.getVersion(), o2.getVersion());
 			}});
     	resources.addMigrations(Sets.newLinkedHashSet(migrations));
-        return  MigrationEngine.withSession(session).migrate(resources);
+        return  MigrationEngine.withSession(session, schemaVersionCf).migrate(resources);
     }
 
 	public String getBasePackage() {
@@ -95,6 +97,22 @@ public class CMigrationProcessor {
 
 	public void setBasePackage(String basePackage) {
 		this.basePackage = basePackage;
+	}
+
+	public Session getSession() {
+		return session;
+	}
+
+	public void setSession(Session session) {
+		this.session = session;
+	}
+
+	public String getSchemaVersionCf() {
+		return schemaVersionCf;
+	}
+
+	public void setSchemaVersionCf(String schemaVersionCf) {
+		this.schemaVersionCf = schemaVersionCf;
 	}
 
 }

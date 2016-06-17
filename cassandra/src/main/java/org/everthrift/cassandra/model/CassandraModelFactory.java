@@ -17,22 +17,23 @@ import javax.annotation.PostConstruct;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.thrift.TException;
 import org.everthrift.appserver.model.AbstractCachedModelFactory;
+import org.everthrift.appserver.model.AsyncRoModelFactoryIF;
 import org.everthrift.appserver.model.DaoEntityIF;
 import org.everthrift.appserver.model.LocalEventBus;
 import org.everthrift.appserver.model.RwModelFactoryIF;
 import org.everthrift.appserver.model.Unique;
 import org.everthrift.appserver.model.UniqueException;
-import org.everthrift.appserver.utils.Pair;
-import org.everthrift.appserver.utils.thrift.TFunction;
 import org.everthrift.cassandra.DLock;
 import org.everthrift.cassandra.DLockFactory;
 import org.everthrift.cassandra.com.datastax.driver.mapping.ColumnMapper;
-import org.everthrift.cassandra.com.datastax.driver.mapping.Mapper;
-import org.everthrift.cassandra.com.datastax.driver.mapping.MappingManager;
-import org.everthrift.cassandra.com.datastax.driver.mapping.NotModifiedException;
 import org.everthrift.cassandra.com.datastax.driver.mapping.EntityMapper.Scenario;
+import org.everthrift.cassandra.com.datastax.driver.mapping.Mapper;
 import org.everthrift.cassandra.com.datastax.driver.mapping.Mapper.Option;
 import org.everthrift.cassandra.com.datastax.driver.mapping.Mapper.UpdateQuery;
+import org.everthrift.thrift.TFunction;
+import org.everthrift.utils.Pair;
+import org.everthrift.cassandra.com.datastax.driver.mapping.MappingManager;
+import org.everthrift.cassandra.com.datastax.driver.mapping.NotModifiedException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.CollectionUtils;
 
@@ -59,7 +60,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import net.sf.ehcache.Cache;
 import net.sf.ehcache.Element;
 
-public abstract class CassandraModelFactory<PK extends Serializable,ENTITY extends DaoEntityIF, E extends TException> extends AbstractCachedModelFactory<PK, ENTITY> implements RwModelFactoryIF<PK, ENTITY, E> {
+public abstract class CassandraModelFactory<PK extends Serializable,ENTITY extends DaoEntityIF, E extends TException> extends AbstractCachedModelFactory<PK, ENTITY> implements RwModelFactoryIF<PK, ENTITY, E>, AsyncRoModelFactoryIF<PK, ENTITY> {
 
 	private final Class<ENTITY> entityClass;	
 	private final Constructor<ENTITY> copyConstructor;
@@ -326,6 +327,18 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 			return ret;			
 		});
 	}
+	
+    @Override
+	final public ListenableFuture<List<ENTITY>> findEntityByIdsInOrderAsync(final Collection<PK> ids) {
+    	
+    	if (CollectionUtils.isEmpty(ids))
+    		return Futures.immediateFuture(Collections.emptyList());
+
+        return Futures.transform(findEntityByIdAsMapAsync(ids), (Map<PK, ENTITY> loaded) -> (        
+        	ids.stream().map(id -> loaded.get(id)).filter(o -> o!=null).collect(Collectors.toList())	
+        ));
+    }
+	
 
 	@Override
 	final protected ENTITY fetchEntityById(PK id) {
@@ -615,7 +628,8 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 //        return stmt;
 //    }
     
-    final public ListenableFuture<Map<PK, ENTITY>> findEntityByIdAsMapAsync(Collection<PK> ids){
+    @Override
+	final public ListenableFuture<Map<PK, ENTITY>> findEntityByIdAsMapAsync(Collection<PK> ids){
 		if (CollectionUtils.isEmpty(ids))
 			return Futures.immediateFuture(Collections.emptyMap());
 		

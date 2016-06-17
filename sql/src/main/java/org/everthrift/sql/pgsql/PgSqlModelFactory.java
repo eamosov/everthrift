@@ -6,7 +6,7 @@ import org.apache.thrift.TException;
 import org.everthrift.appserver.model.DaoEntityIF;
 import org.everthrift.appserver.model.LocalEventBus;
 import org.everthrift.appserver.model.UniqueException;
-import org.everthrift.appserver.utils.Pair;
+import org.everthrift.utils.Pair;
 import org.hibernate.SessionFactory;
 import org.springframework.transaction.annotation.Transactional;
 

@@ -13,10 +13,10 @@ import org.everthrift.appserver.model.UpdatedAtIF;
 import org.everthrift.appserver.model.events.DeleteEntityEvent;
 import org.everthrift.appserver.model.events.InsertEntityEvent;
 import org.everthrift.appserver.model.events.UpdateEntityEvent;
-import org.everthrift.appserver.utils.LongTimestamp;
-import org.everthrift.appserver.utils.thrift.TFunction;
 import org.everthrift.cassandra.com.datastax.driver.mapping.Mapper.Option;
 import org.everthrift.cassandra.com.datastax.driver.mapping.Mapper.UpdateQuery;
+import org.everthrift.thrift.TFunction;
+import org.everthrift.utils.LongTimestamp;
 
 import com.datastax.driver.core.BatchStatement;
 import com.datastax.driver.core.ResultSetFuture;

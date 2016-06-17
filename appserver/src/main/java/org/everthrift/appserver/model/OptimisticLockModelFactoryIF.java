@@ -4,7 +4,7 @@ import java.util.Random;
 
 import org.apache.thrift.TException;
 import org.everthrift.appserver.model.pgsql.OptimisticUpdateFailException;
-import org.everthrift.appserver.utils.thrift.TFunction;
+import org.everthrift.thrift.TFunction;
 
 public interface OptimisticLockModelFactoryIF<PK, ENTITY extends DaoEntityIF, E extends TException> extends RwModelFactoryIF<PK, ENTITY, E> {
 

@@ -10,7 +10,7 @@ import java.util.Set;
 
 import org.everthrift.appserver.model.lazy.AbstractLazyLoader;
 import org.everthrift.appserver.model.lazy.Registry;
-import org.everthrift.appserver.utils.Function2;
+import org.everthrift.utils.Function2;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.CollectionUtils;

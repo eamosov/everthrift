@@ -11,8 +11,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.Callable;
 
 import org.everthrift.sql.migration.utils.ConsoleUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
@@ -29,7 +32,9 @@ import org.springframework.transaction.support.TransactionCallbackWithoutResult;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.ClassUtils;
 
-public class MigrationProcessor{
+public class MigrationProcessor implements Callable<Boolean>{
+	
+	private static final Logger log = LoggerFactory.getLogger(MigrationProcessor.class);
 
     @Autowired
     private PlatformTransactionManager txManager;
@@ -212,4 +217,17 @@ public class MigrationProcessor{
             }
         });
     }
+
+	@Override
+	public Boolean call() throws Exception {
+		
+        final Map<String, MigrationProcessor.Result> results = process(true, Collections.EMPTY_LIST, false);
+        for (final Map.Entry<String, MigrationProcessor.Result> entry : results.entrySet())
+            if (entry.getValue().equals(MigrationProcessor.Result.FAIL)) {
+                log.error("Filed to execute migration: {} ", entry.getKey());
+                throw entry.getValue().getException();
+            }
+		
+		return null;
+	}
 }

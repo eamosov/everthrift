@@ -4,8 +4,8 @@ import java.util.Map;
 
 import org.apache.thrift.TException;
 import org.everthrift.appserver.model.DaoEntityIF;
-import org.everthrift.appserver.utils.thrift.TFunction;
-import org.everthrift.appserver.utils.thrift.TVoidFunction;
+import org.everthrift.thrift.TFunction;
+import org.everthrift.thrift.TVoidFunction;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.SmartLifecycle;

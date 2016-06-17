@@ -8,21 +8,20 @@
        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.2.xsd
        http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.0.xsd" >
 
-
-    <context:annotation-config/>
     <context:property-placeholder/>
 
-	<bean id="cluster" class="org.everthrift.cassandra.migrator.CassandraSessionFactoryBean" factory-method="createCluster" destroy-method="close">
-		<constructor-arg><value>${cassandra.host}</value></constructor-arg>
+	<bean id="cluster" class="org.everthrift.cassandra.CassandraClusterFactoryBean" destroy-method="close">
+		<property name="contactPoints" value="${cassandra.host}"></property>
 	</bean>
 
-	<bean id="session" class="org.everthrift.cassandra.migrator.CassandraSessionFactoryBean" factory-method="createSession" destroy-method="close">
-		<constructor-arg ref="cluster"></constructor-arg>
-		<constructor-arg><value>${cassandra.ks}</value></constructor-arg>
+	<bean id="session" class="org.everthrift.cassandra.CassandraSessionFactoryBean" destroy-method="close">
+		<property name="cluster" ref="cluster"/>
+		<property name="keyspace" value="${cassandra.ks}"></property>
 	</bean>
 
 	<bean id="Migrator" class="org.everthrift.cassandra.migrator.CMigrationProcessor">
 		<constructor-arg><value>${cassandra.migrations.basePackage}</value></constructor-arg>
+		<property name="session" ref="session"></property>
 	</bean>
 
     </beans>

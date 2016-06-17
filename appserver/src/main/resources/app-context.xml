@@ -25,8 +25,14 @@
 
   <int:poller id="defaultPoller" default="true" receive-timeout="5000" fixed-rate="1"/>
 
-  <context:mbean-server/>
-  <context:mbean-export registration="ignoreExisting" server="mbeanServer"/>
+  <bean id="mbeanServer" class="org.springframework.jmx.support.MBeanServerFactoryBean">
+  	<property name="locateExistingServerIfPossible" value="true"/>
+  </bean>
+  
+  <bean id="exporter" class="org.springframework.jmx.export.annotation.AnnotationMBeanExporter">
+    <property name="server" ref="mbeanServer"/>
+    <property name="registrationPolicy" value="IGNORE_EXISTING"/>
+  </bean>
 
   <bean id="jmxServerConnector" class="org.springframework.jmx.support.ConnectorServerFactoryBean">
    	<property name="threaded" value="true"/>

@@ -11,7 +11,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.everthrift.appserver.monitoring.RpsServletIF;
-import org.everthrift.appserver.utils.LongTimestamp;
+import org.everthrift.utils.LongTimestamp;
 import org.rrd4j.ConsolFun;
 import org.rrd4j.DsType;
 import org.rrd4j.core.RrdBackendFactory;
