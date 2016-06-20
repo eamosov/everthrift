@@ -277,7 +277,7 @@ public class TBaseScannerFactory {
 	private String buildScannerCode(String methodName, Class cls, String scenario) throws IOException{
 		
 		final StringBuilder code = new StringBuilder();
-		code.append(String.format("public void %s(Object parent, Object _obj, org.everthrift.utils.thrift.scanner.TBaseScanHandler h, org.everthrift.appserver.model.lazy.Registry r){\n", methodName));
+		code.append(String.format("public void %s(Object parent, Object _obj, org.everthrift.appserver.utils.thrift.scanner.TBaseScanHandler h, org.everthrift.appserver.model.lazy.Registry r){\n", methodName));
 		code.append(String.format("\tfinal %s obj = (%s)_obj;\n\n", cls.getName(), cls.getName()));
 				
 		final Map<String, PropertyInfo> props = Maps.newHashMap();
