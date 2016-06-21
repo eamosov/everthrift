@@ -74,6 +74,7 @@ public class AppserverApplication {
         System.setProperty("jgroups.logging.log_factory_class", "org.everthrift.appserver.cluster.JGroupsLogFactory");
 
         context = new AnnotationConfigApplicationContext();
+        context.registerShutdownHook();
         env = context.getEnvironment();
 
         scanPathList.add("org.everthrift.appserver");

@@ -7,9 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 public class RpcWebsocketRegistry extends ThriftControllerRegistry{
 
-	@Autowired
-	private JettyServer jettyServer;
-
 	public RpcWebsocketRegistry() {
 		super(RpcWebsocket.class);
 	}

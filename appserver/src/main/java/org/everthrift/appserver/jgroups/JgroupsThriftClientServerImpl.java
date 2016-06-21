@@ -3,6 +3,8 @@ package org.everthrift.appserver.jgroups;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 
 import org.apache.commons.lang.NotImplementedException;
@@ -22,7 +24,6 @@ import org.jgroups.blocks.MessageDispatcher;
 import org.jgroups.blocks.ResponseMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.integration.support.MessageBuilder;
@@ -31,7 +32,7 @@ import org.springframework.messaging.MessageHeaders;
 import org.springframework.scheduling.annotation.Scheduled;
 
 
-public class JgroupsThriftClientServerImpl extends AbstractJgroupsThriftClientImpl implements AsyncRequestHandler, InitializingBean, MembershipListener, ClusterThriftClientIF {
+public class JgroupsThriftClientServerImpl extends AbstractJgroupsThriftClientImpl implements AsyncRequestHandler, MembershipListener, ClusterThriftClientIF {
 	
 	private static final Logger log = LoggerFactory.getLogger(JgroupsThriftClientServerImpl.class);
 
@@ -73,7 +74,7 @@ public class JgroupsThriftClientServerImpl extends AbstractJgroupsThriftClientIm
 		inJGroupsChannel.send(m);		
 	}
 	
-	
+	@PreDestroy
 	public void destroy() {
 		cluster.close();
 	}
@@ -86,8 +87,8 @@ public class JgroupsThriftClientServerImpl extends AbstractJgroupsThriftClientIm
 		membershipListeners.remove(m);
 	}
 
-	@Override
-	public void afterPropertiesSet() throws Exception {
+	@PostConstruct
+	public void connect() throws Exception {
 		log.info("Starting JgroupsMessageDispatcher");
 		
 		disp=new MessageDispatcher(cluster, null, this, this);

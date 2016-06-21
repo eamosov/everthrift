@@ -82,15 +82,20 @@ public class JettyServer implements SmartLifecycle {
 	@Value("${jetty.web-xml:WEB-INF/web.xml}")
 	private String webXml;
 	
+	@Value("${jetty.host}")
+	private String jettyHost;
+	
+	@Value("${jetty.port}")
+	private String jettyPort;
+	
+	@Value("${jetty.ssl.port:443}")
+	private String jettySslPort;
+	
 	@PostConstruct
     private void initJetty() {
 
-        final String host = env.getProperty("jetty.host");
-        final int port = Integer.parseInt(env.getProperty("jetty.port"));
-                
-        final int sslPort = Integer.parseInt(env.getProperty("jetty.ssl.port", "443"));
 
-        log.info("Starting jetty server on {}:{}", host, port);
+        log.info("Starting jetty server on {}:{}", jettyHost, jettyPort);
 
         final int capacity = Integer.parseInt(env.getProperty("jetty.capacity", "6000"));
         final int maxThreads = Integer.parseInt(env.getProperty("jetty.maxThreads", "10"));
@@ -113,7 +118,7 @@ public class JettyServer implements SmartLifecycle {
 
         final HttpConfiguration http_config = new HttpConfiguration();
         http_config.setSecureScheme("https");
-        http_config.setSecurePort(sslPort);
+        http_config.setSecurePort(Integer.parseInt(jettySslPort));
         http_config.setOutputBufferSize(32768);
         http_config.setRequestHeaderSize(8192);
         http_config.setResponseHeaderSize(8192);
@@ -121,8 +126,8 @@ public class JettyServer implements SmartLifecycle {
         http_config.setSendDateHeader(false);
 
         final ServerConnector http = new ServerConnector(jettyServer, new HttpConnectionFactory(http_config));
-        http.setHost(host);
-        http.setPort(port);
+        http.setHost(jettyHost);
+        http.setPort(Integer.parseInt(jettyPort));
         jettyServer.addConnector(http);
 
         final String pkcs12 = env.getProperty("jetty.ssl.jks.path");
@@ -142,8 +147,8 @@ public class JettyServer implements SmartLifecycle {
                 https_config.addCustomizer(new SecureRequestCustomizer());
 
                 final ServerConnector https = new ServerConnector(jettyServer, new SslConnectionFactory(contextFactory, HttpVersion.HTTP_1_1.toString()), new HttpConnectionFactory(https_config));
-                https.setHost(host);
-                https.setPort(sslPort);
+                https.setHost(jettyHost);
+                https.setPort(Integer.parseInt(jettySslPort));
                 jettyServer.addConnector(https);
             } catch (NoSuchAlgorithmException | CertificateException | KeyStoreException | IOException e) {
 
@@ -262,5 +267,29 @@ public class JettyServer implements SmartLifecycle {
 	public void stop(Runnable callback) {
 		stop();
 		callback.run();
+	}
+
+	public String getJettyHost() {
+		return jettyHost;
+	}
+
+	public void setJettyHost(String jettyHost) {
+		this.jettyHost = jettyHost;
+	}
+
+	public String getJettyPort() {
+		return jettyPort;
+	}
+
+	public void setJettyPort(String jettyPort) {
+		this.jettyPort = jettyPort;
+	}
+
+	public String getJettySslPort() {
+		return jettySslPort;
+	}
+
+	public void setJettySslPort(String jettySslPort) {
+		this.jettySslPort = jettySslPort;
 	}
 }

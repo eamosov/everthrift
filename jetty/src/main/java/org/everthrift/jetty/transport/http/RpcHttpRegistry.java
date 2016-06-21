@@ -7,9 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 public class RpcHttpRegistry extends ThriftControllerRegistry{
 	
-	@Autowired
-	private JettyServer jettyServer;
-
 	public RpcHttpRegistry() {
 		super(RpcHttp.class);
 	}	

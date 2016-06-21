@@ -60,6 +60,7 @@ public class ThriftServer implements SmartLifecycle{
 	@Override
 	public synchronized void stop() {
 		if (thread !=null){
+	        server.stop();
 			thread.interrupt();
 			try {
 				thread.join();
@@ -88,7 +89,7 @@ public class ThriftServer implements SmartLifecycle{
         final ThriftProcessor tp = ThriftProcessor.create(context, registry);
         args.processor(tp);
         server = new TThreadPoolServer(args);
-        server.serve();
+        server.serve();        
 	}
 	
 	public void setPort(int port){
