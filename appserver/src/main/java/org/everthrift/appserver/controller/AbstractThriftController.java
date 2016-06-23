@@ -108,10 +108,42 @@ public abstract class AbstractThriftController<ArgsType extends TBase, ResultTyp
 		
 		try {
 			setup(args);
-			final ResultType result =  filterOutput(loadLazyRelations(handle()));
-			setResultSentFlag();
-			setEndNanos(System.nanoTime());
-			return result;
+			final ListenableFuture<ResultType> resultFuture =  loadLazyRelations(handle());
+						
+			if (resultFuture.isDone() || allowAsyncAnswer == false){
+				ResultType result;
+				try {
+					result = filterOutput(resultFuture.get());
+				} catch (InterruptedException | ExecutionException e) {
+					setResultSentFlag();
+					setEndNanos(System.nanoTime());
+					log.error("Uncought exception", e);
+					return e;
+				}
+				setResultSentFlag();
+				setEndNanos(System.nanoTime());
+				return result;				
+			}else{
+				Futures.addCallback(resultFuture, new FutureCallback<ResultType>(){
+
+					@Override
+					public void onSuccess(ResultType _answer) {
+						final ResultType result = filterOutput(_answer);
+						setResultSentFlag();
+						setEndNanos(System.nanoTime());
+						sendAnswerOrException(result);				
+					}
+
+					@Override
+					public void onFailure(Throwable t) {
+						setResultSentFlag();
+						setEndNanos(System.nanoTime());						
+						log.error("Uncought exception", t);
+						sendAnswerOrException(t);
+					}}, executor);
+				
+				return waitForAnswer();
+			}
 		} catch (TException e) {
 			return e;
 		}		
@@ -174,9 +206,20 @@ public abstract class AbstractThriftController<ArgsType extends TBase, ResultTyp
 	
 	protected final synchronized void sendAnswer(ResultType answer){
 		setResultSentFlag();
-		final ResultType result = filterOutput(loadLazyRelations((ResultType)answer));
-		setEndNanos(System.nanoTime());
-		sendAnswerOrException(result);
+		
+		Futures.addCallback(loadLazyRelations((ResultType)answer), new FutureCallback<ResultType>(){
+
+			@Override
+			public void onSuccess(ResultType _answer) {
+				final ResultType result = filterOutput(_answer);
+				setEndNanos(System.nanoTime());
+				sendAnswerOrException(result);				
+			}
+
+			@Override
+			public void onFailure(Throwable t) {
+				log.error("Uncought exception", t);
+			}}, executor); 		
 	}
 	
 	protected void sendAnswerOrException(Object answer){
@@ -259,8 +302,8 @@ public abstract class AbstractThriftController<ArgsType extends TBase, ResultTyp
 		return result;
 	}
 
-	protected ResultType loadLazyRelations(ResultType result){
-		return loadLazyRelations ? LazyLoadManager.load(LazyLoadManager.SCENARIO_DEFAULT, result) : result;
+	protected ListenableFuture<ResultType> loadLazyRelations(ResultType result){
+		return loadLazyRelations ? LazyLoadManager.load(LazyLoadManager.SCENARIO_DEFAULT, result) : Futures.immediateFuture(result);
 	}
 
 	protected Map<String, String[]> getHttpRequestParams(){

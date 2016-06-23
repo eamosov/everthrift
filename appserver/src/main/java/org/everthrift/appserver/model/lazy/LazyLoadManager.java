@@ -2,9 +2,15 @@ package org.everthrift.appserver.model.lazy;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.SettableFuture;
 
 public class LazyLoadManager {
 	
@@ -16,59 +22,72 @@ public class LazyLoadManager {
 	public static String SCENARIO_ADMIN = "admin";
 	public static String SCENARIO_JSON = "json";
 	
+	public static void nextLap(SettableFuture<Integer> result, AtomicInteger lap, AtomicInteger nAllLoaded, int maxIterations, Object o, Registry r, WalkerIF walker){
+		
+		log.debug("Starting load iteration: {}", lap);
+		final long st = System.nanoTime();
+		
+		walker.apply(o);					
+
+		Futures.addCallback(r.load(), new FutureCallback<Integer>(){
+
+			@Override
+			public void onSuccess(Integer nLoaded) {
+
+				final long end = System.nanoTime();
+				if (log.isDebugEnabled())
+					log.debug("Iteration {} finished. {} entities loaded with {} mcs", new Object[]{lap, nLoaded, (end -st)/1000});
 				
-	public static int load(int maxIterations, Object o, Registry r, WalkerIF walker){
+				final int _lap = lap.incrementAndGet();
+				final int _nAllLoaded = nAllLoaded.addAndGet(nLoaded);
+
+				if (nLoaded > 0 && _lap < maxIterations)
+					nextLap(result, lap, nAllLoaded, maxIterations, o, r, walker);
+				else
+					result.set(_nAllLoaded);
+			}
+
+			@Override
+			public void onFailure(Throwable t) {
+				result.setException(t);
+			}});
+		
+	}
+				
+	public static ListenableFuture<Integer> load(int maxIterations, Object o, Registry r, WalkerIF walker){
 		
 		log.debug("load, maxIterations={}, o.class={}", maxIterations, o.getClass().getSimpleName());
-					
+							
+		final AtomicInteger nAllLoaded = new AtomicInteger(0);
+		final AtomicInteger lap  = new AtomicInteger(0);
+		final SettableFuture<Integer> result = SettableFuture.create();
 		
-		int nAllLoaded=0;
-		int lap=0;			
-		int nLoaded;
+		nextLap(result, lap, nAllLoaded, maxIterations, o, r, walker);
 		
-		
-		do{
-			nLoaded =0;
-			
-			log.debug("Starting load iteration: {}", lap);
-			final long st = System.nanoTime();
-			
-			walker.apply(o);					
-			nLoaded = r.load();
-			
-			final long end = System.nanoTime();
-			if (log.isDebugEnabled())
-				log.debug("Iteration {} finished. {} entities loaded with {} mcs", new Object[]{lap, nLoaded, (end -st)/1000});
-			
-			lap++;
-			nAllLoaded += nLoaded;
-		}while(nLoaded > 0 && lap < maxIterations);
-				
-		return nAllLoaded;
+		return result;
 	}
 
-	public static <T> T load(final String scenario, int maxIterations, final T o){
+	public static <T> ListenableFuture<T> load(final String scenario, int maxIterations, final T o){
 		return load(scenario, maxIterations, o, new Object[]{});
 	}
 	
-	public static <T> T load(final String scenario, int maxIterations, final T o, Object ... args){
+	public static <T> ListenableFuture<T> load(final String scenario, int maxIterations, final T o, Object ... args){
 		
 		if (o == null ||
 			(o instanceof Collection && ((Collection)o).isEmpty()) ||
 			(o instanceof Map && ((Map)o).isEmpty()))
-			return o;
+			return Futures.immediateFuture(o);
 		
 		final Registry r = new RegistryImpl(args);
 		final WalkerIF walker = new RecursiveWalker(r, scenario);
-		load(maxIterations, o, r, walker);
-		return o;
+		return Futures.transform(load(maxIterations, o, r, walker), (Integer nLoadAdd) -> o);
 	}		
 
-	public static <T> T load(final String scenario, final T o){
+	public static <T> ListenableFuture<T> load(final String scenario, final T o){
 		return load(scenario, MAX_LOAD_ITERATIONS, o);
 	}
 	
-	public static <T> T loadForJson(final T o){
+	public static <T> ListenableFuture<T> loadForJson(final T o){
 		return load(LazyLoadManager.SCENARIO_JSON, o);
 	}
 	
