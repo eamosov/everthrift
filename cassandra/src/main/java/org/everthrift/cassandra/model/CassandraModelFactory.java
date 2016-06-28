@@ -23,6 +23,10 @@ import org.everthrift.appserver.model.LocalEventBus;
 import org.everthrift.appserver.model.RwModelFactoryIF;
 import org.everthrift.appserver.model.Unique;
 import org.everthrift.appserver.model.UniqueException;
+import org.everthrift.appserver.model.XAwareIF;
+import org.everthrift.appserver.model.lazy.AbstractLazyLoader;
+import org.everthrift.appserver.model.lazy.AsyncLazyLoader;
+import org.everthrift.appserver.model.lazy.Registry;
 import org.everthrift.cassandra.DLock;
 import org.everthrift.cassandra.DLockFactory;
 import org.everthrift.cassandra.com.datastax.driver.mapping.ColumnMapper;
@@ -79,6 +83,30 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 	private final List<Pair<ColumnMapper<ENTITY>, PreparedStatement>> uniqueColumns = Lists.newArrayList();
 	
 	protected abstract E createNotFoundException(PK id);
+	
+    private final AsyncLazyLoader<XAwareIF<PK, ENTITY>> asyncLazyLoader = new AsyncLazyLoader<XAwareIF<PK, ENTITY>>(){
+
+		@Override
+		public ListenableFuture<Integer> processAsync(List<XAwareIF<PK, ENTITY>> entities) {
+			
+			final ListenableFuture<Map<PK, ENTITY>> f = findEntityByIdAsMapAsync(entities.stream().filter(XAwareIF<PK, ENTITY>::isSetId).map(XAwareIF<PK, ENTITY>::getId).collect(Collectors.toList()));
+			
+			return Futures.transform(f, (Map<PK, ENTITY> loaded) -> {
+				int n=0;
+				for (XAwareIF<PK, ENTITY> e: entities){
+					if (e.isSetId()){
+						final ENTITY l = loaded.get(e.getId());
+						if (l!=null){
+							e.set(loaded.get(e.getId()));
+							n++;							
+						}
+					}
+				}
+				
+				return n;				
+			});
+		}    	
+    };
 	
 	//private volatile Map<String, PreparedStatement> preparedQueries = Collections.emptyMap();	
 			
@@ -671,5 +699,9 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 			return ret;			
 		});		
     }
+
+    public boolean lazyLoad(Registry r, XAwareIF<PK, ENTITY> m) {
+    	return r.add(asyncLazyLoader, m);
+    }    
 
 }

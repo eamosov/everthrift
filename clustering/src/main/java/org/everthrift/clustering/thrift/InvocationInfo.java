@@ -122,7 +122,8 @@ public class InvocationInfo<T> extends AbstractFuture<T> {
 		
 		TMessage msg = inProtocol.readMessageBegin();
 		if (msg.type == TMessageType.EXCEPTION) {
-			TApplicationException x = TApplicationException.read(inProtocol);
+			TApplicationException x = new TApplicationException();
+			x.read(inProtocol);
 			inProtocol.readMessageEnd();
 			throw x;
 		}

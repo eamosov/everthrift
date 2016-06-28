@@ -25,6 +25,7 @@ import org.everthrift.appserver.controller.ThriftControllerInfo;
 import org.everthrift.utils.Pair;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import com.google.common.primitives.Ints;
@@ -72,11 +73,9 @@ public class ThriftFormatter {
 		sb.append("<div/>\n");
 		return sb.toString();
 	}
-
-	public String formatMethod(ThriftControllerInfo cInfo){
 		
-		
-		final Pair<Class<? extends TBase>, Map<? extends TFieldIdEnum, FieldMetaData>> resultMap =  ThriftUtils.getRootThriftClass(cInfo.getResultCls());
+	public String formatMethod(String name, Class<? extends TBase> argsCls, Class<? extends TBase> resultCls){
+		final Pair<Class<? extends TBase>, Map<? extends TFieldIdEnum, FieldMetaData>> resultMap =  ThriftUtils.getRootThriftClass(resultCls);
 		
 		FieldValueMetaData result;
 		try{
@@ -86,9 +85,9 @@ public class ThriftFormatter {
 		}
 		
 		final StringBuilder sb = new StringBuilder();
-		sb.append("<span class=\"method\">" + formatTypeName(result) + " " + cInfo.getMethodName() + "(");
+		sb.append("<span class=\"method\">" + formatTypeName(result) + " " + name + "(");
 
-		final Pair<Class<? extends TBase>, Map<? extends TFieldIdEnum, FieldMetaData>> argsMap =  ThriftUtils.getRootThriftClass(cInfo.getArgCls());
+		final Pair<Class<? extends TBase>, Map<? extends TFieldIdEnum, FieldMetaData>> argsMap =  ThriftUtils.getRootThriftClass(argsCls);
 		final List<TFieldIdEnum> argsFields = sortedKeys(argsMap.second);
 
 		boolean coma = false;
@@ -121,7 +120,11 @@ public class ThriftFormatter {
 		
 		sb.append("</span>\n");
 
-		return sb.toString();
+		return sb.toString();		
+	}
+
+	public String formatMethod(ThriftControllerInfo cInfo){		
+		return formatMethod(cInfo.getMethodName(), cInfo.getArgCls(), cInfo.getResultCls());
 	}
 	
 	public String formatClass(Class<? extends TBase> cls) throws ClassNotFoundException{

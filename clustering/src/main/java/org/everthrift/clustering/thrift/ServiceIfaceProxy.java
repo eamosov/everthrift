@@ -20,14 +20,14 @@ public class ServiceIfaceProxy implements InvocationHandler{
 
 	final static Pattern ifacePattern = Pattern.compile("^([^\\.]+\\.)+([^\\.]+)\\.Iface$");
 	final String serviceIfaceName;
-	final String serviceName;
+	protected final String serviceName;
 	final InvocationCallback callback;
 	
 	final Map<String, ThriftMeta> methods = Maps.newHashMap();
 	
-	private static class ThriftMeta{		
-		final Constructor<? extends TBase> args;
-		final Constructor<? extends TBase> result;
+	protected static class ThriftMeta{		
+		public final Constructor<? extends TBase> args;
+		public final Constructor<? extends TBase> result;
 		
 		public ThriftMeta(Constructor<? extends TBase> args, Constructor<? extends TBase> result) {
 			super();
@@ -89,7 +89,7 @@ public class ServiceIfaceProxy implements InvocationHandler{
 		}				
 	}
 		
-	private synchronized ThriftMeta getThriftMeta(Method method) throws NoSuchMethodException, SecurityException, ClassNotFoundException{
+	protected synchronized ThriftMeta getThriftMeta(Method method) throws NoSuchMethodException, SecurityException, ClassNotFoundException{
 		
 		ThriftMeta args_result = methods.get(method.getName());
 		

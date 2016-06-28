@@ -1,5 +1,6 @@
 package org.everthrift.jetty.transport.http;
 
+import java.beans.PropertyDescriptor;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -36,6 +37,7 @@ import org.everthrift.appserver.utils.thrift.AbstractThriftClient;
 import org.everthrift.appserver.utils.thrift.SessionIF;
 import org.everthrift.clustering.MessageWrapper;
 import org.everthrift.clustering.thrift.InvocationInfo;
+import org.everthrift.utils.ClassUtils;
 import org.everthrift.utils.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -110,7 +112,7 @@ public class PlainJsonThriftServlet extends HttpServlet {
 		    }
 		});		
 	}
-
+	
 	@Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
 		
@@ -124,7 +126,7 @@ public class PlainJsonThriftServlet extends HttpServlet {
 		attributes.put(MessageWrapper.HTTP_HEADERS, Collections.list(request.getHeaderNames()).stream().map( n -> Pair.create(n, request.getHeader(n))).collect(Collectors.toMap(Pair::getFirst, Pair::getSecond)));
 		
 		try {
-			final TMemoryBuffer mw = tp.process(new ThriftProtocolSupportIF<TMemoryBuffer>(){
+			final Pair<TMemoryBuffer, Integer> mw = tp.process(new ThriftProtocolSupportIF<Pair<TMemoryBuffer, Integer>>(){
 
 				@Override
 				public String getSessionId() {
@@ -186,48 +188,73 @@ public class PlainJsonThriftServlet extends HttpServlet {
 				public void skip() throws TException {
 					
 				}
-
-				private TMemoryBuffer result(TApplicationException o){
+				
+				private Pair<TMemoryBuffer, Integer> result(int code, String message, int httpStatusCode){
 					final TMemoryBuffer outT = new TMemoryBuffer(1024);
 					final JsonObject ex = new JsonObject();
-					ex.addProperty("type", o.getType());
-					ex.addProperty("message", o.getMessage());
-					final JsonObject w = new JsonObject();
-					w.add("error", ex);
+					ex.addProperty("code", code);
+					ex.addProperty("message", message);
 					try {
-						outT.write(w.toString().getBytes());
+						outT.write(ex.toString().getBytes());
 					} catch (TTransportException e) {
 						throw new RuntimeException(e);
 					}
-					return outT;																			
+					return Pair.create(outT, httpStatusCode);																			
 				}
 				
 				@Override
-				public TMemoryBuffer result(final Object o, final ThriftControllerInfo tInfo) {
+				public Pair<TMemoryBuffer, Integer> result(final Object o, final ThriftControllerInfo tInfo) {
+					
+					int httpCode = 200;
 					
 					if (o instanceof TApplicationException){
-						return result((TApplicationException)o);
+						return result(((TApplicationException)o).getType(), ((TApplicationException)o).getMessage(), 400);
+						
 					}else if (o instanceof TProtocolException) {
-						return result(new TApplicationException(TApplicationException.PROTOCOL_ERROR, ((Exception)o).getMessage()));
-					}else if (o instanceof Exception && !(o instanceof TException)){
-						return result(new TApplicationException(TApplicationException.INTERNAL_ERROR, ((Exception)o).getMessage()));
-					}else{
-						final TBase result = tInfo.makeResult(o);
-						final TMemoryBuffer outT = new TMemoryBuffer(1024);
-						try {
-							outT.write(gson.toJson(result).getBytes());
-						} catch (TTransportException e) {
-							throw new RuntimeException(e);
-						}
-						return outT;								
+						return result(TApplicationException.PROTOCOL_ERROR, ((Exception)o).getMessage(), 400);
+						
+						
+					}else if (o instanceof Exception){
+												
+												
+						final Map<String, PropertyDescriptor>  props = ClassUtils.getPropertyDescriptors(o.getClass());
+						
+						httpCode = 400;
+						
+						final PropertyDescriptor httpCodeDescr = props.get("httpCode");
+						if (httpCodeDescr !=null)
+							try {
+								httpCode = ((Number)httpCodeDescr.getReadMethod().invoke(o)).intValue();
+							} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+							}
+						
+						int code = -1;
+						final PropertyDescriptor codeDescr = props.get("code");
+						if (codeDescr !=null)
+							try {
+								code = ((Number)codeDescr.getReadMethod().invoke(o)).intValue();
+							} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+							}
+
+						if (!(o instanceof TException))
+							return result(code, ((Exception)o).getMessage(), httpCode);
 					}
+										
+					final TMemoryBuffer outT = new TMemoryBuffer(1024);
+					try {
+						outT.write(gson.toJson(o).getBytes());
+					} catch (TTransportException e) {
+						throw new RuntimeException(e);
+					}
+					return Pair.create(outT, httpCode);								
 				}
 
 				@Override
 				public void asyncResult(Object o, AbstractThriftController controller) {
-					final TMemoryBuffer tt = result(o, controller.getInfo());
+					final Pair<TMemoryBuffer, Integer> tt = result(o, controller.getInfo());
 					try {
-						out(asyncContext, response, tt.getArray(), tt.length());
+						response.setStatus(tt.second);
+						out(asyncContext, response, tt.first.getArray(), tt.first.length());
 					} catch (IOException e) {
 						log.error("Async Error", e);
 					}
@@ -283,9 +310,9 @@ public class PlainJsonThriftServlet extends HttpServlet {
 				}});
 			
 			if (mw !=null){
-				response.setStatus(200);
+				response.setStatus(mw.second);
 				response.setContentType("application/json");				
-				out(asyncContext, response, mw.getArray(), mw.length());
+				out(asyncContext, response, mw.first.getArray(), mw.first.length());
 			}
 		} catch (Exception e) {
 			response.setStatus(500);

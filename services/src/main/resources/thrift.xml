@@ -16,7 +16,7 @@
 	<target name="build-one" depends="check-local-thrift">
 		<echo level="info" message="Compiling ${file}"/>
 		<exec executable="${thrift.binary}" dir="src/main" failonerror="true">
-			<arg line="-nowarn --gen java:beans,defoptional,generated_annotations=suppress -I thrift-includes/META-INF/thrift/ -I thrift" />
+			<arg line="-nowarn --gen java:beans,defoptional,generated_annotations=suppress,use_tdoc -I thrift-includes/META-INF/thrift/ -I thrift" />
 			<arg line="-o ." />
 			<arg line="${file}" />
 		</exec>
@@ -37,7 +37,7 @@
 		<echo level="info" message="Compiling ${file}"/>
 		
 		<exec executable="${thrift.binary}" dir="src/main" failonerror="true">
-			<arg line="-nowarn --gen java:beans,defoptional,generated_annotations=suppress -I thrift-includes/META-INF/thrift/ -I thrift" />
+			<arg line="-nowarn --gen java:beans,defoptional,generated_annotations=suppress,use_tdoc -I thrift-includes/META-INF/thrift/ -I thrift" />
 			<arg line="-o ." />
 			<arg line="${file}" />
 		</exec>
@@ -72,7 +72,7 @@
 	<target name="build-one-yii" depends="check-local-thrift">
 		<echo level="info" message="Compiling ${file}"/>
 		<exec executable="${thrift.binary}" dir="src/main" failonerror="true">
-			<arg line="-nowarn --gen java:beans,defoptional,generated_annotations=suppress -I thrift-includes/META-INF/thrift/ -I thrift" />
+			<arg line="-nowarn --gen java:beans,defoptional,generated_annotations=suppress,use_tdoc -I thrift-includes/META-INF/thrift/ -I thrift" />
 			<arg line="-o ." />
 			<arg line="${file}" />
 		</exec>
