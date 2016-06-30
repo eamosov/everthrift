@@ -2,6 +2,9 @@ package org.everthrift.appserver.model.lazy;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
@@ -21,6 +24,19 @@ public class LazyLoadManager {
     public static String SCENARIO_DEFAULT = "default";
     public static String SCENARIO_ADMIN = "admin";
     public static String SCENARIO_JSON = "json";
+    
+    private static final Executor loadExecutor = Executors.newCachedThreadPool(new ThreadFactory() {
+        private final AtomicInteger threadNumber = new AtomicInteger(1);
+        public Thread newThread(Runnable r) {
+            final Thread t = new Thread(r);
+            t.setName("LazyLoader-"+ threadNumber.getAndIncrement());
+            if (t.isDaemon())
+                t.setDaemon(false);
+            if (t.getPriority() != Thread.NORM_PRIORITY)
+                t.setPriority(Thread.NORM_PRIORITY);
+            return t;
+        }
+    });
 
     public static void nextLap(SettableFuture<Integer> result, AtomicInteger lap, AtomicInteger nAllLoaded, int maxIterations, Object o, Registry r, WalkerIF walker){
 
@@ -50,7 +66,7 @@ public class LazyLoadManager {
             @Override
             public void onFailure(Throwable t) {
                 result.setException(t);
-            }});
+            }}, loadExecutor);
 
     }
 

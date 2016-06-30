@@ -9,14 +9,14 @@
        http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.0.xsd" >
 
     <context:property-placeholder/>
-
-	<bean id="cluster" class="org.everthrift.cassandra.CassandraClusterFactoryBean" destroy-method="close">
-		<property name="contactPoints" value="${cassandra.host}"></property>
+    
+	<bean id="cluster" class="org.everthrift.cassandra.CassandraClusterFactoryBean">
+		<property name="contactPoints" value="${cassandra.host}"/>
 	</bean>
 
-	<bean id="session" class="org.everthrift.cassandra.CassandraSessionFactoryBean" destroy-method="close">
-		<property name="cluster" ref="cluster"/>
-		<property name="keyspace" value="${cassandra.ks}"></property>
+	<bean id="session" class="org.everthrift.cassandra.CassandraSessionFactoryBean">
+		<constructor-arg ref="cluster"></constructor-arg>
+		<constructor-arg><value>${cassandra.ks}</value></constructor-arg>
 	</bean>
 
 	<bean id="Migrator" class="org.everthrift.cassandra.migrator.CMigrationProcessor">

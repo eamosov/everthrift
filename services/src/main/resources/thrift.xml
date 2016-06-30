@@ -25,26 +25,14 @@
 			<arg line="-o ." />
 			<arg line="${file}" />
 		</exec>
-		<exec executable="${thrift.binary}" dir="src/main" failonerror="true">
-			<arg line="--gen perl -I thrift-includes/META-INF/thrift/ -I thrift" />
-			<arg line="-o ." />
-			<arg line="${file}" />
-		</exec>
 	</target>
 	
 	<target name="build-one-cocoa" depends="check-local-thrift">
 		<echo level="info" message="Compiling ${file}"/>
-		<echo level="info" message="Compiling ${file}"/>
+		<mkdir dir="src/main/gen-android"/>
 		
 		<exec executable="${thrift.binary}" dir="src/main" failonerror="true">
-			<arg line="-nowarn --gen java:beans,defoptional,generated_annotations=suppress,use_tdoc -I thrift-includes/META-INF/thrift/ -I thrift" />
-			<arg line="-o ." />
-			<arg line="${file}" />
-		</exec>
-		
-		<exec executable="${thrift.binary}" dir="src/main" failonerror="true">
-			<arg line="--gen php:server -I thrift-includes/META-INF/thrift/ -I thrift" />
-			<arg line="-o ." />
+			<arg line="-nowarn --gen java:beans,defoptional,generated_annotations=suppress -out gen-android -I thrift-includes/META-INF/thrift/ -I thrift" />
 			<arg line="${file}" />
 		</exec>
 		
@@ -56,12 +44,6 @@
 
 		<exec executable="${thrift.binary}" dir="src/main" failonerror="true">
 			<arg line="-nowarn --gen js:ws -I thrift-includes/META-INF/thrift/ -I thrift" />
-			<arg line="-o ." />
-			<arg line="${file}" />
-		</exec>
-
-		<exec executable="${thrift.binary}" dir="src/main" failonerror="true">
-			<arg line="--gen perl -I thrift-includes/META-INF/thrift/ -I thrift" />
 			<arg line="-o ." />
 			<arg line="${file}" />
 		</exec>

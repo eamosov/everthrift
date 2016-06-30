@@ -88,17 +88,20 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
         @Override
         public ListenableFuture<Integer> processAsync(List<XAwareIF<PK, ENTITY>> entities) {
 
-            final ListenableFuture<Map<PK, ENTITY>> f = findEntityByIdAsMapAsync(entities.stream().filter(XAwareIF<PK, ENTITY>::isSetId).map(XAwareIF<PK, ENTITY>::getId).collect(Collectors.toList()));
+            final ListenableFuture<Map<PK, ENTITY>> f = findEntityByIdAsMapAsync(entities.stream().filter(XAwareIF<PK, ENTITY>::isSetId).map(XAwareIF<PK, ENTITY>::getId).collect(Collectors.toSet()));
 
             return Futures.transform(f, (Map<PK, ENTITY> loaded) -> {
                 int n=0;
                 for (XAwareIF<PK, ENTITY> e: entities){
-                    if (e.isSetId()){
-                        final ENTITY l = loaded.get(e.getId());
-                        if (l!=null){
-                            e.set(loaded.get(e.getId()));
-                            n++;
+                    synchronized(e){
+                        if (e.isSetId()){
+                            final ENTITY l = loaded.get(e.getId());
+                            e.set(l);
+                            if (l!=null){
+                                n++;
+                            }
                         }
+
                     }
                 }
 

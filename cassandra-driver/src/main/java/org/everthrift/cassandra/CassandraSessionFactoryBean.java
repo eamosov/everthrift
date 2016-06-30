@@ -7,11 +7,13 @@ import com.datastax.driver.core.Session;
 
 public class CassandraSessionFactoryBean implements FactoryBean<Session>{
 
-    private Cluster cluster;
-    private String keyspace;
+    private final Cluster cluster;
+    private final String keyspace;
 
-    public CassandraSessionFactoryBean() {
+    public CassandraSessionFactoryBean(Cluster cluster, String keyspace) {
         super();
+        this.cluster = cluster;
+        this.keyspace = keyspace;
     }
 
     @Override
@@ -32,9 +34,5 @@ public class CassandraSessionFactoryBean implements FactoryBean<Session>{
 
     public String getKeyspace() {
         return keyspace;
-    }
-
-    public void setKeyspace(String keyspace) {
-        this.keyspace = keyspace;
     }
 }
