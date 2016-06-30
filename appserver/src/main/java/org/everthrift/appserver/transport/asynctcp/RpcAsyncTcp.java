@@ -8,9 +8,9 @@ import org.springframework.stereotype.Component;
 /**
  * Аннотация на контроллер, выполняющийся в контексте int-ip:tcp-inbound-channel-adapter
  * Такой контроллем имеет возможность асинхронного ответа, посредством завершения работы через
- * 
+ *
  * ThriftController.waitForAnswer() и асинхронным ответом через ThriftController.sendAnswer(TBase answer)
- * 
+ *
  * @author fluder
  *
  */

@@ -50,15 +50,15 @@ public class MappingManager {
      * @param session the {@code Session} to use.
      */
     public MappingManager(Session session, EntityMapper.Factory factory, EntityParser entityParser) {
-        this(session, getProtocolVersion(session), factory, entityParser);        
+        this(session, getProtocolVersion(session), factory, entityParser);
     }
-    
+
     public MappingManager(Session session) {
-        this(session, ReflectionMapper.factory(), AnnotationParser.INSTANCE);        
+        this(session, ReflectionMapper.factory(), AnnotationParser.INSTANCE);
     }
-    
+
     public MappingManager(Session session, EntityParser entityParser) {
-        this(session, ReflectionMapper.factory(), entityParser);        
+        this(session, ReflectionMapper.factory(), entityParser);
     }
 
 
@@ -123,14 +123,14 @@ public class MappingManager {
     public <T> Mapper<T> mapper(Class<T> klass) {
         return getMapper(klass);
     }
-    
+
     /**
      * Always creates new mapper
      * @param klass
      * @return
      */
     public <T> Mapper<T> newMapper(Class<T> klass){
-        return new Mapper<T>(this, klass, entityParser.parseEntity(klass, factory, this));    	
+        return new Mapper<T>(this, klass, entityParser.parseEntity(klass, factory, this));
     }
 
     /**

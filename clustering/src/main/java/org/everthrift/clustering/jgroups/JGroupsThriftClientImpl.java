@@ -24,99 +24,101 @@ import org.springframework.scheduling.annotation.Scheduled;
 import com.google.common.collect.Maps;
 
 public class JGroupsThriftClientImpl extends AbstractJgroupsThriftClientImpl implements  MembershipListener, ClusterThriftClientIF {
-	
-	private static final Logger log = LoggerFactory.getLogger(JGroupsThriftClientImpl.class);
 
-	private final JChannel cluster;
-	private final String clusterName; 
-		
-	private MessageDispatcher  disp;
-	
-	private final TProtocolFactory protocolFactory = new TBinaryProtocol.Factory();
-	
-	private AtomicReference<Map<Address, Node>> nodes = new AtomicReference<Map<Address, Node>>(Maps.newHashMap());
-	
-	public JGroupsThriftClientImpl(String jgroupsXmlPath, String clusterName) throws Exception{
-		this(new JChannel(jgroupsXmlPath), clusterName);
-	}
+    private static final Logger log = LoggerFactory.getLogger(JGroupsThriftClientImpl.class);
 
-	public JGroupsThriftClientImpl(JChannel cluster, String clusterName){
-		log.info("Using {} as MulticastThriftTransport", this.getClass().getSimpleName());
-		this.cluster = cluster;
-		this.clusterName  = clusterName;
-	}
-	
-	public void destroy() {
-		cluster.close();
-	}
-			
-	public void connect() throws Exception {
-		log.info("Starting JGroups MessageDispatcher");
-		
-		disp=new MessageDispatcher(cluster, null, this, new RequestHandler(){
+    private final JChannel cluster;
+    private final String clusterName;
 
-			@Override
-			public Object handle(Message msg) throws Exception {
-				
-				final MessageWrapper w = (MessageWrapper)msg.getObject();				
-				final TProtocol inp = protocolFactory.getProtocol(w.getTTransport());
-				final TMessage m = inp.readMessageBegin();
-				
-				if ("ClusterService:onNodeConfiguration".equals(m.name) && m.type == 1 /*request*/){
-					final ClusterService.onNodeConfiguration_args args = new ClusterService.onNodeConfiguration_args();
-					args.read(inp);
-					inp.readMessageEnd();
-					
-					setNode(msg.getSrc(), args.getNode());
-				}						
-					
-				return null;
-			}});
+    private MessageDispatcher  disp;
 
-		cluster.connect(clusterName);
-	}
-	
-	public MessageDispatcher getMessageDispatcher(){
-		return disp;
-	}
-	
-	public Address getLocalAddress(){
-		return cluster.getAddress();
-	}
+    private final TProtocolFactory protocolFactory = new TBinaryProtocol.Factory();
 
-	@Override
-	public synchronized void viewAccepted(View new_view) {
-		
-		if (!this.viewAccepted.isDone())
-			this.viewAccepted.set(null);
-		
-	
-		nodeDb.retain(new_view.getMembers());
-	}
+    private AtomicReference<Map<Address, Node>> nodes = new AtomicReference<Map<Address, Node>>(Maps.newHashMap());
 
-	@Override
-	public synchronized void suspect(Address suspected_mbr) {
-	}
+    public JGroupsThriftClientImpl(String jgroupsXmlPath, String clusterName) throws Exception{
+        this(new JChannel(jgroupsXmlPath), clusterName);
+    }
 
-	@Override
-	public synchronized void block() {
-		
-	}
+    public JGroupsThriftClientImpl(JChannel cluster, String clusterName){
+        log.info("Using {} as MulticastThriftTransport", this.getClass().getSimpleName());
+        this.cluster = cluster;
+        this.clusterName  = clusterName;
+    }
 
-	@Override
-	public synchronized void unblock() {
-		
-	}
-	
-	@Scheduled(fixedRate=5000)
-	public void logClusterState(){
-		log.info("cluster:{}", cluster.getView());
-	}
+    public void destroy() {
+        cluster.close();
+    }
 
-	@Override
-	public JChannel getCluster() {
-		return cluster;
-	}
+    public void connect() throws Exception {
+        log.info("Starting JGroups MessageDispatcher");
+
+        disp=new MessageDispatcher(cluster, null, this, new RequestHandler(){
+
+            @Override
+            public Object handle(Message msg) throws Exception {
+
+                final MessageWrapper w = (MessageWrapper)msg.getObject();
+                final TProtocol inp = protocolFactory.getProtocol(w.getTTransport());
+                final TMessage m = inp.readMessageBegin();
+
+                if ("ClusterService:onNodeConfiguration".equals(m.name) && m.type == 1 /*request*/){
+                    final ClusterService.onNodeConfiguration_args args = new ClusterService.onNodeConfiguration_args();
+                    args.read(inp);
+                    inp.readMessageEnd();
+
+                    setNode(msg.getSrc(), args.getNode());
+                }
+
+                return null;
+            }});
+
+        cluster.connect(clusterName);
+    }
+
+    @Override
+    public MessageDispatcher getMessageDispatcher(){
+        return disp;
+    }
+
+    @Override
+    public Address getLocalAddress(){
+        return cluster.getAddress();
+    }
+
+    @Override
+    public synchronized void viewAccepted(View new_view) {
+
+        if (!this.viewAccepted.isDone())
+            this.viewAccepted.set(null);
+
+
+        nodeDb.retain(new_view.getMembers());
+    }
+
+    @Override
+    public synchronized void suspect(Address suspected_mbr) {
+    }
+
+    @Override
+    public synchronized void block() {
+
+    }
+
+    @Override
+    public synchronized void unblock() {
+
+    }
+
+    @Scheduled(fixedRate=5000)
+    public void logClusterState(){
+        log.info("cluster:{}", cluster.getView());
+    }
+
+    @Override
+    public JChannel getCluster() {
+        return cluster;
+    }
 
 
 }

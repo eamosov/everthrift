@@ -7,6 +7,6 @@ public interface TypeCodecFactory<T> {
 
     boolean accepts(Class<?> javaType);
     boolean accepts(DataType cqlType);
-    
+
     TypeCodec<T> create(DataType cqlType, Class<?> javaType);
 }

@@ -19,7 +19,7 @@ public class Table {
     protected Class javaClass;
     protected boolean view = false;
     protected OptimisticLockType optimisticLockType = OptimisticLockType.NONE;
-    
+
     protected SQLInsert sqlInsert;
 
     public Table(String schema, String tableName, Class<?> javaClass, boolean view) {
@@ -28,14 +28,14 @@ public class Table {
         this.tableName = tableName;
         this.javaClass = javaClass;
     }
-    
+
     public void setColumns(List<Column> columns){
         columnsByName = Maps.uniqueIndex(columns, new Function<Column, String>() {
             @Override
             public String apply(Column input) {
                 return input.getColumnName();
             }
-        });            	
+        });
     }
 
     public PrimaryKey getPrimaryKey() {
@@ -76,89 +76,89 @@ public class Table {
                 this.columnsByName.keySet().containsAll(this.primaryKey.getColumnNames());
     }
 
-	public OptimisticLockType getOptimisticLockType() {
-		return optimisticLockType;
-	}
+    public OptimisticLockType getOptimisticLockType() {
+        return optimisticLockType;
+    }
 
-	public void setOptimisticLockType(OptimisticLockType optimisticLockType) {
-		this.optimisticLockType = optimisticLockType;
-	}
-	
-	private String toXmlValue (ResultCheckStyle s){
-		switch (s){
-			case NONE:
-				return "none";
-			case COUNT:
-				return "rowcount";
-			case PARAM:
-				return "param";
-		}
-		return null;
-	}
-	
-	public String toHbmXml() {
-		final StringBuilder sb = new StringBuilder();
-		
-		sb.append(String.format("<class name=\"%s\" table=\"%s\" schema=\"%s\" dynamic-update=\"true\" dynamic-insert=\"true\"  lazy=\"false\" optimistic-lock=\"%s\">\n",
-				javaClass.getCanonicalName(), tableName, schema, optimisticLockType.name().toLowerCase() ));
-		
-		if (primaryKey == null)
-			throw new RuntimeException("No PK for table " + this.tableName);
-		
-		if (primaryKey.getColumnNames().size() !=1)
-			throw new RuntimeException("Unsupported composize PK for table " + this.tableName);
-		
-		//        final String secondLevelCache = getHibernateProperties().getProperty("hibernate.cache.use_second_level_cache", "false");
-        
-//        if (secondLevelCache.equalsIgnoreCase("true"))
-  //      	clazz.setCacheConcurrencyStrategy(AccessType.NONSTRICT_READ_WRITE.getExternalName());
-		
-		sb.append("\t<cache usage=\"nonstrict-read-write\" />\n");
-		
-		final String pkColumnName = primaryKey.getColumnNames().get(0);
-		
-		final Column pk = getColumnsByName().get(pkColumnName);
-		sb.append(pk.toHbmXmlPk().replaceAll("(?m)^", "\t") + "\n");
-		
-		if (optimisticLockType == OptimisticLockType.VERSION){
-			final Column v = getColumnsByName().get("version");
-			sb.append(v.toHbmXmlVersion().replaceAll("(?m)^", "\t") + "\n");
-		}
-		
-		for(Column columnModel : getColumnsByName().values()) {
-			
-			if (!columnModel.isValid()){
-				//System.out.println("Invalid column " + columnModel.getColumnName() + " in table " + this.getTableName());
-				continue;
-			}
-			
-			final String col;
-			if (columnModel.getColumnName().equalsIgnoreCase(pkColumnName)){
-				//col = columnModel.toHbmXmlPk();
-				col = null;
-			}else if (optimisticLockType == OptimisticLockType.VERSION &&  columnModel.getColumnName().equalsIgnoreCase("version")){
-				//col = columnModel.toHbmXmlVersion();
-				col = null;
-			}else{
-				col = columnModel.toHbmXml();
-			}
-			
-			if (col!=null)
-				sb.append(col.replaceAll("(?m)^", "\t") + "\n");    	
-		}		
-		
-		if (sqlInsert !=null){
-			sb.append(String.format("\t<sql-insert callable=\"%s\" check=\"%s\">%s</sql-insert>\n", Boolean.toString(sqlInsert.callable()), toXmlValue(sqlInsert.check()), sqlInsert.sql()));
-		}
+    public void setOptimisticLockType(OptimisticLockType optimisticLockType) {
+        this.optimisticLockType = optimisticLockType;
+    }
 
-		sb.append("</class>\n");
-		
-		return sb.toString();
-	}
-	
-	@Override
-	public String toString(){
-		return schema + "." + tableName;
-	}
+    private String toXmlValue (ResultCheckStyle s){
+        switch (s){
+        case NONE:
+            return "none";
+        case COUNT:
+            return "rowcount";
+        case PARAM:
+            return "param";
+        }
+        return null;
+    }
+
+    public String toHbmXml() {
+        final StringBuilder sb = new StringBuilder();
+
+        sb.append(String.format("<class name=\"%s\" table=\"%s\" schema=\"%s\" dynamic-update=\"true\" dynamic-insert=\"true\"  lazy=\"false\" optimistic-lock=\"%s\">\n",
+                javaClass.getCanonicalName(), tableName, schema, optimisticLockType.name().toLowerCase() ));
+
+        if (primaryKey == null)
+            throw new RuntimeException("No PK for table " + this.tableName);
+
+        if (primaryKey.getColumnNames().size() !=1)
+            throw new RuntimeException("Unsupported composize PK for table " + this.tableName);
+
+        //        final String secondLevelCache = getHibernateProperties().getProperty("hibernate.cache.use_second_level_cache", "false");
+
+        //        if (secondLevelCache.equalsIgnoreCase("true"))
+        //      	clazz.setCacheConcurrencyStrategy(AccessType.NONSTRICT_READ_WRITE.getExternalName());
+
+        sb.append("\t<cache usage=\"nonstrict-read-write\" />\n");
+
+        final String pkColumnName = primaryKey.getColumnNames().get(0);
+
+        final Column pk = getColumnsByName().get(pkColumnName);
+        sb.append(pk.toHbmXmlPk().replaceAll("(?m)^", "\t") + "\n");
+
+        if (optimisticLockType == OptimisticLockType.VERSION){
+            final Column v = getColumnsByName().get("version");
+            sb.append(v.toHbmXmlVersion().replaceAll("(?m)^", "\t") + "\n");
+        }
+
+        for(Column columnModel : getColumnsByName().values()) {
+
+            if (!columnModel.isValid()){
+                //System.out.println("Invalid column " + columnModel.getColumnName() + " in table " + this.getTableName());
+                continue;
+            }
+
+            final String col;
+            if (columnModel.getColumnName().equalsIgnoreCase(pkColumnName)){
+                //col = columnModel.toHbmXmlPk();
+                col = null;
+            }else if (optimisticLockType == OptimisticLockType.VERSION &&  columnModel.getColumnName().equalsIgnoreCase("version")){
+                //col = columnModel.toHbmXmlVersion();
+                col = null;
+            }else{
+                col = columnModel.toHbmXml();
+            }
+
+            if (col!=null)
+                sb.append(col.replaceAll("(?m)^", "\t") + "\n");
+        }
+
+        if (sqlInsert !=null){
+            sb.append(String.format("\t<sql-insert callable=\"%s\" check=\"%s\">%s</sql-insert>\n", Boolean.toString(sqlInsert.callable()), toXmlValue(sqlInsert.check()), sqlInsert.sql()));
+        }
+
+        sb.append("</class>\n");
+
+        return sb.toString();
+    }
+
+    @Override
+    public String toString(){
+        return schema + "." + tableName;
+    }
 
 }

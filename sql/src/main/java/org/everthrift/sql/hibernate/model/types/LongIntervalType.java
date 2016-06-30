@@ -13,73 +13,73 @@ import org.postgresql.util.PGobject;
 
 public class LongIntervalType implements UserType {
 
-	public LongIntervalType() {
-		
-	}
+    public LongIntervalType() {
 
-	@Override
-	public int[] sqlTypes() {
-		return new int[]{Types.OTHER};
-	}
+    }
 
-	@Override
-	public Class returnedClass() {
-		return Long.class;
-	}
+    @Override
+    public int[] sqlTypes() {
+        return new int[]{Types.OTHER};
+    }
 
-	@Override
-	public boolean equals(Object x, Object y) throws HibernateException {
-		if (x == null && y == null)
-			return true;
+    @Override
+    public Class returnedClass() {
+        return Long.class;
+    }
 
-		if ((x == null && y != null) || (x != null && y == null))
-			return false;
+    @Override
+    public boolean equals(Object x, Object y) throws HibernateException {
+        if (x == null && y == null)
+            return true;
 
-		return x.equals(y);
-	}
+        if ((x == null && y != null) || (x != null && y == null))
+            return false;
 
-	@Override
-	public int hashCode(Object x) throws HibernateException {		
-		return x.hashCode();
-	}
+        return x.equals(y);
+    }
 
-	@Override
-	public Object nullSafeGet(ResultSet rs, String[] names, SessionImplementor session, Object owner) throws HibernateException, SQLException {		
-		return rs.getLong(names[0]) * 1000;
-	}
+    @Override
+    public int hashCode(Object x) throws HibernateException {
+        return x.hashCode();
+    }
 
-	@Override
-	public void nullSafeSet(PreparedStatement st, Object value, int index, SessionImplementor session) throws HibernateException, SQLException {
-		
-		final PGobject o = new PGobject();
-		o.setType("interval");
-		o.setValue(value == null ? null : ((Long) value / 1000) + " seconds");
-		st.setObject(index, o);
-	}
+    @Override
+    public Object nullSafeGet(ResultSet rs, String[] names, SessionImplementor session, Object owner) throws HibernateException, SQLException {
+        return rs.getLong(names[0]) * 1000;
+    }
 
-	@Override
-	public Object deepCopy(Object value) throws HibernateException {
-		return value;
-	}
+    @Override
+    public void nullSafeSet(PreparedStatement st, Object value, int index, SessionImplementor session) throws HibernateException, SQLException {
 
-	@Override
-	public boolean isMutable() {
-		return false;
-	}
+        final PGobject o = new PGobject();
+        o.setType("interval");
+        o.setValue(value == null ? null : ((Long) value / 1000) + " seconds");
+        st.setObject(index, o);
+    }
 
-	@Override
-	public Serializable disassemble(Object value) throws HibernateException {
-		return (Serializable)value;
-	}
+    @Override
+    public Object deepCopy(Object value) throws HibernateException {
+        return value;
+    }
 
-	@Override
-	public Object assemble(Serializable cached, Object owner) throws HibernateException {
-		return cached;
-	}
+    @Override
+    public boolean isMutable() {
+        return false;
+    }
 
-	@Override
-	public Object replace(Object original, Object target, Object owner)throws HibernateException {
-		return original;
-	}
+    @Override
+    public Serializable disassemble(Object value) throws HibernateException {
+        return (Serializable)value;
+    }
+
+    @Override
+    public Object assemble(Serializable cached, Object owner) throws HibernateException {
+        return cached;
+    }
+
+    @Override
+    public Object replace(Object original, Object target, Object owner)throws HibernateException {
+        return original;
+    }
 
 }

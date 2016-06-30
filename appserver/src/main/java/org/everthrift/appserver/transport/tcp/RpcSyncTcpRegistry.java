@@ -4,8 +4,8 @@ import org.everthrift.appserver.controller.ThriftControllerRegistry;
 
 public class RpcSyncTcpRegistry extends ThriftControllerRegistry{
 
-	public RpcSyncTcpRegistry() {
-		super(RpcSyncTcp.class);
-	}
-	
+    public RpcSyncTcpRegistry() {
+        super(RpcSyncTcp.class);
+    }
+
 }

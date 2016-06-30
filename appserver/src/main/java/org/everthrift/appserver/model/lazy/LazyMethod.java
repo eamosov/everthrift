@@ -8,7 +8,7 @@ import java.lang.annotation.Target;
 /**
  *
  	examples:
- 	
+
  	@LazyMethod
 	public AddressLineModel loadAddress(Registry r, Object parent){
 	   ...//нужно присвоить значение свойству "address" и вернуть этот объект
@@ -22,7 +22,7 @@ import java.lang.annotation.Target;
 	public void loadAddress(Registry r){
 	   ...//загрузить свойство "address" через Registry в batch режиме
 	}
-	
+
  * @author fluder
  *
  */
@@ -30,5 +30,5 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD})
 public @interface LazyMethod {
-	String[] value() default ""; //scenarios "default", "admin", "json" ...
+    String[] value() default ""; //scenarios "default", "admin", "json" ...
 }

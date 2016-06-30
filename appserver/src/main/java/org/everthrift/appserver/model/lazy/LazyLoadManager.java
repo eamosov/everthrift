@@ -13,82 +13,82 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
 
 public class LazyLoadManager {
-	
-	private static final Logger log = LoggerFactory.getLogger(LazyLoadManager.class);
-	
-	public static int MAX_LOAD_ITERATIONS = 5;
-	
-	public static String SCENARIO_DEFAULT = "default";
-	public static String SCENARIO_ADMIN = "admin";
-	public static String SCENARIO_JSON = "json";
-	
-	public static void nextLap(SettableFuture<Integer> result, AtomicInteger lap, AtomicInteger nAllLoaded, int maxIterations, Object o, Registry r, WalkerIF walker){
-		
-		log.debug("Starting load iteration: {}", lap);
-		final long st = System.nanoTime();
-		
-		walker.apply(o);					
 
-		Futures.addCallback(r.load(), new FutureCallback<Integer>(){
+    private static final Logger log = LoggerFactory.getLogger(LazyLoadManager.class);
 
-			@Override
-			public void onSuccess(Integer nLoaded) {
+    public static int MAX_LOAD_ITERATIONS = 5;
 
-				final long end = System.nanoTime();
-				if (log.isDebugEnabled())
-					log.debug("Iteration {} finished. {} entities loaded with {} mcs", new Object[]{lap, nLoaded, (end -st)/1000});
-				
-				final int _lap = lap.incrementAndGet();
-				final int _nAllLoaded = nAllLoaded.addAndGet(nLoaded);
+    public static String SCENARIO_DEFAULT = "default";
+    public static String SCENARIO_ADMIN = "admin";
+    public static String SCENARIO_JSON = "json";
 
-				if (nLoaded > 0 && _lap < maxIterations)
-					nextLap(result, lap, nAllLoaded, maxIterations, o, r, walker);
-				else
-					result.set(_nAllLoaded);
-			}
+    public static void nextLap(SettableFuture<Integer> result, AtomicInteger lap, AtomicInteger nAllLoaded, int maxIterations, Object o, Registry r, WalkerIF walker){
 
-			@Override
-			public void onFailure(Throwable t) {
-				result.setException(t);
-			}});
-		
-	}
-				
-	public static ListenableFuture<Integer> load(int maxIterations, Object o, Registry r, WalkerIF walker){
-		
-		log.debug("load, maxIterations={}, o.class={}", maxIterations, o.getClass().getSimpleName());
-							
-		final AtomicInteger nAllLoaded = new AtomicInteger(0);
-		final AtomicInteger lap  = new AtomicInteger(0);
-		final SettableFuture<Integer> result = SettableFuture.create();
-		
-		nextLap(result, lap, nAllLoaded, maxIterations, o, r, walker);
-		
-		return result;
-	}
+        log.debug("Starting load iteration: {}", lap);
+        final long st = System.nanoTime();
 
-	public static <T> ListenableFuture<T> load(final String scenario, int maxIterations, final T o){
-		return load(scenario, maxIterations, o, new Object[]{});
-	}
-	
-	public static <T> ListenableFuture<T> load(final String scenario, int maxIterations, final T o, Object ... args){
-		
-		if (o == null ||
-			(o instanceof Collection && ((Collection)o).isEmpty()) ||
-			(o instanceof Map && ((Map)o).isEmpty()))
-			return Futures.immediateFuture(o);
-		
-		final Registry r = new RegistryImpl(args);
-		final WalkerIF walker = new RecursiveWalker(r, scenario);
-		return Futures.transform(load(maxIterations, o, r, walker), (Integer nLoadAdd) -> o);
-	}		
+        walker.apply(o);
 
-	public static <T> ListenableFuture<T> load(final String scenario, final T o){
-		return load(scenario, MAX_LOAD_ITERATIONS, o);
-	}
-	
-	public static <T> ListenableFuture<T> loadForJson(final T o){
-		return load(LazyLoadManager.SCENARIO_JSON, o);
-	}
-	
+        Futures.addCallback(r.load(), new FutureCallback<Integer>(){
+
+            @Override
+            public void onSuccess(Integer nLoaded) {
+
+                final long end = System.nanoTime();
+                if (log.isDebugEnabled())
+                    log.debug("Iteration {} finished. {} entities loaded with {} mcs", new Object[]{lap, nLoaded, (end -st)/1000});
+
+                final int _lap = lap.incrementAndGet();
+                final int _nAllLoaded = nAllLoaded.addAndGet(nLoaded);
+
+                if (nLoaded > 0 && _lap < maxIterations)
+                    nextLap(result, lap, nAllLoaded, maxIterations, o, r, walker);
+                else
+                    result.set(_nAllLoaded);
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+                result.setException(t);
+            }});
+
+    }
+
+    public static ListenableFuture<Integer> load(int maxIterations, Object o, Registry r, WalkerIF walker){
+
+        log.debug("load, maxIterations={}, o.class={}", maxIterations, o.getClass().getSimpleName());
+
+        final AtomicInteger nAllLoaded = new AtomicInteger(0);
+        final AtomicInteger lap  = new AtomicInteger(0);
+        final SettableFuture<Integer> result = SettableFuture.create();
+
+        nextLap(result, lap, nAllLoaded, maxIterations, o, r, walker);
+
+        return result;
+    }
+
+    public static <T> ListenableFuture<T> load(final String scenario, int maxIterations, final T o){
+        return load(scenario, maxIterations, o, new Object[]{});
+    }
+
+    public static <T> ListenableFuture<T> load(final String scenario, int maxIterations, final T o, Object ... args){
+
+        if (o == null ||
+                (o instanceof Collection && ((Collection)o).isEmpty()) ||
+                (o instanceof Map && ((Map)o).isEmpty()))
+            return Futures.immediateFuture(o);
+
+        final Registry r = new RegistryImpl(args);
+        final WalkerIF walker = new RecursiveWalker(r, scenario);
+        return Futures.transform(load(maxIterations, o, r, walker), (Integer nLoadAdd) -> o);
+    }
+
+    public static <T> ListenableFuture<T> load(final String scenario, final T o){
+        return load(scenario, MAX_LOAD_ITERATIONS, o);
+    }
+
+    public static <T> ListenableFuture<T> loadForJson(final T o){
+        return load(LazyLoadManager.SCENARIO_JSON, o);
+    }
+
 }

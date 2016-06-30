@@ -10,6 +10,6 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Repeatable(UniqueKeys.class)
 public @interface Unique {
-	String value();
-	String clause() default "";
+    String value();
+    String clause() default "";
 }

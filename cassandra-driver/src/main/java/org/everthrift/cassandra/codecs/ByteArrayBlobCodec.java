@@ -34,10 +34,10 @@ public class ByteArrayBlobCodec extends TypeCodec<byte[]> {
 
     @Override
     public byte[] deserialize(ByteBuffer bytes, ProtocolVersion protocolVersion) {
-    	if (bytes == null)
-    		return null;
-    	
-    	final byte[] array = bytes.array();
+        if (bytes == null)
+            return null;
+
+        final byte[] array = bytes.array();
         final int arrayOffset = bytes.arrayOffset();
         return Arrays.copyOfRange(array, arrayOffset + bytes.position(), arrayOffset + bytes.limit());
     }

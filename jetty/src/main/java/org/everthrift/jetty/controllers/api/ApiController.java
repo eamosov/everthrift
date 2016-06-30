@@ -14,18 +14,18 @@ import org.springframework.web.bind.annotation.RequestMethod;
 
 @Controller
 public class ApiController {
-	
-	@Autowired
-	private RpcHttpRegistry rpcHttpRegistry;
 
-	@RequestMapping(value="/api", method = RequestMethod.GET, produces="text/html")
+    @Autowired
+    private RpcHttpRegistry rpcHttpRegistry;
+
+    @RequestMapping(value="/api", method = RequestMethod.GET, produces="text/html")
     public void getServices(HttpServletRequest request, HttpServletResponse response) throws IOException {
-		
-		final byte[] services = new ThriftFormatter("/api/").formatServices(rpcHttpRegistry.getControllers().values()).getBytes();
-		
-		response.setContentType("text/html");
-		response.setContentLength(services.length);
-		response.getOutputStream().write(services);
-		response.flushBuffer();
-	}
+
+        final byte[] services = new ThriftFormatter("/api/").formatServices(rpcHttpRegistry.getControllers().values()).getBytes();
+
+        response.setContentType("text/html");
+        response.setContentLength(services.length);
+        response.getOutputStream().write(services);
+        response.flushBuffer();
+    }
 }

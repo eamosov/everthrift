@@ -59,7 +59,7 @@ class TypeMappings {
         Set<Class<?>> udts = findUDTs(type, null);
         return (udts == null)
                 ? Collections.<Class<?>>emptySet()
-                : udts;
+                        : udts;
     }
 
     private static Set<Class<?>> findUDTs(Type type, Set<Class<?>> udts) {

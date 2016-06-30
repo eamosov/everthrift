@@ -13,79 +13,79 @@ import org.hibernate.usertype.UserType;
 
 public class LongDateType implements UserType {
 
-	public LongDateType() {
-		
-	}
+    public LongDateType() {
 
-	@Override
-	public int[] sqlTypes() {
-		return new int[]{Types.DATE};
-	}
+    }
 
-	@Override
-	public Class returnedClass() {
-		return Long.class;
-	}
+    @Override
+    public int[] sqlTypes() {
+        return new int[]{Types.DATE};
+    }
 
-	@Override
-	public boolean equals(Object x, Object y) throws HibernateException {
-		if (x == null && y == null)
-			return true;
+    @Override
+    public Class returnedClass() {
+        return Long.class;
+    }
 
-		if ((x == null && y != null) || (x != null && y == null))
-			return false;
+    @Override
+    public boolean equals(Object x, Object y) throws HibernateException {
+        if (x == null && y == null)
+            return true;
 
-		return x.equals(y);
-	}
+        if ((x == null && y != null) || (x != null && y == null))
+            return false;
 
-	@Override
-	public int hashCode(Object x) throws HibernateException {		
-		return x.hashCode();
-	}
+        return x.equals(y);
+    }
 
-	@Override
-	public Object nullSafeGet(ResultSet rs, String[] names, SessionImplementor session, Object owner) throws HibernateException, SQLException {
-		
-		final java.sql.Date value = (java.sql.Date)rs.getObject(names[0]);
+    @Override
+    public int hashCode(Object x) throws HibernateException {
+        return x.hashCode();
+    }
 
-		if (value == null)
-			return null;
+    @Override
+    public Object nullSafeGet(ResultSet rs, String[] names, SessionImplementor session, Object owner) throws HibernateException, SQLException {
 
-		return LongTimestamp.from(value);
-	}
+        final java.sql.Date value = (java.sql.Date)rs.getObject(names[0]);
 
-	@Override
-	public void nullSafeSet(PreparedStatement st, Object value, int index, SessionImplementor session) throws HibernateException, SQLException {
-		
-		if (value == null)
-			st.setNull(index, Types.DATE);
-		else
-			st.setDate(index, new java.sql.Date(LongTimestamp.toMillis((Long)value)));
-	}
+        if (value == null)
+            return null;
 
-	@Override
-	public Object deepCopy(Object value) throws HibernateException {
-		return value;
-	}
+        return LongTimestamp.from(value);
+    }
 
-	@Override
-	public boolean isMutable() {
-		return false;
-	}
+    @Override
+    public void nullSafeSet(PreparedStatement st, Object value, int index, SessionImplementor session) throws HibernateException, SQLException {
 
-	@Override
-	public Serializable disassemble(Object value) throws HibernateException {
-		return (Serializable)value;
-	}
+        if (value == null)
+            st.setNull(index, Types.DATE);
+        else
+            st.setDate(index, new java.sql.Date(LongTimestamp.toMillis((Long)value)));
+    }
 
-	@Override
-	public Object assemble(Serializable cached, Object owner) throws HibernateException {
-		return cached;
-	}
+    @Override
+    public Object deepCopy(Object value) throws HibernateException {
+        return value;
+    }
 
-	@Override
-	public Object replace(Object original, Object target, Object owner)throws HibernateException {
-		return original;
-	}
+    @Override
+    public boolean isMutable() {
+        return false;
+    }
+
+    @Override
+    public Serializable disassemble(Object value) throws HibernateException {
+        return (Serializable)value;
+    }
+
+    @Override
+    public Object assemble(Serializable cached, Object owner) throws HibernateException {
+        return cached;
+    }
+
+    @Override
+    public Object replace(Object original, Object target, Object owner)throws HibernateException {
+        return original;
+    }
 
 }

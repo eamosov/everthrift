@@ -17,27 +17,27 @@ import com.google.common.base.Optional;
 
 public class WebsocketHandshakeInterceptor implements HandshakeInterceptor {
 
-	public WebsocketHandshakeInterceptor() {
-		
-	}
+    public WebsocketHandshakeInterceptor() {
 
-	@Override
-	public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response, WebSocketHandler wsHandler, Map<String, Object> attributes) throws Exception {
-		
-		attributes.put(WebsocketThriftHandler.UUID, UUID.randomUUID().toString());
-		attributes.put(MessageWrapper.HTTP_REQUEST_PARAMS, Optional.fromNullable(((ServletServerHttpRequest)request).getServletRequest().getParameterMap()).or(Collections.emptyMap()));
-		attributes.put(MessageWrapper.HTTP_COOKIES,  Optional.fromNullable(((ServletServerHttpRequest)request).getServletRequest().getCookies()).or( () -> (new Cookie[0])));
-		
-		final String xRealIp = request.getHeaders().getFirst(WebsocketThriftHandler.HTTP_X_REAL_IP);
-		if (xRealIp !=null)
-			attributes.put(WebsocketThriftHandler.HTTP_X_REAL_IP, xRealIp);
-			
-		return true;
-	}
+    }
 
-	@Override
-	public void afterHandshake(ServerHttpRequest request, ServerHttpResponse response, WebSocketHandler wsHandler, Exception exception) {
+    @Override
+    public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response, WebSocketHandler wsHandler, Map<String, Object> attributes) throws Exception {
 
-	}
+        attributes.put(WebsocketThriftHandler.UUID, UUID.randomUUID().toString());
+        attributes.put(MessageWrapper.HTTP_REQUEST_PARAMS, Optional.fromNullable(((ServletServerHttpRequest)request).getServletRequest().getParameterMap()).or(Collections.emptyMap()));
+        attributes.put(MessageWrapper.HTTP_COOKIES,  Optional.fromNullable(((ServletServerHttpRequest)request).getServletRequest().getCookies()).or( () -> (new Cookie[0])));
+
+        final String xRealIp = request.getHeaders().getFirst(WebsocketThriftHandler.HTTP_X_REAL_IP);
+        if (xRealIp !=null)
+            attributes.put(WebsocketThriftHandler.HTTP_X_REAL_IP, xRealIp);
+
+        return true;
+    }
+
+    @Override
+    public void afterHandshake(ServerHttpRequest request, ServerHttpResponse response, WebSocketHandler wsHandler, Exception exception) {
+
+    }
 
 }

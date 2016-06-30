@@ -35,17 +35,17 @@ public abstract class AbstractMigration {
     public JdbcTemplate getJdbcTemplate() {
         return jdbcTemplate;
     }
-    
+
     public void execute(String sql){
-    	this.getJdbcTemplate().execute(sql);
+        this.getJdbcTemplate().execute(sql);
     }
-    
+
     public void execute(Resource sql){
         try {
-			execute(IOUtils.toString(sql.getInputStream()));
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}    	
+            execute(IOUtils.toString(sql.getInputStream()));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 }

@@ -45,47 +45,47 @@ public class MetaDataProvider {
 
     private void readMetaData() {
         for (final String schemaTable : tableNames.stringPropertyNames()) {
-        	for (String m : tableNames.getProperty(schemaTable).split(","))
-        		addTable(schemaTable, m);
+            for (String m : tableNames.getProperty(schemaTable).split(","))
+                addTable(schemaTable, m);
         }
     }
-    
+
     private void addTable(final String schemaTable, final String modelName){
         try {
             if (schemaTable.indexOf(".") < 0) {
                 LOG.warn("Skip table {} due to can't find delimiter \".\" between schema.table", schemaTable);
                 return;
             }
-            
+
             final String schemaName = schemaTable.substring(0, schemaTable.indexOf("."));
             final String tableName = schemaTable.substring(schemaTable.indexOf(".") + 1);
             final Class clazz = Class.forName(modelName);
-            
+
             final Table table = new Table(schemaName, tableName, clazz,tableName.endsWith(VIEW_POSTFIX));
-            
+
             final List<Column> tableColumns = readColumns(table, clazz);
             final PrimaryKey pk = readPK(tableName);
-            
+
             table.setColumns(tableColumns);
             table.setPrimaryKey(pk);
-            
-            
+
+
             if (clazz.isAnnotationPresent(OptimisticLocking.class)){
-            	table.setOptimisticLockType(((OptimisticLocking)clazz.getAnnotation(OptimisticLocking.class)).type());
+                table.setOptimisticLockType(((OptimisticLocking)clazz.getAnnotation(OptimisticLocking.class)).type());
             }
-            
+
             table.sqlInsert = (SQLInsert)clazz.getAnnotation(SQLInsert.class);
-            
+
             tableModels.add(table);
         } catch (MetaDataAccessException e) {
             LOG.error("Error get model metadata {}", schemaTable, e);
         } catch (ClassNotFoundException e) {
             LOG.error("Can't find class {}", modelName, e);
-        }   	
+        }
     }
 
     @SuppressWarnings({ "unchecked"})
-	private List<Column> readColumns(final Table table, Class clazz) throws MetaDataAccessException {
+    private List<Column> readColumns(final Table table, Class clazz) throws MetaDataAccessException {
         List<Column> columns = (List<Column>) JdbcUtils.extractDatabaseMetaData(dataSource, new DatabaseMetaDataCallback() {
             @Override
             public Object processMetaData(DatabaseMetaData dbmd) throws SQLException, MetaDataAccessException {
@@ -105,21 +105,21 @@ public class MetaDataProvider {
         String camelCase = CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, lowerCase.toUpperCase());
         String camelCaseTs = null;
         switch (column.getJdbcType()){
-            case Types.TIMESTAMP:
-            case Types.TIME:
-            case Types.DATE: camelCaseTs = camelCase.concat(TS_POSTFIX);
+        case Types.TIMESTAMP:
+        case Types.TIME:
+        case Types.DATE: camelCaseTs = camelCase.concat(TS_POSTFIX);
         }
-        
+
         final PropertyDescriptor property = (camelCaseTs != null && BeanUtils.getPropertyDescriptor(clazz, camelCaseTs) != null) ? BeanUtils.getPropertyDescriptor(clazz, camelCaseTs)
                 : BeanUtils.getPropertyDescriptor(clazz, camelCase) != null ? BeanUtils.getPropertyDescriptor(clazz, camelCase)
-                : BeanUtils.getPropertyDescriptor(clazz, lowerCase);
-                
-        if (property != null) {
-            column.setJavaClass(property.getPropertyType());
-            column.setPropertyName(property.getName());
-        }else{
-        	//System.err.println("Coudn't find property " + column.getColumnName() + " in class " + meta.getName());
-        }
+                        : BeanUtils.getPropertyDescriptor(clazz, lowerCase);
+
+                if (property != null) {
+                    column.setJavaClass(property.getPropertyType());
+                    column.setPropertyName(property.getName());
+                }else{
+                    //System.err.println("Coudn't find property " + column.getColumnName() + " in class " + meta.getName());
+                }
 
     }
 
@@ -138,22 +138,22 @@ public class MetaDataProvider {
         }
         return primaryKey;
     }
-    
+
     public String toHbmXml() {
-    	final StringBuilder sb = new StringBuilder();
-    	sb.append("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
-    	//sb.append("<!DOCTYPE hibernate-mapping PUBLIC \n\"-//Hibernate/Hibernate Mapping DTD//EN\"\n \"http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd\">\n");
-    	sb.append("<hibernate-mapping>\n");
-    	for(Table t: tableModels){
-    		
-    		if (!t.isValid())
-    			throw new RuntimeException("Table " + t.getTableName() + " is invalid");
-    		
-    		sb.append(t.toHbmXml().replaceAll("(?m)^", "\t"));
-    	}
-    	sb.append("</hibernate-mapping>");
-    	sb.toString();
-    	return sb.toString();
+        final StringBuilder sb = new StringBuilder();
+        sb.append("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
+        //sb.append("<!DOCTYPE hibernate-mapping PUBLIC \n\"-//Hibernate/Hibernate Mapping DTD//EN\"\n \"http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd\">\n");
+        sb.append("<hibernate-mapping>\n");
+        for(Table t: tableModels){
+
+            if (!t.isValid())
+                throw new RuntimeException("Table " + t.getTableName() + " is invalid");
+
+            sb.append(t.toHbmXml().replaceAll("(?m)^", "\t"));
+        }
+        sb.append("</hibernate-mapping>");
+        sb.toString();
+        return sb.toString();
     }
 
 }

@@ -17,5 +17,5 @@ import org.springframework.stereotype.Component;
 @Scope(value=ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface RpcSyncTcp{
-	String value() default "";
+    String value() default "";
 }

@@ -8,7 +8,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 public interface AsyncRoModelFactoryIF<PK, ENTITY> {
 
-	ListenableFuture<Map<PK, ENTITY>> findEntityByIdAsMapAsync(Collection<PK> ids);
-	
-	ListenableFuture<List<ENTITY>> findEntityByIdsInOrderAsync(final Collection<PK> ids);
+    ListenableFuture<Map<PK, ENTITY>> findEntityByIdAsMapAsync(Collection<PK> ids);
+
+    ListenableFuture<List<ENTITY>> findEntityByIdsInOrderAsync(final Collection<PK> ids);
 }

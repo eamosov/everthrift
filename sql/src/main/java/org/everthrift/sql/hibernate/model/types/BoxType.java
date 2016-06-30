@@ -21,195 +21,195 @@ import org.springframework.beans.BeanUtils;
 @SuppressWarnings("rawtypes")
 public abstract class BoxType implements UserType {
 
-	//private static final Logger log = LoggerFactory.getLogger(BoxType.class);
+    //private static final Logger log = LoggerFactory.getLogger(BoxType.class);
 
-	final Constructor create;
-	final Constructor copy;
+    final Constructor create;
+    final Constructor copy;
 
-	private final PropertyDescriptor min;
-	private final Class minType;
-	private final PropertyDescriptor minX;
-	private final PropertyDescriptor minY;
+    private final PropertyDescriptor min;
+    private final Class minType;
+    private final PropertyDescriptor minX;
+    private final PropertyDescriptor minY;
 
-	private final PropertyDescriptor max;
-	private final Class maxType;
-	private final PropertyDescriptor maxX;
-	private final PropertyDescriptor maxY;
+    private final PropertyDescriptor max;
+    private final Class maxType;
+    private final PropertyDescriptor maxX;
+    private final PropertyDescriptor maxY;
 
-	private final static Pattern boxPattern = Pattern.compile("BOX\\(([0-9.-]+) ([0-9.-]+),([0-9.-]+) ([0-9.-]+)\\)");
+    private final static Pattern boxPattern = Pattern.compile("BOX\\(([0-9.-]+) ([0-9.-]+),([0-9.-]+) ([0-9.-]+)\\)");
 
-	@Override
-	public int[] sqlTypes() {
-		return new int[] { Types.OTHER };
-	}
+    @Override
+    public int[] sqlTypes() {
+        return new int[] { Types.OTHER };
+    }
 
-	@SuppressWarnings("unchecked")
-	public BoxType() throws NoSuchMethodException, SecurityException {
+    @SuppressWarnings("unchecked")
+    public BoxType() throws NoSuchMethodException, SecurityException {
 
-		create = returnedClass().getConstructor();
-		copy = returnedClass().getConstructor(returnedClass());
+        create = returnedClass().getConstructor();
+        copy = returnedClass().getConstructor(returnedClass());
 
-		min = BeanUtils.getPropertyDescriptor(returnedClass(), "min");
-		minType = min.getPropertyType();
-		minX = BeanUtils.getPropertyDescriptor(minType, "x");
-		minY = BeanUtils.getPropertyDescriptor(minType, "y");
+        min = BeanUtils.getPropertyDescriptor(returnedClass(), "min");
+        minType = min.getPropertyType();
+        minX = BeanUtils.getPropertyDescriptor(minType, "x");
+        minY = BeanUtils.getPropertyDescriptor(minType, "y");
 
-		max = BeanUtils.getPropertyDescriptor(returnedClass(), "max");
-		maxType = max.getPropertyType();
-		maxX = BeanUtils.getPropertyDescriptor(maxType, "x");
-		maxY = BeanUtils.getPropertyDescriptor(maxType, "y");
+        max = BeanUtils.getPropertyDescriptor(returnedClass(), "max");
+        maxType = max.getPropertyType();
+        maxX = BeanUtils.getPropertyDescriptor(maxType, "x");
+        maxY = BeanUtils.getPropertyDescriptor(maxType, "y");
 
-	}
+    }
 
-	public static boolean isCompatible(final Class cls) {
+    public static boolean isCompatible(final Class cls) {
 
-		try {
-			final BoxType d = new BoxType() {
+        try {
+            final BoxType d = new BoxType() {
 
-				@Override
-				public Class returnedClass() {
-					return cls;
-				}
-			};
+                @Override
+                public Class returnedClass() {
+                    return cls;
+                }
+            };
 
-			final Object o = cls.newInstance();
+            final Object o = cls.newInstance();
 
-			final Object min = d.minType.newInstance();
-			d.minX.getWriteMethod().invoke(min, 0.0);
-			d.minY.getWriteMethod().invoke(min, 0.0);
+            final Object min = d.minType.newInstance();
+            d.minX.getWriteMethod().invoke(min, 0.0);
+            d.minY.getWriteMethod().invoke(min, 0.0);
 
-			final Object max = d.maxType.newInstance();
-			d.maxX.getWriteMethod().invoke(max, 0.0);
-			d.maxY.getWriteMethod().invoke(max, 0.0);
+            final Object max = d.maxType.newInstance();
+            d.maxX.getWriteMethod().invoke(max, 0.0);
+            d.maxY.getWriteMethod().invoke(max, 0.0);
 
-			d.min.getWriteMethod().invoke(o, min);
-			d.max.getWriteMethod().invoke(o, max);
-			return true;
-		} catch (Exception e) {
-			return false;
-		}
-	}
+            d.min.getWriteMethod().invoke(o, min);
+            d.max.getWriteMethod().invoke(o, max);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
 
-	@Override
-	public boolean equals(Object x, Object y) throws HibernateException {
-		if (x == null && y == null)
-			return true;
+    @Override
+    public boolean equals(Object x, Object y) throws HibernateException {
+        if (x == null && y == null)
+            return true;
 
-		if ((x == null && y != null) || (x != null && y == null))
-			return false;
+        if ((x == null && y != null) || (x != null && y == null))
+            return false;
 
-		return x.equals(y);
-	}
+        return x.equals(y);
+    }
 
-	@Override
-	public int hashCode(Object x) throws HibernateException {
-		if (x == null)
-			return 0;
+    @Override
+    public int hashCode(Object x) throws HibernateException {
+        if (x == null)
+            return 0;
 
-		return x.hashCode();
-	}
+        return x.hashCode();
+    }
 
-	@Override
-	public Object nullSafeGet(ResultSet rs, String[] names,
-			SessionImplementor session, Object owner)
-			throws HibernateException, SQLException {
+    @Override
+    public Object nullSafeGet(ResultSet rs, String[] names,
+            SessionImplementor session, Object owner)
+                    throws HibernateException, SQLException {
 
-		final Object value = rs.getObject(names[0]);
+        final Object value = rs.getObject(names[0]);
 
-		if (value == null)
-			return null;
+        if (value == null)
+            return null;
 
-		final Matcher m = boxPattern.matcher(value.toString());
-		if (!m.matches())
-			throw new HibernateException("invalid box2d presentation:"
-					+ value.toString());
+        final Matcher m = boxPattern.matcher(value.toString());
+        if (!m.matches())
+            throw new HibernateException("invalid box2d presentation:"
+                    + value.toString());
 
-		Object ret;
-		try {
-			ret = create.newInstance();
+        Object ret;
+        try {
+            ret = create.newInstance();
 
-			final Object _min = minType.newInstance();
-			minX.getWriteMethod().invoke(_min, Double.parseDouble(m.group(1)));
-			minY.getWriteMethod().invoke(_min, Double.parseDouble(m.group(2)));
+            final Object _min = minType.newInstance();
+            minX.getWriteMethod().invoke(_min, Double.parseDouble(m.group(1)));
+            minY.getWriteMethod().invoke(_min, Double.parseDouble(m.group(2)));
 
-			final Object _max = maxType.newInstance();
-			maxX.getWriteMethod().invoke(_max, Double.parseDouble(m.group(3)));
-			maxY.getWriteMethod().invoke(_max, Double.parseDouble(m.group(4)));
+            final Object _max = maxType.newInstance();
+            maxX.getWriteMethod().invoke(_max, Double.parseDouble(m.group(3)));
+            maxY.getWriteMethod().invoke(_max, Double.parseDouble(m.group(4)));
 
-			min.getWriteMethod().invoke(ret, _min);
-			max.getWriteMethod().invoke(ret, _max);
+            min.getWriteMethod().invoke(ret, _min);
+            max.getWriteMethod().invoke(ret, _max);
 
-		} catch (InstantiationException | IllegalAccessException
-				| IllegalArgumentException | InvocationTargetException e) {
-			throw new SQLException(e);
-		}
+        } catch (InstantiationException | IllegalAccessException
+                | IllegalArgumentException | InvocationTargetException e) {
+            throw new SQLException(e);
+        }
 
-		return ret;
-	}
+        return ret;
+    }
 
-	@Override
-	public void nullSafeSet(PreparedStatement st, Object value, int index,
-			SessionImplementor session) throws HibernateException, SQLException {
+    @Override
+    public void nullSafeSet(PreparedStatement st, Object value, int index,
+            SessionImplementor session) throws HibernateException, SQLException {
 
-		if (value == null) {
-			st.setNull(index, java.sql.Types.OTHER);
-			return;
-		}
+        if (value == null) {
+            st.setNull(index, java.sql.Types.OTHER);
+            return;
+        }
 
-		;
-		try {
-			final Object _min = min.getReadMethod().invoke(value);
-			final Object _max = max.getReadMethod().invoke(value);
+        ;
+        try {
+            final Object _min = min.getReadMethod().invoke(value);
+            final Object _max = max.getReadMethod().invoke(value);
 
-			final Double _minX = (Double) minX.getReadMethod().invoke(_min);
-			final Double _minY = (Double) minY.getReadMethod().invoke(_min);
-			final Double _maxX = (Double) maxX.getReadMethod().invoke(_max);
-			final Double _maxY = (Double) maxY.getReadMethod().invoke(_max);
+            final Double _minX = (Double) minX.getReadMethod().invoke(_min);
+            final Double _minY = (Double) minY.getReadMethod().invoke(_min);
+            final Double _maxX = (Double) maxX.getReadMethod().invoke(_max);
+            final Double _maxY = (Double) maxY.getReadMethod().invoke(_max);
 
-			final PGobject o = new PGobject();
-			o.setType("box2d");
-			o.setValue(String.format(Locale.ENGLISH, "BOX(%f %f,%f %f)", _minX,
-					_minY, _maxX, _maxY));
-			st.setObject(index, o);
-			
-		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-			throw new HibernateException(e);
-		}
-	}
+            final PGobject o = new PGobject();
+            o.setType("box2d");
+            o.setValue(String.format(Locale.ENGLISH, "BOX(%f %f,%f %f)", _minX,
+                    _minY, _maxX, _maxY));
+            st.setObject(index, o);
 
-	@Override
-	public Object deepCopy(Object value) throws HibernateException {
+        } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+            throw new HibernateException(e);
+        }
+    }
 
-		if (value == null)
-			return null;
+    @Override
+    public Object deepCopy(Object value) throws HibernateException {
 
-		try {
-			return copy.newInstance(value);
-		} catch (InstantiationException | IllegalAccessException
-				| IllegalArgumentException | InvocationTargetException e) {
-			return new HibernateException(e);
-		}
-	}
+        if (value == null)
+            return null;
 
-	@Override
-	public boolean isMutable() {
-		return true;
-	}
+        try {
+            return copy.newInstance(value);
+        } catch (InstantiationException | IllegalAccessException
+                | IllegalArgumentException | InvocationTargetException e) {
+            return new HibernateException(e);
+        }
+    }
 
-	@Override
-	public Serializable disassemble(Object value) throws HibernateException {
-		return (Serializable) deepCopy(value);
-	}
+    @Override
+    public boolean isMutable() {
+        return true;
+    }
 
-	@Override
-	public Object assemble(Serializable cached, Object owner) throws HibernateException {
-		return deepCopy(cached);
-	}
+    @Override
+    public Serializable disassemble(Object value) throws HibernateException {
+        return (Serializable) deepCopy(value);
+    }
 
-	@Override
-	public Object replace(Object original, Object target, Object owner)
-			throws HibernateException {
-		return original == null ? null : deepCopy(original);
-	}
+    @Override
+    public Object assemble(Serializable cached, Object owner) throws HibernateException {
+        return deepCopy(cached);
+    }
+
+    @Override
+    public Object replace(Object original, Object target, Object owner)
+            throws HibernateException {
+        return original == null ? null : deepCopy(original);
+    }
 
 }

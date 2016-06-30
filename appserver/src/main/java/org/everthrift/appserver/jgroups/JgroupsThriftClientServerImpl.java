@@ -33,140 +33,142 @@ import org.springframework.scheduling.annotation.Scheduled;
 
 
 public class JgroupsThriftClientServerImpl extends AbstractJgroupsThriftClientImpl implements AsyncRequestHandler, MembershipListener, ClusterThriftClientIF {
-	
-	private static final Logger log = LoggerFactory.getLogger(JgroupsThriftClientServerImpl.class);
 
-	private final JChannel cluster;
-	
-	@Autowired
-	private ApplicationContext applicationContext;
-	
-	@Autowired
-	private RpcJGroupsRegistry rpcJGroupsRegistry;
-	
-	private MessageDispatcher  disp;
-	
-	private List<MembershipListener> membershipListeners = new ArrayList<MembershipListener>();
-		
-	@Resource
-	private MessageChannel inJGroupsChannel;
+    private static final Logger log = LoggerFactory.getLogger(JgroupsThriftClientServerImpl.class);
 
-	public JgroupsThriftClientServerImpl(JChannel cluster){
-		log.info("Using {} as MulticastThriftTransport", this.getClass().getSimpleName());
-		this.cluster = cluster;
-	}
+    private final JChannel cluster;
 
-	@Override
-	public Object handle(Message msg) throws Exception {
-		log.error("NotImplemented");
-		throw new NotImplementedException();
-	}
-	
-	@Override
-	public void handle(Message request, org.jgroups.blocks.Response response) throws Exception {
-		log.debug("handle message: {}, {}", request, response);
-		
-		final MessageWrapper w = (MessageWrapper)request.getObject();
-		w.setAttribute(JGroupsThriftAdapter.HEADER_JRESPONSE, response);
-		w.setAttribute("src", request.getSrc());
-				
-		org.springframework.messaging.Message<MessageWrapper> m = MessageBuilder.<MessageWrapper>withPayload(w).setHeader(MessageHeaders.REPLY_CHANNEL, "outJGroupsChannel").build();		
-		inJGroupsChannel.send(m);		
-	}
-	
-	@PreDestroy
-	public void destroy() {
-		cluster.close();
-	}
-			
-	public synchronized void addMembershipListener(MembershipListener m){
-		membershipListeners.add(m);
-	}
+    @Autowired
+    private ApplicationContext applicationContext;
 
-	public synchronized void removeMembershipListener(MembershipListener m){
-		membershipListeners.remove(m);
-	}
+    @Autowired
+    private RpcJGroupsRegistry rpcJGroupsRegistry;
 
-	@PostConstruct
-	public void connect() throws Exception {
-		log.info("Starting JgroupsMessageDispatcher");
-		
-		disp=new MessageDispatcher(cluster, null, this, this);
-		disp.asyncDispatching(true);
+    private MessageDispatcher  disp;
 
-		cluster.connect(applicationContext.getEnvironment().getProperty("jgroups.cluster.name"));
-	}
-	
-	public MessageDispatcher getMessageDispatcher(){
-		return disp;
-	}
-	
-	public Address getLocalAddress(){
-		return cluster.getAddress();
-	}
+    private List<MembershipListener> membershipListeners = new ArrayList<MembershipListener>();
 
-	@Override
-	public synchronized void viewAccepted(View new_view) {
-		
-		if (!this.viewAccepted.isDone())
-			this.viewAccepted.set(null);
-		
-		nodeDb.retain(new_view.getMembers());
-		populateConfiguration();
-		
-		for(MembershipListener m: membershipListeners){
-			m.viewAccepted(new_view);
-		}		
-	}
+    @Resource
+    private MessageChannel inJGroupsChannel;
 
-	@Override
-	public synchronized void suspect(Address suspected_mbr) {
-		
-		populateConfiguration();
-		
-		for(MembershipListener m: membershipListeners){
-			m.suspect(suspected_mbr);
-		}		
-	}
+    public JgroupsThriftClientServerImpl(JChannel cluster){
+        log.info("Using {} as MulticastThriftTransport", this.getClass().getSimpleName());
+        this.cluster = cluster;
+    }
 
-	@Override
-	public synchronized void block() {
-		
-		populateConfiguration();
-		
-		for(MembershipListener m: membershipListeners){
-			m.block();
-		}		
-	}
+    @Override
+    public Object handle(Message msg) throws Exception {
+        log.error("NotImplemented");
+        throw new NotImplementedException();
+    }
 
-	@Override
-	public synchronized void unblock() {
-		
-		populateConfiguration();
-		
-		for(MembershipListener m: membershipListeners){
-			m.unblock();
-		}		
-	}
-	
-	@Scheduled(fixedRate=5000)
-	public void logClusterState(){
-		log.info("cluster:{}", cluster.getView());
-		
-		populateConfiguration();
-	}
+    @Override
+    public void handle(Message request, org.jgroups.blocks.Response response) throws Exception {
+        log.debug("handle message: {}, {}", request, response);
 
-	@Override
-	public JChannel getCluster() {
-		return cluster;
-	}
-	
-	public void populateConfiguration(){		
-		try {
-			ThriftProxyFactory.on(ClusterService.Iface.class).onNodeConfiguration(rpcJGroupsRegistry.getNodeConfiguration());
-			call(InvocationInfoThreadHolder.getInvocationInfo(), ClusterThriftClientIF.Options.responseMode(ResponseMode.GET_NONE));
-		} catch (Exception e) {
-			log.error("Exception", e);
-		}		
-	}	
+        final MessageWrapper w = (MessageWrapper)request.getObject();
+        w.setAttribute(JGroupsThriftAdapter.HEADER_JRESPONSE, response);
+        w.setAttribute("src", request.getSrc());
+
+        org.springframework.messaging.Message<MessageWrapper> m = MessageBuilder.<MessageWrapper>withPayload(w).setHeader(MessageHeaders.REPLY_CHANNEL, "outJGroupsChannel").build();
+        inJGroupsChannel.send(m);
+    }
+
+    @PreDestroy
+    public void destroy() {
+        cluster.close();
+    }
+
+    public synchronized void addMembershipListener(MembershipListener m){
+        membershipListeners.add(m);
+    }
+
+    public synchronized void removeMembershipListener(MembershipListener m){
+        membershipListeners.remove(m);
+    }
+
+    @PostConstruct
+    public void connect() throws Exception {
+        log.info("Starting JgroupsMessageDispatcher");
+
+        disp=new MessageDispatcher(cluster, null, this, this);
+        disp.asyncDispatching(true);
+
+        cluster.connect(applicationContext.getEnvironment().getProperty("jgroups.cluster.name"));
+    }
+
+    @Override
+    public MessageDispatcher getMessageDispatcher(){
+        return disp;
+    }
+
+    @Override
+    public Address getLocalAddress(){
+        return cluster.getAddress();
+    }
+
+    @Override
+    public synchronized void viewAccepted(View new_view) {
+
+        if (!this.viewAccepted.isDone())
+            this.viewAccepted.set(null);
+
+        nodeDb.retain(new_view.getMembers());
+        populateConfiguration();
+
+        for(MembershipListener m: membershipListeners){
+            m.viewAccepted(new_view);
+        }
+    }
+
+    @Override
+    public synchronized void suspect(Address suspected_mbr) {
+
+        populateConfiguration();
+
+        for(MembershipListener m: membershipListeners){
+            m.suspect(suspected_mbr);
+        }
+    }
+
+    @Override
+    public synchronized void block() {
+
+        populateConfiguration();
+
+        for(MembershipListener m: membershipListeners){
+            m.block();
+        }
+    }
+
+    @Override
+    public synchronized void unblock() {
+
+        populateConfiguration();
+
+        for(MembershipListener m: membershipListeners){
+            m.unblock();
+        }
+    }
+
+    @Scheduled(fixedRate=5000)
+    public void logClusterState(){
+        log.info("cluster:{}", cluster.getView());
+
+        populateConfiguration();
+    }
+
+    @Override
+    public JChannel getCluster() {
+        return cluster;
+    }
+
+    public void populateConfiguration(){
+        try {
+            ThriftProxyFactory.on(ClusterService.Iface.class).onNodeConfiguration(rpcJGroupsRegistry.getNodeConfiguration());
+            call(InvocationInfoThreadHolder.getInvocationInfo(), ClusterThriftClientIF.Options.responseMode(ResponseMode.GET_NONE));
+        } catch (Exception e) {
+            log.error("Exception", e);
+        }
+    }
 }

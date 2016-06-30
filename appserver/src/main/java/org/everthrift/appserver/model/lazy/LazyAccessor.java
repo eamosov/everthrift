@@ -8,5 +8,5 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.TYPE})
 public @interface LazyAccessor {
-	String[] value() default ""; //scenarios "default", "admin", "json" ...
+    String[] value() default ""; //scenarios "default", "admin", "json" ...
 }

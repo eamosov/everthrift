@@ -41,11 +41,11 @@ public class GsonSerializer {
         }.getType();
 
         private final static Logger log = LoggerFactory.getLogger(TBaseSerializer.class);
-        
-		@Override
+
+        @Override
         public JsonElement serialize(T src, Type typeOfSrc, JsonSerializationContext context) {
-			return serialize(src, typeOfSrc, context, Collections.emptySet());
-		}
+            return serialize(src, typeOfSrc, context, Collections.emptySet());
+        }
 
         public JsonElement serialize(T src, Type typeOfSrc, JsonSerializationContext context, final Set<String> excludes) {
 
@@ -55,16 +55,16 @@ public class GsonSerializer {
             }
 
             final JsonObject jo = new JsonObject();
-            
+
             final Map<? extends TFieldIdEnum, FieldMetaData> map = ThriftUtils.getRootThriftClass(src.getClass()).second;
-            
+
             if (map == null) {
                 log.error("coudn't serialize class {}", src.getClass());
                 return new JsonObject();
             }
-            
+
             for (TFieldIdEnum f : map.keySet()) {
-            	
+
                 if (src.isSet(f) && !excludes.contains(f.getFieldName())) {
 
                     final Object v = src.getFieldValue(f);
@@ -80,54 +80,54 @@ public class GsonSerializer {
                     }
                 }
             }
-            
+
             return jo;
         }
 
-		@Override
-		public T deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-			
-			
-			final Object o;
-			Class objCls;
-			try {
-				
-				if ((objCls = TBaseHasModel.getModel((Class)typeOfT)) == null)
-					objCls = (Class)typeOfT;
-				
-				o = objCls.newInstance();
-			} catch (InstantiationException | IllegalAccessException e1) {
-				throw new JsonParseException(e1);
-			}
-												
-			final Map<String, PropertyDescriptor> pds = ClassUtils.getPropertyDescriptors(o.getClass());
-			
-			for (Map.Entry<String, JsonElement> e:json.getAsJsonObject().entrySet()){
-				
-				final PropertyDescriptor pd = pds.get(e.getKey()); 
-				
-				if (pd == null){
-					if (log.isDebugEnabled())
-						log.debug("coudn't find property {} for class {}, json={}", e.getKey(), o.getClass().getSimpleName(), json.toString());
-					continue;
-				}
-				
-				final Field f;
-				try {
-					f = ClassUtils.getDeclaredField((Class)objCls, e.getKey());
-				} catch (SecurityException | NoSuchFieldException e1) {
-					throw new JsonParseException("class " + ((Class)objCls).getSimpleName(), e1);
-				}
-						
-				try {
-					pd.getWriteMethod().invoke(o, new Object[]{context.deserialize(e.getValue(), f.getGenericType())});
-				} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e1) {
-					throw new RuntimeException(e1);
-				}
-			}
-						
-			return (T)o;
-		}
+        @Override
+        public T deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+
+
+            final Object o;
+            Class objCls;
+            try {
+
+                if ((objCls = TBaseHasModel.getModel((Class)typeOfT)) == null)
+                    objCls = (Class)typeOfT;
+
+                o = objCls.newInstance();
+            } catch (InstantiationException | IllegalAccessException e1) {
+                throw new JsonParseException(e1);
+            }
+
+            final Map<String, PropertyDescriptor> pds = ClassUtils.getPropertyDescriptors(o.getClass());
+
+            for (Map.Entry<String, JsonElement> e:json.getAsJsonObject().entrySet()){
+
+                final PropertyDescriptor pd = pds.get(e.getKey());
+
+                if (pd == null){
+                    if (log.isDebugEnabled())
+                        log.debug("coudn't find property {} for class {}, json={}", e.getKey(), o.getClass().getSimpleName(), json.toString());
+                    continue;
+                }
+
+                final Field f;
+                try {
+                    f = ClassUtils.getDeclaredField((Class)objCls, e.getKey());
+                } catch (SecurityException | NoSuchFieldException e1) {
+                    throw new JsonParseException("class " + ((Class)objCls).getSimpleName(), e1);
+                }
+
+                try {
+                    pd.getWriteMethod().invoke(o, new Object[]{context.deserialize(e.getValue(), f.getGenericType())});
+                } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e1) {
+                    throw new RuntimeException(e1);
+                }
+            }
+
+            return (T)o;
+        }
 
     }
 
@@ -136,8 +136,8 @@ public class GsonSerializer {
     public static Gson get() {
         return gson;
     }
-    
-	public static String toJson(TBase src) {
+
+    public static String toJson(TBase src) {
         return get().toJson(src, TBase.class);
     }
 

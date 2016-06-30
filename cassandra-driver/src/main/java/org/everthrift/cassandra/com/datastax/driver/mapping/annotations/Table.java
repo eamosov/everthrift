@@ -69,9 +69,9 @@ public @interface Table {
      * @return the consistency level to use for the read operations provded by the {@link Mapper} class.
      */
     String readConsistency() default "";
-    
+
     /**
-     * 
+     *
      * @return column name for IF clause (ONLY_IF)
      */
     String version() default "";

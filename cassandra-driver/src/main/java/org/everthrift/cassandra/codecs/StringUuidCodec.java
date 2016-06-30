@@ -9,14 +9,14 @@ import com.datastax.driver.core.TypeCodec;
 import com.datastax.driver.core.exceptions.InvalidTypeException;
 
 public class StringUuidCodec extends TypeCodec<String> {
-	
-	public static final TypeCodec<String> instance = new StringUuidCodec();
-	
-    private StringUuidCodec() {
-		super(DataType.uuid(), String.class);
-	}
 
-	@Override
+    public static final TypeCodec<String> instance = new StringUuidCodec();
+
+    private StringUuidCodec() {
+        super(DataType.uuid(), String.class);
+    }
+
+    @Override
     public String parse(String value) {
         try {
             return value == null || value.isEmpty() || value.equalsIgnoreCase("NULL") ? null : UUID.fromString(value).toString();
@@ -36,13 +36,13 @@ public class StringUuidCodec extends TypeCodec<String> {
     public ByteBuffer serialize(String value, ProtocolVersion protocolVersion) {
         if (value == null)
             return null;
-        
+
         try{
-        	final UUID _value = UUID.fromString(value);
-        	ByteBuffer bb = ByteBuffer.allocate(16);
-        	bb.putLong(0, _value.getMostSignificantBits());
-        	bb.putLong(8, _value.getLeastSignificantBits());
-        	return bb;
+            final UUID _value = UUID.fromString(value);
+            ByteBuffer bb = ByteBuffer.allocate(16);
+            bb.putLong(0, _value.getMostSignificantBits());
+            bb.putLong(8, _value.getLeastSignificantBits());
+            return bb;
         } catch (IllegalArgumentException e) {
             throw new InvalidTypeException(String.format("Cannot parse UUID value from \"%s\"", value), e);
         }

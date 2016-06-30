@@ -33,8 +33,8 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.ClassUtils;
 
 public class MigrationProcessor implements Callable<Boolean>{
-	
-	private static final Logger log = LoggerFactory.getLogger(MigrationProcessor.class);
+
+    private static final Logger log = LoggerFactory.getLogger(MigrationProcessor.class);
 
     @Autowired
     private PlatformTransactionManager txManager;
@@ -86,13 +86,13 @@ public class MigrationProcessor implements Callable<Boolean>{
         ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
         scanner.addIncludeFilter(new AnnotationTypeFilter(Migration.class));
         final String root = context.getEnvironment().getProperty("sqlmigrator.root");
-        
+
         if (root ==null)
-        	throw new RuntimeException("sqlmigrator.root is NULL");
-        
+            throw new RuntimeException("sqlmigrator.root is NULL");
+
         for (String s : root.split(",")) {
-        	ConsoleUtils.printString("Scanning " + s + "\n");
-        	
+            ConsoleUtils.printString("Scanning " + s + "\n");
+
             Map<String, AbstractMigration> migrationsByName = scanMigrationClasses(scanner, s);
             if (byName) {
                 for (String name : migrationNames)
@@ -105,21 +105,21 @@ public class MigrationProcessor implements Callable<Boolean>{
     }
 
     private Map<String, AbstractMigration> scanMigrationClasses(ClassPathScanningCandidateComponentProvider scanner, String basePath) {
-    	
+
         final Map<String, AbstractMigration> migrations4Path = new HashMap<>();
         final DefaultListableBeanFactory beanFactory = (DefaultListableBeanFactory)context.getBeanFactory();
-        
+
         for (BeanDefinition b : scanner.findCandidateComponents(basePath)) {
-        	
+
             final Class cls = ClassUtils.resolveClassName(b.getBeanClassName(), ClassUtils.getDefaultClassLoader());
-            	
-           	beanFactory.registerBeanDefinition(cls.getSimpleName(), BeanDefinitionBuilder.rootBeanDefinition(cls).getBeanDefinition());
-            	
-           	final AbstractMigration migration = context.getBean(cls.getSimpleName(), AbstractMigration.class);
-           	
-           	if (migration == null)
-           		throw new RuntimeException("cound't get bean:" + cls.getSimpleName());
-           	
+
+            beanFactory.registerBeanDefinition(cls.getSimpleName(), BeanDefinitionBuilder.rootBeanDefinition(cls).getBeanDefinition());
+
+            final AbstractMigration migration = context.getBean(cls.getSimpleName(), AbstractMigration.class);
+
+            if (migration == null)
+                throw new RuntimeException("cound't get bean:" + cls.getSimpleName());
+
             migration.setJdbcTemplate(jdbcTemplate);
             migrations4Path.put(((Migration)cls.getAnnotation(Migration.class)).version(), migration);
         }
@@ -218,16 +218,16 @@ public class MigrationProcessor implements Callable<Boolean>{
         });
     }
 
-	@Override
-	public Boolean call() throws Exception {
-		
+    @Override
+    public Boolean call() throws Exception {
+
         final Map<String, MigrationProcessor.Result> results = process(true, Collections.EMPTY_LIST, false);
         for (final Map.Entry<String, MigrationProcessor.Result> entry : results.entrySet())
             if (entry.getValue().equals(MigrationProcessor.Result.FAIL)) {
                 log.error("Filed to execute migration: {} ", entry.getKey());
                 throw entry.getValue().getException();
             }
-		
-		return null;
-	}
+
+        return null;
+    }
 }

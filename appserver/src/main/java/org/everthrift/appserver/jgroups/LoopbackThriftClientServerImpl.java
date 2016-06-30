@@ -33,80 +33,80 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 public class LoopbackThriftClientServerImpl extends ClusterThriftClientImpl {
 
-	private static final Logger log = LoggerFactory.getLogger(LoopbackThriftClientServerImpl.class);
-	
-	@Autowired
-	private ApplicationContext applicationContext;
-	
-	@Autowired
-	private RpcJGroupsRegistry rpcJGroupsRegistry;
-	
-	private TProcessor thriftProcessor;
-	
-	private final TProtocolFactory binary = new TBinaryProtocol.Factory();
+    private static final Logger log = LoggerFactory.getLogger(LoopbackThriftClientServerImpl.class);
 
-	public LoopbackThriftClientServerImpl() {
-		log.info("Using {} as MulticastThriftTransport", this.getClass().getSimpleName());
-	}
+    @Autowired
+    private ApplicationContext applicationContext;
 
-	@Override
-	public <T> ListenableFuture<Map<Address, Reply<T>>> call(Collection<Address> dest, Collection<Address> exclusionList, InvocationInfo tInfo, Options... options) throws TException {
-		
-		if (isLoopback(options) == false)
-			return Futures.immediateFuture(Collections.emptyMap());
-		
-		final TMemoryBuffer in = tInfo.buildCall(0, binary);
-		final TProtocol inP = binary.getProtocol(in);
-		final TMemoryBuffer out = new TMemoryBuffer(1024);
-		final TProtocol outP = binary.getProtocol(out);
-		
-		thriftProcessor.process(inP, outP);
-		return Futures.immediateFuture(Collections.singletonMap(new Address(){
+    @Autowired
+    private RpcJGroupsRegistry rpcJGroupsRegistry;
 
-			@Override
-			public void writeTo(DataOutput out) throws Exception {
-			}
+    private TProcessor thriftProcessor;
 
-			@Override
-			public void readFrom(DataInput in) throws Exception {
-			}
+    private final TProtocolFactory binary = new TBinaryProtocol.Factory();
 
-			@Override
-			public int compareTo(Address o) {
-				return 0;
-			}
+    public LoopbackThriftClientServerImpl() {
+        log.info("Using {} as MulticastThriftTransport", this.getClass().getSimpleName());
+    }
 
-			@Override
-			public void writeExternal(ObjectOutput out) throws IOException {
-			}
+    @Override
+    public <T> ListenableFuture<Map<Address, Reply<T>>> call(Collection<Address> dest, Collection<Address> exclusionList, InvocationInfo tInfo, Options... options) throws TException {
 
-			@Override
-			public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-			}
+        if (isLoopback(options) == false)
+            return Futures.immediateFuture(Collections.emptyMap());
 
-			@Override
-			public int size() {
-				return 0;
-			}}, new ReplyImpl<T>( () -> (T)tInfo.setReply(out, binary))));
-	}
+        final TMemoryBuffer in = tInfo.buildCall(0, binary);
+        final TProtocol inP = binary.getProtocol(in);
+        final TMemoryBuffer out = new TMemoryBuffer(1024);
+        final TProtocol outP = binary.getProtocol(out);
 
-	@PostConstruct
-	private void postConstruct(){
-		thriftProcessor = ThriftProcessor.create(applicationContext, rpcJGroupsRegistry);		
-	}
+        thriftProcessor.process(inP, outP);
+        return Futures.immediateFuture(Collections.singletonMap(new Address(){
 
-	public TProcessor getThriftProcessor() {
-		return thriftProcessor;
-	}
+            @Override
+            public void writeTo(DataOutput out) throws Exception {
+            }
 
-	public void setThriftProcessor(TProcessor thriftProcessor) {
-		this.thriftProcessor = thriftProcessor;
-	}
+            @Override
+            public void readFrom(DataInput in) throws Exception {
+            }
 
-	@Override
-	public JChannel getCluster() {
-		throw new NotImplementedException();
-	}
+            @Override
+            public int compareTo(Address o) {
+                return 0;
+            }
+
+            @Override
+            public void writeExternal(ObjectOutput out) throws IOException {
+            }
+
+            @Override
+            public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            }
+
+            @Override
+            public int size() {
+                return 0;
+            }}, new ReplyImpl<T>( () -> (T)tInfo.setReply(out, binary))));
+    }
+
+    @PostConstruct
+    private void postConstruct(){
+        thriftProcessor = ThriftProcessor.create(applicationContext, rpcJGroupsRegistry);
+    }
+
+    public TProcessor getThriftProcessor() {
+        return thriftProcessor;
+    }
+
+    public void setThriftProcessor(TProcessor thriftProcessor) {
+        this.thriftProcessor = thriftProcessor;
+    }
+
+    @Override
+    public JChannel getCluster() {
+        throw new NotImplementedException();
+    }
 
 
 }

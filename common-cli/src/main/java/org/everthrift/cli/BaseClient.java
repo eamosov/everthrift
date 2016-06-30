@@ -57,45 +57,55 @@ public class BaseClient {
 
     protected void init() {
         initModules();
-        
+
         moduleGroup.setRequired(true);
         argumentGroup.setRequired(true);
         configGroup.setRequired(true);
-        
+
         for (BaseModule module : getModules().values()) {
-        	
+
             //добавление новых модулей (пока только cache и cluster)
             moduleGroup.addOption(module.getModule());
-            
+
             //аргументы для модулей (взаимоисключаемые)
             for (Option option : (List<Option>) module.getOptions()) {
-            	
-            	boolean isReused = false;
-            	for (Option old: (Collection<Option>)argumentGroup.getOptions()){            	
-            		if (old.getOpt().equals(option.getOpt())){
-            			old.setDescription(old.getDescription() + "\n" + option.getDescription());
-            			isReused = true;
-            			break;
-            		}
-            	}
-            	
-            	if (!isReused)
-            		argumentGroup.addOption(option);
+
+                boolean isReused = false;
+                for (Option old: (Collection<Option>)argumentGroup.getOptions()){
+                    if (old.getOpt().equals(option.getOpt())){
+                        old.setDescription(old.getDescription() + "\n" + option.getDescription());
+                        isReused = true;
+                        break;
+                    }
+                }
+
+                if (!isReused)
+                    argumentGroup.addOption(option);
             }
-                        
+
         }
 
-        final Option infonode = OptionBuilder.withLongOpt("infonode").isRequired().hasArgs(2).withArgName("host port").withDescription("infonode <host> <port>").create("i");
-        final Option conf = OptionBuilder.withLongOpt("file").isRequired().hasArg().withArgName("conf.json").withDescription("cluster config location").create("f");
+        OptionBuilder.withLongOpt("infonode");
+        OptionBuilder.isRequired();
+        OptionBuilder.hasArgs(2);
+        OptionBuilder.withArgName("host port");
+        OptionBuilder.withDescription("infonode <host> <port>");
+        final Option infonode = OptionBuilder.create("i");
+        OptionBuilder.withLongOpt("file");
+        OptionBuilder.isRequired();
+        OptionBuilder.hasArg();
+        OptionBuilder.withArgName("conf.json");
+        OptionBuilder.withDescription("cluster config location");
+        final Option conf = OptionBuilder.create("f");
         configGroup.addOption(infonode);
         configGroup.addOption(conf);
 
         moduleOptions.addOptionGroup(moduleGroup);
         moduleOptions4Help.addOptionGroup(moduleGroup);
-        
+
         moduleOptions.addOptionGroup(argumentGroup);
         argumentOptions4Help.addOptionGroup(argumentGroup);
-        
+
         moduleOptions.addOptionGroup(configGroup);
         argumentOptions4Help.addOptionGroup(configGroup);
 
@@ -108,19 +118,19 @@ public class BaseClient {
             CommandLine moduleLine = parser.parse(moduleOptions, args, false);
 
             switch (configGroup.getSelected()){
-                case "f":
-                    if (moduleLine.getOptionValue("file") == null)
-                        throw new IllegalArgumentException("provide config file location");
-                    getModule(moduleGroup.getSelected(),moduleLine.getOptionValue("file")).runModule(pw, argumentGroup.getSelected(), moduleLine);
-                    break;
-                case "i":
-                    String[] conf_args = moduleLine.getOptionValues("infonode");
-                    if (conf_args.length != 2)
-                        throw new ParseException("invalid parameters for infonode connection");
-                    getModule(moduleGroup.getSelected(), conf_args[0], Integer.parseInt(conf_args[1]))
-                            .runModule(pw, argumentGroup.getSelected(), moduleLine);
-                    break;
-                default: throw new ParseException("Set infonode host:port or cluster configuration in json");
+            case "f":
+                if (moduleLine.getOptionValue("file") == null)
+                    throw new IllegalArgumentException("provide config file location");
+                getModule(moduleGroup.getSelected(),moduleLine.getOptionValue("file")).runModule(pw, argumentGroup.getSelected(), moduleLine);
+                break;
+            case "i":
+                String[] conf_args = moduleLine.getOptionValues("infonode");
+                if (conf_args.length != 2)
+                    throw new ParseException("invalid parameters for infonode connection");
+                getModule(moduleGroup.getSelected(), conf_args[0], Integer.parseInt(conf_args[1]))
+                .runModule(pw, argumentGroup.getSelected(), moduleLine);
+                break;
+            default: throw new ParseException("Set infonode host:port or cluster configuration in json");
             }
         } catch (ParseException e) {
             LOG.error("Argument Error: {}", e);

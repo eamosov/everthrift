@@ -49,10 +49,10 @@ public class LongTimestampCodec extends TypeCodec<Long> {
 
     @Override
     public ByteBuffer serialize(Long value, ProtocolVersion protocolVersion) {
-    	
-    	if (value == null)
-    		return null;
-    	
+
+        if (value == null)
+            return null;
+
         final ByteBuffer bb = ByteBuffer.allocate(8);
         bb.putLong(0, value);
         return bb;
@@ -60,10 +60,10 @@ public class LongTimestampCodec extends TypeCodec<Long> {
 
     @Override
     public Long deserialize(ByteBuffer bytes, ProtocolVersion protocolVersion) {
-    	
+
         if (bytes == null || bytes.remaining() == 0)
             return null;
-        
+
         if (bytes.remaining() != 8)
             throw new InvalidTypeException("Invalid 64-bits long value, expecting 8 bytes but got " + bytes.remaining());
 

@@ -13,31 +13,31 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 
 public abstract class ConnectionStateHandler {
-	
-	protected final Logger log = LoggerFactory.getLogger(this.getClass());
-	
-	protected ThriftControllerInfo info;
-	protected DataSource ds;
-	protected ThriftClient thriftClient;
-	protected MessageWrapper attributes;
-	
-	@Autowired
-	private ApplicationContext context;
-		
-	protected Class<? extends Annotation> registryAnn;
 
-	public abstract boolean onOpen();
-	
-	public void setup (MessageWrapper attributes, ThriftClient thriftClient, Class<? extends Annotation> registryAnn){
-		this.thriftClient = thriftClient;
-		this.registryAnn = registryAnn;
-		this.attributes = attributes;		
-		
-		try{
-			this.ds = context.getBean(DataSource.class);
-		}catch (NoSuchBeanDefinitionException e){
-			this.ds = null;
-		}				
-	}
+    protected final Logger log = LoggerFactory.getLogger(this.getClass());
+
+    protected ThriftControllerInfo info;
+    protected DataSource ds;
+    protected ThriftClient thriftClient;
+    protected MessageWrapper attributes;
+
+    @Autowired
+    private ApplicationContext context;
+
+    protected Class<? extends Annotation> registryAnn;
+
+    public abstract boolean onOpen();
+
+    public void setup (MessageWrapper attributes, ThriftClient thriftClient, Class<? extends Annotation> registryAnn){
+        this.thriftClient = thriftClient;
+        this.registryAnn = registryAnn;
+        this.attributes = attributes;
+
+        try{
+            this.ds = context.getBean(DataSource.class);
+        }catch (NoSuchBeanDefinitionException e){
+            this.ds = null;
+        }
+    }
 
 }

@@ -33,5 +33,5 @@ import org.everthrift.cassandra.com.datastax.driver.mapping.EntityMapper;
 @Target({ElementType.FIELD, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Scenario {
-	EntityMapper.ColumnScenario value() default EntityMapper.ColumnScenario.COMMON;
+    EntityMapper.ColumnScenario value() default EntityMapper.ColumnScenario.COMMON;
 }

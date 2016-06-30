@@ -26,7 +26,7 @@ public class CassandraVersioner {
     private final String CREATE_SCHEMA_VERSION_CQL;
 
     private final Session session;
-    
+
 
     /**
      * Create Cassandra versioner for active session.
@@ -35,7 +35,7 @@ public class CassandraVersioner {
     public CassandraVersioner(final Session session, final String schemaVersionCf) {
         this.session = session;
         this.SCHEMA_VERSION_CF = schemaVersionCf;
-        
+
         CREATE_SCHEMA_VERSION_CQL = String.format("CREATE TABLE IF NOT EXISTS %s (",
                 SCHEMA_VERSION_CF)
                 + String.format("%s text,", TYPE)
@@ -44,7 +44,7 @@ public class CassandraVersioner {
                 + String.format("%s text,", DESCRIPTION)
                 + String.format("PRIMARY KEY (%s, %s)", TYPE, VERSION)
                 + String.format(")  WITH CLUSTERING ORDER BY (%s DESC)", VERSION) + " AND COMMENT='Schema version';";
-        
+
         createSchemaVersion();
     }
 

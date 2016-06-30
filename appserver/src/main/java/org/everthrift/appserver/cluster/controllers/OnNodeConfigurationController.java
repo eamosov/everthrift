@@ -12,18 +12,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 @RpcJGroups
 public class OnNodeConfigurationController extends ThriftController<ClusterService.onNodeConfiguration_args, Void> {
 
-	@Autowired
-	private ClusterThriftClientImpl client;
-	
-	@Override
-	public void setup(onNodeConfiguration_args args) {
-		this.noProfile = true;
-	}
+    @Autowired
+    private ClusterThriftClientImpl client;
 
-	@Override
-	protected Void handle() throws TException {		
-		client.setNode((Address)tps.getAttributes().get("src"), args.getNode());
-		return null;
-	}
+    @Override
+    public void setup(onNodeConfiguration_args args) {
+        this.noProfile = true;
+    }
+
+    @Override
+    protected Void handle() throws TException {
+        client.setNode((Address)tps.getAttributes().get("src"), args.getNode());
+        return null;
+    }
 
 }

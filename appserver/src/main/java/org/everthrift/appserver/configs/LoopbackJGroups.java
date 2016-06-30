@@ -10,11 +10,11 @@ public class LoopbackJGroups {
 
     @Bean
     public RpcJGroupsRegistry RpcJGroupsRegistry(){
-    	return new RpcJGroupsRegistry();
+        return new RpcJGroupsRegistry();
     }
 
     @Bean
     public LoopbackThriftClientServerImpl loopbackThriftClientServerImpl(){
-    	return new LoopbackThriftClientServerImpl();
+        return new LoopbackThriftClientServerImpl();
     }
 }

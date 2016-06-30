@@ -42,17 +42,17 @@ public class ClusterModule extends BaseModule<ClusterService.Client> {
 
 
     @Override
-	public void runModule(PrintWriter out, String option, CommandLine cmd) throws Exception {
+    public void runModule(PrintWriter out, String option, CommandLine cmd) throws Exception {
         switch (option) {
-            case "gc": {
-                out.println("\n\n");
-                out.print("not implemented");
-                out.println("\n\n");
-                break;
-            }
-            default: {
-                throw new RuntimeException("Please insert option for cluster module (gc  for get Config)");
-            }
+        case "gc": {
+            out.println("\n\n");
+            out.print("not implemented");
+            out.println("\n\n");
+            break;
+        }
+        default: {
+            throw new RuntimeException("Please insert option for cluster module (gc  for get Config)");
+        }
         }
     }
 }

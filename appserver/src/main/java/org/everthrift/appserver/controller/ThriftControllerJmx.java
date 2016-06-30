@@ -7,22 +7,22 @@ import org.springframework.jmx.export.annotation.ManagedResource;
 
 @ManagedResource(objectName="bean:name=ThriftController")
 public class ThriftControllerJmx {
-	
-	private static final Logger log = LoggerFactory.getLogger(ThriftControllerJmx.class); 
 
-	@ManagedOperation(description="getExecutionLog")
-	public String getExecutionLog(){
-		return ThriftController.getExecutionLog();
-	}
+    private static final Logger log = LoggerFactory.getLogger(ThriftControllerJmx.class);
 
-	@ManagedOperation(description="logExecutionLog")
-	public void logExecutionLog(){
-		log.info("\n{}", ThriftController.getExecutionLog());
-	}
+    @ManagedOperation(description="getExecutionLog")
+    public String getExecutionLog(){
+        return AbstractThriftController.getExecutionLog();
+    }
 
-	@ManagedOperation(description="resetExecutionLog")
-	public void resetExecutionLog(){
-		ThriftController.resetExecutionLog();
-	}
+    @ManagedOperation(description="logExecutionLog")
+    public void logExecutionLog(){
+        log.info("\n{}", AbstractThriftController.getExecutionLog());
+    }
+
+    @ManagedOperation(description="resetExecutionLog")
+    public void resetExecutionLog(){
+        AbstractThriftController.resetExecutionLog();
+    }
 
 }

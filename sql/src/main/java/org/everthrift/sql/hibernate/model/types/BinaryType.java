@@ -15,41 +15,41 @@ import org.hibernate.type.descriptor.sql.BinaryTypeDescriptor;
  * @author Steve Ebersole
  */
 public class BinaryType
-		extends AbstractSingleColumnStandardBasicType<byte[]>
-		implements VersionType<byte[]> {
+extends AbstractSingleColumnStandardBasicType<byte[]>
+implements VersionType<byte[]> {
 
-	public static final BinaryType INSTANCE = new BinaryType();
+    public static final BinaryType INSTANCE = new BinaryType();
 
-	@Override
-	public String getName() {
-		return "binary";
-	}
+    @Override
+    public String getName() {
+        return "binary";
+    }
 
-	public BinaryType() {
-		super( BinaryTypeDescriptor.INSTANCE, PrimitiveByteArrayTypeDescriptor.INSTANCE );
-	}
+    public BinaryType() {
+        super( BinaryTypeDescriptor.INSTANCE, PrimitiveByteArrayTypeDescriptor.INSTANCE );
+    }
 
-	@Override
-	public String[] getRegistrationKeys() {
-		return new String[] { getName(), "byte[]", byte[].class.getName() };
-	}
+    @Override
+    public String[] getRegistrationKeys() {
+        return new String[] { getName(), "byte[]", byte[].class.getName() };
+    }
 
-	@Override
-	public byte[] seed(SessionImplementor session) {
-		// Note : simply returns null for seed() and next() as the only known
-		// 		application of binary types for versioning is for use with the
-		// 		TIMESTAMP datatype supported by Sybase and SQL Server, which
-		// 		are completely db-generated values...
-		return null;
-	}
+    @Override
+    public byte[] seed(SessionImplementor session) {
+        // Note : simply returns null for seed() and next() as the only known
+        // 		application of binary types for versioning is for use with the
+        // 		TIMESTAMP datatype supported by Sybase and SQL Server, which
+        // 		are completely db-generated values...
+        return null;
+    }
 
-	@Override
-	public byte[] next(byte[] current, SessionImplementor session) {
-		return current;
-	}
+    @Override
+    public byte[] next(byte[] current, SessionImplementor session) {
+        return current;
+    }
 
-	@Override
-	public Comparator<byte[]> getComparator() {
-		return PrimitiveByteArrayTypeDescriptor.INSTANCE.getComparator();
-	}
+    @Override
+    public Comparator<byte[]> getComparator() {
+        return PrimitiveByteArrayTypeDescriptor.INSTANCE.getComparator();
+    }
 }

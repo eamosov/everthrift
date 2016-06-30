@@ -1,5 +1,5 @@
 package org.everthrift.appserver.utils.thrift;
 
-public interface SessionIF {	
-	String getCredentials();
+public interface SessionIF {
+    String getCredentials();
 }

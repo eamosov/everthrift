@@ -5,9 +5,9 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration("org.everthrift.cassandra.model.CassandraConfig")
 public class CassandraConfig {
-	
-	@Bean
-	public CassandraFactories cassandraFactories(){
-		return new CassandraFactories();
-	}
+
+    @Bean
+    public CassandraFactories cassandraFactories(){
+        return new CassandraFactories();
+    }
 }

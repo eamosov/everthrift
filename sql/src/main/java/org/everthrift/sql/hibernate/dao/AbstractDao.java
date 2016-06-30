@@ -24,15 +24,15 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 
 
 public interface AbstractDao<K, V extends DaoEntityIF> {
-	
-	public Class<V> getEntityClass();
+
+    public Class<V> getEntityClass();
 
     public V findById(K id);
 
     public Collection<V> findByIds(Collection<K> id);
 
     /**
-     *  Если entity не найдено, то метод возвращает null для этого ключа 
+     *  Если entity не найдено, то метод возвращает null для этого ключа
      * @param id
      * @param keyExtractor
      * @return
@@ -44,13 +44,13 @@ public interface AbstractDao<K, V extends DaoEntityIF> {
     public Pair<V, Boolean> save(V e) throws UniqueException;
 
     public void delete(V e);
-    
+
     public void deleteAll();
-    
+
     public void evict(K id);
 
     public Object uniqueResult(Criterion criterion, Projection... projections);
-    
+
     public List<K> findPkByCriteria(Criterion criterion, Order order);
 
     public List<V> findByCriteria(Criterion criterion, Order order);

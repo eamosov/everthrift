@@ -25,9 +25,9 @@ public class MigrationEngine {
     public static Migrator withSession(final Session session, final String schemaVersionCf) {
         return new Migrator(session, schemaVersionCf);
     }
-    
+
     public static Migrator withSession(final Session session) {
-    	return new Migrator(session, "schema_version");
+        return new Migrator(session, "schema_version");
     }
 
     /**

@@ -93,9 +93,9 @@ class ReflectionMapper<T> extends EntityMapper<T> {
         public <T> ColumnMapper<T> createColumnMapper(Class<T> entityClass, FieldDescriptor field, MappingManager mappingManager, AtomicInteger columnCounter) {
             final String fieldName = field.getFieldName();
             final PropertyDescriptor pd = BeanUtils.getPropertyDescriptor(entityClass, fieldName);
-            
+
             if (pd == null)
-            	throw new IllegalArgumentException("Cannot find matching getter and setter for field '" + fieldName + "'");
+                throw new IllegalArgumentException("Cannot find matching getter and setter for field '" + fieldName + "'");
 
             for (Class<?> udt : TypeMappings.findUDTs(field.getFieldType().getType()))
                 mappingManager.getUDTCodec(udt);

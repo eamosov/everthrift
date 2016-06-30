@@ -66,7 +66,7 @@ public class AppserverApplication {
 
     private boolean initialized = false;
 
-    
+
     private List<Class> annotatedClasses = Lists.newArrayList(AppserverConfig.class);
 
     private AppserverApplication() {
@@ -79,34 +79,34 @@ public class AppserverApplication {
 
         scanPathList.add("org.everthrift.appserver");
     }
-    
+
 
     private boolean isJettyEnabled(){
-    	return !env.getProperty("jetty", "false").equalsIgnoreCase("false");
+        return !env.getProperty("jetty", "false").equalsIgnoreCase("false");
     }
 
     private boolean isThriftEnabled(){
-    	return !env.getProperty("thrift", "false").equalsIgnoreCase("false");
+        return !env.getProperty("thrift", "false").equalsIgnoreCase("false");
     }
 
     private boolean isAsyncThriftEnabled(){
-    	return !env.getProperty("thrift.async", "false").equalsIgnoreCase("false");
+        return !env.getProperty("thrift.async", "false").equalsIgnoreCase("false");
     }
 
     public static boolean isJGroupsEnabled(Environment env){
-    	return !env.getProperty("jgroups", "false").equalsIgnoreCase("false");
+        return !env.getProperty("jgroups", "false").equalsIgnoreCase("false");
     }
 
     private boolean isJGroupsEnabled(){
-    	return isJGroupsEnabled(env);
+        return isJGroupsEnabled(env);
     }
 
     private boolean isJmsEnabled(){
-    	return !env.getProperty("jms", "false").equalsIgnoreCase("false");
+        return !env.getProperty("jms", "false").equalsIgnoreCase("false");
     }
-    
+
     private boolean isRabbitEnabled(){
-    	return !env.getProperty("rabbit", "false").equalsIgnoreCase("false");
+        return !env.getProperty("rabbit", "false").equalsIgnoreCase("false");
     }
 
     @SuppressWarnings("rawtypes")
@@ -130,20 +130,20 @@ public class AppserverApplication {
 
         if (Boolean.parseBoolean(env.getProperty("sqlmigrator.run", "false"))) {
             try {
-				runSqlMigrator();
-			} catch (Exception e) {
-				throw Throwables.propagate(e);
-			}
+                runSqlMigrator();
+            } catch (Exception e) {
+                throw Throwables.propagate(e);
+            }
         }
-        
+
         if (Boolean.parseBoolean(env.getProperty("cassandra.migrator.run", "false"))) {
-        	try {
-				runCMigrationProcessor();
-			} catch (Exception e) {
-				throw Throwables.propagate(e);
-			}
+            try {
+                runCMigrationProcessor();
+            } catch (Exception e) {
+                throw Throwables.propagate(e);
+            }
         }
-                
+
         final boolean nothrift = !env.getProperty("nothrift", "false").equalsIgnoreCase("false");
 
         try {
@@ -156,85 +156,85 @@ public class AppserverApplication {
         } catch (IOException e1) {
             throw new RuntimeException(e1);
         }
-        
+
         if (env.getProperty("jgroups.multicast.bind_addr") !=null)
-        	System.setProperty("jgroups.multicast.bind_addr", env.getProperty("jgroups.multicast.bind_addr"));
+            System.setProperty("jgroups.multicast.bind_addr", env.getProperty("jgroups.multicast.bind_addr"));
 
         if (env.getProperty("tbase.root") !=null){
-    		final MetaDataMapBuilder mdb = new MetaDataMapBuilder();
+            final MetaDataMapBuilder mdb = new MetaDataMapBuilder();
 
-        	for (String root : env.getProperty("tbase.root").split(",")){
-        		mdb.build(root);		
-        	}
+            for (String root : env.getProperty("tbase.root").split(",")){
+                mdb.build(root);
+            }
         }
 
         context.register(annotatedClasses.toArray(new Class[annotatedClasses.size()]));
-        
+
         if (isAsyncThriftEnabled())
-        	context.register(AsyncTcpThrift.class);
-        
+            context.register(AsyncTcpThrift.class);
+
         if (isThriftEnabled())
-        	context.register(TcpThrift.class);
+            context.register(TcpThrift.class);
 
         if (isJGroupsEnabled())
-        	context.register(JGroups.class);
-        else        
-        	context.register(LoopbackJGroups.class);
-        
+            context.register(JGroups.class);
+        else
+            context.register(LoopbackJGroups.class);
+
         if (isJmsEnabled()){
-        	try {
-        		context.register(Class.forName("org.everthrift.jms.Jms"));
-			} catch (ClassNotFoundException e) {
-				throw Throwables.propagate(e);
-			}        		
+            try {
+                context.register(Class.forName("org.everthrift.jms.Jms"));
+            } catch (ClassNotFoundException e) {
+                throw Throwables.propagate(e);
+            }
         }else{
-        	try {        	
-        		context.register(Class.forName("org.everthrift.jms.LoopbackJms"));
-			} catch (ClassNotFoundException e) {
-				log.warn("Cound't find LoopbackJms. @RpcJms Service will be disabled.");
-			}        		        	
+            try {
+                context.register(Class.forName("org.everthrift.jms.LoopbackJms"));
+            } catch (ClassNotFoundException e) {
+                log.warn("Cound't find LoopbackJms. @RpcJms Service will be disabled.");
+            }
         }
-        
+
         if (isRabbitEnabled()){
-        	try {
-        		context.register(Class.forName("org.everthrift.rabbit.RabbitConfig"));
-			} catch (ClassNotFoundException e) {
-				throw Throwables.propagate(e);
-			}        		        	
+            try {
+                context.register(Class.forName("org.everthrift.rabbit.RabbitConfig"));
+            } catch (ClassNotFoundException e) {
+                throw Throwables.propagate(e);
+            }
         }
-        
+
         if (isJettyEnabled()) {
-        	try {
-				context.register(Class.forName("org.everthrift.jetty.configs.Http"));
-			} catch (ClassNotFoundException e) {
-				throw Throwables.propagate(e);
-			}
+            try {
+                context.register(Class.forName("org.everthrift.jetty.configs.Http"));
+            } catch (ClassNotFoundException e) {
+                throw Throwables.propagate(e);
+            }
         }
-        
+
         try {
-			context.register(Class.forName("org.everthrift.cassandra.model.CassandraConfig"));
-		} catch (ClassNotFoundException e) {
-		}
-        
+            context.register(Class.forName("org.everthrift.cassandra.model.CassandraConfig"));
+        } catch (ClassNotFoundException e) {
+        }
+
         context.refresh();
-        initialized = true;        
+        initialized = true;
     }
 
     private Object runCallable(String xmlConfig, String className) throws Exception {
-    	
-    	final Class<Callable> proc =  (Class)Class.forName(className);
-    	
+
+        final Class<Callable> proc =  (Class)Class.forName(className);
+
         final ClassPathXmlApplicationContext xmlContext = new ClassPathXmlApplicationContext(new String[]{xmlConfig}, false);
         try {
             for (final PropertySource p : env.getPropertySources())
                 xmlContext.getEnvironment().getPropertySources().addLast(p);
-            
+
             xmlContext.refresh();
 
             final Callable processor = xmlContext.getBean(proc);
-            if (processor == null) 
+            if (processor == null)
                 throw new RuntimeException("Can't find Migration processor bean");
-            
+
             return processor.call();
         } finally {
             if (xmlContext != null && xmlContext.isActive())
@@ -243,18 +243,18 @@ public class AppserverApplication {
     }
 
     private void runSqlMigrator() throws Exception {
-    	log.info("Executing SQL migrations");
-    	
-    	runCallable("migration-context.xml", "org.everthrift.sql.migration.MigrationProcessor");
+        log.info("Executing SQL migrations");
+
+        runCallable("migration-context.xml", "org.everthrift.sql.migration.MigrationProcessor");
     }
-    
+
     private void runCMigrationProcessor() throws Exception {
-    	
-    	log.info("Executing cassandra migrations");
-    	
-    	runCallable("classpath:cassandra-migration-context.xml", "org.everthrift.cassandra.migrator.CMigrationProcessor");
+
+        log.info("Executing cassandra migrations");
+
+        runCallable("classpath:cassandra-migration-context.xml", "org.everthrift.cassandra.migrator.CMigrationProcessor");
     }
-    
+
 
     private KeyStore loadJettyKeystore(final String jks, String keystorePassword) throws IOException, NoSuchAlgorithmException, CertificateException, KeyStoreException {
         final InputStream inputStream = context.getResource(jks).getInputStream();
@@ -302,10 +302,10 @@ public class AppserverApplication {
     public synchronized void addPropertySource(String resourceName) throws IOException {
         addPropertySource(new ResourcePropertySource(AppserverApplication.INSTANCE.context.getResource(resourceName)));
     }
-    
+
     public void registerAnnotatedClasses(Class<?>... annotatedClasses) {
-    	for (Class cls: annotatedClasses)
-    		this.annotatedClasses.add(cls);
+        for (Class cls: annotatedClasses)
+            this.annotatedClasses.add(cls);
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})

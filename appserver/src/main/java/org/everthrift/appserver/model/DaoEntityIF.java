@@ -6,6 +6,6 @@ public interface DaoEntityIF extends Serializable  {
 
     public Serializable getPk();
 
-    public void setPk(Serializable identifier);    
+    public void setPk(Serializable identifier);
 
 }

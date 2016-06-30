@@ -44,12 +44,12 @@ public abstract class ColumnMapper<T> {
         this.columnName = field.getColumnName();
         this.alias = (columnCounter != null)
                 ? FieldDescriptor.newAlias(field, columnCounter.incrementAndGet())
-                : null;
-        this.fieldName = field.getFieldName();
-        this.fieldType = field.getFieldType();
-        this.kind = field.getKind();
-        this.customCodec = field.getCustomCodec();
-        this.columnScenario = field.getColumnScenario();
+                        : null;
+                this.fieldName = field.getFieldName();
+                this.fieldType = field.getFieldType();
+                this.kind = field.getKind();
+                this.customCodec = field.getCustomCodec();
+                this.columnScenario = field.getColumnScenario();
     }
 
     public abstract Object getValue(T entity);
@@ -59,7 +59,7 @@ public abstract class ColumnMapper<T> {
     public String getColumnName() {
         return kind == Kind.COMPUTED
                 ? columnName
-                : Metadata.quote(columnName);
+                        : Metadata.quote(columnName);
     }
 
     public String getAlias() {
@@ -76,12 +76,12 @@ public abstract class ColumnMapper<T> {
     public TypeToken<Object> getJavaType() {
         return fieldType;
     }
-    
+
     public String getColumnNameUnquoted(){
-    	return columnName;
+        return columnName;
     }
 
-	public String getFieldName() {
-		return fieldName;
-	}    
+    public String getFieldName() {
+        return fieldName;
+    }
 }

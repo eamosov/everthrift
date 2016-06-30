@@ -23,70 +23,70 @@ import com.google.gson.JsonSyntaxException;
 
 @SuppressWarnings({"unchecked"})
 public abstract class JsonType implements UserType {
-	
-	private static final Logger log = LoggerFactory.getLogger(JsonType.class);
-		
-	private final Gson gson = new GsonBuilder().registerTypeHierarchyAdapter(TBase.class, new TBaseSerializer()).create();
 
-	@Override
-	public int[] sqlTypes() {		
-		return new int[]{Types.OTHER};
-	}
+    private static final Logger log = LoggerFactory.getLogger(JsonType.class);
 
-	@Override
-	public boolean equals(Object x, Object y) throws HibernateException {		
-		return Objects.equals(x, y);
-	}
+    private final Gson gson = new GsonBuilder().registerTypeHierarchyAdapter(TBase.class, new TBaseSerializer()).create();
 
-	@Override
-	public int hashCode(Object x) throws HibernateException {
-		
-		if (x == null)
-			return 0;
-		
-		return x.hashCode();
-	}
+    @Override
+    public int[] sqlTypes() {
+        return new int[]{Types.OTHER};
+    }
 
-	@Override
-	public Object nullSafeGet(ResultSet rs, String[] names, SessionImplementor session, Object owner) throws HibernateException, SQLException {
-		
-		final PGobject json = (PGobject)rs.getObject(names[0]);
-		
-		if (json == null)
-			return null;
-		
-		try{
-			return gson.fromJson(json.getValue(), returnedClass());
-		}catch(JsonSyntaxException e){
-			log.error("Coudn't parse '{}' in {}", json.getValue(), this.returnedClass().getSimpleName());
-			throw new HibernateException(e);
-		}
-	}
+    @Override
+    public boolean equals(Object x, Object y) throws HibernateException {
+        return Objects.equals(x, y);
+    }
 
-	@Override
-	public void nullSafeSet(PreparedStatement st, Object value, int index, SessionImplementor session) throws HibernateException, SQLException {
-		
-		final PGobject json = new PGobject();
-		json.setType("jsonb");
-		json.setValue(value == null ? null : gson.toJson(value));		
-		st.setObject(index, json);
-	}
+    @Override
+    public int hashCode(Object x) throws HibernateException {
 
-	@Override
-	public Object deepCopy(Object value) throws HibernateException {
-		try {
-			return value==null ? null : value.getClass().getConstructor(value.getClass()).newInstance(value);
-		} catch (InstantiationException | IllegalAccessException
-				| IllegalArgumentException | InvocationTargetException
-				| NoSuchMethodException | SecurityException e) {
-			throw new HibernateException(e);
-		}
-	}
+        if (x == null)
+            return 0;
 
-	@Override
-	public boolean isMutable() {
-		return true;
-	}
+        return x.hashCode();
+    }
+
+    @Override
+    public Object nullSafeGet(ResultSet rs, String[] names, SessionImplementor session, Object owner) throws HibernateException, SQLException {
+
+        final PGobject json = (PGobject)rs.getObject(names[0]);
+
+        if (json == null)
+            return null;
+
+        try{
+            return gson.fromJson(json.getValue(), returnedClass());
+        }catch(JsonSyntaxException e){
+            log.error("Coudn't parse '{}' in {}", json.getValue(), this.returnedClass().getSimpleName());
+            throw new HibernateException(e);
+        }
+    }
+
+    @Override
+    public void nullSafeSet(PreparedStatement st, Object value, int index, SessionImplementor session) throws HibernateException, SQLException {
+
+        final PGobject json = new PGobject();
+        json.setType("jsonb");
+        json.setValue(value == null ? null : gson.toJson(value));
+        st.setObject(index, json);
+    }
+
+    @Override
+    public Object deepCopy(Object value) throws HibernateException {
+        try {
+            return value==null ? null : value.getClass().getConstructor(value.getClass()).newInstance(value);
+        } catch (InstantiationException | IllegalAccessException
+                | IllegalArgumentException | InvocationTargetException
+                | NoSuchMethodException | SecurityException e) {
+            throw new HibernateException(e);
+        }
+    }
+
+    @Override
+    public boolean isMutable() {
+        return true;
+    }
 
     @Override
     public Object assemble(final Serializable cached, final Object owner) throws HibernateException {
@@ -99,9 +99,9 @@ public abstract class JsonType implements UserType {
         return (Serializable) deepCopy(o);
     }
 
-	@Override
-	public Object replace(Object original, Object target, Object owner) throws HibernateException {
-		return original == null ? null: deepCopy(original);
-	}
+    @Override
+    public Object replace(Object original, Object target, Object owner) throws HibernateException {
+        return original == null ? null: deepCopy(original);
+    }
 
 }

@@ -53,7 +53,7 @@ public abstract class HibernateListType<T> implements UserType {
 
     @Override
     public int hashCode(final Object o) throws HibernateException {
-    	return ((List)o).hashCode();
+        return ((List)o).hashCode();
     }
 
     @Override
@@ -68,7 +68,7 @@ public abstract class HibernateListType<T> implements UserType {
 
     @Override
     public Object replace(final Object original, final Object target, final Object owner) throws HibernateException {
-    	return original == null ? null: deepCopy(original);
+        return original == null ? null: deepCopy(original);
     }
 
     public abstract Array createArray(final List<T> object, Connection connection) throws SQLException;

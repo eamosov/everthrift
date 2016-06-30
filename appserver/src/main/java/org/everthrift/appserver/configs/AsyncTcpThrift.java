@@ -11,13 +11,13 @@ import org.springframework.context.annotation.ImportResource;
 @ImportResource("classpath:async-tcp-thrift.xml")
 public class AsyncTcpThrift {
 
-	@Bean
-	public AsyncTcpThriftAdapter asyncTcpThriftAdapter(){
-		return new AsyncTcpThriftAdapter(new TBinaryProtocol.Factory());
-	}
-	
-	@Bean
-	public RpcAsyncTcpRegistry rpcAsyncTcpRegistry(){
-		return new RpcAsyncTcpRegistry();
-	}
+    @Bean
+    public AsyncTcpThriftAdapter asyncTcpThriftAdapter(){
+        return new AsyncTcpThriftAdapter(new TBinaryProtocol.Factory());
+    }
+
+    @Bean
+    public RpcAsyncTcpRegistry rpcAsyncTcpRegistry(){
+        return new RpcAsyncTcpRegistry();
+    }
 }

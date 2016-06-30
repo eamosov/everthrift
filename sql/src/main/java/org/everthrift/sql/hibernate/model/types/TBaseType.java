@@ -19,123 +19,123 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Throwables;
 
 public abstract class TBaseType implements UserType {
-	
-	private static final Logger log = LoggerFactory.getLogger(TBaseType.class);
-	
-	final Constructor<TBaseModel> init;
-	
-	public TBaseType(){
-		
-		try {
-			init = returnedClass().getConstructor();
-		} catch (NoSuchMethodException | SecurityException e) {
-			throw Throwables.propagate(e);
-		}
-	}
 
-	@Override
-	public int[] sqlTypes() {
-		return new int[]{Types.BINARY};
-	}
+    private static final Logger log = LoggerFactory.getLogger(TBaseType.class);
 
-	@Override
-	public abstract Class returnedClass();
+    final Constructor<TBaseModel> init;
 
-	@Override
-	public boolean equals(Object x, Object y) throws HibernateException {
-		
-		if (x==null && y == null)
-			return true;
-		
-		if ((x == null && y!=null) || (x!=null && y==null))
-			return false;
+    public TBaseType(){
 
-		return x.equals(y);
-	}
+        try {
+            init = returnedClass().getConstructor();
+        } catch (NoSuchMethodException | SecurityException e) {
+            throw Throwables.propagate(e);
+        }
+    }
 
-	@Override
-	public int hashCode(Object x) throws HibernateException {
+    @Override
+    public int[] sqlTypes() {
+        return new int[]{Types.BINARY};
+    }
 
-		if (x == null)
-			return 0;
-		
-		return x.hashCode();
-	}
+    @Override
+    public abstract Class returnedClass();
 
-	@Override
-	public Object nullSafeGet(ResultSet rs, String[] names, SessionImplementor session, Object owner) throws HibernateException, SQLException {
-				
-		final byte[] bytes = rs.getBytes(names[0]);
-		
-		if (log.isDebugEnabled())
-			log.debug("Load {} bytes for type {}", bytes == null ? 0 : bytes.length, returnedClass().getSimpleName());
+    @Override
+    public boolean equals(Object x, Object y) throws HibernateException {
 
-		if (bytes == null)
-			return null;		
-				
-		try {
-			final TBaseModel o = init.newInstance();
-			o.read(bytes, 0);
-			return o;
-		} catch (Exception e) {		
-			if (e instanceof RuntimeException)
-				throw (RuntimeException)e;
-			else
-				throw new HibernateException(e);
-		}				
-	}
+        if (x==null && y == null)
+            return true;
 
-	@Override
-	public void nullSafeSet(PreparedStatement st, Object value, int index, SessionImplementor session) throws HibernateException, SQLException {
-		
-		if (value == null){
-			st.setNull(index, Types.BINARY);
-		}else{
-			st.setBytes(index, ((TBaseModel)value).write());
-		}		
-	}
+        if ((x == null && y!=null) || (x!=null && y==null))
+            return false;
 
-	@Override
-	public Object deepCopy(Object value) throws HibernateException {
-		return value==null ? null : ((TBaseModel)value).deepCopy();
-	}
+        return x.equals(y);
+    }
 
-	@Override
-	public boolean isMutable() {
-		return true;
-	}
+    @Override
+    public int hashCode(Object x) throws HibernateException {
 
-	@Override
-	public Serializable disassemble(Object value) throws HibernateException {
-		
-		if (value == null)
-			return null;
+        if (x == null)
+            return 0;
 
-		return (value instanceof TBaseLazyModel) ? ((TBaseLazyModel)value).write() : (Serializable)deepCopy(value);
-	}
+        return x.hashCode();
+    }
 
-	@Override
-	public Object assemble(Serializable cached, Object owner) throws HibernateException {
-		
-		if (cached == null)
-			return null;
-		
-		if (cached instanceof byte[]){
-			try {
-				final TBaseModel o = init.newInstance();
-				o.read((byte[])cached, 0);
-				return o;
-			} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-				throw new HibernateException(e);
-			}							
-		}else{
-			return deepCopy(cached);
-		}
-	}
+    @Override
+    public Object nullSafeGet(ResultSet rs, String[] names, SessionImplementor session, Object owner) throws HibernateException, SQLException {
 
-	@Override
-	public Object replace(Object original, Object target, Object owner)throws HibernateException {
-		return original == null ? null: deepCopy(original);
-	}
+        final byte[] bytes = rs.getBytes(names[0]);
+
+        if (log.isDebugEnabled())
+            log.debug("Load {} bytes for type {}", bytes == null ? 0 : bytes.length, returnedClass().getSimpleName());
+
+        if (bytes == null)
+            return null;
+
+        try {
+            final TBaseModel o = init.newInstance();
+            o.read(bytes, 0);
+            return o;
+        } catch (Exception e) {
+            if (e instanceof RuntimeException)
+                throw (RuntimeException)e;
+            else
+                throw new HibernateException(e);
+        }
+    }
+
+    @Override
+    public void nullSafeSet(PreparedStatement st, Object value, int index, SessionImplementor session) throws HibernateException, SQLException {
+
+        if (value == null){
+            st.setNull(index, Types.BINARY);
+        }else{
+            st.setBytes(index, ((TBaseModel)value).write());
+        }
+    }
+
+    @Override
+    public Object deepCopy(Object value) throws HibernateException {
+        return value==null ? null : ((TBaseModel)value).deepCopy();
+    }
+
+    @Override
+    public boolean isMutable() {
+        return true;
+    }
+
+    @Override
+    public Serializable disassemble(Object value) throws HibernateException {
+
+        if (value == null)
+            return null;
+
+        return (value instanceof TBaseLazyModel) ? ((TBaseLazyModel)value).write() : (Serializable)deepCopy(value);
+    }
+
+    @Override
+    public Object assemble(Serializable cached, Object owner) throws HibernateException {
+
+        if (cached == null)
+            return null;
+
+        if (cached instanceof byte[]){
+            try {
+                final TBaseModel o = init.newInstance();
+                o.read((byte[])cached, 0);
+                return o;
+            } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+                throw new HibernateException(e);
+            }
+        }else{
+            return deepCopy(cached);
+        }
+    }
+
+    @Override
+    public Object replace(Object original, Object target, Object owner)throws HibernateException {
+        return original == null ? null: deepCopy(original);
+    }
 
 }

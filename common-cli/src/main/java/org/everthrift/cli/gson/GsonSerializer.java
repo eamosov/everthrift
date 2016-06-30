@@ -40,15 +40,15 @@ public class GsonSerializer {
             }
 
             final JsonObject jo = new JsonObject();
-                        
+
             Map<? extends TFieldIdEnum, FieldMetaData> map = null;
             Class thriftClass = src.getClass();
             while(map == null && thriftClass !=null){
-            	try{
-            		map = FieldMetaData.getStructMetaDataMap(thriftClass);
-            	}catch(Exception e){
-            		map = null;
-            	}
+                try{
+                    map = FieldMetaData.getStructMetaDataMap(thriftClass);
+                }catch(Exception e){
+                    map = null;
+                }
                 thriftClass = thriftClass.getSuperclass();
             }
 
@@ -81,7 +81,7 @@ public class GsonSerializer {
 
     }
 
-    private static Gson gson = new GsonBuilder().setPrettyPrinting().registerTypeHierarchyAdapter(TBase.class, new TBaseSerializer()).create(); 
+    private static Gson gson = new GsonBuilder().setPrettyPrinting().registerTypeHierarchyAdapter(TBase.class, new TBaseSerializer()).create();
 
     public static Gson get() {
         return gson;

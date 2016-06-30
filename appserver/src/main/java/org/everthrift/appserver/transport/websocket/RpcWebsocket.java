@@ -12,5 +12,5 @@ import org.springframework.stereotype.Component;
 @Scope(value=ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface RpcWebsocket {
-	String value() default "";
+    String value() default "";
 }

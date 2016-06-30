@@ -130,7 +130,7 @@ public class Result<T> implements Iterable<T> {
      * this mapped result set.
      */
     @Override
-    public Iterator<T> iterator() {        
+    public Iterator<T> iterator() {
         return new Iterator<T>() {
             private final Iterator<Row> rowIterator = rs.iterator();
 

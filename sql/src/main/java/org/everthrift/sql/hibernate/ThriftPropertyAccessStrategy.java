@@ -5,13 +5,13 @@ import org.hibernate.property.access.spi.PropertyAccessStrategy;
 
 public class ThriftPropertyAccessStrategy implements PropertyAccessStrategy {
 
-	public ThriftPropertyAccessStrategy() {
+    public ThriftPropertyAccessStrategy() {
 
-	}
+    }
 
-	@Override
-	public PropertyAccess buildPropertyAccess(Class containerJavaType, String propertyName) {
-		return new ThriftPropertyAccess(this, containerJavaType, propertyName);
-	}
+    @Override
+    public PropertyAccess buildPropertyAccess(Class containerJavaType, String propertyName) {
+        return new ThriftPropertyAccess(this, containerJavaType, propertyName);
+    }
 
 }

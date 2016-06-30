@@ -66,12 +66,13 @@ public class AnnotationParser implements EntityParser{
             return position(f1) - position(f2);
         }
     };
-    
+
     public final static AnnotationParser INSTANCE = new AnnotationParser();
 
     private AnnotationParser() {
     }
 
+    @Override
     public <T> EntityMapper<T> parseEntity(Class<T> entityClass, EntityMapper.Factory factory, MappingManager mappingManager) {
         Table table = AnnotationChecks.getTypeAnnotation(Table.class, entityClass);
 
@@ -88,7 +89,7 @@ public class AnnotationParser implements EntityParser{
                         "Error creating mapper for class %s, the @%s annotation declares no default keyspace, and the session is not currently logged to any keyspace",
                         entityClass.getSimpleName(),
                         Table.class.getSimpleName()
-                ));
+                        ));
         }
 
         EntityMapper<T> mapper = factory.create(entityClass, ksName, tableName, writeConsistency, readConsistency);
@@ -113,19 +114,19 @@ public class AnnotationParser implements EntityParser{
                 continue;
 
             switch (kind(field)) {
-                case PARTITION_KEY:
-                    pks.add(field);
-                    break;
-                case CLUSTERING_COLUMN:
-                    ccs.add(field);
-                    break;
-                default:
-                    rgs.add(field);
-                    break;
+            case PARTITION_KEY:
+                pks.add(field);
+                break;
+            case CLUSTERING_COLUMN:
+                ccs.add(field);
+                break;
+            default:
+                rgs.add(field);
+                break;
             }
-            
+
             if (field.getAnnotation(Version.class) !=null)
-            	versionField = field;
+                versionField = field;
         }
 
         AtomicInteger columnCounter = mappingManager.isCassandraV1 ? null : new AtomicInteger(0);
@@ -139,11 +140,11 @@ public class AnnotationParser implements EntityParser{
         mapper.addColumns(createColumnMappers(pks, factory, mapper.entityClass, mappingManager, columnCounter),
                 createColumnMappers(ccs, factory, mapper.entityClass, mappingManager, columnCounter),
                 createColumnMappers(rgs, factory, mapper.entityClass, mappingManager, columnCounter));
-        
+
         if (versionField != null){
-            mapper.setVersionColumn(factory.createColumnMapper(mapper.entityClass, fieldDescriptor(versionField), mappingManager, columnCounter));        	
+            mapper.setVersionColumn(factory.createColumnMapper(mapper.entityClass, fieldDescriptor(versionField), mappingManager, columnCounter));
         }
-        
+
         return mapper;
     }
 
@@ -156,6 +157,7 @@ public class AnnotationParser implements EntityParser{
         return mappers;
     }
 
+    @Override
     public <T> MappedUDTCodec<T> parseUDT(Class<T> udtClass, EntityMapper.Factory factory, MappingManager mappingManager) {
         UDT udt = AnnotationChecks.getTypeAnnotation(UDT.class, udtClass);
 
@@ -169,7 +171,7 @@ public class AnnotationParser implements EntityParser{
                         "Error creating UDT codec for class %s, the @%s annotation declares no default keyspace, and the session is not currently logged to any keyspace",
                         udtClass.getSimpleName(),
                         UDT.class.getSimpleName()
-                ));
+                        ));
         }
 
         UserType userType = mappingManager.getSession().getCluster().getMetadata().getKeyspace(ksName).getUserType(udtName);
@@ -188,13 +190,13 @@ public class AnnotationParser implements EntityParser{
                 continue;
 
             switch (kind(field)) {
-                case PARTITION_KEY:
-                    throw new IllegalArgumentException("Annotation @PartitionKey is not allowed in a class annotated by @UDT");
-                case CLUSTERING_COLUMN:
-                    throw new IllegalArgumentException("Annotation @ClusteringColumn is not allowed in a class annotated by @UDT");
-                default:
-                    columns.add(field);
-                    break;
+            case PARTITION_KEY:
+                throw new IllegalArgumentException("Annotation @PartitionKey is not allowed in a class annotated by @UDT");
+            case CLUSTERING_COLUMN:
+                throw new IllegalArgumentException("Annotation @ClusteringColumn is not allowed in a class annotated by @UDT");
+            default:
+                columns.add(field);
+                break;
             }
         }
         Map<String, ColumnMapper<T>> columnMappers = createFieldMappers(columns, factory, udtClass, mappingManager, null);
@@ -224,12 +226,12 @@ public class AnnotationParser implements EntityParser{
 
     private static int position(Field field) {
         switch (kind(field)) {
-            case PARTITION_KEY:
-                return field.getAnnotation(PartitionKey.class).value();
-            case CLUSTERING_COLUMN:
-                return field.getAnnotation(ClusteringColumn.class).value();
-            default:
-                return -1;
+        case PARTITION_KEY:
+            return field.getAnnotation(PartitionKey.class).value();
+        case CLUSTERING_COLUMN:
+            return field.getAnnotation(ClusteringColumn.class).value();
+        default:
+            return -1;
         }
     }
 
@@ -288,13 +290,13 @@ public class AnnotationParser implements EntityParser{
             throw new IllegalArgumentException(String.format(
                     "Cannot create an instance of custom codec %s for field %s",
                     codecClass, field
-            ), e);
+                    ), e);
         }
     }
-    
-	private static FieldDescriptor fieldDescriptor(Field field){
-		return new FieldDescriptor(AnnotationParser.columnName(field), field.getName(), AnnotationParser.kind(field), ColumnScenario.COMMON, (TypeToken<Object>) TypeToken.of(field.getGenericType()), AnnotationParser.customCodec(field));
-    }    
+
+    private static FieldDescriptor fieldDescriptor(Field field){
+        return new FieldDescriptor(AnnotationParser.columnName(field), field.getName(), AnnotationParser.kind(field), ColumnScenario.COMMON, (TypeToken<Object>) TypeToken.of(field.getGenericType()), AnnotationParser.customCodec(field));
+    }
 
     private static Class<? extends TypeCodec<?>> getCodecClass(Field field) {
         Column column = field.getAnnotation(Column.class);

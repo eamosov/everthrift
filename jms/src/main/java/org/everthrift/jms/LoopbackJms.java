@@ -5,15 +5,15 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class LoopbackJms {
-	
-	@Bean
-	public RpcJmsRegistry RpcJmsRegistry(){
-		return new RpcJmsRegistry();
-	}
-	
+
+    @Bean
+    public RpcJmsRegistry RpcJmsRegistry(){
+        return new RpcJmsRegistry();
+    }
+
     @Bean
     public LocalJmsThriftClientServerImpl localJmsThriftClientServerImpl(){
-    	return new LocalJmsThriftClientServerImpl();
+        return new LocalJmsThriftClientServerImpl();
     }
 
 }

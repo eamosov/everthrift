@@ -14,61 +14,61 @@ import com.google.common.eventbus.SubscriberExceptionContext;
 import com.google.common.eventbus.SubscriberExceptionHandler;
 
 public class LocalEventBus implements InitializingBean{
-	
-	private static final Logger log = LoggerFactory.getLogger(LocalEventBus.class);
 
-	@Qualifier("unboundQueueExecutor")
-	@Autowired
-	private Executor executor;
+    private static final Logger log = LoggerFactory.getLogger(LocalEventBus.class);
+
+    @Qualifier("unboundQueueExecutor")
+    @Autowired
+    private Executor executor;
 
     private EventBus eventBus;
-	private EventBus asyncEventBus;
-	
-	public LocalEventBus() {
+    private EventBus asyncEventBus;
 
-	}
-	
-	public LocalEventBus(Executor executor){
-		this.executor = executor;
-		afterPropertiesSet();
-	}
+    public LocalEventBus() {
 
-	@Override
-	public void afterPropertiesSet() {		
-		eventBus = new EventBus(new SubscriberExceptionHandler(){
+    }
 
-			@Override
-			public void handleException(Throwable exception, SubscriberExceptionContext context) {
-				log.error("Exception in eventBus", exception);
-			}});
-		
-		asyncEventBus = new AsyncEventBus(executor, new SubscriberExceptionHandler(){
+    public LocalEventBus(Executor executor){
+        this.executor = executor;
+        afterPropertiesSet();
+    }
 
-			@Override
-			public void handleException(Throwable exception, SubscriberExceptionContext context) {
-				log.error("Exception in asyncEventBus", exception);
-			}});
-	}
+    @Override
+    public void afterPropertiesSet() {
+        eventBus = new EventBus(new SubscriberExceptionHandler(){
 
-	public void register(Object object){
-		eventBus.register(object);
-		asyncEventBus.register(object);
-	}
-	
-	public void post(Object event){
-		eventBus.post(event);
-	}
-	
-	public void postAsync(Object event){
-		asyncEventBus.post(event);
-	}
+            @Override
+            public void handleException(Throwable exception, SubscriberExceptionContext context) {
+                log.error("Exception in eventBus", exception);
+            }});
 
-	public Executor getExecutor() {
-		return executor;
-	}
+        asyncEventBus = new AsyncEventBus(executor, new SubscriberExceptionHandler(){
 
-	public void setExecutor(Executor executor) {
-		this.executor = executor;
-	}
-	
+            @Override
+            public void handleException(Throwable exception, SubscriberExceptionContext context) {
+                log.error("Exception in asyncEventBus", exception);
+            }});
+    }
+
+    public void register(Object object){
+        eventBus.register(object);
+        asyncEventBus.register(object);
+    }
+
+    public void post(Object event){
+        eventBus.post(event);
+    }
+
+    public void postAsync(Object event){
+        asyncEventBus.post(event);
+    }
+
+    public Executor getExecutor() {
+        return executor;
+    }
+
+    public void setExecutor(Executor executor) {
+        this.executor = executor;
+    }
+
 }

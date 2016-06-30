@@ -6,16 +6,16 @@ import org.everthrift.appserver.model.DaoEntityIF;
 
 public class DummyEntity implements DaoEntityIF {
 
-	public DummyEntity() {
-	}
+    public DummyEntity() {
+    }
 
-	@Override
-	public Serializable getPk() {
-		return null;
-	}
+    @Override
+    public Serializable getPk() {
+        return null;
+    }
 
-	@Override
-	public void setPk(Serializable identifier) {		
-	}
+    @Override
+    public void setPk(Serializable identifier) {
+    }
 
 }

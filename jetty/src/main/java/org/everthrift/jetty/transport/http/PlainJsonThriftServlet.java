@@ -57,267 +57,270 @@ import com.google.gson.JsonParser;
 
 public class PlainJsonThriftServlet extends HttpServlet {
 
-	private static final long serialVersionUID = 1L;
-	
-	private static final Logger log = LoggerFactory.getLogger(PlainJsonThriftServlet.class);
-	
-	private ThriftProcessor tp;
-	
-	@Autowired
-	private ApplicationContext context;
-	
-	@Autowired
-	private RpcHttpRegistry registry;
-	
-	private static final Gson gson =
-			new GsonBuilder().
-			setPrettyPrinting().
-			disableHtmlEscaping().
-			registerTypeHierarchyAdapter(TBase.class, new TBaseSerializer()).
-			create();
-	
-	
-	@PostConstruct
-	public void afterPropertiesSet() throws Exception {
-		tp =ThriftProcessor.create(context, registry);
-	}
+    private static final long serialVersionUID = 1L;
 
-    protected void doOptions(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException {
-		response.setHeader("Access-Control-Allow-Origin", "*");
-		response.setHeader("Access-Control-Allow-Headers", "Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
-		super.doOptions(req, response);
+    private static final Logger log = LoggerFactory.getLogger(PlainJsonThriftServlet.class);
+
+    private ThriftProcessor tp;
+
+    @Autowired
+    private ApplicationContext context;
+
+    @Autowired
+    private RpcHttpRegistry registry;
+
+    private static final Gson gson =
+            new GsonBuilder().
+            setPrettyPrinting().
+            disableHtmlEscaping().
+            registerTypeHierarchyAdapter(TBase.class, new TBaseSerializer()).
+            create();
+
+
+    @PostConstruct
+    public void afterPropertiesSet() throws Exception {
+        tp =ThriftProcessor.create(context, registry);
     }
-    
-	@Override
+
+    @Override
+    protected void doOptions(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException {
+        response.setHeader("Access-Control-Allow-Origin", "*");
+        response.setHeader("Access-Control-Allow-Headers", "Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
+        super.doOptions(req, response);
+    }
+
+    @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
-		doPost(request, response);
-	}
-	
-	private void out(AsyncContext asyncContext, HttpServletResponse response, byte buf[]) throws IOException{
-		out(asyncContext, response, buf, buf.length);
-	}
-	
-	private void out(AsyncContext asyncContext, HttpServletResponse response, byte buf[], int length) throws IOException{
-		final ServletOutputStream out = response.getOutputStream();
-		
-		out.setWriteListener(new WriteListener(){
-		    public void onWritePossible() throws IOException { 
-		    	out.write(buf, 0, length);
-		    	asyncContext.complete();
-		    }
-		    
-		    public void onError(Throwable t){
-		    	log.error("Async Error",t);
-		    	asyncContext.complete();
-		    }
-		});		
-	}
-	
-	@Override
+        doPost(request, response);
+    }
+
+    private void out(AsyncContext asyncContext, HttpServletResponse response, byte buf[]) throws IOException{
+        out(asyncContext, response, buf, buf.length);
+    }
+
+    private void out(AsyncContext asyncContext, HttpServletResponse response, byte buf[], int length) throws IOException{
+        final ServletOutputStream out = response.getOutputStream();
+
+        out.setWriteListener(new WriteListener(){
+            @Override
+            public void onWritePossible() throws IOException {
+                out.write(buf, 0, length);
+                asyncContext.complete();
+            }
+
+            @Override
+            public void onError(Throwable t){
+                log.error("Async Error",t);
+                asyncContext.complete();
+            }
+        });
+    }
+
+    @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
-		
-		final AsyncContext asyncContext = request.startAsync();
-		
-		final String msgName = request.getPathInfo().substring(1);
-		
-		final Map<String, Object> attributes = Maps.newHashMap();
-		attributes.put(MessageWrapper.HTTP_REQUEST_PARAMS, Optional.fromNullable(request.getParameterMap()).or(Collections.emptyMap()));
-		attributes.put(MessageWrapper.HTTP_COOKIES, Optional.fromNullable(request.getCookies()).or(() -> new Cookie[0]));
-		attributes.put(MessageWrapper.HTTP_HEADERS, Collections.list(request.getHeaderNames()).stream().map( n -> Pair.create(n, request.getHeader(n))).collect(Collectors.toMap(Pair::getFirst, Pair::getSecond)));
-		
-		try {
-			final Pair<TMemoryBuffer, Integer> mw = tp.process(new ThriftProtocolSupportIF<Pair<TMemoryBuffer, Integer>>(){
 
-				@Override
-				public String getSessionId() {
-					return null;
-				}
+        final AsyncContext asyncContext = request.startAsync();
 
-				@Override
-				public TMessage getTMessage() throws TException {
-					return new TMessage(msgName, TMessageType.CALL, 0);
-				}
+        final String msgName = request.getPathInfo().substring(1);
 
-				@Override
-				public Map<String, Object> getAttributes() {
-					return attributes;
-				}
+        final Map<String, Object> attributes = Maps.newHashMap();
+        attributes.put(MessageWrapper.HTTP_REQUEST_PARAMS, Optional.fromNullable(request.getParameterMap()).or(Collections.emptyMap()));
+        attributes.put(MessageWrapper.HTTP_COOKIES, Optional.fromNullable(request.getCookies()).or(() -> new Cookie[0]));
+        attributes.put(MessageWrapper.HTTP_HEADERS, Collections.list(request.getHeaderNames()).stream().map( n -> Pair.create(n, request.getHeader(n))).collect(Collectors.toMap(Pair::getFirst, Pair::getSecond)));
 
-				@Override
-				public <T extends TBase> T readArgs(ThriftControllerInfo tInfo) throws TException {
-					final JsonParser jsonParser = new JsonParser();
-					
-					final JsonObject _args;
-					final byte[] packet;
-					try {
-						packet = IOUtils.toByteArray(request.getInputStream());
-					} catch (IOException e1) {
-						throw new TException(e1);
-					}
-					
-					final JsonElement e = jsonParser.parse(new String(packet));
-					if (e.isJsonNull()){
-						_args = new JsonObject();
-					}else if (e.isJsonObject()){
-						_args = e.getAsJsonObject();	
-					}else{
-						throw new TProtocolException("POST data must be a JSON object");
-					}
-										
-					for (Map.Entry<String, String[]> _e: request.getParameterMap().entrySet()){
-						_args.add(_e.getKey(), jsonParser.parse(_e.getValue()[0]));
-					}
-					
-					log.debug("method:{}, args:{}", msgName, _args);
-					
-					final T ret =  (T)gson.fromJson(_args, tInfo.getArgCls());
-					
-					try{
-						final Method m = tInfo.getArgCls().getMethod("validate");
-						m.invoke(ret);
-					} catch(NoSuchMethodException | IllegalAccessException | IllegalArgumentException e1){						
-					} catch (InvocationTargetException e1) {
-						Throwables.propagateIfInstanceOf(e1.getCause(), TException.class);
-						throw Throwables.propagate(e1.getCause());
-					}
-					
-					return ret;
-				}
+        try {
+            final Pair<TMemoryBuffer, Integer> mw = tp.process(new ThriftProtocolSupportIF<Pair<TMemoryBuffer, Integer>>(){
 
-				@Override
-				public void skip() throws TException {
-					
-				}
-				
-				private Pair<TMemoryBuffer, Integer> result(int code, String message, int httpStatusCode){
-					final TMemoryBuffer outT = new TMemoryBuffer(1024);
-					final JsonObject ex = new JsonObject();
-					ex.addProperty("code", code);
-					ex.addProperty("message", message);
-					try {
-						outT.write(ex.toString().getBytes());
-					} catch (TTransportException e) {
-						throw new RuntimeException(e);
-					}
-					return Pair.create(outT, httpStatusCode);																			
-				}
-				
-				@Override
-				public Pair<TMemoryBuffer, Integer> result(final Object o, final ThriftControllerInfo tInfo) {
-					
-					int httpCode = 200;
-					
-					if (o instanceof TApplicationException){
-						return result(((TApplicationException)o).getType(), ((TApplicationException)o).getMessage(), 400);
-						
-					}else if (o instanceof TProtocolException) {
-						return result(TApplicationException.PROTOCOL_ERROR, ((Exception)o).getMessage(), 400);
-						
-						
-					}else if (o instanceof Exception){
-												
-												
-						final Map<String, PropertyDescriptor>  props = ClassUtils.getPropertyDescriptors(o.getClass());
-						
-						httpCode = 400;
-						
-						final PropertyDescriptor httpCodeDescr = props.get("httpCode");
-						if (httpCodeDescr !=null)
-							try {
-								httpCode = ((Number)httpCodeDescr.getReadMethod().invoke(o)).intValue();
-							} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-							}
-						
-						int code = -1;
-						final PropertyDescriptor codeDescr = props.get("code");
-						if (codeDescr !=null)
-							try {
-								code = ((Number)codeDescr.getReadMethod().invoke(o)).intValue();
-							} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-							}
+                @Override
+                public String getSessionId() {
+                    return null;
+                }
 
-						if (!(o instanceof TException))
-							return result(code, ((Exception)o).getMessage(), httpCode);
-					}
-										
-					final TMemoryBuffer outT = new TMemoryBuffer(1024);
-					try {
-						outT.write(gson.toJson(o).getBytes());
-					} catch (TTransportException e) {
-						throw new RuntimeException(e);
-					}
-					return Pair.create(outT, httpCode);								
-				}
+                @Override
+                public TMessage getTMessage() throws TException {
+                    return new TMessage(msgName, TMessageType.CALL, 0);
+                }
 
-				@Override
-				public void asyncResult(Object o, AbstractThriftController controller) {
-					final Pair<TMemoryBuffer, Integer> tt = result(o, controller.getInfo());
-					try {
-						response.setStatus(tt.second);
-						out(asyncContext, response, tt.first.getArray(), tt.first.length());
-					} catch (IOException e) {
-						log.error("Async Error", e);
-					}
+                @Override
+                public Map<String, Object> getAttributes() {
+                    return attributes;
+                }
 
-					ThriftProcessor.logEnd(ThriftProcessor.log, controller, msgName, getSessionId(), o);					
-				}
+                @Override
+                public <T extends TBase> T readArgs(ThriftControllerInfo tInfo) throws TException {
+                    final JsonParser jsonParser = new JsonParser();
 
-				@Override
-				public boolean allowAsyncAnswer() {
-					return true;
-				}
-				
-			}, new AbstractThriftClient<Object>(null){
-				
-				private SessionIF session;
+                    final JsonObject _args;
+                    final byte[] packet;
+                    try {
+                        packet = IOUtils.toByteArray(request.getInputStream());
+                    } catch (IOException e1) {
+                        throw new TException(e1);
+                    }
 
-				@Override
-				public boolean isThriftCallEnabled() {
-					return false;
-				}
+                    final JsonElement e = jsonParser.parse(new String(packet));
+                    if (e.isJsonNull()){
+                        _args = new JsonObject();
+                    }else if (e.isJsonObject()){
+                        _args = e.getAsJsonObject();
+                    }else{
+                        throw new TProtocolException("POST data must be a JSON object");
+                    }
 
-				@Override
-				public void setSession(SessionIF data) {
-					session = data;				
-				}
+                    for (Map.Entry<String, String[]> _e: request.getParameterMap().entrySet()){
+                        _args.add(_e.getKey(), jsonParser.parse(_e.getValue()[0]));
+                    }
 
-				@Override
-				public SessionIF getSession() {
-					return session;
-				}
+                    log.debug("method:{}, args:{}", msgName, _args);
 
-				@Override
-				public String getSessionId() {
-					return null;
-				}
+                    final T ret =  (T)gson.fromJson(_args, tInfo.getArgCls());
 
-				@Override
-				public String getClientIp() {
-					final String xRealIp = request.getHeader(MessageWrapper.HTTP_X_REAL_IP);
-					if (xRealIp != null)
-						return xRealIp;
-					else
-						return request.getRemoteHost() + ":" + request.getRemotePort();				
-				}
+                    try{
+                        final Method m = tInfo.getArgCls().getMethod("validate");
+                        m.invoke(ret);
+                    } catch(NoSuchMethodException | IllegalAccessException | IllegalArgumentException e1){
+                    } catch (InvocationTargetException e1) {
+                        Throwables.propagateIfInstanceOf(e1.getCause(), TException.class);
+                        throw Throwables.propagate(e1.getCause());
+                    }
 
-				@Override
-				public void addCloseCallback(FutureCallback<Void> callback) {
-				}
+                    return ret;
+                }
 
-				@Override
-				protected <T> ListenableFuture<T> thriftCall(Object sessionId, int timeout, InvocationInfo tInfo) throws TException {
-					throw new NotImplementedException();
-				}});
-			
-			if (mw !=null){
-				response.setStatus(mw.second);
-				response.setContentType("application/json");				
-				out(asyncContext, response, mw.first.getArray(), mw.first.length());
-			}
-		} catch (Exception e) {
-			response.setStatus(500);
-			response.setContentType("text/plain");
-			out(asyncContext, response, e.getMessage().getBytes());
-		}				
-	}    
+                @Override
+                public void skip() throws TException {
+
+                }
+
+                private Pair<TMemoryBuffer, Integer> result(int code, String message, int httpStatusCode){
+                    final TMemoryBuffer outT = new TMemoryBuffer(1024);
+                    final JsonObject ex = new JsonObject();
+                    ex.addProperty("code", code);
+                    ex.addProperty("message", message);
+                    try {
+                        outT.write(ex.toString().getBytes());
+                    } catch (TTransportException e) {
+                        throw new RuntimeException(e);
+                    }
+                    return Pair.create(outT, httpStatusCode);
+                }
+
+                @Override
+                public Pair<TMemoryBuffer, Integer> result(final Object o, final ThriftControllerInfo tInfo) {
+
+                    int httpCode = 200;
+
+                    if (o instanceof TApplicationException){
+                        return result(((TApplicationException)o).getType(), ((TApplicationException)o).getMessage(), 400);
+
+                    }else if (o instanceof TProtocolException) {
+                        return result(TApplicationException.PROTOCOL_ERROR, ((Exception)o).getMessage(), 400);
+
+
+                    }else if (o instanceof Exception){
+
+
+                        final Map<String, PropertyDescriptor>  props = ClassUtils.getPropertyDescriptors(o.getClass());
+
+                        httpCode = 400;
+
+                        final PropertyDescriptor httpCodeDescr = props.get("httpCode");
+                        if (httpCodeDescr !=null)
+                            try {
+                                httpCode = ((Number)httpCodeDescr.getReadMethod().invoke(o)).intValue();
+                            } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+                            }
+
+                        int code = -1;
+                        final PropertyDescriptor codeDescr = props.get("code");
+                        if (codeDescr !=null)
+                            try {
+                                code = ((Number)codeDescr.getReadMethod().invoke(o)).intValue();
+                            } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+                            }
+
+                        if (!(o instanceof TException))
+                            return result(code, ((Exception)o).getMessage(), httpCode);
+                    }
+
+                    final TMemoryBuffer outT = new TMemoryBuffer(1024);
+                    try {
+                        outT.write(gson.toJson(o).getBytes());
+                    } catch (TTransportException e) {
+                        throw new RuntimeException(e);
+                    }
+                    return Pair.create(outT, httpCode);
+                }
+
+                @Override
+                public void asyncResult(Object o, AbstractThriftController controller) {
+                    final Pair<TMemoryBuffer, Integer> tt = result(o, controller.getInfo());
+                    try {
+                        response.setStatus(tt.second);
+                        out(asyncContext, response, tt.first.getArray(), tt.first.length());
+                    } catch (IOException e) {
+                        log.error("Async Error", e);
+                    }
+
+                    ThriftProcessor.logEnd(ThriftProcessor.log, controller, msgName, getSessionId(), o);
+                }
+
+                @Override
+                public boolean allowAsyncAnswer() {
+                    return true;
+                }
+
+            }, new AbstractThriftClient<Object>(null){
+
+                private SessionIF session;
+
+                @Override
+                public boolean isThriftCallEnabled() {
+                    return false;
+                }
+
+                @Override
+                public void setSession(SessionIF data) {
+                    session = data;
+                }
+
+                @Override
+                public SessionIF getSession() {
+                    return session;
+                }
+
+                @Override
+                public String getSessionId() {
+                    return null;
+                }
+
+                @Override
+                public String getClientIp() {
+                    final String xRealIp = request.getHeader(MessageWrapper.HTTP_X_REAL_IP);
+                    if (xRealIp != null)
+                        return xRealIp;
+                    else
+                        return request.getRemoteHost() + ":" + request.getRemotePort();
+                }
+
+                @Override
+                public void addCloseCallback(FutureCallback<Void> callback) {
+                }
+
+                @Override
+                protected <T> ListenableFuture<T> thriftCall(Object sessionId, int timeout, InvocationInfo tInfo) throws TException {
+                    throw new NotImplementedException();
+                }});
+
+            if (mw !=null){
+                response.setStatus(mw.second);
+                response.setContentType("application/json");
+                out(asyncContext, response, mw.first.getArray(), mw.first.length());
+            }
+        } catch (Exception e) {
+            response.setStatus(500);
+            response.setContentType("text/plain");
+            out(asyncContext, response, e.getMessage().getBytes());
+        }
+    }
 }

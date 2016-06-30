@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 /**
  * По-умолчанию сервер будет слушать очередь с именем, совпадающем с именем thrift сервиса.
  * Можно переопределить имя этой очереди через свойство 'rabbit.rpc.${queueName}.queue'
- * 
+ *
  * Клиент сообщения отправляет в Exchange c именем, совпадающем с именем thrift сервиса.
  */
 @Target(ElementType.TYPE)

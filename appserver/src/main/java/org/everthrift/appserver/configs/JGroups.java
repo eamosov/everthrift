@@ -12,24 +12,24 @@ import org.springframework.context.annotation.ImportResource;
 @Configuration
 @ImportResource("classpath:jgroups-beans.xml")
 public class JGroups {
-	
+
     @Bean
     public JChannel yocluster() throws Exception{
-    	return new JChannel("jgroups.xml");
+        return new JChannel("jgroups.xml");
     }
-        
+
     @Bean
     public JgroupsThriftClientServerImpl jgroupsThriftClientServerImpl(@Qualifier("yocluster") JChannel cluster){
-    	return new JgroupsThriftClientServerImpl(cluster);
+        return new JgroupsThriftClientServerImpl(cluster);
     }
 
     @Bean
     public RpcJGroupsRegistry RpcJGroupsRegistry(){
-    	return new RpcJGroupsRegistry();
+        return new RpcJGroupsRegistry();
     }
 
     @Bean
     public JGroupsThriftAdapter jGroupsThriftAdapter(){
-    	return new JGroupsThriftAdapter();
+        return new JGroupsThriftAdapter();
     }
 }

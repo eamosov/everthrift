@@ -13,8 +13,8 @@ import org.springframework.jmx.export.annotation.AnnotationMBeanExporter;
 
 public class PersistanceMbeanExporter extends AnnotationMBeanExporter {
 
-	@Autowired
-	private ApplicationPropertiesModelFactory propertiesModelFactory;
+    @Autowired
+    private ApplicationPropertiesModelFactory propertiesModelFactory;
 
     public PersistanceMbeanExporter() {
         super();
@@ -31,7 +31,7 @@ public class PersistanceMbeanExporter extends AnnotationMBeanExporter {
     }
 
     @Override
-	protected ModelMBean createAndConfigureMBean(Object managedResource, String beanKey) throws MBeanExportException {
+    protected ModelMBean createAndConfigureMBean(Object managedResource, String beanKey) throws MBeanExportException {
         return (ModelMBean) getProxy(super.createAndConfigureMBean(managedResource, beanKey), managedResource);
     }
 

@@ -7,14 +7,14 @@ import org.slf4j.LoggerFactory;
 
 public class JGroupsLogFactory implements CustomLogFactory {
 
-	@Override
-	public Log getLog(Class clazz) {
-		return new Slf4jLogImpl(LoggerFactory.getLogger(clazz));
-	}
+    @Override
+    public Log getLog(Class clazz) {
+        return new Slf4jLogImpl(LoggerFactory.getLogger(clazz));
+    }
 
-	@Override
-	public Log getLog(String category) {
-		return null;
-	}
+    @Override
+    public Log getLog(String category) {
+        return null;
+    }
 
 }

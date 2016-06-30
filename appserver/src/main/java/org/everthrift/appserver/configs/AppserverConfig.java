@@ -22,47 +22,47 @@ import com.google.common.util.concurrent.MoreExecutors;
 @Configuration
 @ImportResource("classpath:app-context.xml")
 public class AppserverConfig {
-	
-	public AppserverConfig(){
-		
-	}
-        
+
+    public AppserverConfig(){
+
+    }
+
     @Bean
     public ListeningExecutorService listeningCallerRunsBoundQueueExecutor(@Qualifier("callerRunsBoundQueueExecutor") ThreadPoolTaskExecutor executor){
-    	return MoreExecutors.listeningDecorator(executor.getThreadPoolExecutor());
+        return MoreExecutors.listeningDecorator(executor.getThreadPoolExecutor());
     }
 
     @Bean
     public ListeningScheduledExecutorService listeningScheduledExecutorService(@Qualifier("myScheduler") ThreadPoolTaskScheduler scheduler){
-    	return MoreExecutors.listeningDecorator(scheduler.getScheduledThreadPoolExecutor());
+        return MoreExecutors.listeningDecorator(scheduler.getScheduledThreadPoolExecutor());
     }
-    
+
     @Bean
     @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
     public ThriftProcessor thriftProcessor(ThriftControllerRegistry registry) {
         return new ThriftProcessor(registry);
     }
-    
+
     @Bean
     public LocalEventBus LocalEventBus(){
-    	return new LocalEventBus();
+        return new LocalEventBus();
     }
-    
+
     @Bean
     public ThriftControllerJmx ThriftControllerJmx(){
-    	return new ThriftControllerJmx();
+        return new ThriftControllerJmx();
     }
-    
+
     @Bean
     @Scope(value=ConfigurableBeanFactory.SCOPE_PROTOTYPE)
     public GetNodeConfigurationController getNodeConfigurationController(){
-    	return new GetNodeConfigurationController();
+        return new GetNodeConfigurationController();
     }
 
     @Bean
     @Scope(value=ConfigurableBeanFactory.SCOPE_PROTOTYPE)
     public OnNodeConfigurationController getOnNodeConfigurationController(){
-    	return new OnNodeConfigurationController();
-    }    
-    
+        return new OnNodeConfigurationController();
+    }
+
 }

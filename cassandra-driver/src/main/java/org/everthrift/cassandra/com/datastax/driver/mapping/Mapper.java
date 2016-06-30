@@ -87,12 +87,12 @@ public class Mapper<T> {
     private volatile EnumMap<Option.Type, Option> defaultGetOptions;
     private volatile EnumMap<Option.Type, Option> defaultGetAllOptions;
     private volatile EnumMap<Option.Type, Option> defaultDeleteOptions;
-    
+
 
     private static final EnumMap<Option.Type, Option> NO_OPTIONS = new EnumMap<Option.Type, Option>(Option.Type.class);
-    
+
     {
-    	NO_OPTIONS.put(Option.Type.SCENARIO, Option.scenario(Scenario.COMMON));
+        NO_OPTIONS.put(Option.Type.SCENARIO, Option.scenario(Scenario.COMMON));
     }
 
     final Function<ResultSet, T> mapOneFunction;
@@ -137,7 +137,7 @@ public class Mapper<T> {
     Session session() {
         return manager.getSession();
     }
-    
+
     public int primaryKeySize() {
         return mapper.primaryKeySize();
     }
@@ -145,25 +145,25 @@ public class Mapper<T> {
     public ColumnMapper<T> getPrimaryKeyColumn(int i) {
         return mapper.getPrimaryKeyColumn(i);
     }
-    
+
     public ColumnMapper<T> getColumnByFieldName(final String fieldName){
-    	return mapper.getColumnByFieldName(fieldName);
+        return mapper.getColumnByFieldName(fieldName);
     }
-    
+
     public Set<ColumnMapper<T>> allColumns(Scenario scenario) {
-    	return mapper.allColumns(scenario);
+        return mapper.allColumns(scenario);
     }
-    
+
     public String getTableName(){
-    	return mapper.getTable();
+        return mapper.getTable();
     }
-    
+
     public ColumnMapper<T> getVersionColumn(){
-    	return mapper.getVersionColumn();
+        return mapper.getVersionColumn();
     }
 
     public ColumnMapper<T> getUpdatedAtColumn(){
-    	return mapper.getUpdatedAtColumn();
+        return mapper.getUpdatedAtColumn();
     }
 
     PreparedStatement getPreparedQuery(QueryType type, Set<ColumnMapper<?>> columns, EnumMap<Option.Type, Option> options) {
@@ -274,7 +274,7 @@ public class Mapper<T> {
 
         return bs;
     }
-    
+
     public UpdateQuery updateQuery(T entity, Option... options) throws NotModifiedException {
         return updateQuery(null, entity, toMapWithDefaults(options, this.defaultUpdateOptions));
     }
@@ -282,63 +282,63 @@ public class Mapper<T> {
     public UpdateQuery updateQuery(T beforeUpdate, T afterUpdate, Option... options) throws NotModifiedException {
         return updateQuery(beforeUpdate, afterUpdate, toMapWithDefaults(options, this.defaultUpdateOptions));
     }
-    
+
     private Number inc(Object value){
-       	if (value instanceof Integer){
-       		return (Integer) value + 1;
-       	}else if (value instanceof Long){
-       		return (Long) value + 1;
-       	}else if (value == null){
-       		return 1;
-       	}else{
-       		throw new RuntimeException("invalid type for version column: " + value.getClass().getCanonicalName());
-       	}    	
+        if (value instanceof Integer){
+            return (Integer) value + 1;
+        }else if (value instanceof Long){
+            return (Long) value + 1;
+        }else if (value == null){
+            return 1;
+        }else{
+            throw new RuntimeException("invalid type for version column: " + value.getClass().getCanonicalName());
+        }
     }
-    
+
     public static class UpdateQuery{
-    	public final Statement statement;
-    	public final Map<ColumnMapper, Object> specialValues; // version and updatedAt 
-    	
-		UpdateQuery(Statement statement, Map<ColumnMapper, Object> specialValues) {
-			super();
-			this.statement = statement;
-			this.specialValues = specialValues;
-		}
-		
-		public void applySpecialValues(Object entity){
-			for (Entry<ColumnMapper, Object> e: specialValues.entrySet()){
-				e.getKey().setValue(entity, e.getValue());
-			}
-		}
+        public final Statement statement;
+        public final Map<ColumnMapper, Object> specialValues; // version and updatedAt
+
+        UpdateQuery(Statement statement, Map<ColumnMapper, Object> specialValues) {
+            super();
+            this.statement = statement;
+            this.specialValues = specialValues;
+        }
+
+        public void applySpecialValues(Object entity){
+            for (Entry<ColumnMapper, Object> e: specialValues.entrySet()){
+                e.getKey().setValue(entity, e.getValue());
+            }
+        }
     }
 
     private UpdateQuery updateQuery(T beforeUpdate, T afterUpdate, EnumMap<Option.Type, Option> options) throws NotModifiedException {
-    	
-    	if (afterUpdate == beforeUpdate)
-    		throw new IllegalArgumentException();
-    	
+
+        if (afterUpdate == beforeUpdate)
+            throw new IllegalArgumentException();
+
         boolean saveNullFields = shouldSaveNullFields(options);
 
         boolean isOptimisticUpdate = options.containsKey(Option.Type.ONLY_IF);
-        
+
         if (isOptimisticUpdate && mapper.getVersionColumn() == null)
-        	throw new RuntimeException("ONLY_IF may be used only with versioned entities");
-    		
+            throw new RuntimeException("ONLY_IF may be used only with versioned entities");
+
         final Map<ColumnMapper<T>, Object> values = new HashMap<ColumnMapper<T>, Object>();
         final Map<ColumnMapper<T>, Object> specialValues = new HashMap<ColumnMapper<T>, Object>();
 
         int nUpdatedFields =0;
-        
+
         final Option.UpdatedAt updatedAtOption = (Option.UpdatedAt)options.get(Option.Type.UPDATED_AT);
-        
+
         if (updatedAtOption !=null && mapper.getUpdatedAtColumn() == null)
-        	throw new RuntimeException("Option.UpdatedAt needs updatedAtColumn");
-        
+            throw new RuntimeException("Option.UpdatedAt needs updatedAtColumn");
+
         Object versionBefore = null;
-        
+
         for (ColumnMapper<T> cm : mapper.allColumns(((Option.Scenario)options.get(Option.Type.SCENARIO)).getScenario())) {
-            final Object value = cm.getValue(afterUpdate);            
-            
+            final Object value = cm.getValue(afterUpdate);
+
             if (beforeUpdate == null){
                 if (cm.kind == ColumnMapper.Kind.REGULAR && (saveNullFields || value != null)) {
                     values.put(cm, value);
@@ -346,55 +346,55 @@ public class Mapper<T> {
                 }
             }else{
                 final Object origValue = cm.getValue(beforeUpdate);
-                
-                if (mapper.isVersion(cm) && isOptimisticUpdate){
-                	                		
-                	if (!Objects.equal(value, origValue))
-                		throw new IllegalArgumentException("entity and original must have the same version");
-            		
-                	versionBefore = origValue;
-                	
-                	final Object _value;
-                	if (mapper.isUpdatedAt(cm))
-                		_value = updatedAtOption !=null ? updatedAtOption.getValue() :  System.currentTimeMillis();
-                	else
-                		_value = inc(value);
 
-            		values.put(cm, _value);
-                	specialValues.put(cm, _value);
+                if (mapper.isVersion(cm) && isOptimisticUpdate){
+
+                    if (!Objects.equal(value, origValue))
+                        throw new IllegalArgumentException("entity and original must have the same version");
+
+                    versionBefore = origValue;
+
+                    final Object _value;
+                    if (mapper.isUpdatedAt(cm))
+                        _value = updatedAtOption !=null ? updatedAtOption.getValue() :  System.currentTimeMillis();
+                        else
+                            _value = inc(value);
+
+                    values.put(cm, _value);
+                    specialValues.put(cm, _value);
                 }else if (mapper.isUpdatedAt(cm)){
-                	final Object _value = updatedAtOption !=null ? updatedAtOption.getValue() :  System.currentTimeMillis();
-                	values.put(cm, _value);
-                	specialValues.put(cm, _value);
+                    final Object _value = updatedAtOption !=null ? updatedAtOption.getValue() :  System.currentTimeMillis();
+                    values.put(cm, _value);
+                    specialValues.put(cm, _value);
                 }else if (cm.kind == ColumnMapper.Kind.REGULAR){
-                	if (!Objects.equal(value, origValue)){
-                		values.put(cm, value);
-                		nUpdatedFields++;
-                	}
+                    if (!Objects.equal(value, origValue)){
+                        values.put(cm, value);
+                        nUpdatedFields++;
+                    }
                 }else if (!Objects.equal(value, origValue)){
-                	throw new IllegalArgumentException("entity must have the same non regular fields");	
-                }            	
+                    throw new IllegalArgumentException("entity must have the same non regular fields");
+                }
             }
         }
-        
+
         if (nUpdatedFields == 0)
-        	throw new NotModifiedException();
-        
+            throw new NotModifiedException();
+
         final BoundStatement bs = getPreparedQuery(QueryType.UPDATE, (Set)values.keySet(), options).bind();
         int i = 0;
-        for (Map.Entry<ColumnMapper<T>, Object> entry : values.entrySet()) {            
-           	setObject(bs, i++, entry.getValue(), entry.getKey());
+        for (Map.Entry<ColumnMapper<T>, Object> entry : values.entrySet()) {
+            setObject(bs, i++, entry.getValue(), entry.getKey());
         }
-        
+
         for (int j = 0; j < mapper.primaryKeySize(); j++){
-        	ColumnMapper<T> cm = mapper.getPrimaryKeyColumn(j);
-        	Object value = cm.getValue(afterUpdate);
-        	setObject(bs, i++, value, cm);
+            ColumnMapper<T> cm = mapper.getPrimaryKeyColumn(j);
+            Object value = cm.getValue(afterUpdate);
+            setObject(bs, i++, value, cm);
         }
-        
+
         if (isOptimisticUpdate){
             setObject(bs, i++, versionBefore, mapper.getVersionColumn());
-        }        
+        }
 
         if (mapper.writeConsistency != null)
             bs.setConsistencyLevel(mapper.writeConsistency);
@@ -403,10 +403,10 @@ public class Mapper<T> {
             opt.checkValidFor(QueryType.UPDATE, manager);
             opt.addToPreparedStatement(bs, i++);
         }
-        
+
         return new UpdateQuery(bs, (Map)specialValues);
     }
-    
+
     public Statement updateQuery(Consumer<Assignments> assignment, Object ...objects ){
         List<Object> pks = new ArrayList<Object>();
         EnumMap<Option.Type, Option> options = new EnumMap<Option.Type, Option>(defaultUpdateOptions);
@@ -419,56 +419,56 @@ public class Mapper<T> {
                 pks.add(o);
             }
         }
-    	return updateQuery(assignment, pks, options);
+        return updateQuery(assignment, pks, options);
     }
-    
+
     private Statement updateQuery(Consumer<Assignments> assignment, List<Object> pks, EnumMap<Option.Type, Option> options){
-    	    		
+
         final Option.UpdatedAt updatedAtOption = (Option.UpdatedAt)options.get(Option.Type.UPDATED_AT);
-        
+
         if (updatedAtOption !=null && mapper.getUpdatedAtColumn() == null)
-        	throw new RuntimeException("Option.UpdatedAt needs updatedAtColumn");
-        
-		final Update update = QueryBuilder.update(mapper.getTable());
-		final Assignments assignments = update.with();
-		
-		if (mapper.getUpdatedAtColumn() !=null){
-			assignments.and(QueryBuilder.set(mapper.getUpdatedAtColumn().getColumnName(), new Date(updatedAtOption !=null ? updatedAtOption.getValue() : System.currentTimeMillis())));
-		}
-		
-		assignment.accept(assignments);
-		
-       	final Update.Where uWhere = update.where();
-		for (int i=0; i< mapper.primaryKeySize(); i++){
-			uWhere.and(QueryBuilder.eq(mapper.getPrimaryKeyColumn(i).getColumnNameUnquoted(), pks.get(i)));
-		}
-		
-		update.setConsistencyLevel(getWriteConsistency());
-		
-		return update;
+            throw new RuntimeException("Option.UpdatedAt needs updatedAtColumn");
+
+        final Update update = QueryBuilder.update(mapper.getTable());
+        final Assignments assignments = update.with();
+
+        if (mapper.getUpdatedAtColumn() !=null){
+            assignments.and(QueryBuilder.set(mapper.getUpdatedAtColumn().getColumnName(), new Date(updatedAtOption !=null ? updatedAtOption.getValue() : System.currentTimeMillis())));
+        }
+
+        assignment.accept(assignments);
+
+        final Update.Where uWhere = update.where();
+        for (int i=0; i< mapper.primaryKeySize(); i++){
+            uWhere.and(QueryBuilder.eq(mapper.getPrimaryKeyColumn(i).getColumnNameUnquoted(), pks.get(i)));
+        }
+
+        update.setConsistencyLevel(getWriteConsistency());
+
+        return update;
     }
-    
+
     private static boolean shouldSaveNullFields(EnumMap<Option.Type, Option> options) {
         SaveNullFields option = (SaveNullFields) options.get(SAVE_NULL_FIELDS);
         return option == null || option.saveNullFields;
     }
 
     private void setObject(BoundStatement bs, int i, Object value, ColumnMapper<?> mapper) {
-    	try{
+        try{
             TypeCodec<Object> customCodec = mapper.getCustomCodec();
             if (customCodec != null)
                 bs.set(i, value, customCodec);
             else
-                bs.set(i, value, mapper.getJavaType());    		
-    	}catch (Exception e){
-    		logger.error(String.format("Error setting %s.%s, query='%s', i=%d, value=%s", getTableName(), mapper.getColumnNameUnquoted(), bs.preparedStatement().getQueryString(), i, value), e);
-    		throw Throwables.propagate(e);
-    	}
+                bs.set(i, value, mapper.getJavaType());
+        }catch (Exception e){
+            logger.error(String.format("Error setting %s.%s, query='%s', i=%d, value=%s", getTableName(), mapper.getColumnNameUnquoted(), bs.preparedStatement().getQueryString(), i, value), e);
+            throw Throwables.propagate(e);
+        }
     }
-    
+
     private boolean isApplied(ResultSet rs){
-    	final List<Row> all = rs.all();
-    	return all.isEmpty() || all.get(0).getBool(0);
+        final List<Row> all = rs.all();
+        return all.isEmpty() || all.get(0).getBool(0);
     }
 
     /**
@@ -479,8 +479,8 @@ public class Mapper<T> {
      * @param entity the entity to save.
      */
     public boolean save(T entity) {
-    	return isApplied(session().execute(saveQuery(entity)));
-    }    
+        return isApplied(session().execute(saveQuery(entity)));
+    }
 
     /**
      * Save an entity mapped by this mapper and using special options for save.
@@ -511,10 +511,10 @@ public class Mapper<T> {
     public ListenableFuture<Boolean> saveAsync(T entity) {
         return Futures.transform(session().executeAsync(saveQuery(entity)), new Function<ResultSet, Boolean>(){
 
-			@Override
-			public Boolean apply(ResultSet input) {
-				return isApplied(input);
-			}});
+            @Override
+            public Boolean apply(ResultSet input) {
+                return isApplied(input);
+            }});
     }
 
     /**
@@ -529,42 +529,42 @@ public class Mapper<T> {
     public ListenableFuture<Boolean> saveAsync(T entity, Option... options) {
         return Futures.transform(session().executeAsync(saveQuery(entity, options)), new Function<ResultSet, Boolean>(){
 
-			@Override
-			public Boolean apply(ResultSet input) {
-				return isApplied(input);
-			}});
+            @Override
+            public Boolean apply(ResultSet input) {
+                return isApplied(input);
+            }});
     }
-    
+
     public boolean update(T entity) throws VersionException {
-    	return update(null, entity);
+        return update(null, entity);
     }
 
     public boolean update(T beforeUpdate, T afterUpdate, Option... options) throws VersionException {
-    	final ResultSet rs;
-    	final UpdateQuery uq;
-		try {
-			uq = updateQuery(beforeUpdate, afterUpdate, options);
-		} catch (NotModifiedException e) {
-			logger.debug("NotModifiedException");
-			return false;
-		}
-		
-		rs = session().execute(uq.statement);
-    	
-    	final List<Row> all = rs.all();
-    	if (all.isEmpty()){ //no optimistic locking
-    		uq.applySpecialValues(afterUpdate);
-    		return true;
-    	}
-    	
-    	final boolean applied = all.get(0).getBool(0);
-    	if (applied){
-    		uq.applySpecialValues(afterUpdate);
-    	}else if (mapper.getVersionColumn() !=null && rs.getColumnDefinitions().contains(mapper.getVersionColumn().getColumnName())){
-    		throw new VersionException(all.get(0).getObject(mapper.getVersionColumn().getColumnName()));
-    	}    	    	
-    	    	
-    	return applied;
+        final ResultSet rs;
+        final UpdateQuery uq;
+        try {
+            uq = updateQuery(beforeUpdate, afterUpdate, options);
+        } catch (NotModifiedException e) {
+            logger.debug("NotModifiedException");
+            return false;
+        }
+
+        rs = session().execute(uq.statement);
+
+        final List<Row> all = rs.all();
+        if (all.isEmpty()){ //no optimistic locking
+            uq.applySpecialValues(afterUpdate);
+            return true;
+        }
+
+        final boolean applied = all.get(0).getBool(0);
+        if (applied){
+            uq.applySpecialValues(afterUpdate);
+        }else if (mapper.getVersionColumn() !=null && rs.getColumnDefinitions().contains(mapper.getVersionColumn().getColumnName())){
+            throw new VersionException(all.get(0).getObject(mapper.getVersionColumn().getColumnName()));
+        }
+
+        return applied;
     }
 
 
@@ -654,16 +654,16 @@ public class Mapper<T> {
         }
         return bs;
     }
-    
+
     public Statement getAllQuery(Option... _options) {
         EnumMap<Option.Type, Option> options = new EnumMap<Option.Type, Option>(defaultGetAllOptions);
 
         for (Option o : _options) {
-        	options.put(o.type, o);
+            options.put(o.type, o);
         }
         return getAllQuery(options);
     }
-    
+
 
     /**
      * Fetch an entity based on its primary key.
@@ -699,7 +699,7 @@ public class Mapper<T> {
     public ListenableFuture<T> getAsync(Object... objects) {
         return Futures.transform(session().executeAsync(getQuery(objects)), mapOneFunction);
     }
-    
+
     public Result<T> getAll(Option... options) {
         return mapAliased(session().execute(getAllQuery(options)));
     }
@@ -958,7 +958,7 @@ public class Mapper<T> {
     public Result<T> mapAliased(ResultSet resultSet) {
         return (manager.isCassandraV1)
                 ? map(resultSet) // no aliases
-                : new Result<T>(resultSet, mapper, protocolVersion, true);
+                        : new Result<T>(resultSet, mapper, protocolVersion, true);
     }
 
     /**
@@ -1005,7 +1005,7 @@ public class Mapper<T> {
     public void resetDefaultGetOptions() {
         this.defaultGetOptions = NO_OPTIONS;
     }
-    
+
     public void setDefaultGetAllOptions(Option... options) {
         this.defaultGetAllOptions = toMap(options);
 
@@ -1049,21 +1049,21 @@ public class Mapper<T> {
         }
         return result;
     }
-    
+
     public ConsistencyLevel getReadConsistency(){
-    	return mapper.readConsistency;
+        return mapper.readConsistency;
     }
-    
+
     public void setReadConsistency(ConsistencyLevel level){
-    	mapper.readConsistency = level;
+        mapper.readConsistency = level;
     }
 
     public ConsistencyLevel getWriteConsistency(){
-    	return mapper.writeConsistency;
+        return mapper.writeConsistency;
     }
 
     public void setWriteConsistency(ConsistencyLevel level){
-    	mapper.writeConsistency = level;
+        mapper.writeConsistency = level;
     }
 
     /**
@@ -1159,29 +1159,29 @@ public class Mapper<T> {
         public static Option saveNullFields(boolean enabled) {
             return new SaveNullFields(enabled);
         }
-        
+
         public static Option ifNotExist(){
-        	return IfNotExist.instance;
+            return IfNotExist.instance;
         }
 
         public static Option ifExist(){
-        	return IfExist.instance;
+            return IfExist.instance;
         }
 
         public static Option onlyIf(){
-        	return OnlyIf.instance;
+            return OnlyIf.instance;
         }
-        
+
         public static Option fetchSize(int fetchSize) {
             return new FetchSize(fetchSize);
         }
 
         public static Option scenario(EntityMapper.Scenario scenario){
-        	return new Scenario(scenario);
+            return new Scenario(scenario);
         }
-        
+
         public static Option updatedAt(long value){
-        	return new UpdatedAt(value);
+            return new UpdatedAt(value);
         }
 
         public Type getType() {
@@ -1189,7 +1189,7 @@ public class Mapper<T> {
         }
 
         abstract void appendTo(Insert insert);
-        
+
         abstract void appendTo(Update update);
 
         abstract void appendTo(Delete.Options usings);
@@ -1211,7 +1211,7 @@ public class Mapper<T> {
 
             @Override
             void appendTo(Insert insert) {
-            	insert.using(QueryBuilder.ttl(QueryBuilder.bindMarker()));
+                insert.using(QueryBuilder.ttl(QueryBuilder.bindMarker()));
             }
 
             @Override
@@ -1235,10 +1235,10 @@ public class Mapper<T> {
                 return true;
             }
 
-			@Override
-			void appendTo(Update update) {
-				update.using(QueryBuilder.ttl(QueryBuilder.bindMarker()));
-			}
+            @Override
+            void appendTo(Update update) {
+                update.using(QueryBuilder.ttl(QueryBuilder.bindMarker()));
+            }
         }
 
         static class Timestamp extends Option {
@@ -1252,7 +1252,7 @@ public class Mapper<T> {
 
             @Override
             void appendTo(Insert insert) {
-            	insert.using(QueryBuilder.timestamp(QueryBuilder.bindMarker()));
+                insert.using(QueryBuilder.timestamp(QueryBuilder.bindMarker()));
             }
 
             @Override
@@ -1276,10 +1276,10 @@ public class Mapper<T> {
                 return true;
             }
 
-			@Override
-			void appendTo(Update update) {
-				update.using(QueryBuilder.timestamp(QueryBuilder.bindMarker()));
-			}
+            @Override
+            void appendTo(Update update) {
+                update.using(QueryBuilder.timestamp(QueryBuilder.bindMarker()));
+            }
         }
 
         static class ConsistencyLevelOption extends Option {
@@ -1301,10 +1301,10 @@ public class Mapper<T> {
                 throw new UnsupportedOperationException("shouldn't be called");
             }
 
-			@Override
-			void appendTo(Update update) {
-				throw new UnsupportedOperationException("shouldn't be called");				
-			}
+            @Override
+            void appendTo(Update update) {
+                throw new UnsupportedOperationException("shouldn't be called");
+            }
 
             @Override
             void addToPreparedStatement(BoundStatement bs, int i) {
@@ -1342,11 +1342,11 @@ public class Mapper<T> {
                 throw new UnsupportedOperationException("shouldn't be called");
             }
 
-			@Override
-			void appendTo(Update update) {
-				throw new UnsupportedOperationException("shouldn't be called");				
-			}
-            
+            @Override
+            void appendTo(Update update) {
+                throw new UnsupportedOperationException("shouldn't be called");
+            }
+
             @Override
             void addToPreparedStatement(BoundStatement bs, int i) {
                 if (this.tracing)
@@ -1384,11 +1384,11 @@ public class Mapper<T> {
             void appendTo(Delete.Options usings) {
                 throw new UnsupportedOperationException("shouldn't be called");
             }
-            
-			@Override
-			void appendTo(Update update) {
-				throw new UnsupportedOperationException("shouldn't be called");
-			}            
+
+            @Override
+            void appendTo(Update update) {
+                throw new UnsupportedOperationException("shouldn't be called");
+            }
 
             @Override
             void addToPreparedStatement(BoundStatement bs, int i) {
@@ -1405,252 +1405,252 @@ public class Mapper<T> {
                 return false;
             }
         }
-        
+
         static class IfNotExist extends Option {
-        	
-        	private static final IfNotExist instance = new IfNotExist(); 
 
-			IfNotExist() {
-				super(Type.IF_NOT_EXISTS);
-			}
+            private static final IfNotExist instance = new IfNotExist();
 
-			@Override
-			void appendTo(Insert insert) {
-				insert.ifNotExists();
-			}
+            IfNotExist() {
+                super(Type.IF_NOT_EXISTS);
+            }
 
-			@Override
-			void appendTo(Delete.Options usings) {
-				throw new UnsupportedOperationException("shouldn't be called");				
-			}
+            @Override
+            void appendTo(Insert insert) {
+                insert.ifNotExists();
+            }
 
-			@Override
-			void appendTo(Update update) {
-				throw new UnsupportedOperationException("shouldn't be called");				
-			}
+            @Override
+            void appendTo(Delete.Options usings) {
+                throw new UnsupportedOperationException("shouldn't be called");
+            }
 
-			@Override
-			void addToPreparedStatement(BoundStatement bs, int i) {
-				
-			}
+            @Override
+            void appendTo(Update update) {
+                throw new UnsupportedOperationException("shouldn't be called");
+            }
 
-			@Override
-			void checkValidFor(QueryType qt, MappingManager manager) throws IllegalArgumentException {
-				checkArgument(qt == QueryType.SAVE, "IF NOT EXISTS option is only allowed in save queries");				
-			}
+            @Override
+            void addToPreparedStatement(BoundStatement bs, int i) {
 
-			@Override
-			boolean isIncludedInQuery() {
-				return true;
-			}        	
+            }
+
+            @Override
+            void checkValidFor(QueryType qt, MappingManager manager) throws IllegalArgumentException {
+                checkArgument(qt == QueryType.SAVE, "IF NOT EXISTS option is only allowed in save queries");
+            }
+
+            @Override
+            boolean isIncludedInQuery() {
+                return true;
+            }
         }
 
         static class IfExist extends Option {
-        	
-        	private static final IfExist instance = new IfExist(); 
 
-        	IfExist() {
-				super(Type.IF_EXISTS);
-			}
+            private static final IfExist instance = new IfExist();
 
-			@Override
-			void appendTo(Insert insert) {
-				throw new UnsupportedOperationException("shouldn't be called");
-			}
+            IfExist() {
+                super(Type.IF_EXISTS);
+            }
 
-			@Override
-			void appendTo(Delete.Options usings) {
-				throw new UnsupportedOperationException("shouldn't be called");				
-			}
+            @Override
+            void appendTo(Insert insert) {
+                throw new UnsupportedOperationException("shouldn't be called");
+            }
 
-			@Override
-			void appendTo(Update update) {
-				update.where().ifExists();
-			}
+            @Override
+            void appendTo(Delete.Options usings) {
+                throw new UnsupportedOperationException("shouldn't be called");
+            }
 
-			@Override
-			void addToPreparedStatement(BoundStatement bs, int i) {
-				
-			}
+            @Override
+            void appendTo(Update update) {
+                update.where().ifExists();
+            }
 
-			@Override
-			void checkValidFor(QueryType qt, MappingManager manager) throws IllegalArgumentException {
-				checkArgument(qt == QueryType.UPDATE, "IF NOT EXISTS option is only allowed in update queries");				
-			}
+            @Override
+            void addToPreparedStatement(BoundStatement bs, int i) {
 
-			@Override
-			boolean isIncludedInQuery() {
-				return true;
-			}        	
+            }
+
+            @Override
+            void checkValidFor(QueryType qt, MappingManager manager) throws IllegalArgumentException {
+                checkArgument(qt == QueryType.UPDATE, "IF NOT EXISTS option is only allowed in update queries");
+            }
+
+            @Override
+            boolean isIncludedInQuery() {
+                return true;
+            }
         }
 
         static class OnlyIf extends Option {
-        	
-        	private static final OnlyIf instance = new OnlyIf(); 
 
-        	OnlyIf() {
-				super(Type.ONLY_IF);
-			}
+            private static final OnlyIf instance = new OnlyIf();
 
-			@Override
-			void appendTo(Insert insert) {
-				throw new UnsupportedOperationException("shouldn't be called");
-			}
+            OnlyIf() {
+                super(Type.ONLY_IF);
+            }
 
-			@Override
-			void appendTo(Delete.Options usings) {
-				throw new UnsupportedOperationException("shouldn't be called");				
-			}
+            @Override
+            void appendTo(Insert insert) {
+                throw new UnsupportedOperationException("shouldn't be called");
+            }
 
-			@Override
-			void appendTo(Update update) {
-				
-			}
+            @Override
+            void appendTo(Delete.Options usings) {
+                throw new UnsupportedOperationException("shouldn't be called");
+            }
 
-			@Override
-			void addToPreparedStatement(BoundStatement bs, int i) {
-				
-			}
+            @Override
+            void appendTo(Update update) {
 
-			@Override
-			void checkValidFor(QueryType qt, MappingManager manager) throws IllegalArgumentException {
-				checkArgument(qt == QueryType.UPDATE, "ONLY_IF option is only allowed in update queries");				
-			}
+            }
 
-			@Override
-			boolean isIncludedInQuery() {
-				return true;
-			}        	
+            @Override
+            void addToPreparedStatement(BoundStatement bs, int i) {
+
+            }
+
+            @Override
+            void checkValidFor(QueryType qt, MappingManager manager) throws IllegalArgumentException {
+                checkArgument(qt == QueryType.UPDATE, "ONLY_IF option is only allowed in update queries");
+            }
+
+            @Override
+            boolean isIncludedInQuery() {
+                return true;
+            }
         }
-        
+
         static class FetchSize extends Option {
-        	
-        	private int fetchSize;
 
-        	FetchSize(int fetchSize) {
-				super(Type.FETCH_SIZE);
-				this.fetchSize = fetchSize;
-			}
+            private int fetchSize;
 
-			@Override
-			void appendTo(Insert insert) {
-				throw new UnsupportedOperationException("shouldn't be called");
-			}
+            FetchSize(int fetchSize) {
+                super(Type.FETCH_SIZE);
+                this.fetchSize = fetchSize;
+            }
 
-			@Override
-			void appendTo(Delete.Options usings) {
-				throw new UnsupportedOperationException("shouldn't be called");				
-			}
+            @Override
+            void appendTo(Insert insert) {
+                throw new UnsupportedOperationException("shouldn't be called");
+            }
 
-			@Override
-			void appendTo(Update update) {
-				throw new UnsupportedOperationException("shouldn't be called");
-			}
+            @Override
+            void appendTo(Delete.Options usings) {
+                throw new UnsupportedOperationException("shouldn't be called");
+            }
 
-			@Override
-			void addToPreparedStatement(BoundStatement bs, int i) {
-				bs.setFetchSize(fetchSize);
-			}
+            @Override
+            void appendTo(Update update) {
+                throw new UnsupportedOperationException("shouldn't be called");
+            }
 
-			@Override
-			void checkValidFor(QueryType qt, MappingManager manager) throws IllegalArgumentException {
-				checkArgument(qt == QueryType.GET_ALL, "FETCH_SIZE option is only allowed in GET_ALL queries");				
-			}
+            @Override
+            void addToPreparedStatement(BoundStatement bs, int i) {
+                bs.setFetchSize(fetchSize);
+            }
 
-			@Override
-			boolean isIncludedInQuery() {
-				return false;
-			}        	
+            @Override
+            void checkValidFor(QueryType qt, MappingManager manager) throws IllegalArgumentException {
+                checkArgument(qt == QueryType.GET_ALL, "FETCH_SIZE option is only allowed in GET_ALL queries");
+            }
+
+            @Override
+            boolean isIncludedInQuery() {
+                return false;
+            }
         }
-        
+
         static class Scenario extends Option {
-        	
-        	private EntityMapper.Scenario scenario;
 
-        	Scenario(EntityMapper.Scenario scenario) {
-				super(Type.SCENARIO);
-				this.scenario = scenario;
-			}
-        	
-        	public EntityMapper.Scenario getScenario(){
-        		return scenario;
-        	}
+            private EntityMapper.Scenario scenario;
 
-			@Override
-			void appendTo(Insert insert) {
-				throw new UnsupportedOperationException("shouldn't be called");
-			}
+            Scenario(EntityMapper.Scenario scenario) {
+                super(Type.SCENARIO);
+                this.scenario = scenario;
+            }
 
-			@Override
-			void appendTo(Delete.Options usings) {
-				throw new UnsupportedOperationException("shouldn't be called");				
-			}
+            public EntityMapper.Scenario getScenario(){
+                return scenario;
+            }
 
-			@Override
-			void appendTo(Update update) {
-				throw new UnsupportedOperationException("shouldn't be called");
-			}
+            @Override
+            void appendTo(Insert insert) {
+                throw new UnsupportedOperationException("shouldn't be called");
+            }
 
-			@Override
-			void addToPreparedStatement(BoundStatement bs, int i) {
-				
-			}
+            @Override
+            void appendTo(Delete.Options usings) {
+                throw new UnsupportedOperationException("shouldn't be called");
+            }
 
-			@Override
-			void checkValidFor(QueryType qt, MappingManager manager) throws IllegalArgumentException {
-								
-			}
+            @Override
+            void appendTo(Update update) {
+                throw new UnsupportedOperationException("shouldn't be called");
+            }
 
-			@Override
-			boolean isIncludedInQuery() {
-				return false;
-			}        	
+            @Override
+            void addToPreparedStatement(BoundStatement bs, int i) {
+
+            }
+
+            @Override
+            void checkValidFor(QueryType qt, MappingManager manager) throws IllegalArgumentException {
+
+            }
+
+            @Override
+            boolean isIncludedInQuery() {
+                return false;
+            }
         }
-        
+
         static class UpdatedAt extends Option {
-        	
-        	final long updatedAt;
 
-        	UpdatedAt(long updatedAt) {
-				super(Type.UPDATED_AT);
-				this.updatedAt = updatedAt;
-			}
-        	
-        	public long getValue(){
-        		return updatedAt;
-        	}
+            final long updatedAt;
 
-			@Override
-			void appendTo(Insert insert) {
-				throw new UnsupportedOperationException("shouldn't be called");
-			}
+            UpdatedAt(long updatedAt) {
+                super(Type.UPDATED_AT);
+                this.updatedAt = updatedAt;
+            }
 
-			@Override
-			void appendTo(Delete.Options usings) {
-				throw new UnsupportedOperationException("shouldn't be called");				
-			}
+            public long getValue(){
+                return updatedAt;
+            }
 
-			@Override
-			void appendTo(Update update) {
-				throw new UnsupportedOperationException("shouldn't be called");
-			}
+            @Override
+            void appendTo(Insert insert) {
+                throw new UnsupportedOperationException("shouldn't be called");
+            }
 
-			@Override
-			void addToPreparedStatement(BoundStatement bs, int i) {
-				
-			}
+            @Override
+            void appendTo(Delete.Options usings) {
+                throw new UnsupportedOperationException("shouldn't be called");
+            }
 
-			@Override
-			void checkValidFor(QueryType qt, MappingManager manager) throws IllegalArgumentException {
-				checkArgument(qt == QueryType.UPDATE, "UpdatedAt option is only allowed in update queries");					
-			}
+            @Override
+            void appendTo(Update update) {
+                throw new UnsupportedOperationException("shouldn't be called");
+            }
 
-			@Override
-			boolean isIncludedInQuery() {
-				return false;
-			}        	
+            @Override
+            void addToPreparedStatement(BoundStatement bs, int i) {
+
+            }
+
+            @Override
+            void checkValidFor(QueryType qt, MappingManager manager) throws IllegalArgumentException {
+                checkArgument(qt == QueryType.UPDATE, "UpdatedAt option is only allowed in update queries");
+            }
+
+            @Override
+            boolean isIncludedInQuery() {
+                return false;
+            }
         }
-        
+
     }
 
     private static class MapperQueryKey {
@@ -1689,9 +1689,9 @@ public class Mapper<T> {
             return Objects.hashCode(queryType, optionTypes, columns);
         }
     }
-    
+
     @Override
     public String toString(){
-    	return mapper.toString();
+        return mapper.toString();
     }
 }

@@ -22,110 +22,110 @@ import org.springframework.context.SmartLifecycle;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 public class ThriftServer implements SmartLifecycle{
-	
-	private static final Logger log = LoggerFactory.getLogger(ThriftServer.class);
-	
-	@Value("${thrift.port}")
-	private int port;
-	
-	@Value("${thrift.host}")
-	private String host;
-	
-	private final RpcSyncTcpRegistry registry;
-	private final TProtocolFactory protocolFactory;
-	private final ApplicationContext context;
-		
-	private TServer server;
-	private TServerSocket trans;
-	
-	private Thread thread;
-	
-	public ThriftServer(ApplicationContext context, TProtocolFactory protocolFactory, RpcSyncTcpRegistry registry){
-		this.protocolFactory = protocolFactory;
-		this.registry = registry;
-		this.context = context;
-	}
-	
-	@Override
-	public synchronized void start(){
-	
-		thread = new Thread(() -> {
-			threadRun();
-		});
-		
-		thread.setName("ThriftServer");
-		thread.start();
-	}
-	
-	@Override
-	public synchronized void stop() {
-		if (thread !=null){
-	        server.stop();
-			thread.interrupt();
-			try {
-				thread.join();
-			} catch (InterruptedException e) {
-			}
-			thread = null;
-		}
-	}
-	
-	private void threadRun() {
-		
-		log.info("Starting ThriftServer on {}:{}", host, port);
-		
-		try {
-			trans = new TServerSocket(new InetSocketAddress(host, port));
-		} catch (TTransportException e) {
-			throw new RuntimeException(e);
-		}
-		
-		final SynchronousQueue<Runnable> executorQueue = new SynchronousQueue<Runnable>();
-		final ExecutorService es = new ThreadPoolExecutor(5, Integer.MAX_VALUE, 60, TimeUnit.SECONDS, executorQueue, new ThreadFactoryBuilder().setDaemon(false).setPriority(Thread.NORM_PRIORITY).setNameFormat("thrift-%d").build());
-			
+
+    private static final Logger log = LoggerFactory.getLogger(ThriftServer.class);
+
+    @Value("${thrift.port}")
+    private int port;
+
+    @Value("${thrift.host}")
+    private String host;
+
+    private final RpcSyncTcpRegistry registry;
+    private final TProtocolFactory protocolFactory;
+    private final ApplicationContext context;
+
+    private TServer server;
+    private TServerSocket trans;
+
+    private Thread thread;
+
+    public ThriftServer(ApplicationContext context, TProtocolFactory protocolFactory, RpcSyncTcpRegistry registry){
+        this.protocolFactory = protocolFactory;
+        this.registry = registry;
+        this.context = context;
+    }
+
+    @Override
+    public synchronized void start(){
+
+        thread = new Thread(() -> {
+            threadRun();
+        });
+
+        thread.setName("ThriftServer");
+        thread.start();
+    }
+
+    @Override
+    public synchronized void stop() {
+        if (thread !=null){
+            server.stop();
+            thread.interrupt();
+            try {
+                thread.join();
+            } catch (InterruptedException e) {
+            }
+            thread = null;
+        }
+    }
+
+    private void threadRun() {
+
+        log.info("Starting ThriftServer on {}:{}", host, port);
+
+        try {
+            trans = new TServerSocket(new InetSocketAddress(host, port));
+        } catch (TTransportException e) {
+            throw new RuntimeException(e);
+        }
+
+        final SynchronousQueue<Runnable> executorQueue = new SynchronousQueue<Runnable>();
+        final ExecutorService es = new ThreadPoolExecutor(5, Integer.MAX_VALUE, 60, TimeUnit.SECONDS, executorQueue, new ThreadFactoryBuilder().setDaemon(false).setPriority(Thread.NORM_PRIORITY).setNameFormat("thrift-%d").build());
+
         final TThreadPoolServer.Args args = new TThreadPoolServer.Args(trans).executorService(es);
         args.transportFactory(new TFramedTransport.Factory());
         args.protocolFactory(protocolFactory);
         final ThriftProcessor tp = ThriftProcessor.create(context, registry);
         args.processor(tp);
         server = new TThreadPoolServer(args);
-        server.serve();        
-	}
-	
-	public void setPort(int port){
-		this.port = port;
-	}
-	
-	public int getPort() {
-		return port;
-	}
+        server.serve();
+    }
 
-	public void setHost(String host){
-		this.host = host;
-	}
-	
-	public String getHost() {
-		return host;
-	}
+    public void setPort(int port){
+        this.port = port;
+    }
 
-	@Override
-	public boolean isRunning() {
-		return thread !=null;
-	}
+    public int getPort() {
+        return port;
+    }
 
-	@Override
-	public int getPhase() {
-		return 0;
-	}
+    public void setHost(String host){
+        this.host = host;
+    }
 
-	@Override
-	public boolean isAutoStartup() {
-		return true;
-	}
+    public String getHost() {
+        return host;
+    }
 
-	@Override
-	public void stop(Runnable callback) {
-		stop();
-		callback.run();		
-	}	
+    @Override
+    public boolean isRunning() {
+        return thread !=null;
+    }
+
+    @Override
+    public int getPhase() {
+        return 0;
+    }
+
+    @Override
+    public boolean isAutoStartup() {
+        return true;
+    }
+
+    @Override
+    public void stop(Runnable callback) {
+        stop();
+        callback.run();
+    }
 }
