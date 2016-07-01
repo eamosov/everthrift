@@ -32,7 +32,7 @@ import org.springframework.transaction.support.TransactionCallbackWithoutResult;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.ClassUtils;
 
-public class MigrationProcessor implements Callable<Boolean>{
+public class MigrationProcessor {
 
     private static final Logger log = LoggerFactory.getLogger(MigrationProcessor.class);
 
@@ -218,8 +218,7 @@ public class MigrationProcessor implements Callable<Boolean>{
         });
     }
 
-    @Override
-    public Boolean call() throws Exception {
+    public void migrate() throws Exception {
 
         final Map<String, MigrationProcessor.Result> results = process(true, Collections.EMPTY_LIST, false);
         for (final Map.Entry<String, MigrationProcessor.Result> entry : results.entrySet())
@@ -228,6 +227,6 @@ public class MigrationProcessor implements Callable<Boolean>{
                 throw entry.getValue().getException();
             }
 
-        return null;
+        return;
     }
 }

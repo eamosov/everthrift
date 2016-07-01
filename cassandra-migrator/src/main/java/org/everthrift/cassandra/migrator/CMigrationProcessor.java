@@ -2,19 +2,19 @@ package org.everthrift.cassandra.migrator;
 
 import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.Callable;
-
-import javax.annotation.PostConstruct;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
 import org.springframework.core.type.filter.AssignableTypeFilter;
+import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 
 import com.datastax.driver.core.Session;
@@ -26,12 +26,11 @@ import io.smartcat.migration.Migration;
 import io.smartcat.migration.MigrationEngine;
 import io.smartcat.migration.MigrationResources;
 
-public class CMigrationProcessor implements Callable<Boolean>{
+public class CMigrationProcessor implements ApplicationContextAware{
 
     private static final Logger log = LoggerFactory.getLogger(CMigrationProcessor.class);
 
-    @Autowired
-    private ConfigurableApplicationContext context;
+    private ApplicationContext context;
 
     private Session session;
     private String schemaVersionCf = "schema_version";
@@ -45,10 +44,6 @@ public class CMigrationProcessor implements Callable<Boolean>{
 
     }
 
-    public CMigrationProcessor(String basePackage){
-        this.basePackage = basePackage;
-    }
-
     private void findMigrations(String basePackage) {
 
         log.info("Using basePackage:{}", basePackage);
@@ -56,7 +51,7 @@ public class CMigrationProcessor implements Callable<Boolean>{
         final ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
         scanner.addIncludeFilter(new AssignableTypeFilter(Migration.class));
 
-        final DefaultListableBeanFactory beanFactory = (DefaultListableBeanFactory)context.getBeanFactory();
+        final DefaultListableBeanFactory beanFactory = (DefaultListableBeanFactory)((ConfigurableApplicationContext)context).getBeanFactory();
 
         for (BeanDefinition b : scanner.findCandidateComponents(basePackage)) {
 
@@ -74,13 +69,13 @@ public class CMigrationProcessor implements Callable<Boolean>{
 
     }
 
-    @PostConstruct
-    private void postConstruct() {
+    public void migrate() throws Exception {
+        
+        Assert.notNull(session);
+        Assert.notNull(context);
+        
         findMigrations(basePackage);
-    }
-
-    @Override
-    public Boolean call() throws Exception {
+        
         migrations.sort(new Comparator<Migration>(){
 
             @Override
@@ -88,7 +83,9 @@ public class CMigrationProcessor implements Callable<Boolean>{
                 return Ints.compare(o1.getVersion(), o2.getVersion());
             }});
         resources.addMigrations(Sets.newLinkedHashSet(migrations));
-        return  MigrationEngine.withSession(session, schemaVersionCf).migrate(resources);
+
+        if (MigrationEngine.withSession(session, schemaVersionCf).migrate(resources) == false)
+            throw new RuntimeException("Error in cassandra migrations");
     }
 
     public String getBasePackage() {
@@ -113,6 +110,11 @@ public class CMigrationProcessor implements Callable<Boolean>{
 
     public void setSchemaVersionCf(String schemaVersionCf) {
         this.schemaVersionCf = schemaVersionCf;
+    }
+
+    @Override
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        this.context = applicationContext;
     }
 
 }

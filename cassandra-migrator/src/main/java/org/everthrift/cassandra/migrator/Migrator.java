@@ -42,7 +42,7 @@ public class Migrator {
         processor = context.getBean(CMigrationProcessor.class);
 
         try{
-            processor.call();
+            processor.migrate();
         }finally{
             context.close();
         }

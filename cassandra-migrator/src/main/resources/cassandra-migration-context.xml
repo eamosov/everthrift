@@ -20,8 +20,8 @@
 	</bean>
 
 	<bean id="Migrator" class="org.everthrift.cassandra.migrator.CMigrationProcessor">
-		<constructor-arg><value>${cassandra.migrations.basePackage}</value></constructor-arg>
 		<property name="session" ref="session"></property>
+		<property name="basePackage" value="${cassandra.migrations.basePackage}"></property>
 	</bean>
 
-    </beans>
+</beans>

@@ -220,7 +220,7 @@ public class AppserverApplication {
         initialized = true;
     }
 
-    private Object runCallable(String xmlConfig, String className) throws Exception {
+    private void runInContext(String xmlConfig, String className, String method) throws Exception {
 
         final Class<Callable> proc =  (Class)Class.forName(className);
 
@@ -231,11 +231,11 @@ public class AppserverApplication {
 
             xmlContext.refresh();
 
-            final Callable processor = xmlContext.getBean(proc);
+            final Object processor = xmlContext.getBean(proc);
             if (processor == null)
                 throw new RuntimeException("Can't find Migration processor bean");
 
-            return processor.call();
+            processor.getClass().getMethod(method).invoke(processor);
         } finally {
             if (xmlContext != null && xmlContext.isActive())
                 xmlContext.close();
@@ -245,14 +245,14 @@ public class AppserverApplication {
     private void runSqlMigrator() throws Exception {
         log.info("Executing SQL migrations");
 
-        runCallable("migration-context.xml", "org.everthrift.sql.migration.MigrationProcessor");
+        runInContext("migration-context.xml", "org.everthrift.sql.migration.MigrationProcessor", "migrate");
     }
 
     private void runCMigrationProcessor() throws Exception {
 
         log.info("Executing cassandra migrations");
 
-        runCallable("classpath:cassandra-migration-context.xml", "org.everthrift.cassandra.migrator.CMigrationProcessor");
+        runInContext("classpath:cassandra-migration-context.xml", "org.everthrift.cassandra.migrator.CMigrationProcessor", "migrate");
     }
 
 
