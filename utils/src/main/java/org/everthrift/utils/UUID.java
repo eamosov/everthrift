@@ -13,58 +13,58 @@ import com.google.common.primitives.Longs;
 import com.google.common.primitives.UnsignedLongs;
 
 public class UUID implements Comparable<UUID>, Serializable{
-	
-	private static final Random rnd = new Random();
-	
-	  private static final class UUIDDomain extends DiscreteDomain<UUID> implements Serializable {
-		    private static final UUIDDomain INSTANCE = new UUIDDomain();
 
-		    @Override
-		    public UUID next(UUID value) {
-		      return value.equals(UUID.MAX_VALUE) ? null : value.inc();
-		    }
+    private static final Random rnd = new Random();
 
-		    @Override
-		    public UUID previous(UUID value) {
-		      return value.equals(UUID.MIN_VALUE) ? null : value.dec();
-		    }
+    private static final class UUIDDomain extends DiscreteDomain<UUID> implements Serializable {
+        private static final UUIDDomain INSTANCE = new UUIDDomain();
 
-		    @Override
-		    public long distance(UUID start, UUID end) {
-		      return end.subtract(start).toLongNotOverflow();
-		    }
+        @Override
+        public UUID next(UUID value) {
+            return value.equals(UUID.MAX_VALUE) ? null : value.inc();
+        }
 
-		    @Override
-		    public UUID minValue() {
-		      return UUID.MIN_VALUE;
-		    }
+        @Override
+        public UUID previous(UUID value) {
+            return value.equals(UUID.MIN_VALUE) ? null : value.dec();
+        }
 
-		    @Override
-		    public UUID maxValue() {
-		      return UUID.MAX_VALUE;
-		    }
+        @Override
+        public long distance(UUID start, UUID end) {
+            return end.subtract(start).toLongNotOverflow();
+        }
 
-		    private Object readResolve() {
-		      return INSTANCE;
-		    }
+        @Override
+        public UUID minValue() {
+            return UUID.MIN_VALUE;
+        }
 
-		    @Override
-		    public String toString() {
-		      return "DiscreteDomain.uuids()";
-		    }
+        @Override
+        public UUID maxValue() {
+            return UUID.MAX_VALUE;
+        }
 
-		    private static final long serialVersionUID = 0;
-		  }
+        private Object readResolve() {
+            return INSTANCE;
+        }
+
+        @Override
+        public String toString() {
+            return "DiscreteDomain.uuids()";
+        }
+
+        private static final long serialVersionUID = 0;
+    }
 
 
-	public static final DiscreteDomain<UUID> discreteDomain = UUIDDomain.INSTANCE; 
+    public static final DiscreteDomain<UUID> discreteDomain = UUIDDomain.INSTANCE;
 
-	
-	public static final UUID MIN_VALUE = createWithString(0,0);
-	public static final UUID MAX_VALUE = createWithString(0xFFFFFFFFFFFFFFFFL, 0xFFFFFFFFFFFFFFFFL);
-	
-	public static final UUID MIN_LONG = createWithString(0xFFFFFFFFFFFFFFFFL, Long.MIN_VALUE);
-	public static final UUID MAX_LONG = createWithString(0, Long.MAX_VALUE);
+
+    public static final UUID MIN_VALUE = createWithString(0,0);
+    public static final UUID MAX_VALUE = createWithString(0xFFFFFFFFFFFFFFFFL, 0xFFFFFFFFFFFFFFFFL);
+
+    public static final UUID MIN_LONG = createWithString(0xFFFFFFFFFFFFFFFFL, Long.MIN_VALUE);
+    public static final UUID MAX_LONG = createWithString(0, Long.MAX_VALUE);
 
     /**
      * Explicit serialVersionUID for interoperability.
@@ -84,11 +84,11 @@ public class UUID implements Comparable<UUID>, Serializable{
      * @serial
      */
     private final long leastSigBits;
-    
+
     private final String asString;
 
     private static final UUID[] cache = new UUID[1024*10];
-    
+
     /*
 
     // Constructors and Factories
@@ -126,109 +126,109 @@ public class UUID implements Comparable<UUID>, Serializable{
         this.leastSigBits = leastSigBits;
         this.asString = null;
     }
-    
+
     private UUID(long mostSigBits, long leastSigBits, String asString) {
         this.mostSigBits = mostSigBits;
         this.leastSigBits = leastSigBits;
         this.asString = asString;
     }
-    
+
     private static UUID createWithString(long mostSigBits, long leastSigBits) {
-    	return new UUID(mostSigBits, leastSigBits, new UUID(mostSigBits, leastSigBits).toString());
+        return new UUID(mostSigBits, leastSigBits, new UUID(mostSigBits, leastSigBits).toString());
     }
 
     public static UUID fromJdkUUID(java.util.UUID uuid){
-    	if (uuid == null)
-    		return null;
-    	
-    	return new UUID(uuid.getMostSignificantBits(), uuid.getLeastSignificantBits());
+        if (uuid == null)
+            return null;
+
+        return new UUID(uuid.getMostSignificantBits(), uuid.getLeastSignificantBits());
     }
 
-    public UUID(int space8bit, long hi32Bits, long low32Bits, long millis48Bits, int rnd8Bits){    	
-    	mostSigBits = (((long)(space8bit & 0xFF)) << 56) | ((hi32Bits & 0xFFFFFFFFL) << 24) | ((low32Bits >> 8) & 0xFFFFFFL);
-    	leastSigBits = ((low32Bits & 0xFF) << 56) | ((millis48Bits & 0xFFFFFFFFFFFFL) << 8) | (rnd8Bits & 0xFF);
-    	asString = null;
+    public UUID(int space8bit, long hi32Bits, long low32Bits, long millis48Bits, int rnd8Bits){
+        mostSigBits = (((long)(space8bit & 0xFF)) << 56) | ((hi32Bits & 0xFFFFFFFFL) << 24) | ((low32Bits >> 8) & 0xFFFFFFL);
+        leastSigBits = ((low32Bits & 0xFF) << 56) | ((millis48Bits & 0xFFFFFFFFFFFFL) << 8) | (rnd8Bits & 0xFF);
+        asString = null;
     }
 
-    public UUID(int space8bit, long hi32Bits, long low32Bits, long seq56Bits){    	
-    	mostSigBits = (((long)(space8bit & 0xFF)) << 56) | ((hi32Bits & 0xFFFFFFFFL) << 24) | ((low32Bits >> 8) & 0xFFFFFFL);
-    	leastSigBits = ((low32Bits & 0xFF) << 56) | (seq56Bits & 0xFFFFFFFFFFFFFFL);
-    	asString = null;
+    public UUID(int space8bit, long hi32Bits, long low32Bits, long seq56Bits){
+        mostSigBits = (((long)(space8bit & 0xFF)) << 56) | ((hi32Bits & 0xFFFFFFFFL) << 24) | ((low32Bits >> 8) & 0xFFFFFFL);
+        leastSigBits = ((low32Bits & 0xFF) << 56) | (seq56Bits & 0xFFFFFFFFFFFFFFL);
+        asString = null;
     }
 
-	public int getSpace8bit(){
-		return (int)((mostSigBits >> 56) & 0xFF);
-	}
+    public int getSpace8bit(){
+        return (int)((mostSigBits >> 56) & 0xFF);
+    }
 
-	public long getHi32Bits(){
-		return (mostSigBits >> 24) & 0xFFFFFFFFL;
-	}
-	
-	public long getLow32Bits(){
-		return  ((mostSigBits & 0xFFFFFFL) << 8) | ((leastSigBits >> 56) & 0xFFL);
-	}
-	
-	public long getMillis48Bits(){
-		return (leastSigBits >> 8) & 0xFFFFFFFFFFFFL;
-	}
-	
-	public int getRnd8Bits(){
-		return (int)(leastSigBits & 0xFF);
-	}
-	
-	public long getSeq56Bits(){
-		return leastSigBits & 0xFFFFFFFFFFFFFFL;
-	}
+    public long getHi32Bits(){
+        return (mostSigBits >> 24) & 0xFFFFFFFFL;
+    }
 
-	public static UUID rnd(int space8bit, long hi32Bits, long low32Bits){
-		return new UUID(space8bit, hi32Bits, low32Bits, System.currentTimeMillis(), rnd.nextInt());
-	}
+    public long getLow32Bits(){
+        return  ((mostSigBits & 0xFFFFFFL) << 8) | ((leastSigBits >> 56) & 0xFFL);
+    }
 
-	public static UUID rnd(int space8bit, long low32Bits){
-		return rnd(space8bit, 0, low32Bits);
-	}
-	
-	public static UUID rnd(int space8bit){
-		final long time = System.currentTimeMillis();
-		return new UUID(space8bit, (time >> 32) & 0xFFFFFFFFL, time & 0xFFFFFFFFL, rnd.nextInt(), rnd.nextInt());
-	}
+    public long getMillis48Bits(){
+        return (leastSigBits >> 8) & 0xFFFFFFFFFFFFL;
+    }
 
-	public static UUID hash(int space8bit, String value){
-		
-	    try {
-	    	final MessageDigest md = MessageDigest.getInstance("SHA-1");
-	    	final ByteBuffer b = ByteBuffer.wrap(md.digest(value.getBytes()));
-	    	final long mostSigBits = (((long)(space8bit & 0xFF)) << 56) | (b.getLong() & 0xFFFFFFFFFFFFFFL);
-	    	final long leastSigBits = b.getLong();
-	    	return new UUID(mostSigBits, leastSigBits);
-	    } catch(NoSuchAlgorithmException e) {
-	        throw new RuntimeException(e);
-	    } 
-	}
-	
-//	/**
-//	 * 
-//	 * @param uuid
-//	 * @return get middle 40bits
-//	 */
-//	public static long getAccountId(String uuid){
-//		final  UUID u = UUID.fromString(uuid);
-//		return u.getAccountId();
-//	}
+    public int getRnd8Bits(){
+        return (int)(leastSigBits & 0xFF);
+    }
 
-//	public long getAccountId(){
-//		final int space = getSpace8bit(); 
-//		if (space == 8/*Device*/ || space == 10 /*gift image*/ || space == 11 /*offer image*/) 
-//			return getMost40Bits();
-//		else
-//			return getMiddle40Bits();
-//	}
+    public long getSeq56Bits(){
+        return leastSigBits & 0xFFFFFFFFFFFFFFL;
+    }
+
+    public static UUID rnd(int space8bit, long hi32Bits, long low32Bits){
+        return new UUID(space8bit, hi32Bits, low32Bits, System.currentTimeMillis(), rnd.nextInt());
+    }
+
+    public static UUID rnd(int space8bit, long low32Bits){
+        return rnd(space8bit, 0, low32Bits);
+    }
+
+    public static UUID rnd(int space8bit){
+        final long time = System.currentTimeMillis();
+        return new UUID(space8bit, (time >> 32) & 0xFFFFFFFFL, time & 0xFFFFFFFFL, rnd.nextInt(), rnd.nextInt());
+    }
+
+    public static UUID hash(int space8bit, String value){
+
+        try {
+            final MessageDigest md = MessageDigest.getInstance("SHA-1");
+            final ByteBuffer b = ByteBuffer.wrap(md.digest(value.getBytes()));
+            final long mostSigBits = (((long)(space8bit & 0xFF)) << 56) | (b.getLong() & 0xFFFFFFFFFFFFFFL);
+            final long leastSigBits = b.getLong();
+            return new UUID(mostSigBits, leastSigBits);
+        } catch(NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    //	/**
+    //	 *
+    //	 * @param uuid
+    //	 * @return get middle 40bits
+    //	 */
+    //	public static long getAccountId(String uuid){
+    //		final  UUID u = UUID.fromString(uuid);
+    //		return u.getAccountId();
+    //	}
+
+    //	public long getAccountId(){
+    //		final int space = getSpace8bit();
+    //		if (space == 8/*Device*/ || space == 10 /*gift image*/ || space == 11 /*offer image*/)
+    //			return getMost40Bits();
+    //		else
+    //			return getMiddle40Bits();
+    //	}
 
 
-//	public long getLeast40Bits(){
-//		return leastSigBits & 0xFFFFFFFFFFL;
-//	}
-		
+    //	public long getLeast40Bits(){
+    //		return leastSigBits & 0xFFFFFFFFFFL;
+    //	}
+
     /**
      * Creates a {@code UUID} from the string standard representation as
      * described in the {@link #toString} method.
@@ -244,12 +244,12 @@ public class UUID implements Comparable<UUID>, Serializable{
      *
      */
     public static UUID fromString(String name) {
-    	
-    	final int cacheKey = Math.abs(name.hashCode()) % cache.length;
-    	final UUID cached = cache[cacheKey];
-    	if (cached !=null && cached.asString.equals(name))
-    		return cached;
-    	
+
+        final int cacheKey = Math.abs(name.hashCode()) % cache.length;
+        final UUID cached = cache[cacheKey];
+        if (cached !=null && cached.asString.equals(name))
+            return cached;
+
         String[] components = name.split("-");
         if (components.length != 5)
             throw new IllegalArgumentException("Invalid UUID string: "+name);
@@ -265,9 +265,9 @@ public class UUID implements Comparable<UUID>, Serializable{
         long leastSigBits = Long.decode(components[3]).longValue();
         leastSigBits <<= 48;
         leastSigBits |= Long.decode(components[4]).longValue();
-        
+
         final UUID created =  new UUID(mostSigBits, leastSigBits, name);
-        
+
         cache[cacheKey] = created;
         return created;
     }
@@ -320,19 +320,19 @@ public class UUID implements Comparable<UUID>, Serializable{
      * @return  A string representation of this {@code UUID}
      */
     @Override
-	public String toString() {
-    	if (this.asString !=null)
-    		return asString;
-    	else
-	        return (digits(mostSigBits >> 32, 8) + "-" +
-	                digits(mostSigBits >> 16, 4) + "-" +
-	                digits(mostSigBits, 4) + "-" +
-	                digits(leastSigBits >> 48, 4) + "-" +
-	                digits(leastSigBits, 12));
+    public String toString() {
+        if (this.asString !=null)
+            return asString;
+        else
+            return (digits(mostSigBits >> 32, 8) + "-" +
+                    digits(mostSigBits >> 16, 4) + "-" +
+                    digits(mostSigBits, 4) + "-" +
+                    digits(leastSigBits >> 48, 4) + "-" +
+                    digits(leastSigBits, 12));
     }
-    
+
     public static List<String> toString(List<UUID> uuids){
-    	return Lists.transform(uuids, UUID::toString);
+        return Lists.transform(uuids, UUID::toString);
     }
 
     /** Returns val represented by the specified number of hex digits. */
@@ -347,7 +347,7 @@ public class UUID implements Comparable<UUID>, Serializable{
      * @return  A hash code value for this {@code UUID}
      */
     @Override
-	public int hashCode() {
+    public int hashCode() {
         long hilo = mostSigBits ^ leastSigBits;
         return ((int)(hilo >> 32)) ^ (int) hilo;
     }
@@ -365,7 +365,7 @@ public class UUID implements Comparable<UUID>, Serializable{
      *          otherwise
      */
     @Override
-	public boolean equals(Object obj) {
+    public boolean equals(Object obj) {
         if ((null == obj) || (obj.getClass() != UUID.class))
             return false;
         UUID id = (UUID)obj;
@@ -390,16 +390,16 @@ public class UUID implements Comparable<UUID>, Serializable{
      *
      */
     @Override
-	public int compareTo(UUID val) {
-    	final int r = UnsignedLongs.compare(this.mostSigBits, val.mostSigBits);
-    	
-    	return r==0 ? UnsignedLongs.compare(this.leastSigBits, val.leastSigBits) : r;
+    public int compareTo(UUID val) {
+        final int r = UnsignedLongs.compare(this.mostSigBits, val.mostSigBits);
+
+        return r==0 ? UnsignedLongs.compare(this.leastSigBits, val.leastSigBits) : r;
     }
 
     public int compareSigned(UUID val) {
-    	final int r = Longs.compare(this.mostSigBits, val.mostSigBits);
-    	
-    	return r==0 ? UnsignedLongs.compare(this.leastSigBits, val.leastSigBits) : r;
+        final int r = Longs.compare(this.mostSigBits, val.mostSigBits);
+
+        return r==0 ? UnsignedLongs.compare(this.leastSigBits, val.leastSigBits) : r;
     }
 
     public static UUID inc(UUID N)
@@ -408,11 +408,11 @@ public class UUID implements Comparable<UUID>, Serializable{
         long hi = N.mostSigBits +  (((N.leastSigBits ^ lo) & N.leastSigBits) >>> 63);
         return new UUID(hi, lo);
     }
-    
+
     public UUID inc(){
-    	return inc(this);
+        return inc(this);
     }
-    
+
     public static UUID dec(UUID N)
     {
         long lo = (N.leastSigBits - 1);
@@ -421,7 +421,7 @@ public class UUID implements Comparable<UUID>, Serializable{
     }
 
     public UUID dec(){
-    	return dec(this);
+        return dec(this);
     }
 
     public static UUID add(UUID N, UUID M)
@@ -431,11 +431,11 @@ public class UUID implements Comparable<UUID>, Serializable{
         long Lo = N.leastSigBits + M.leastSigBits;
         return new UUID(Hi, Lo);
     }
-    
+
     public UUID add(UUID M){
-    	return add(this, M);
+        return add(this, M);
     }
-    
+
     public static UUID subtract(UUID N, UUID M)
     {
         final long Lo = N.leastSigBits - M.leastSigBits;
@@ -445,35 +445,35 @@ public class UUID implements Comparable<UUID>, Serializable{
     }
 
     public UUID subtract(UUID M){
-    	return subtract(this, M);
+        return subtract(this, M);
     }
 
     public static long toLongNotOverflow(UUID r){
-    	    	
-    	if (r.compareSigned(MIN_LONG)==-1)
-    		return Long.MIN_VALUE;
-    	else if (r.compareSigned(MAX_LONG)==1)
-    		return Long.MAX_VALUE;
-    	else 
-    		return r.leastSigBits;
+
+        if (r.compareSigned(MIN_LONG)==-1)
+            return Long.MIN_VALUE;
+        else if (r.compareSigned(MAX_LONG)==1)
+            return Long.MAX_VALUE;
+        else
+            return r.leastSigBits;
     }
-    
+
     public long toLongNotOverflow(){
-    	return toLongNotOverflow(this);
+        return toLongNotOverflow(this);
     }
-    
+
     public static UUID fromBytes(byte []bytes){
-    	ByteBuffer bb = ByteBuffer.wrap(bytes);
+        ByteBuffer bb = ByteBuffer.wrap(bytes);
         long firstLong = bb.getLong();
         long secondLong = bb.getLong();
-        return new UUID(firstLong, secondLong);    	
+        return new UUID(firstLong, secondLong);
     }
- 
-    public byte[] asBytes(){    	
-    	final ByteBuffer bb = ByteBuffer.wrap(new byte[16]);
+
+    public byte[] asBytes(){
+        final ByteBuffer bb = ByteBuffer.wrap(new byte[16]);
         bb.putLong(getMostSignificantBits());
         bb.putLong(getLeastSignificantBits());
-        return bb.array();    	
+        return bb.array();
     }
 
 }

@@ -9,7 +9,7 @@ import java.util.Map;
 import org.hibernate.HibernateException;
 import org.hibernate.PropertyNotFoundException;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.engine.spi.SessionImplementor;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.property.access.spi.Getter;
 import org.hibernate.property.access.spi.PropertyAccess;
 import org.hibernate.property.access.spi.PropertyAccessStrategy;
@@ -73,7 +73,7 @@ public class ThriftPropertyAccess implements PropertyAccess {
          * {@inheritDoc}
          */
         @Override
-        public Object getForInsert(Object target, Map mergeMap, SessionImplementor session) {
+        public Object getForInsert(Object target, Map mergeMap, SharedSessionContractImplementor session) {
             return get( target );
         }
 

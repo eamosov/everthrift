@@ -32,8 +32,8 @@ import org.everthrift.appserver.controller.AbstractThriftController;
 import org.everthrift.appserver.controller.ThriftControllerInfo;
 import org.everthrift.appserver.controller.ThriftProcessor;
 import org.everthrift.appserver.controller.ThriftProtocolSupportIF;
-import org.everthrift.appserver.utils.thrift.GsonSerializer.TBaseSerializer;
 import org.everthrift.appserver.utils.thrift.AbstractThriftClient;
+import org.everthrift.appserver.utils.thrift.GsonSerializer.TBaseSerializer;
 import org.everthrift.appserver.utils.thrift.SessionIF;
 import org.everthrift.clustering.MessageWrapper;
 import org.everthrift.clustering.thrift.InvocationInfo;
@@ -69,17 +69,11 @@ public class PlainJsonThriftServlet extends HttpServlet {
     @Autowired
     private RpcHttpRegistry registry;
 
-    private static final Gson gson =
-            new GsonBuilder().
-            setPrettyPrinting().
-            disableHtmlEscaping().
-            registerTypeHierarchyAdapter(TBase.class, new TBaseSerializer()).
-            create();
-
+    private static final Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().registerTypeHierarchyAdapter(TBase.class, new TBaseSerializer()).create();
 
     @PostConstruct
     public void afterPropertiesSet() throws Exception {
-        tp =ThriftProcessor.create(context, registry);
+        tp = ThriftProcessor.create(context, registry);
     }
 
     @Override
@@ -94,31 +88,37 @@ public class PlainJsonThriftServlet extends HttpServlet {
         doPost(request, response);
     }
 
-    private void out(AsyncContext asyncContext, HttpServletResponse response, byte buf[]) throws IOException{
-        out(asyncContext, response, buf, buf.length);
+    private void out(AsyncContext asyncContext, int status, String contentType, byte buf[]) throws IOException {
+        out(asyncContext, status, contentType, buf, buf.length);
     }
 
-    private void out(AsyncContext asyncContext, HttpServletResponse response, byte buf[], int length) throws IOException{
-        final ServletOutputStream out = response.getOutputStream();
+    private void out(AsyncContext asyncContext, int status, String contentType, byte buf[], int length) throws IOException {
 
-        out.setWriteListener(new WriteListener(){
+        ((HttpServletResponse) asyncContext.getResponse()).setStatus(status);
+        asyncContext.getResponse().setContentType(contentType);
+
+        final ServletOutputStream out = asyncContext.getResponse().getOutputStream();
+
+        out.setWriteListener(new WriteListener() {
+
             @Override
             public void onWritePossible() throws IOException {
-                out.write(buf, 0, length);
-                asyncContext.complete();
+
+                if (out.isReady()) {
+                    out.write(buf, 0, length);
+                    asyncContext.complete();
+                }
             }
 
             @Override
-            public void onError(Throwable t){
-                log.error("Async Error",t);
-                asyncContext.complete();
+            public void onError(Throwable t) {
+
             }
         });
     }
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
-
         final AsyncContext asyncContext = request.startAsync();
 
         final String msgName = request.getPathInfo().substring(1);
@@ -126,10 +126,11 @@ public class PlainJsonThriftServlet extends HttpServlet {
         final Map<String, Object> attributes = Maps.newHashMap();
         attributes.put(MessageWrapper.HTTP_REQUEST_PARAMS, Optional.fromNullable(request.getParameterMap()).or(Collections.emptyMap()));
         attributes.put(MessageWrapper.HTTP_COOKIES, Optional.fromNullable(request.getCookies()).or(() -> new Cookie[0]));
-        attributes.put(MessageWrapper.HTTP_HEADERS, Collections.list(request.getHeaderNames()).stream().map( n -> Pair.create(n, request.getHeader(n))).collect(Collectors.toMap(Pair::getFirst, Pair::getSecond)));
+        attributes.put(MessageWrapper.HTTP_HEADERS,
+                Collections.list(request.getHeaderNames()).stream().map(n -> Pair.create(n, request.getHeader(n))).collect(Collectors.toMap(Pair::getFirst, Pair::getSecond)));
 
         try {
-            final Pair<TMemoryBuffer, Integer> mw = tp.process(new ThriftProtocolSupportIF<Pair<TMemoryBuffer, Integer>>(){
+            final Pair<TMemoryBuffer, Integer> mw = tp.process(new ThriftProtocolSupportIF<Pair<TMemoryBuffer, Integer>>() {
 
                 @Override
                 public String getSessionId() {
@@ -159,26 +160,26 @@ public class PlainJsonThriftServlet extends HttpServlet {
                     }
 
                     final JsonElement e = jsonParser.parse(new String(packet));
-                    if (e.isJsonNull()){
+                    if (e.isJsonNull()) {
                         _args = new JsonObject();
-                    }else if (e.isJsonObject()){
+                    } else if (e.isJsonObject()) {
                         _args = e.getAsJsonObject();
-                    }else{
+                    } else {
                         throw new TProtocolException("POST data must be a JSON object");
                     }
 
-                    for (Map.Entry<String, String[]> _e: request.getParameterMap().entrySet()){
+                    for (Map.Entry<String, String[]> _e : request.getParameterMap().entrySet()) {
                         _args.add(_e.getKey(), jsonParser.parse(_e.getValue()[0]));
                     }
 
                     log.debug("method:{}, args:{}", msgName, _args);
 
-                    final T ret =  (T)gson.fromJson(_args, tInfo.getArgCls());
+                    final T ret = (T) gson.fromJson(_args, tInfo.getArgCls());
 
-                    try{
+                    try {
                         final Method m = tInfo.getArgCls().getMethod("validate");
                         m.invoke(ret);
-                    } catch(NoSuchMethodException | IllegalAccessException | IllegalArgumentException e1){
+                    } catch (NoSuchMethodException | IllegalAccessException | IllegalArgumentException e1) {
                     } catch (InvocationTargetException e1) {
                         Throwables.propagateIfInstanceOf(e1.getCause(), TException.class);
                         throw Throwables.propagate(e1.getCause());
@@ -192,7 +193,7 @@ public class PlainJsonThriftServlet extends HttpServlet {
 
                 }
 
-                private Pair<TMemoryBuffer, Integer> result(int code, String message, int httpStatusCode){
+                private Pair<TMemoryBuffer, Integer> result(int code, String message, int httpStatusCode) {
                     final TMemoryBuffer outT = new TMemoryBuffer(1024);
                     final JsonObject ex = new JsonObject();
                     ex.addProperty("code", code);
@@ -210,37 +211,35 @@ public class PlainJsonThriftServlet extends HttpServlet {
 
                     int httpCode = 200;
 
-                    if (o instanceof TApplicationException){
-                        return result(((TApplicationException)o).getType(), ((TApplicationException)o).getMessage(), 400);
+                    if (o instanceof TApplicationException) {
+                        return result(((TApplicationException) o).getType(), ((TApplicationException) o).getMessage(), 400);
 
-                    }else if (o instanceof TProtocolException) {
-                        return result(TApplicationException.PROTOCOL_ERROR, ((Exception)o).getMessage(), 400);
+                    } else if (o instanceof TProtocolException) {
+                        return result(TApplicationException.PROTOCOL_ERROR, ((Exception) o).getMessage(), 400);
 
+                    } else if (o instanceof Exception) {
 
-                    }else if (o instanceof Exception){
-
-
-                        final Map<String, PropertyDescriptor>  props = ClassUtils.getPropertyDescriptors(o.getClass());
+                        final Map<String, PropertyDescriptor> props = ClassUtils.getPropertyDescriptors(o.getClass());
 
                         httpCode = 400;
 
                         final PropertyDescriptor httpCodeDescr = props.get("httpCode");
-                        if (httpCodeDescr !=null)
+                        if (httpCodeDescr != null)
                             try {
-                                httpCode = ((Number)httpCodeDescr.getReadMethod().invoke(o)).intValue();
+                                httpCode = ((Number) httpCodeDescr.getReadMethod().invoke(o)).intValue();
                             } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
                             }
 
                         int code = -1;
                         final PropertyDescriptor codeDescr = props.get("code");
-                        if (codeDescr !=null)
+                        if (codeDescr != null)
                             try {
-                                code = ((Number)codeDescr.getReadMethod().invoke(o)).intValue();
+                                code = ((Number) codeDescr.getReadMethod().invoke(o)).intValue();
                             } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
                             }
 
                         if (!(o instanceof TException))
-                            return result(code, ((Exception)o).getMessage(), httpCode);
+                            return result(code, ((Exception) o).getMessage(), httpCode);
                     }
 
                     final TMemoryBuffer outT = new TMemoryBuffer(1024);
@@ -256,8 +255,7 @@ public class PlainJsonThriftServlet extends HttpServlet {
                 public void asyncResult(Object o, AbstractThriftController controller) {
                     final Pair<TMemoryBuffer, Integer> tt = result(o, controller.getInfo());
                     try {
-                        response.setStatus(tt.second);
-                        out(asyncContext, response, tt.first.getArray(), tt.first.length());
+                        out(asyncContext, tt.second, "application/json", tt.first.getArray(), tt.first.length());
                     } catch (IOException e) {
                         log.error("Async Error", e);
                     }
@@ -270,7 +268,7 @@ public class PlainJsonThriftServlet extends HttpServlet {
                     return true;
                 }
 
-            }, new AbstractThriftClient<Object>(null){
+            }, new AbstractThriftClient<Object>(null) {
 
                 private SessionIF session;
 
@@ -310,17 +308,14 @@ public class PlainJsonThriftServlet extends HttpServlet {
                 @Override
                 protected <T> ListenableFuture<T> thriftCall(Object sessionId, int timeout, InvocationInfo tInfo) throws TException {
                     throw new NotImplementedException();
-                }});
+                }
+            });
 
-            if (mw !=null){
-                response.setStatus(mw.second);
-                response.setContentType("application/json");
-                out(asyncContext, response, mw.first.getArray(), mw.first.length());
+            if (mw != null) {
+                out(asyncContext, mw.second, "application/json", mw.first.getArray(), mw.first.length());
             }
         } catch (Exception e) {
-            response.setStatus(500);
-            response.setContentType("text/plain");
-            out(asyncContext, response, e.getMessage().getBytes());
+            out(asyncContext, 500, "text/plain", e.getMessage().getBytes());
         }
     }
 }

@@ -70,12 +70,12 @@ public class CMigrationProcessor implements ApplicationContextAware{
     }
 
     public void migrate() throws Exception {
-        
+
         Assert.notNull(session);
         Assert.notNull(context);
-        
+
         findMigrations(basePackage);
-        
+
         migrations.sort(new Comparator<Migration>(){
 
             @Override

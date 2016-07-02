@@ -38,6 +38,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.core.env.Environment;
 import org.springframework.web.context.support.XmlWebApplicationContext;
@@ -162,6 +163,9 @@ public class JettyServer implements SmartLifecycle {
         jettyContext.setDescriptor(webXml);
         jettyContext.setConfigurationClasses(WebAppContext.getDefaultConfigurationClasses());
         jettyServer.setHandler(jettyContext);
+
+        ((ConfigurableApplicationContext)context).getBeanFactory().registerSingleton("webAppContext", jettyContext);
+        ((ConfigurableApplicationContext)context).getBeanFactory().registerSingleton("servletContext", jettyContext.getServletContext());
 
         if (isJMinixEnabled()) {
             final MiniConsoleServlet jminix = new MiniConsoleServlet();

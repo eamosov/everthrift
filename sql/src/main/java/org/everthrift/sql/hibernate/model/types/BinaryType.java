@@ -2,21 +2,20 @@ package org.everthrift.sql.hibernate.model.types;
 
 import java.util.Comparator;
 
-import org.hibernate.engine.spi.SessionImplementor;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.type.AbstractSingleColumnStandardBasicType;
 import org.hibernate.type.VersionType;
 import org.hibernate.type.descriptor.java.PrimitiveByteArrayTypeDescriptor;
 import org.hibernate.type.descriptor.sql.BinaryTypeDescriptor;
 
 /**
- * A type that maps between a {@link java.sql.Types#VARBINARY VARBINARY} and {@code byte[]}
+ * A type that maps between a {@link java.sql.Types#VARBINARY VARBINARY} and
+ * {@code byte[]}
  *
  * @author Gavin King
  * @author Steve Ebersole
  */
-public class BinaryType
-extends AbstractSingleColumnStandardBasicType<byte[]>
-implements VersionType<byte[]> {
+public class BinaryType extends AbstractSingleColumnStandardBasicType<byte[]> implements VersionType<byte[]> {
 
     public static final BinaryType INSTANCE = new BinaryType();
 
@@ -26,7 +25,7 @@ implements VersionType<byte[]> {
     }
 
     public BinaryType() {
-        super( BinaryTypeDescriptor.INSTANCE, PrimitiveByteArrayTypeDescriptor.INSTANCE );
+        super(BinaryTypeDescriptor.INSTANCE, PrimitiveByteArrayTypeDescriptor.INSTANCE);
     }
 
     @Override
@@ -35,16 +34,16 @@ implements VersionType<byte[]> {
     }
 
     @Override
-    public byte[] seed(SessionImplementor session) {
+    public byte[] seed(SharedSessionContractImplementor session) {
         // Note : simply returns null for seed() and next() as the only known
-        // 		application of binary types for versioning is for use with the
-        // 		TIMESTAMP datatype supported by Sybase and SQL Server, which
-        // 		are completely db-generated values...
+        // application of binary types for versioning is for use with the
+        // TIMESTAMP datatype supported by Sybase and SQL Server, which
+        // are completely db-generated values...
         return null;
     }
 
     @Override
-    public byte[] next(byte[] current, SessionImplementor session) {
+    public byte[] next(byte[] current, SharedSessionContractImplementor session) {
         return current;
     }
 

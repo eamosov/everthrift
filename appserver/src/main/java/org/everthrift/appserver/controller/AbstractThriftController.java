@@ -18,6 +18,7 @@ import org.apache.thrift.TException;
 import org.everthrift.appserver.model.lazy.LazyLoadManager;
 import org.everthrift.appserver.utils.thrift.ThriftClient;
 import org.everthrift.clustering.MessageWrapper;
+import org.everthrift.thrift.TFunction;
 import org.everthrift.utils.ExecutionStats;
 import org.everthrift.utils.Pair;
 import org.slf4j.Logger;
@@ -27,6 +28,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
 
+import com.google.common.base.Function;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -151,6 +153,35 @@ public abstract class AbstractThriftController<ArgsType extends TBase, ResultTyp
 
     protected ResultType waitForAnswer(){
         throw new AsyncAnswer();
+    }
+
+    private static class ExUtil
+    {
+        @SuppressWarnings("unchecked")
+        private static <T extends Throwable> void throwException(Throwable exception, Object dummy) throws T
+        {
+            throw (T) exception;
+        }
+
+        public static void throwException(Throwable exception)
+        {
+            ExUtil.<RuntimeException>throwException(exception, null);
+        }
+    }
+
+    protected <F, T>  Function<F, T> unchecked(TFunction<F, T> f){
+        return new Function<F,T>(){
+
+            @Override
+            public T apply(F input) {
+                try {
+                    return f.apply(input);
+                } catch (TException e) {
+                    ExUtil.throwException(e);
+                    return null;
+                }
+            }
+        };
     }
 
     protected ResultType waitForAnswer(ListenableFuture<? extends ResultType> lf) throws TException{

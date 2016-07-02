@@ -3,13 +3,14 @@ package org.everthrift.appserver.controller;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.NoSuchElementException;
 
 import org.apache.thrift.TBase;
 import org.apache.thrift.TException;
 import org.apache.thrift.TFieldIdEnum;
 import org.everthrift.appserver.utils.thrift.ThriftClient;
+import org.everthrift.utils.ClassUtils;
 import org.springframework.context.ApplicationContext;
-import org.springframework.util.StringUtils;
 
 public class ThriftControllerInfo {
     private final Class<? extends ThriftController> controllerCls;
@@ -21,8 +22,8 @@ public class ThriftControllerInfo {
     private final ApplicationContext context;
 
     public ThriftControllerInfo(ApplicationContext context, Class<? extends ThriftController> controllerCls,
-            String serviceName, String methodName,
-            Class<? extends TBase> argCls, Class<? extends TBase> resultCls, Method findResultFieldByName) {
+            String serviceName, String methodName, Class<? extends TBase> argCls, Class<? extends TBase> resultCls,
+            Method findResultFieldByName) {
         super();
         this.controllerCls = controllerCls;
         this.serviceName = serviceName;
@@ -33,19 +34,17 @@ public class ThriftControllerInfo {
         this.context = context;
     }
 
-    public String getName(){
+    public String getName() {
         return this.serviceName + ":" + this.methodName;
     }
 
     @Override
     public String toString() {
-        return "ThriftControllerInfo [controllerCls=" + controllerCls
-                + ", serviceName=" + serviceName + ", methodName=" + methodName
-                + ", argCls=" + argCls + ", resultCls=" + resultCls + "]";
+        return "ThriftControllerInfo [controllerCls=" + controllerCls + ", serviceName=" + serviceName + ", methodName="
+                + methodName + ", argCls=" + argCls + ", resultCls=" + resultCls + "]";
     }
 
-
-    public TBase makeArgument(){
+    public TBase makeArgument() {
         try {
             return argCls.newInstance();
         } catch (InstantiationException e) {
@@ -55,25 +54,26 @@ public class ThriftControllerInfo {
         }
     }
 
-    public TBase makeResult(Object ret){
+    public TBase makeResult(Object ret) {
 
         try {
 
-            final TBase res =  resultCls.newInstance();
+            final TBase res = resultCls.newInstance();
 
-            if (ret !=null){
-                final TFieldIdEnum f;
-                if (ret instanceof TException){
-                    f = (TFieldIdEnum)findResultFieldByName.invoke(null, StringUtils.uncapitalize(ret.getClass().getSimpleName()));
-                }else{
-                    f = (TFieldIdEnum)findResultFieldByName.invoke(null, "success");
+            if (ret != null) {
+                if (ret instanceof TException) {
+                    final Method setMethod = ClassUtils.getPropertyDescriptors(resultCls).entrySet().stream()
+                            .filter(e -> e.getValue().getReadMethod() !=null && e.getValue().getWriteMethod() !=null && e.getValue().getReadMethod().getReturnType().isAssignableFrom(ret.getClass()))
+                            .findFirst().get().getValue().getWriteMethod();
+                    setMethod.invoke(res, ret);
+                } else {
+                    final TFieldIdEnum f = (TFieldIdEnum) findResultFieldByName.invoke(null, "success");
+                    if (f == null) {
+                        throw new IllegalArgumentException("no such field for class " + ret.getClass().getSimpleName(),
+                                (ret instanceof Throwable) ? (Throwable) ret : null);
+                    }
+                    res.setFieldValue(f, ret);
                 }
-
-                if (f==null){
-                    throw new IllegalArgumentException("no such field for class " + ret.getClass().getSimpleName(), (ret instanceof Throwable) ? (Throwable)ret : null);
-                }
-
-                res.setFieldValue(f, ret);
             }
             return res;
         } catch (InstantiationException e) {
@@ -84,10 +84,14 @@ public class ThriftControllerInfo {
             throw new RuntimeException(e);
         } catch (InvocationTargetException e) {
             throw new RuntimeException(e);
+        } catch (NoSuchElementException e) {
+            throw new RuntimeException(e);
         }
     }
 
-    public ThriftController makeController(TBase args, ThriftProtocolSupportIF tps, LogEntry logEntry, int seqId, ThriftClient thriftClient, Class<? extends Annotation> registryAnn, boolean allowAsyncAnswer) throws TException{
+    public ThriftController makeController(TBase args, ThriftProtocolSupportIF tps, LogEntry logEntry, int seqId,
+            ThriftClient thriftClient, Class<? extends Annotation> registryAnn, boolean allowAsyncAnswer)
+                    throws TException {
 
         final ThriftController ctrl = context.getBean(controllerCls);
         ctrl.setup(args, this, tps, logEntry, seqId, thriftClient, registryAnn, allowAsyncAnswer);

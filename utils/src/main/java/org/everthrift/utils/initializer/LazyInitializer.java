@@ -5,15 +5,15 @@ import java.io.Serializable;
 
 public abstract class LazyInitializer<T> implements Initializer<T>, Serializable {
 
-	private static final long serialVersionUID = 1L;
-	
-	private transient T object;
+    private static final long serialVersionUID = 1L;
+
+    private transient T object;
 
     @Override
     public T get() {
-    	
+
         if (object == null) {
-        	object = initialize();
+            object = initialize();
         }
 
         return object;

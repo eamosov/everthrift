@@ -24,9 +24,10 @@ public class LazyLoadManager {
     public static String SCENARIO_DEFAULT = "default";
     public static String SCENARIO_ADMIN = "admin";
     public static String SCENARIO_JSON = "json";
-    
+
     private static final Executor loadExecutor = Executors.newCachedThreadPool(new ThreadFactory() {
         private final AtomicInteger threadNumber = new AtomicInteger(1);
+        @Override
         public Thread newThread(Runnable r) {
             final Thread t = new Thread(r);
             t.setName("LazyLoader-"+ threadNumber.getAndIncrement());

@@ -9,7 +9,7 @@ import java.util.Map;
 
 import org.everthrift.utils.SqlUtils;
 import org.hibernate.HibernateException;
-import org.hibernate.engine.spi.SessionImplementor;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.usertype.UserType;
 
 import gnu.trove.impl.hash.THash;
@@ -47,7 +47,7 @@ public abstract class Trove4jHstoreType<T extends THash> implements UserType {
     protected abstract Map transformReverse(T input);
 
     @Override
-    public Object nullSafeGet(ResultSet rs, String[] names, SessionImplementor session, Object owner) throws HibernateException, SQLException {
+    public Object nullSafeGet(ResultSet rs, String[] names, SharedSessionContractImplementor session, Object owner) throws HibernateException, SQLException {
 
         final Map<String,String> hstore = (Map<String,String>)rs.getObject(names[0]);
 
@@ -58,7 +58,7 @@ public abstract class Trove4jHstoreType<T extends THash> implements UserType {
     }
 
     @Override
-    public void nullSafeSet(PreparedStatement st, Object value, int index, SessionImplementor session) throws HibernateException, SQLException {
+    public void nullSafeSet(PreparedStatement st, Object value, int index, SharedSessionContractImplementor session) throws HibernateException, SQLException {
         st.setString(index, value==null ? null:(String)SqlUtils.toSqlParam(transformReverse((T)value)));
     }
 

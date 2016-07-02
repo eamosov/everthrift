@@ -39,176 +39,176 @@ import org.springframework.util.Assert;
  */
 public final class SocketUtils {
 
-	public static final int DEFAULT_PORT_RANGE_MIN = 10000;
-	public static final int DEFAULT_PORT_RANGE_MAX = 60000;
+    public static final int DEFAULT_PORT_RANGE_MIN = 10000;
+    public static final int DEFAULT_PORT_RANGE_MAX = 60000;
 
-	/**
-	 * The constructor is intentionally public. In several test cases you may have
-	 * the need to use the methods of this class multiple times from within your
-	 * Spring Application Context XML file using SpEL. Of course you can do:
-	 *
-	 * <pre>
-	 * {@code
-	 * ...port="#{T(org.springframework.integration.test.util.SocketUtils).findAvailableServerSocket(12000)}"
-	 * }
-	 * </pre>
-	 *
-	 * But unfortunately, you would need to repeat the package for each usage.
-	 * This will be acceptable for single use, but if you need to invoke the
-	 * methods numerous time, you may instead want to do this:
-	 *
-	 * <pre>
-	 * {@code
-	 * <bean id="tcpIpUtils" class="org.springframework.integration.test.util.SocketUtils" />
-	 *
-	 * ...port="#{tcpIpUtils.findAvailableServerSocket(12000)}"
-	 * }
-	 * </pre>
-	 *
-	 */
-	public SocketUtils() { }
+    /**
+     * The constructor is intentionally public. In several test cases you may have
+     * the need to use the methods of this class multiple times from within your
+     * Spring Application Context XML file using SpEL. Of course you can do:
+     *
+     * <pre>
+     * {@code
+     * ...port="#{T(org.springframework.integration.test.util.SocketUtils).findAvailableServerSocket(12000)}"
+     * }
+     * </pre>
+     *
+     * But unfortunately, you would need to repeat the package for each usage.
+     * This will be acceptable for single use, but if you need to invoke the
+     * methods numerous time, you may instead want to do this:
+     *
+     * <pre>
+     * {@code
+     * <bean id="tcpIpUtils" class="org.springframework.integration.test.util.SocketUtils" />
+     *
+     * ...port="#{tcpIpUtils.findAvailableServerSocket(12000)}"
+     * }
+     * </pre>
+     *
+     */
+    public SocketUtils() { }
 
-	/**
-	 * Determines a free available server socket (port) using the 'seed' value as
-	 * the starting port. The utility methods will probe for 200 sockets but will
-	 * return as soon an open port is found.
-	 *
-	 * @param seed The starting port, which must not be negative.
-	 * @return An available port number
-	 *
-	 * @throws IllegalStateException when no open port was found.
-	 */
-	public static int findAvailableServerSocket(int seed) {
-		final List<Integer> openPorts = findAvailableServerSockets(seed, 1);
-		return openPorts.get(0);
-	}
+    /**
+     * Determines a free available server socket (port) using the 'seed' value as
+     * the starting port. The utility methods will probe for 200 sockets but will
+     * return as soon an open port is found.
+     *
+     * @param seed The starting port, which must not be negative.
+     * @return An available port number
+     *
+     * @throws IllegalStateException when no open port was found.
+     */
+    public static int findAvailableServerSocket(int seed) {
+        final List<Integer> openPorts = findAvailableServerSockets(seed, 1);
+        return openPorts.get(0);
+    }
 
-	/**
-	 * Determines a free available server socket (port) using the 'seed' value as
-	 * the starting port. The utility methods will probe for 200 sockets but will
-	 * return as soon an open port is found.
-	 *
-	 * @param seed The starting port, which must not be negative.
-	 * @param numberOfRequestedPorts How many open ports shall be retrieved?
-	 * @return A list containing the requested number of open ports
-	 *
-	 * @throws IllegalStateException when no open port was found.
-	 */
-	public static List<Integer> findAvailableServerSockets(int seed, int numberOfRequestedPorts) {
+    /**
+     * Determines a free available server socket (port) using the 'seed' value as
+     * the starting port. The utility methods will probe for 200 sockets but will
+     * return as soon an open port is found.
+     *
+     * @param seed The starting port, which must not be negative.
+     * @param numberOfRequestedPorts How many open ports shall be retrieved?
+     * @return A list containing the requested number of open ports
+     *
+     * @throws IllegalStateException when no open port was found.
+     */
+    public static List<Integer> findAvailableServerSockets(int seed, int numberOfRequestedPorts) {
 
-		Assert.isTrue(seed >= 0, "'seed' must not be negative");
-		Assert.isTrue(numberOfRequestedPorts > 0, "'numberOfRequestedPorts' must not be negative");
+        Assert.isTrue(seed >= 0, "'seed' must not be negative");
+        Assert.isTrue(numberOfRequestedPorts > 0, "'numberOfRequestedPorts' must not be negative");
 
-		final List<Integer> openPorts = new ArrayList<Integer>(numberOfRequestedPorts);
+        final List<Integer> openPorts = new ArrayList<Integer>(numberOfRequestedPorts);
 
-		for (int i = seed; i < seed+200; i++) {
-			try {
-				ServerSocket sock = ServerSocketFactory.getDefault().createServerSocket(i);
-				sock.close();
-				openPorts.add(i);
+        for (int i = seed; i < seed+200; i++) {
+            try {
+                ServerSocket sock = ServerSocketFactory.getDefault().createServerSocket(i);
+                sock.close();
+                openPorts.add(i);
 
-				if (openPorts.size() == numberOfRequestedPorts) {
-					return openPorts;
-				}
+                if (openPorts.size() == numberOfRequestedPorts) {
+                    return openPorts;
+                }
 
-			} catch (Exception e) { }
-		}
+            } catch (Exception e) { }
+        }
 
-		throw new IllegalStateException(String.format("Cannot find a free server socket (%s requested)", numberOfRequestedPorts));
-	}
+        throw new IllegalStateException(String.format("Cannot find a free server socket (%s requested)", numberOfRequestedPorts));
+    }
 
-	/**
-	 * Determines a free available server socket (port) using an automatically
-	 * chosen start seed port.
-	 *
-	 * @return An available port number
-	 *
-	 * @throws IllegalStateException when no open port was found.
-	 */
-	public static int findAvailableServerSocket() {
-		int seed = getRandomSeedPort();
-		return findAvailableServerSocket(seed);
-	}
+    /**
+     * Determines a free available server socket (port) using an automatically
+     * chosen start seed port.
+     *
+     * @return An available port number
+     *
+     * @throws IllegalStateException when no open port was found.
+     */
+    public static int findAvailableServerSocket() {
+        int seed = getRandomSeedPort();
+        return findAvailableServerSocket(seed);
+    }
 
-	/**
-	 * Determines a free available Udp socket (port) using the 'seed' value as
-	 * the starting port. The utility methods will probe for 200 sockets but will
-	 * return as soon an open port is found.
-	 *
-	 * @param seed The starting port, which must not be negative.
-	 * @return An available port number
-	 *
-	 * @throws IllegalStateException when no open port was found.
-	 *
-	 */
-	public static int findAvailableUdpSocket(int seed) {
-		final List<Integer> openPorts = findAvailableUdpSockets(seed, 1);
-		return openPorts.get(0);
-	}
+    /**
+     * Determines a free available Udp socket (port) using the 'seed' value as
+     * the starting port. The utility methods will probe for 200 sockets but will
+     * return as soon an open port is found.
+     *
+     * @param seed The starting port, which must not be negative.
+     * @return An available port number
+     *
+     * @throws IllegalStateException when no open port was found.
+     *
+     */
+    public static int findAvailableUdpSocket(int seed) {
+        final List<Integer> openPorts = findAvailableUdpSockets(seed, 1);
+        return openPorts.get(0);
+    }
 
-	/**
-	 * Determines free available udp socket(s) (port) using the 'seed' value as
-	 * the starting port. The utility methods will probe for 200 sockets but will
-	 * return as soon an open port is found.
-	 *
-	 * @param seed The starting port, which must not be negative.
-	 * @param numberOfRequestedPorts How many open ports shall be retrieved?
-	 * @return A list containing the requested number of open ports
-	 *
-	 * @throws IllegalStateException when no open port was found.
-	 */
-	public static List<Integer> findAvailableUdpSockets(int seed, int numberOfRequestedPorts) {
+    /**
+     * Determines free available udp socket(s) (port) using the 'seed' value as
+     * the starting port. The utility methods will probe for 200 sockets but will
+     * return as soon an open port is found.
+     *
+     * @param seed The starting port, which must not be negative.
+     * @param numberOfRequestedPorts How many open ports shall be retrieved?
+     * @return A list containing the requested number of open ports
+     *
+     * @throws IllegalStateException when no open port was found.
+     */
+    public static List<Integer> findAvailableUdpSockets(int seed, int numberOfRequestedPorts) {
 
-		Assert.isTrue(seed >= 0, "'seed' must not be negative");
-		Assert.isTrue(numberOfRequestedPorts > 0, "'numberOfRequestedPorts' must not be negative");
+        Assert.isTrue(seed >= 0, "'seed' must not be negative");
+        Assert.isTrue(numberOfRequestedPorts > 0, "'numberOfRequestedPorts' must not be negative");
 
-		final List<Integer> openPorts = new ArrayList<Integer>(numberOfRequestedPorts);
+        final List<Integer> openPorts = new ArrayList<Integer>(numberOfRequestedPorts);
 
-		for (int i = seed; i < seed+200; i++) {
-			try {
-				DatagramSocket sock = new DatagramSocket(i);
-				sock.close();
-				Thread.sleep(100);
+        for (int i = seed; i < seed+200; i++) {
+            try {
+                DatagramSocket sock = new DatagramSocket(i);
+                sock.close();
+                Thread.sleep(100);
 
-				openPorts.add(i);
+                openPorts.add(i);
 
-				if (openPorts.size() == numberOfRequestedPorts) {
-					return openPorts;
-				}
+                if (openPorts.size() == numberOfRequestedPorts) {
+                    return openPorts;
+                }
 
-			} catch (Exception e) { }
-		}
+            } catch (Exception e) { }
+        }
 
-		throw new IllegalStateException(String.format("Cannot find a free server socket (%s requested)", numberOfRequestedPorts));
+        throw new IllegalStateException(String.format("Cannot find a free server socket (%s requested)", numberOfRequestedPorts));
 
-	}
+    }
 
-	/**
-	 * Determines a free available Udp socket using an automatically
-	 * chosen start seed port.
-	 *
-	 * @return An available port number
-	 *
-	 * @throws IllegalStateException when no open port was found.
-	 */
-	public static int findAvailableUdpSocket() {
-		int seed = getRandomSeedPort();
-		return findAvailableUdpSocket(seed);
-	}
+    /**
+     * Determines a free available Udp socket using an automatically
+     * chosen start seed port.
+     *
+     * @return An available port number
+     *
+     * @throws IllegalStateException when no open port was found.
+     */
+    public static int findAvailableUdpSocket() {
+        int seed = getRandomSeedPort();
+        return findAvailableUdpSocket(seed);
+    }
 
-	/**
-	 * Determines a random seed port number within the port range
-	 * {@value #DEFAULT_PORT_RANGE_MIN} and {@value #DEFAULT_PORT_RANGE_MAX}.
-	 *
-	 * @return A number with the the specified range
-	 */
-	public static int getRandomSeedPort() {
+    /**
+     * Determines a random seed port number within the port range
+     * {@value #DEFAULT_PORT_RANGE_MIN} and {@value #DEFAULT_PORT_RANGE_MAX}.
+     *
+     * @return A number with the the specified range
+     */
+    public static int getRandomSeedPort() {
 
-		final Random random = new Random();
+        final Random random = new Random();
 
-		int randomNumber = random.nextInt(DEFAULT_PORT_RANGE_MAX - DEFAULT_PORT_RANGE_MIN + 1) + DEFAULT_PORT_RANGE_MIN;
+        int randomNumber = random.nextInt(DEFAULT_PORT_RANGE_MAX - DEFAULT_PORT_RANGE_MIN + 1) + DEFAULT_PORT_RANGE_MIN;
 
-		return randomNumber;
-	}
+        return randomNumber;
+    }
 
 }

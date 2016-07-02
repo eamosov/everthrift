@@ -44,6 +44,7 @@
 
 	<bean id="upgradeStrategy" class="org.springframework.web.socket.server.jetty.JettyRequestUpgradeStrategy">
 		<constructor-arg ref="serverFactory"/>
+		<property name="servletContext" ref="servletContext"/>
 	</bean>    
     
     <bean id="serverFactory" class="org.eclipse.jetty.websocket.server.WebSocketServerFactory">

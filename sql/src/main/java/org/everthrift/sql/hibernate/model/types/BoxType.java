@@ -13,7 +13,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.hibernate.HibernateException;
-import org.hibernate.engine.spi.SessionImplementor;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.usertype.UserType;
 import org.postgresql.util.PGobject;
 import org.springframework.beans.BeanUtils;
@@ -111,7 +111,7 @@ public abstract class BoxType implements UserType {
 
     @Override
     public Object nullSafeGet(ResultSet rs, String[] names,
-            SessionImplementor session, Object owner)
+            SharedSessionContractImplementor session, Object owner)
                     throws HibernateException, SQLException {
 
         final Object value = rs.getObject(names[0]);
@@ -149,7 +149,7 @@ public abstract class BoxType implements UserType {
 
     @Override
     public void nullSafeSet(PreparedStatement st, Object value, int index,
-            SessionImplementor session) throws HibernateException, SQLException {
+            SharedSessionContractImplementor session) throws HibernateException, SQLException {
 
         if (value == null) {
             st.setNull(index, java.sql.Types.OTHER);

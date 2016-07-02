@@ -235,6 +235,7 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
     }
 
     @Override
+    @Transactional
     public void delete(V e) {
         try {
             final Session session = getCurrentSession();
@@ -412,26 +413,15 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
     }
 
     @Override
+    @Transactional
     public int executeCustomUpdate(K evictId, String query, Function<SQLQuery, Query> bindFunction) {
-        StatelessSession ss = null;
         try {
-            SQLQuery q;
-            try {
-                final Session session = getCurrentSession();
-                q = session.createSQLQuery(query);
+            
+            final Session session = getCurrentSession();
+            final SQLQuery q = session.createSQLQuery(query);
 
-                if (log.isDebugEnabled())
-                    log.debug("executeCustomUpdate tx={}: {}#{}", session.getTransaction().getStatus(), entityClass.getSimpleName(), query);
-
-            } catch (HibernateException he) {
-                propogateIfAbsentMessage(he, NO_SESSION_FOR_THREAD);
-                ss = getStatelessSession();
-                q = ss.createSQLQuery(query);
-
-                if (log.isDebugEnabled())
-                    log.debug("executeCustomUpdate stateless: {}#{}", entityClass.getSimpleName(), query);
-
-            }
+            if (log.isDebugEnabled())
+                log.debug("executeCustomUpdate tx={}: {}#{}", session.getTransaction().getStatus(), entityClass.getSimpleName(), query);
 
             bindFunction.apply(q);
 
@@ -443,9 +433,6 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
             }
         } catch (ConstraintViolationException e){
             throw uniqueException(e);
-        } finally {
-            if (ss != null)
-                ss.close();
         }
     }
 

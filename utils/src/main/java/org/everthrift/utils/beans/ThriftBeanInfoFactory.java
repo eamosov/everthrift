@@ -24,25 +24,25 @@ import org.springframework.core.Ordered;
  */
 public class ThriftBeanInfoFactory implements BeanInfoFactory, Ordered {
 
-	/**
-	 * Return an {@link ThriftBeanInfo} for the given bean class, if applicable.
-	 */
-	@Override
-	public BeanInfo getBeanInfo(Class<?> beanClass) throws IntrospectionException {
-		return (supports(beanClass) ? new ThriftBeanInfo(Introspector.getBeanInfo(beanClass)) : null);
-	}
+    /**
+     * Return an {@link ThriftBeanInfo} for the given bean class, if applicable.
+     */
+    @Override
+    public BeanInfo getBeanInfo(Class<?> beanClass) throws IntrospectionException {
+        return (supports(beanClass) ? new ThriftBeanInfo(Introspector.getBeanInfo(beanClass)) : null);
+    }
 
-	/**
-	 * Return whether the given bean class declares or inherits any non-void
-	 * returning bean property or indexed property setter methods.
-	 */
-	private boolean supports(Class<?> beanClass) {
-		return TBase.class.isAssignableFrom(beanClass);
-	}
+    /**
+     * Return whether the given bean class declares or inherits any non-void
+     * returning bean property or indexed property setter methods.
+     */
+    private boolean supports(Class<?> beanClass) {
+        return TBase.class.isAssignableFrom(beanClass);
+    }
 
-	@Override
-	public int getOrder() {
-		return Ordered.HIGHEST_PRECEDENCE;
-	}
+    @Override
+    public int getOrder() {
+        return Ordered.HIGHEST_PRECEDENCE;
+    }
 
 }

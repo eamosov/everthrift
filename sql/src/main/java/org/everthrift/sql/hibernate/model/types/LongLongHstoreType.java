@@ -10,7 +10,7 @@ import java.util.Map;
 
 import org.everthrift.utils.SqlUtils;
 import org.hibernate.HibernateException;
-import org.hibernate.engine.spi.SessionImplementor;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.usertype.UserType;
 
 import com.google.common.collect.Maps;
@@ -50,7 +50,7 @@ public class LongLongHstoreType implements UserType {
     }
 
     @Override
-    public Object nullSafeGet(ResultSet rs, String[] names, SessionImplementor session, Object owner) throws HibernateException, SQLException {
+    public Object nullSafeGet(ResultSet rs, String[] names, SharedSessionContractImplementor session, Object owner) throws HibernateException, SQLException {
 
         final Map<String,String> hstore = (Map<String,String>)rs.getObject(names[0]);
 
@@ -69,7 +69,7 @@ public class LongLongHstoreType implements UserType {
     }
 
     @Override
-    public void nullSafeSet(PreparedStatement st, Object value, int index, SessionImplementor session) throws HibernateException, SQLException {
+    public void nullSafeSet(PreparedStatement st, Object value, int index, SharedSessionContractImplementor session) throws HibernateException, SQLException {
         st.setString(index, value==null?null:(String)SqlUtils.toSqlParam((Map)value));
     }
 

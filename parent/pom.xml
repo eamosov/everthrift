@@ -11,14 +11,14 @@
 
 	<properties>
 		<thrift.version>27.06.16</thrift.version>
-		<spring.version>4.2.3.RELEASE</spring.version>
+		<spring.version>4.3.0.RELEASE</spring.version>
 		<github.global.server>github</github.global.server>
 		<slf4j.version>1.7.16</slf4j.version>
 		<logback.version>1.1.5</logback.version>
 
 		<everthrift.version>0.0.1-SNAPSHOT</everthrift.version>
 
-		<jetty.version>9.3.0.M1</jetty.version>
+		<jetty.version>9.3.10.v20160621</jetty.version>
 		<jackson.version>2.6.2</jackson.version>
 		<activemq.version>5.13.1</activemq.version>
 		<elasticsearch.version>2.1.0</elasticsearch.version>
@@ -548,6 +548,12 @@
 				<groupId>com.fasterxml.jackson.core</groupId>
 				<artifactId>jackson-databind</artifactId>
 				<version>${jackson.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.javassist</groupId>
+				<artifactId>javassist</artifactId>
+				<version>3.20.0-GA</version>
 			</dependency>
 
 		</dependencies>

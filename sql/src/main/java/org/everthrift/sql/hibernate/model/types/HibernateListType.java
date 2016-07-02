@@ -10,7 +10,7 @@ import java.sql.Types;
 import java.util.List;
 
 import org.hibernate.HibernateException;
-import org.hibernate.engine.spi.SessionImplementor;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.usertype.UserType;
 
 import com.google.common.collect.Lists;
@@ -24,12 +24,12 @@ public abstract class HibernateListType<T> implements UserType {
     }
 
     @Override
-    public void nullSafeSet(final PreparedStatement statement, final Object object, final int i, final SessionImplementor sessionImplementor) throws HibernateException, SQLException {
+    public void nullSafeSet(final PreparedStatement statement, final Object object, final int i, final SharedSessionContractImplementor sessionImplementor) throws HibernateException, SQLException {
         statement.setArray(i, object == null ? null : createArray((List<T>) object, statement.getConnection()));
     }
 
     @Override
-    public Object nullSafeGet(ResultSet rs, String[] names, SessionImplementor session, Object owner) throws HibernateException, SQLException {
+    public Object nullSafeGet(ResultSet rs, String[] names, SharedSessionContractImplementor session, Object owner) throws HibernateException, SQLException {
         Array sqlArr = rs.getArray(names[0]);
         final List result = sqlArr == null ? null : Lists.newArrayList((Object[]) sqlArr.getArray());
         return result;

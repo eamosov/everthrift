@@ -11,7 +11,7 @@ import java.util.Objects;
 import org.apache.thrift.TBase;
 import org.everthrift.appserver.utils.thrift.GsonSerializer.TBaseSerializer;
 import org.hibernate.HibernateException;
-import org.hibernate.engine.spi.SessionImplementor;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.usertype.UserType;
 import org.postgresql.util.PGobject;
 import org.slf4j.Logger;
@@ -48,7 +48,7 @@ public abstract class JsonType implements UserType {
     }
 
     @Override
-    public Object nullSafeGet(ResultSet rs, String[] names, SessionImplementor session, Object owner) throws HibernateException, SQLException {
+    public Object nullSafeGet(ResultSet rs, String[] names, SharedSessionContractImplementor session, Object owner) throws HibernateException, SQLException {
 
         final PGobject json = (PGobject)rs.getObject(names[0]);
 
@@ -64,7 +64,7 @@ public abstract class JsonType implements UserType {
     }
 
     @Override
-    public void nullSafeSet(PreparedStatement st, Object value, int index, SessionImplementor session) throws HibernateException, SQLException {
+    public void nullSafeSet(PreparedStatement st, Object value, int index, SharedSessionContractImplementor session) throws HibernateException, SQLException {
 
         final PGobject json = new PGobject();
         json.setType("jsonb");

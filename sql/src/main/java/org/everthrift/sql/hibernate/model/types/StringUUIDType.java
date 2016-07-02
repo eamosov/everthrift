@@ -13,7 +13,7 @@ import java.util.Objects;
 
 import org.everthrift.utils.UUID;
 import org.hibernate.HibernateException;
-import org.hibernate.engine.spi.SessionImplementor;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.usertype.UserType;
 
 public class StringUUIDType implements UserType, Externalizable {
@@ -41,7 +41,7 @@ public class StringUUIDType implements UserType, Externalizable {
     }
 
     @Override
-    public Object nullSafeGet(ResultSet rs, String[] names, SessionImplementor session, Object owner) throws HibernateException, SQLException {
+    public Object nullSafeGet(ResultSet rs, String[] names, SharedSessionContractImplementor session, Object owner) throws HibernateException, SQLException {
 
         final UUID uuid = UUID.fromJdkUUID((java.util.UUID)rs.getObject(names[0]));
 
@@ -52,7 +52,7 @@ public class StringUUIDType implements UserType, Externalizable {
     }
 
     @Override
-    public void nullSafeSet(PreparedStatement st, Object value, int index, SessionImplementor session) throws HibernateException, SQLException {
+    public void nullSafeSet(PreparedStatement st, Object value, int index, SharedSessionContractImplementor session) throws HibernateException, SQLException {
 
         if (value == null)
             st.setObject(index, null);
