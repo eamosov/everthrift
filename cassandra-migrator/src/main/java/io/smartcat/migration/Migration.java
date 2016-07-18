@@ -1,5 +1,8 @@
 package io.smartcat.migration;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.Statement;
@@ -12,7 +15,8 @@ import io.smartcat.migration.exceptions.SchemaAgreementException;
  */
 public abstract class Migration {
 
-    private int version = -1;
+    private static final Pattern versionPattern = Pattern.compile("[^0-9]*([0-9]+).*");
+    
     private MigrationType type = MigrationType.SCHEMA;
 
     /**
@@ -25,9 +29,8 @@ public abstract class Migration {
      * @param type Migration type (SCHEMA or DATA)
      * @param version Migration version
      */
-    public Migration(final MigrationType type, final int version) {
+    public Migration(final MigrationType type) {
         this.type = type;
-        this.version = version;
     }
 
     /**
@@ -45,13 +48,21 @@ public abstract class Migration {
     public MigrationType getType() {
         return this.type;
     }
+    
+    protected int extractVersion(String name){
+        final Matcher m = versionPattern.matcher(name);
+        if (m.matches())
+            return Integer.parseInt(m.group(1), 10);
+        
+        throw new RuntimeException("Coudn't parse migration version");        
+    }
 
     /**
      * Returns resulting database schema version of this migration.
      * @return Resulting db schema version
      */
     public int getVersion() {
-        return this.version;
+        return extractVersion(this.getClass().getSimpleName());
     }
 
     /**
@@ -126,7 +137,7 @@ public abstract class Migration {
         final int prime = 31;
         int result = 1;
         result = prime * result + ((type == null) ? 0 : type.hashCode());
-        result = prime * result + version;
+        result = prime * result + getVersion();
         return result;
     }
 
@@ -141,9 +152,13 @@ public abstract class Migration {
         Migration other = (Migration) obj;
         if (type != other.type)
             return false;
-        if (version != other.version)
+        if (getVersion() != other.getVersion())
             return false;
         return true;
     }
 
+    @Override
+    public String toString() {
+        return "Migration [type=" + type + ", version=" + getVersion() + "]";
+    }        
 }

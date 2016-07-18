@@ -1,14 +1,15 @@
 package io.smartcat.migration;
 
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * Class which holds set of migrations.
  */
 public class MigrationResources {
 
-    private final Set<Migration> migrations = new LinkedHashSet<>();
+    private final List<Migration> migrations = new ArrayList<>();
 
     /**
      * Add Migration object to migration collection.
@@ -24,7 +25,7 @@ public class MigrationResources {
      * position).
      * @param migrations Migration object list
      */
-    public void addMigrations(final Set<Migration> migrations) {
+    public void addMigrations(final Collection<Migration> migrations) {
         this.migrations.addAll(migrations);
     }
 
@@ -32,16 +33,7 @@ public class MigrationResources {
      * Get all Migration objects sorted by order of insert.
      * @return Sorted list of Migration objects
      */
-    public Set<Migration> getMigrations() {
+    public List<Migration> getMigrations() {
         return this.migrations;
-    }
-
-    /**
-     * Get migration on particular position (position of inserting).
-     * @param position of migration in collection
-     * @return Migration on provided position
-     */
-    public Migration getMigration(final int position) {
-        return (Migration) this.migrations.toArray()[position];
     }
 }

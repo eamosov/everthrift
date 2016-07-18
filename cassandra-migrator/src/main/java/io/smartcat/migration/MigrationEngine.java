@@ -41,9 +41,13 @@ public class MigrationEngine {
          * Create new Migrator with active Cassandra session.
          * @param session Active Cassandra session
          */
-        public Migrator(final Session session, final String schemaVersionCf) {
+        Migrator(final Session session, final String schemaVersionCf) {
             this.session = session;
             this.versioner = new CassandraVersioner(session, schemaVersionCf);
+        }
+        
+        public boolean migrate(final MigrationResources resources) {
+            return migrate(resources, false);
         }
 
         /**
@@ -53,7 +57,7 @@ public class MigrationEngine {
          * @param resources Collection of migrations to be executed
          * @return Success of migration
          */
-        public boolean migrate(final MigrationResources resources) {
+        public boolean migrate(final MigrationResources resources, boolean force) {
             LOGGER.debug("Start migration");
 
             for (final Migration migration : resources.getMigrations()) {
@@ -65,7 +69,7 @@ public class MigrationEngine {
                 LOGGER.info("Compare {} migration version {} with description {}", type.name(), migrationVersion,
                         migration.getDescription());
 
-                if (migrationVersion <= version) {
+                if (migrationVersion <= version && !force) {
                     LOGGER.warn("Skipping migration [{}] with version {} since db is on higher version {}.",
                             migration.getDescription(), migrationVersion, version);
                     continue;

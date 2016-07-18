@@ -2,7 +2,6 @@
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/JGroups-3.4.xsd">
     <UDP
-    	 singleton_name="tp_jgroups"
          mcast_port="${jgroups.udp.mcast_port:45588}"
          bind_addr="${jgroups.multicast.bind_addr:0.0.0.0}"
          tos="8"
@@ -10,8 +9,6 @@
          ucast_send_buf_size="640K"
          mcast_recv_buf_size="5M"
          mcast_send_buf_size="640K"
-         loopback="true"
-         enable_bundling="false"
          max_bundle_size="64K"
          max_bundle_timeout="30"
          ip_ttl="${jgroups.udp.ip_ttl:8}"
@@ -40,8 +37,7 @@
          oob_thread_pool.queue_max_size="100"
          oob_thread_pool.rejection_policy="discard"/>
 
-    <PING timeout="2000"
-            num_initial_members="20"/>
+    <PING timeout="2000" />
     <MERGE2 max_interval="30000"
             min_interval="10000"/>
     <FD_SOCK/>
