@@ -34,7 +34,7 @@ public class RegistryImpl implements Registry {
         public int hashCode() {
             final int prime = 31;
             int result = 1;
-            result = prime * result + ((entity == null) ? 0 : entity.hashCode());
+            result = prime * result + ((entity == null) ? 0 : System.identityHashCode(entity));
             result = prime * result + ((eq == null) ? 0 : eq.hashCode());
             return result;
         }
@@ -77,7 +77,7 @@ public class RegistryImpl implements Registry {
     }
 
     @Override
-    public <K> boolean add(LazyLoader<K> l, K e, Object eq) {
+    public synchronized <K> boolean add(LazyLoader<K> l, K e, Object eq) {
 
         if (uniqSet.add(new UniqKey(e, eq))){
             loadList.put(l, e);
@@ -89,7 +89,7 @@ public class RegistryImpl implements Registry {
     }
 
     @Override
-    public void clear(){
+    public synchronized void clear(){
         loadList.clear();
     }
 
@@ -97,22 +97,24 @@ public class RegistryImpl implements Registry {
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public ListenableFuture<Integer> load(){
 
-        if (loadList.isEmpty())
-            return Futures.immediateFuture(0);
-
-        final List<ListenableFuture<Integer>> asyncLoaders = Lists.newArrayList();
-
         int nLoaded = 0;
-        for (Map.Entry<LazyLoader<?>, Collection<Object>> e : loadList.asMap().entrySet()){
-            final List<Object> entities = (List)e.getValue();
-            if (!entities.isEmpty()){
+        final List<ListenableFuture<Integer>> asyncLoaders = Lists.newArrayList();
+        
+        synchronized(this){
+            if (loadList.isEmpty())
+                return Futures.immediateFuture(0);
+            
+            for (Map.Entry<LazyLoader<?>, Collection<Object>> e : loadList.asMap().entrySet()){
+                final List<Object> entities = (List)e.getValue();
+                if (!entities.isEmpty()){
 
-                if (e.getKey() instanceof AsyncLazyLoader){
-                    asyncLoaders.add(((AsyncLazyLoader)e.getKey()).processAsync(entities));
-                }else{
-                    nLoaded += ((LazyLoader)e.getKey()).process(entities);
+                    if (e.getKey() instanceof AsyncLazyLoader){
+                        asyncLoaders.add(((AsyncLazyLoader)e.getKey()).processAsync(entities));
+                    }else{
+                        nLoaded += ((LazyLoader)e.getKey()).process(entities);
+                    }
                 }
-            }
+            }            
         }
 
         if (asyncLoaders.isEmpty())
@@ -127,5 +129,4 @@ public class RegistryImpl implements Registry {
     public Object[] getArgs() {
         return args;
     }
-
 }
