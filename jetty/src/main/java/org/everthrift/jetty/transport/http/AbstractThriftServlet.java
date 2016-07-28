@@ -3,6 +3,7 @@ package org.everthrift.jetty.transport.http;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -129,7 +130,7 @@ public abstract class AbstractThriftServlet extends HttpServlet implements Initi
         } catch (TException e2) {
             response.setStatus(500);
             response.setContentType("text/plain");
-            out(asyncContext, response, e2.getMessage().getBytes());
+            out(asyncContext, response, e2.getMessage().getBytes(StandardCharsets.UTF_8));
             return;
         }
 
@@ -284,7 +285,7 @@ public abstract class AbstractThriftServlet extends HttpServlet implements Initi
         } catch (Exception e) {
             response.setStatus(500);
             response.setContentType("text/plain");
-            out(asyncContext, response, e.getMessage().getBytes());
+            out(asyncContext, response, e.getMessage().getBytes(StandardCharsets.UTF_8));
         }
     }
 

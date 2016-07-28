@@ -1,6 +1,7 @@
 package org.everthrift.jetty.controllers.api;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -26,7 +27,7 @@ public class EnumController {
 
         if (enumClassName==null || !enumClassName.startsWith(tbaseRoot)){
             response.setStatus(403);
-            response.getOutputStream().write(("Class '" +  enumClassName + "' not allowed").getBytes());
+            response.getOutputStream().write(("Class '" +  enumClassName + "' not allowed").getBytes(StandardCharsets.UTF_8));
             response.flushBuffer();
             return;
         }
@@ -34,7 +35,7 @@ public class EnumController {
         try {
             final Class cls = Class.forName(enumClassName, false, EnumController.class.getClassLoader());
 
-            final byte[] services = new ThriftFormatter("/api/").formatTEnum(cls).getBytes();
+            final byte[] services = new ThriftFormatter("/api/").formatTEnum(cls).getBytes(StandardCharsets.UTF_8);
 
             response.setContentType("text/html");
             response.setContentLength(services.length);
@@ -43,7 +44,7 @@ public class EnumController {
 
         } catch (ClassNotFoundException e) {
             response.setStatus(404);
-            response.getOutputStream().write(("Class '" +  enumClassName + "' not found").getBytes());
+            response.getOutputStream().write(("Class '" +  enumClassName + "' not found").getBytes(StandardCharsets.UTF_8));
             response.flushBuffer();
             return;
         }

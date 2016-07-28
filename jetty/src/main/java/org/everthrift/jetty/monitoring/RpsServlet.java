@@ -2,6 +2,7 @@ package org.everthrift.jetty.monitoring;
 
 import java.awt.Color;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Date;
 
@@ -160,7 +161,7 @@ public class RpsServlet extends HttpServlet implements InitializingBean, Disposa
         body.append(min + "\n<br/>\n" + hour + "\n<br/>\n" + day + "\n<br/>\n" + week + "\n<br/>\n");
         body.append("</body></html>");
 
-        final byte[] _body = body.toString().getBytes();
+        final byte[] _body = body.toString().getBytes(StandardCharsets.UTF_8);
 
         response.setContentLength(_body.length);
         response.getOutputStream().write(_body);

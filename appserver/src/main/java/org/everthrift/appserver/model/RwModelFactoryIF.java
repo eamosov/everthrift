@@ -9,7 +9,11 @@ public interface RwModelFactoryIF<PK, ENTITY extends DaoEntityIF, E extends TExc
 
     ENTITY insertEntity(ENTITY e) throws UniqueException;
 
-    ENTITY updateEntity(ENTITY e) throws UniqueException;
+    default ENTITY updateEntity(ENTITY e) throws UniqueException {
+        return updateEntity(e, null);
+    }
+    
+    ENTITY updateEntity(ENTITY e, ENTITY old) throws UniqueException;
 
     void deleteEntity(ENTITY e) throws E;
 

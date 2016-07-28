@@ -1,6 +1,7 @@
 package org.everthrift.jetty.controllers.api;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -21,7 +22,7 @@ public class ApiController {
     @RequestMapping(value="/api", method = RequestMethod.GET, produces="text/html")
     public void getServices(HttpServletRequest request, HttpServletResponse response) throws IOException {
 
-        final byte[] services = new ThriftFormatter("/api/").formatServices(rpcHttpRegistry.getControllers().values()).getBytes();
+        final byte[] services = new ThriftFormatter("/api/").formatServices(rpcHttpRegistry.getControllers().values()).getBytes(StandardCharsets.UTF_8);
 
         response.setContentType("text/html");
         response.setContentLength(services.length);

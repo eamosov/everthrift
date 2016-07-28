@@ -95,8 +95,6 @@ public abstract class OptLockCassandraModelFactory<PK extends Serializable,ENTIT
         try {
             final OptResult<ENTITY> ret = OptimisticLockModelFactoryIF.optimisticUpdate((count) -> {
 
-                final long now = LongTimestamp.now();
-
                 ENTITY e;
 
                 if (count == 0)
@@ -112,8 +110,7 @@ public abstract class OptLockCassandraModelFactory<PK extends Serializable,ENTIT
 
                     e = factory.create(id);
 
-                    if (e instanceof CreatedAtIF && (((CreatedAtIF)e).getCreatedAt() == 0))
-                        ((CreatedAtIF)e).setCreatedAt(now);
+                    setCreatedAt(e);
 
                     orig = null;
                 }else{
@@ -209,8 +206,6 @@ public abstract class OptLockCassandraModelFactory<PK extends Serializable,ENTIT
     @Override
     public final OptResult<ENTITY> optInsert(ENTITY e) {
 
-        final long now = LongTimestamp.now();
-
         if (e.getPk() == null){
             if (sequenceFactory !=null)
                 e.setPk(sequenceFactory.nextId());
@@ -218,11 +213,7 @@ public abstract class OptLockCassandraModelFactory<PK extends Serializable,ENTIT
                 throw new IllegalArgumentException("PK is null:" + e.toString());
         }
 
-        if (e instanceof CreatedAtIF && (((CreatedAtIF)e).getCreatedAt() == 0))
-            ((CreatedAtIF)e).setCreatedAt(now);
-
-        if (e instanceof UpdatedAtIF)
-            ((UpdatedAtIF) e).setUpdatedAt(now);
+        setCreatedAt(e);
 
         final DLock lock = this.assertUnique(null, e);
         final boolean saved;
@@ -256,14 +247,7 @@ public abstract class OptLockCassandraModelFactory<PK extends Serializable,ENTIT
      * @return
      */
     public final OptResult<ENTITY> fastInsert(ENTITY e) {
-        final long now = LongTimestamp.now();
-
-        if (e instanceof CreatedAtIF && (((CreatedAtIF)e).getCreatedAt() == 0))
-            ((CreatedAtIF)e).setCreatedAt(now);
-
-        if (e instanceof UpdatedAtIF)
-            ((UpdatedAtIF) e).setUpdatedAt(now);
-
+        setCreatedAt(e);
         putEntity(e, false);
         final OptResult<ENTITY> r = OptResult.create(this, e, null, true);
 

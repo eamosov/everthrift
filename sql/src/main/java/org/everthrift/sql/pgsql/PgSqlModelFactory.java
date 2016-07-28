@@ -36,7 +36,7 @@ public class PgSqlModelFactory<PK extends Serializable, ENTITY extends DaoEntity
 
     @Override
     @Transactional
-    public final ENTITY updateEntity(ENTITY e) throws UniqueException {
+    public final ENTITY updateEntity(ENTITY e, ENTITY old) throws UniqueException {
         final ENTITY before;
         if (e.getPk()!=null){
             before = getDao().findById((PK)e.getPk());

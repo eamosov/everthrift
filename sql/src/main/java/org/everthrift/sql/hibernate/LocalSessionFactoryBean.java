@@ -1,6 +1,7 @@
 package org.everthrift.sql.hibernate;
 
 import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 
 import org.everthrift.sql.hibernate.dao.EntityInterceptor;
 import org.everthrift.sql.hibernate.model.MetaDataProvider;
@@ -18,7 +19,7 @@ public class LocalSessionFactoryBean extends org.springframework.orm.hibernate5.
 
     @Override
     protected SessionFactory buildSessionFactory(LocalSessionFactoryBuilder sfb) {
-        sfb.addInputStream(new ByteArrayInputStream(metaDataProvider.toHbmXml().getBytes()));
+        sfb.addInputStream(new ByteArrayInputStream(metaDataProvider.toHbmXml().getBytes(StandardCharsets.UTF_8)));
         sfb.setInterceptor(EntityInterceptor.INSTANCE);
         final SessionFactory ret =  super.buildSessionFactory(sfb);
         return ret;

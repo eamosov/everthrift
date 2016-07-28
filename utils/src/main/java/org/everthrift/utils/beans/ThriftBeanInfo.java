@@ -28,6 +28,7 @@ import java.beans.PropertyDescriptor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -537,7 +538,7 @@ class ThriftBeanInfo implements BeanInfo {
                 if (right.length() == i) {
                     return 1;
                 }
-                int result = left.getBytes()[i] - right.getBytes()[i];
+                int result = left.getBytes(StandardCharsets.UTF_8)[i] - right.getBytes(StandardCharsets.UTF_8)[i];
                 if (result != 0) {
                     return result;
                 }

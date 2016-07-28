@@ -1,6 +1,7 @@
 package org.everthrift.jetty.controllers.api;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -26,7 +27,7 @@ public class StructController {
 
         if (structClassName==null || !structClassName.startsWith(tbaseRoot)){
             response.setStatus(403);
-            response.getOutputStream().write(("Class '" +  structClassName + "' not allowed").getBytes());
+            response.getOutputStream().write(("Class '" +  structClassName + "' not allowed").getBytes(StandardCharsets.UTF_8));
             response.flushBuffer();
             return;
         }
@@ -34,7 +35,7 @@ public class StructController {
         try {
             final Class cls = Class.forName(structClassName, false, StructController.class.getClassLoader());
 
-            final byte[] services = new ThriftFormatter("/api/").formatClass(cls).getBytes();
+            final byte[] services = new ThriftFormatter("/api/").formatClass(cls).getBytes(StandardCharsets.UTF_8);
 
             response.setContentType("text/html");
             response.setContentLength(services.length);
@@ -43,7 +44,7 @@ public class StructController {
 
         } catch (ClassNotFoundException e) {
             response.setStatus(404);
-            response.getOutputStream().write(("Class '" +  structClassName + "' not found").getBytes());
+            response.getOutputStream().write(("Class '" +  structClassName + "' not found").getBytes(StandardCharsets.UTF_8));
             response.flushBuffer();
             return;
         }

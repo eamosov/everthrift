@@ -2,6 +2,7 @@ package org.everthrift.utils;
 
 import java.io.Serializable;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
@@ -197,7 +198,7 @@ public class UUID implements Comparable<UUID>, Serializable{
 
         try {
             final MessageDigest md = MessageDigest.getInstance("SHA-1");
-            final ByteBuffer b = ByteBuffer.wrap(md.digest(value.getBytes()));
+            final ByteBuffer b = ByteBuffer.wrap(md.digest(value.getBytes(StandardCharsets.UTF_8)));
             final long mostSigBits = (((long)(space8bit & 0xFF)) << 56) | (b.getLong() & 0xFFFFFFFFFFFFFFL);
             final long leastSigBits = b.getLong();
             return new UUID(mostSigBits, leastSigBits);

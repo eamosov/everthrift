@@ -4,6 +4,7 @@ import java.beans.PropertyDescriptor;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -159,7 +160,7 @@ public class PlainJsonThriftServlet extends HttpServlet {
                         throw new TException(e1);
                     }
 
-                    final JsonElement e = jsonParser.parse(new String(packet));
+                    final JsonElement e = jsonParser.parse(new String(packet, StandardCharsets.UTF_8));
                     if (e.isJsonNull()) {
                         _args = new JsonObject();
                     } else if (e.isJsonObject()) {
@@ -199,7 +200,7 @@ public class PlainJsonThriftServlet extends HttpServlet {
                     ex.addProperty("code", code);
                     ex.addProperty("message", message);
                     try {
-                        outT.write(ex.toString().getBytes());
+                        outT.write(ex.toString().getBytes(StandardCharsets.UTF_8));
                     } catch (TTransportException e) {
                         throw new RuntimeException(e);
                     }
@@ -244,7 +245,7 @@ public class PlainJsonThriftServlet extends HttpServlet {
 
                     final TMemoryBuffer outT = new TMemoryBuffer(1024);
                     try {
-                        outT.write(gson.toJson(o).getBytes());
+                        outT.write(gson.toJson(o).getBytes(StandardCharsets.UTF_8));
                     } catch (TTransportException e) {
                         throw new RuntimeException(e);
                     }
@@ -255,7 +256,7 @@ public class PlainJsonThriftServlet extends HttpServlet {
                 public void asyncResult(Object o, AbstractThriftController controller) {
                     final Pair<TMemoryBuffer, Integer> tt = result(o, controller.getInfo());
                     try {
-                        out(asyncContext, tt.second, "application/json", tt.first.getArray(), tt.first.length());
+                        out(asyncContext, tt.second, "application/json; charset=utf-8", tt.first.getArray(), tt.first.length());
                     } catch (IOException e) {
                         log.error("Async Error", e);
                     }
@@ -312,10 +313,10 @@ public class PlainJsonThriftServlet extends HttpServlet {
             });
 
             if (mw != null) {
-                out(asyncContext, mw.second, "application/json", mw.first.getArray(), mw.first.length());
+                out(asyncContext, mw.second, "application/json; charset=utf-8", mw.first.getArray(), mw.first.length());
             }
         } catch (Exception e) {
-            out(asyncContext, 500, "text/plain", e.getMessage().getBytes());
+            out(asyncContext, 500, "text/plain", e.getMessage().getBytes(StandardCharsets.UTF_8));
         }
     }
 }

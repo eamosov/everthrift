@@ -144,13 +144,7 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
 
         final long now = LongTimestamp.now();
 
-        if (e instanceof CreatedAtIF){
-            ((CreatedAtIF)e).setCreatedAt(now);
-        }
-
-        if (e instanceof UpdatedAtIF){
-            ((UpdatedAtIF)e).setUpdatedAt(now);
-        }
+        setCreatedAt(e);
 
         final ENTITY inserted = getDao().save(e).first;
         _invalidateEhCache((PK)inserted.getPk());
@@ -225,16 +219,7 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
 
                 orig = null;
                 e = factory.create(id);
-
-                final long now = LongTimestamp.now();
-
-                if (e instanceof CreatedAtIF){
-                    ((CreatedAtIF)e).setCreatedAt(now);
-                }
-
-                if (e instanceof UpdatedAtIF){
-                    ((UpdatedAtIF)e).setUpdatedAt(now);
-                }
+                setCreatedAt(e);
 
                 getDao().persist(e);
             }else{

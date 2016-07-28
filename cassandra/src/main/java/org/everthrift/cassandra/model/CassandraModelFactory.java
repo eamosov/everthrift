@@ -18,11 +18,13 @@ import org.apache.commons.lang.ArrayUtils;
 import org.apache.thrift.TException;
 import org.everthrift.appserver.model.AbstractCachedModelFactory;
 import org.everthrift.appserver.model.AsyncRoModelFactoryIF;
+import org.everthrift.appserver.model.CreatedAtIF;
 import org.everthrift.appserver.model.DaoEntityIF;
 import org.everthrift.appserver.model.LocalEventBus;
 import org.everthrift.appserver.model.RwModelFactoryIF;
 import org.everthrift.appserver.model.Unique;
 import org.everthrift.appserver.model.UniqueException;
+import org.everthrift.appserver.model.UpdatedAtIF;
 import org.everthrift.appserver.model.XAwareIF;
 import org.everthrift.appserver.model.lazy.AsyncLazyLoader;
 import org.everthrift.appserver.model.lazy.Registry;
@@ -391,6 +393,9 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 
     @Override
     public ENTITY insertEntity(ENTITY e) throws UniqueException {
+        
+        setCreatedAt(e);
+        
         putEntity(e, false);
 
         localEventBus.postAsync(insertEntityEvent(e));
@@ -398,14 +403,15 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
     }
 
     @Override
-    public ENTITY updateEntity(ENTITY e) throws UniqueException {
-        putEntity(e, true);
-
-        localEventBus.postAsync(updateEntityEvent(null, e));
-
+    public ENTITY updateEntity(ENTITY e, ENTITY old) throws UniqueException {
+        if (!e.equals(old)){
+            setUpdatedAt(e);
+            putEntity(e, true);
+            localEventBus.postAsync(updateEntityEvent(old, e));            
+        }
         return e;
     }
-
+    
     @Override
     public void deleteEntity(ENTITY e) {
         mapper.delete(extractCompaundPk((PK)e.getPk()));

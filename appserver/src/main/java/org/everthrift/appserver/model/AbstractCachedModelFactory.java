@@ -286,4 +286,13 @@ public abstract class AbstractCachedModelFactory<PK,ENTITY> extends RoModelFacto
         this.cache = cache;
         _afterPropertiesSet();
     }
+    
+    protected void setCreatedAt(ENTITY e){
+        CreatedAtIF.setCreatedAt(e);
+    }
+    
+    protected void setUpdatedAt(ENTITY e){
+        CreatedAtIF.setUpdatedAt(e);
+    }
+    
 }

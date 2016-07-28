@@ -209,13 +209,7 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
             if (log.isDebugEnabled())
                 log.debug("save tx={}: {}", session.getTransaction().getStatus(), e);
 
-            final long now = LongTimestamp.now();
-
-            if (e instanceof CreatedAtIF && (((CreatedAtIF)e).getCreatedAt() == 0))
-                ((CreatedAtIF)e).setCreatedAt(now);
-
-            if (e instanceof UpdatedAtIF)
-                ((UpdatedAtIF) e).setUpdatedAt(now);
+            CreatedAtIF.setCreatedAt(e);
 
             if (e.getPk() == null){
                 e.setPk(session.save(e));
