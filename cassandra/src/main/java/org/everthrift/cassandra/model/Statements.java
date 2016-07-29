@@ -19,6 +19,7 @@ import org.everthrift.thrift.TFunction;
 import org.everthrift.utils.LongTimestamp;
 
 import com.datastax.driver.core.BatchStatement;
+import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.Statement;
@@ -43,6 +44,7 @@ public class Statements {
     private Session session;
     private boolean autoCommit = false;
     private boolean isBatch = true;
+    private BatchStatement.Type batchType = BatchStatement.Type.LOGGED;
     private long timestamp; //in microseconds
 
     private CassandraFactories cassandraFactories;
@@ -102,7 +104,7 @@ public class Statements {
         if (autoCommit)
             commit();
     }
-
+    
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public <ENTITY extends DaoEntityIF> ENTITY update(ENTITY e, TFunction<ENTITY, Boolean> mutator, Option... options) throws TException{
         final CassandraModelFactory factory = of(e);
@@ -161,7 +163,15 @@ public class Statements {
 
         return e;
     }
+    
+    public ResultSet execute(Statement s){
+        return session.execute(s);
+    }
 
+    public ResultSetFuture executeAsync(Statement s){
+        return session.executeAsync(s);
+    }
+    
     public void add(Statement s){
         statements.add(s);
 
@@ -194,14 +204,14 @@ public class Statements {
         final ListenableFuture f;
 
         if (isBatch() && statements.size()>1){
-            final BatchStatement batch = new BatchStatement();
+            final BatchStatement batch = new BatchStatement(batchType);
             batch.setDefaultTimestamp(timestamp);
             statements.forEach(s -> batch.add(s));
-            f = session.executeAsync(batch);
+            f = executeAsync(batch);
         }else{
             final List<ResultSetFuture> ff = Lists.newArrayList();
             for (Statement s: statements){
-                ff.add(session.executeAsync(s));
+                ff.add(executeAsync(s));
             }
             f = Futures.successfulAsList(ff);
         }
@@ -229,14 +239,13 @@ public class Statements {
     public void commit(){
 
         if (isBatch() && statements.size()>1){
-            final BatchStatement batch = new BatchStatement();
+            final BatchStatement batch = new BatchStatement(batchType);
+            batch.setIdempotent(false);
             batch.setDefaultTimestamp(timestamp);
             statements.forEach(s -> batch.add(s));
-            session.execute(batch);
+            execute(batch);
         }else{
-            for (Statement s: statements){
-                session.execute(s);
-            }
+            statements.forEach(s -> execute(s));
         }
 
         for (Map.Entry<CassandraModelFactory, Object> e: invalidates.entries()){
@@ -276,70 +285,12 @@ public class Statements {
         return timestamp / 1000;
     }
 
-    //	public void setTimestamp(long timestamp) {
-    //		this.timestamp = timestamp;
-    //	}
+    public BatchStatement.Type getBatchType() {
+        return batchType;
+    }
 
-    //	public Statements append(Statements s){
-    //
-    //		if (s.statements !=null)
-    //			statements.addAll(s.statements);
-    //
-    //		if (s.onExecute !=null)
-    //			onExecute.addAll(s.onExecute);
-    //
-    //		return this;
-    //	}
-    //
-    //	public Statements prepend(Statements s){
-    //
-    //		s.append(this);
-    //		return s;
-    //	}
-    //
-    //	public ListenableFuture<ResultSet> executeAsync(Session session, Executor executor){
-    //
-    //		final ResultSetFuture f;
-    //
-    //		if (!CollectionUtils.isEmpty(statements)){
-    //			f = session.executeAsync(batch());
-    //			Futures.addCallback(f, new FutureCallback<ResultSet>(){
-    //
-    //				@Override
-    //				public void onSuccess(ResultSet result) {
-    //					run();
-    //				}
-    //
-    //				@Override
-    //				public void onFailure(Throwable t) {
-    //					t.printStackTrace();
-    //				}}, executor);
-    //
-    //			return f;
-    //		}else{
-    //			run();
-    //			return Futures.immediateFuture((ResultSet)null);
-    //		}
-    //	}
-    //
-    //	public ResultSet execute(Session session, Executor executor){
-    //		try {
-    //			return executeAsync(session, executor).get();
-    //		} catch (InterruptedException e) {
-    //			throw new RuntimeException(e);
-    //		} catch (ExecutionException e) {
-    //			throw Throwables.propagate(e.getCause());
-    //		}
-    //	}
-    //
-    //	private BatchStatement batch(){
-    //		final BatchStatement batch = new BatchStatement();
-    //		statements.forEach(s -> batch.add(s));
-    //		return batch;
-    //	}
-    //
-    //	public void run(){
-    //		if (!CollectionUtils.isEmpty(onExecute))
-    //			onExecute.forEach(r -> r.run());
-    //	}
+    public Statements setBatchType(BatchStatement.Type batchType) {
+        this.batchType = batchType;
+        return this;
+    }
 }

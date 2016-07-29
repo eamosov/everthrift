@@ -15,6 +15,29 @@ import com.google.common.collect.Maps;
 
 @SuppressWarnings("rawtypes")
 public class CassandraFactories implements SmartLifecycle{
+    
+    public static class Result<E>{
+        private final E r;
+        private Result(E r){
+            this.r = r;
+        }
+        
+        public E get(){
+            return r;
+        }
+        
+        public void no(){            
+        }
+    }
+    
+    public static class VoidResult extends Result<Void>{
+        private VoidResult(){
+            super(null);
+        }
+    }
+
+    
+    private static final VoidResult NO_RESULT = new VoidResult();
 
     @Autowired
     private ApplicationContext ctx;
@@ -49,30 +72,32 @@ public class CassandraFactories implements SmartLifecycle{
         this.session = session;
     }
 
-    public void batch(TVoidFunction<Statements> run) throws TException{
+    public VoidResult batchApplyAndCommit(TVoidFunction<Statements> run) throws TException{
         Statements s = begin();
         run.apply(s);
         s.commit();
+        return NO_RESULT;
     }
 
-    public <E> E batch(TFunction<Statements, E> run) throws TException{
+    public <E> Result<E> batchApplyAndCommit(TFunction<Statements, E> run) throws TException{
         Statements s = begin();
         final E ret = run.apply(s);
         s.commit();
-        return ret;
+        return new Result<E>(ret);
     }
 
-    public void execute(TVoidFunction<Statements> run) throws TException{
+    public VoidResult executeApplyAndCommit(TVoidFunction<Statements> run) throws TException{
         Statements s = begin().setBatch(false);
         run.apply(s);
         s.commit();
+        return NO_RESULT;
     }
 
-    public <E> E execute(TFunction<Statements, E> run) throws TException{
+    public <E> Result<E> executeApplyAndCommit(TFunction<Statements, E> run) throws TException{
         Statements s = begin().setBatch(false);
         final E ret = run.apply(s);
         s.commit();
-        return ret;
+        return new Result<E>(ret);
     }
 
     @Override
