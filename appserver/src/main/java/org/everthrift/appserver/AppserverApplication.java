@@ -201,6 +201,12 @@ public class AppserverApplication {
             } catch (ClassNotFoundException e) {
                 throw Throwables.propagate(e);
             }
+        }else{
+            try {
+                context.register(Class.forName("org.everthrift.rabbit.LocalRabbitConfig"));
+            } catch (ClassNotFoundException e) {
+                log.warn("Cound't find LoopbackJms. @RpcJms Service will be disabled.");
+            }            
         }
 
         if (isJettyEnabled()) {

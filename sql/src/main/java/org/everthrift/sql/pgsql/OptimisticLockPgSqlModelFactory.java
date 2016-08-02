@@ -119,7 +119,7 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
             });
 
             final OptResult<ENTITY> r = OptResult.create(this, null, deleted, true);
-            localEventBus.postAsync(deleteEntityEvent(deleted));
+            localEventBus.postEntityEvent(deleteEntityEvent(deleted));
             return r;
         } catch (EntityNotFoundException e) {
             throw createNotFoundException(id);
@@ -150,7 +150,7 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
         _invalidateEhCache((PK)inserted.getPk());
 
         final OptResult<ENTITY> r = OptResult.create(this, inserted, null, true);
-        localEventBus.postAsync(insertEntityEvent(inserted));
+        localEventBus.postEntityEvent(insertEntityEvent(inserted));
         return r;
     }
 
@@ -199,7 +199,7 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
         if (ret.isUpdated){
             _invalidateEhCache(id);
 
-            localEventBus.postAsync(updateEntityEvent(ret.beforeUpdate, ret.afterUpdate));
+            localEventBus.postEntityEvent(updateEntityEvent(ret.beforeUpdate, ret.afterUpdate));
         }
 
         return ret;
@@ -269,7 +269,7 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
         final OptResult<ENTITY> ret = new OptResult<ENTITY>(this, r.first, before, true);
 
         if (r.second){
-            localEventBus.postAsync(updateEntityEvent(before, r.first));
+            localEventBus.postEntityEvent(updateEntityEvent(before, r.first));
         }
         return r.first;
     }

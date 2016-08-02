@@ -7,6 +7,7 @@ import org.everthrift.appserver.controller.ThriftControllerRegistry;
 import org.everthrift.appserver.controller.ThriftProcessor;
 import org.everthrift.appserver.model.LocalEventBus;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -65,4 +66,8 @@ public class AppserverConfig {
         return new OnNodeConfigurationController();
     }
 
+    @Bean
+    public Boolean testMode(@Value("${app.testMode:false}") String value){
+        return Boolean.parseBoolean(value);
+    }    
 }

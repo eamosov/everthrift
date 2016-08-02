@@ -18,14 +18,13 @@ import org.apache.commons.lang.ArrayUtils;
 import org.apache.thrift.TException;
 import org.everthrift.appserver.model.AbstractCachedModelFactory;
 import org.everthrift.appserver.model.AsyncRoModelFactoryIF;
-import org.everthrift.appserver.model.CreatedAtIF;
 import org.everthrift.appserver.model.DaoEntityIF;
 import org.everthrift.appserver.model.LocalEventBus;
 import org.everthrift.appserver.model.RwModelFactoryIF;
 import org.everthrift.appserver.model.Unique;
 import org.everthrift.appserver.model.UniqueException;
-import org.everthrift.appserver.model.UpdatedAtIF;
 import org.everthrift.appserver.model.XAwareIF;
+import org.everthrift.appserver.model.events.InsertEntityEvent;
 import org.everthrift.appserver.model.lazy.AsyncLazyLoader;
 import org.everthrift.appserver.model.lazy.Registry;
 import org.everthrift.cassandra.DLock;
@@ -40,6 +39,7 @@ import org.everthrift.cassandra.com.datastax.driver.mapping.NotModifiedException
 import org.everthrift.thrift.TFunction;
 import org.everthrift.utils.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.CollectionUtils;
 
 import com.datastax.driver.core.BoundStatement;
@@ -69,7 +69,7 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
 
     private final Class<ENTITY> entityClass;
     private final Constructor<ENTITY> copyConstructor;
-
+    
     @Autowired
     protected MappingManager mappingManager;
 
@@ -398,7 +398,7 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
         
         putEntity(e, false);
 
-        localEventBus.postAsync(insertEntityEvent(e));
+        localEventBus.postEntityEvent(insertEntityEvent(e));
         return e;
     }
 
@@ -407,7 +407,7 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
         if (!e.equals(old)){
             setUpdatedAt(e);
             putEntity(e, true);
-            localEventBus.postAsync(updateEntityEvent(old, e));            
+            localEventBus.postEntityEvent(updateEntityEvent(old, e));            
         }
         return e;
     }
@@ -499,6 +499,10 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
     @Override
     public boolean lazyLoad(Registry r, XAwareIF<PK, ENTITY> m) {
         return r.add(asyncLazyLoader, m);
+    }
+
+    public void truncate(){
+        mapper.getManager().getSession().execute(QueryBuilder.truncate(mapper.getTableName()));
     }
 
 }

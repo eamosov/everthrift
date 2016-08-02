@@ -175,7 +175,7 @@ public abstract class OptLockCassandraModelFactory<PK extends Serializable,ENTIT
             });
 
             if (ret.isUpdated){
-                localEventBus.postAsync(updateEntityEvent(ret.beforeUpdate, ret.afterUpdate));
+                localEventBus.postEntityEvent(updateEntityEvent(ret.beforeUpdate, ret.afterUpdate));
             }
 
             return ret;
@@ -188,7 +188,7 @@ public abstract class OptLockCassandraModelFactory<PK extends Serializable,ENTIT
         mapper.delete(e);
         invalidate((PK)e.getPk());
         final OptResult<ENTITY> r= OptResult.create(this, null, e, true);;
-        localEventBus.postAsync(deleteEntityEvent(e));
+        localEventBus.postEntityEvent(deleteEntityEvent(e));
         return r;
     }
 
@@ -231,7 +231,7 @@ public abstract class OptLockCassandraModelFactory<PK extends Serializable,ENTIT
 
         final OptResult<ENTITY> r = OptResult.create(this, e, null, true);
 
-        localEventBus.postAsync(insertEntityEvent(e));
+        localEventBus.postEntityEvent(insertEntityEvent(e));
 
         return r;
     }
@@ -251,7 +251,7 @@ public abstract class OptLockCassandraModelFactory<PK extends Serializable,ENTIT
         putEntity(e, false);
         final OptResult<ENTITY> r = OptResult.create(this, e, null, true);
 
-        localEventBus.postAsync(insertEntityEvent(e));
+        localEventBus.postEntityEvent(insertEntityEvent(e));
         return r;
     }
 }

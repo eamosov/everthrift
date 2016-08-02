@@ -8,6 +8,7 @@ import java.util.function.Consumer;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.thrift.TException;
+import org.everthrift.appserver.model.CreatedAtIF;
 import org.everthrift.appserver.model.DaoEntityIF;
 import org.everthrift.appserver.model.UpdatedAtIF;
 import org.everthrift.appserver.model.events.DeleteEntityEvent;
@@ -98,7 +99,7 @@ public class Statements {
         final UpdateEntityEvent<PK, ENTITY> event = factory.updateEntityEvent(beforeUpdate, afterUpdate);
 
         callbacks.add(()->{
-            factory.localEventBus.postAsync(event);
+            factory.localEventBus.postEntityEvent(event);
         });
 
         if (autoCommit)
@@ -119,7 +120,7 @@ public class Statements {
         final UpdateEntityEvent event = factory.updateEntityEvent(beforeUpdate, (ENTITY)factory.copy(e));
         callbacks.add(()->{
             uq.applySpecialValues(e);
-            factory.localEventBus.postAsync(event);
+            factory.localEventBus.postEntityEvent(event);
         });
 
         if (autoCommit)
@@ -131,12 +132,14 @@ public class Statements {
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public <ENTITY extends DaoEntityIF> ENTITY save(ENTITY e, Option... options){
         final CassandraModelFactory f = of(e);
+        
+        CreatedAtIF.setCreatedAt(e);
         addStatement(f, f.insertQuery(e, options), e);
 
         final ENTITY copy = (ENTITY)f.copy(e);
         final InsertEntityEvent event = f.insertEntityEvent(copy);
         callbacks.add(()->{
-            f.localEventBus.postAsync(event);
+            f.localEventBus.postEntityEvent(event);
         });
 
         if (autoCommit)
@@ -155,7 +158,7 @@ public class Statements {
 
         final DeleteEntityEvent event = f.deleteEntityEvent(e);
         callbacks.add(()->{
-            f.localEventBus.postAsync(event);
+            f.localEventBus.postEntityEvent(event);
         });
 
         if (autoCommit)

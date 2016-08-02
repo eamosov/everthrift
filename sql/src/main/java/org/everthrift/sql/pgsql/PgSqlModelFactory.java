@@ -29,7 +29,7 @@ public class PgSqlModelFactory<PK extends Serializable, ENTITY extends DaoEntity
         final ENTITY ret = getDao().save(e).first;
         _invalidateEhCache((PK)ret.getPk());
 
-        localEventBus.postAsync(insertEntityEvent(ret));
+        localEventBus.postEntityEvent(insertEntityEvent(ret));
 
         return ret;
     }
@@ -48,7 +48,7 @@ public class PgSqlModelFactory<PK extends Serializable, ENTITY extends DaoEntity
         _invalidateEhCache((PK)r.first.getPk());
 
         if (r.second){
-            localEventBus.postAsync(updateEntityEvent(before, r.first));
+            localEventBus.postEntityEvent(updateEntityEvent(before, r.first));
         }
         return r.first;
     }

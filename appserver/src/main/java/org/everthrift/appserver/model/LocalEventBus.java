@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 
 import com.google.common.eventbus.AsyncEventBus;
 import com.google.common.eventbus.EventBus;
@@ -24,6 +25,9 @@ public class LocalEventBus implements InitializingBean{
     private EventBus eventBus;
     private EventBus asyncEventBus;
 
+    @Autowired
+    private boolean testMode;
+    
     public LocalEventBus() {
 
     }
@@ -53,6 +57,13 @@ public class LocalEventBus implements InitializingBean{
     public void register(Object object){
         eventBus.register(object);
         asyncEventBus.register(object);
+    }
+    
+    public void postEntityEvent(Object event){
+        if (testMode)
+            post(event);
+        else
+            postAsync(event);
     }
 
     public void post(Object event){
