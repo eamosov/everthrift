@@ -67,6 +67,10 @@ public class RegistryImpl implements Registry {
 
     private Object[] args;
 
+    public RegistryImpl() {
+        
+    }
+    
     public RegistryImpl(Object[] args) {
         this.args = args;
     }
@@ -128,5 +132,9 @@ public class RegistryImpl implements Registry {
     @Override
     public Object[] getArgs() {
         return args;
+    }
+    
+    public void setArgs(Object[] args){
+        this.args = args;
     }
 }

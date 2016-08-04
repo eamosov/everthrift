@@ -1,5 +1,6 @@
 package org.everthrift.jms;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -12,8 +13,11 @@ public class LoopbackJms {
     }
 
     @Bean
-    public LocalJmsThriftClientServerImpl localJmsThriftClientServerImpl(){
-        return new LocalJmsThriftClientServerImpl();
+    public LocalJmsThriftClientServerImpl localJmsThriftClientServerImpl(@Qualifier("testMode") boolean testMode){
+        final LocalJmsThriftClientServerImpl jms = new LocalJmsThriftClientServerImpl();
+        if (testMode)
+            jms.setBlock(true);
+        return jms;
     }
 
 }

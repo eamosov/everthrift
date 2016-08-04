@@ -43,8 +43,6 @@ public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY 
     private final AbstractDao<PK, ENTITY> dao;
     protected final Class<ENTITY> entityClass;
 
-    //    final RwModelFactoryHelper<PK, ENTITY> helper;
-    //
     protected abstract E createNotFoundException(PK id);
 
     protected AbstractPgSqlModelFactory(Cache cache, Class<ENTITY> entityClass, ListeningExecutorService listeningExecutorService, SessionFactory sessionFactory, LocalEventBus localEventBus) {
@@ -52,17 +50,6 @@ public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY 
 
         this.entityClass = entityClass;
         dao = new AbstractDaoImpl<PK, ENTITY>(this.entityClass);
-        //       	helper = new RwModelFactoryHelper<PK, ENTITY>(){
-        //
-        //			@Override
-        //			protected ENTITY updateEntityImpl(ENTITY e) {
-        //				return AbstractPgSqlModelFactory.this.updateEntityImpl(e);
-        //			}
-        //
-        //			@Override
-        //			protected PK extractPk(ENTITY e) {
-        //				return (PK)e.getPk();
-        //			}};
 
         this.listeningExecutorService = listeningExecutorService;
         this.localEventBus = localEventBus;
@@ -76,17 +63,6 @@ public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY 
 
         this.entityClass = entityClass;
         dao = new AbstractDaoImpl<PK, ENTITY>(this.entityClass);
-        //       	helper = new RwModelFactoryHelper<PK, ENTITY>(){
-        //
-        //			@Override
-        //			protected ENTITY updateEntityImpl(ENTITY e) {
-        //				return AbstractPgSqlModelFactory.this.updateEntityImpl(e);
-        //			}
-        //
-        //			@Override
-        //			protected PK extractPk(ENTITY e) {
-        //				return (PK)e.getPk();
-        //			}};
     }
 
     private void _afterPropertiesSet(){
@@ -101,23 +77,6 @@ public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY 
     private void afterPropertiesSet() {
         _afterPropertiesSet();
     }
-
-    //    private ENTITY updateEntityImpl(ENTITY e) {
-    //
-    //		try{
-    //			final Pair<ENTITY, Boolean> ret = dao.saveOrUpdate(e);
-    //
-    //			if (ret.second){
-    //				doAfterCommit( () -> {_invalidate((PK)e.getPk());} );
-    //			}
-    //
-    //			helper.setUpdated(ret.second);
-    //			return ret.first;
-    //		}catch(Exception e1){
-    //			helper.setUpdated(false);
-    //			throw e1;
-    //		}
-    //    }
 
     protected final void _invalidateEhCache(PK id){
         super.invalidate(id);

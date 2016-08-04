@@ -57,6 +57,8 @@ public abstract class AbstractThriftController<ArgsType extends TBase, ResultTyp
 
     protected Class<? extends Annotation> registryAnn;
     protected boolean allowAsyncAnswer;
+    
+    protected LazyLoadManager lazyLoadManager = new LazyLoadManager();
 
     @Autowired
     @Qualifier("listeningCallerRunsBoundQueueExecutor")
@@ -334,7 +336,7 @@ public abstract class AbstractThriftController<ArgsType extends TBase, ResultTyp
     }
 
     protected ListenableFuture<ResultType> loadLazyRelations(ResultType result){
-        return loadLazyRelations ? LazyLoadManager.load(LazyLoadManager.SCENARIO_DEFAULT, result) : Futures.immediateFuture(result);
+        return loadLazyRelations ? lazyLoadManager.load(LazyLoadManager.SCENARIO_DEFAULT, result) : Futures.immediateFuture(result);
     }
 
     protected Map<String, String[]> getHttpRequestParams(){

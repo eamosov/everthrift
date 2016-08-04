@@ -24,6 +24,8 @@ public class LazyLoadManager {
     public static String SCENARIO_DEFAULT = "default";
     public static String SCENARIO_ADMIN = "admin";
     public static String SCENARIO_JSON = "json";
+    
+    final RegistryImpl registry = new RegistryImpl();
 
     private static final Executor loadExecutor = Executors.newCachedThreadPool(new ThreadFactory() {
         private final AtomicInteger threadNumber = new AtomicInteger(1);
@@ -84,27 +86,27 @@ public class LazyLoadManager {
         return result;
     }
 
-    public static <T> ListenableFuture<T> load(final String scenario, int maxIterations, final T o){
+    public <T> ListenableFuture<T> load(final String scenario, int maxIterations, final T o){
         return load(scenario, maxIterations, o, new Object[]{});
     }
 
-    public static <T> ListenableFuture<T> load(final String scenario, int maxIterations, final T o, Object ... args){
+    public <T> ListenableFuture<T> load(final String scenario, int maxIterations, final T o, Object ... args){
 
         if (o == null ||
                 (o instanceof Collection && ((Collection)o).isEmpty()) ||
                 (o instanceof Map && ((Map)o).isEmpty()))
             return Futures.immediateFuture(o);
 
-        final Registry r = new RegistryImpl(args);
-        final WalkerIF walker = new RecursiveWalker(r, scenario);
-        return Futures.transform(load(maxIterations, o, r, walker), (Integer nLoadAdd) -> o);
+        registry.setArgs(args);
+        final WalkerIF walker = new RecursiveWalker(registry, scenario);
+        return Futures.transform(load(maxIterations, o, registry, walker), (Integer nLoadAdd) -> o);
     }
 
-    public static <T> ListenableFuture<T> load(final String scenario, final T o){
+    public <T> ListenableFuture<T> load(final String scenario, final T o){
         return load(scenario, MAX_LOAD_ITERATIONS, o);
     }
 
-    public static <T> ListenableFuture<T> loadForJson(final T o){
+    public <T> ListenableFuture<T> loadForJson(final T o){
         return load(LazyLoadManager.SCENARIO_JSON, o);
     }
 

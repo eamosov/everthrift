@@ -1,7 +1,9 @@
 package org.everthrift.jms;
 
 import java.lang.reflect.Proxy;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -43,6 +45,8 @@ public class LocalJmsThriftClientServerImpl implements JmsThriftClientIF {
     private final TProtocolFactory binary = new TBinaryProtocol.Factory();
 
     private final ExecutorService executor;
+    
+    private boolean block = false;
 
     public LocalJmsThriftClientServerImpl(){
 
@@ -76,7 +80,7 @@ public class LocalJmsThriftClientServerImpl implements JmsThriftClientIF {
                 final TMemoryBuffer out = new TMemoryBuffer(1024);
                 final TProtocol outP = binary.getProtocol(out);
 
-                executor.execute(() -> {
+                final Future f = executor.submit(() -> {
                     try {
                         thriftProcessor.process(inP, outP);
                     } catch (Exception e) {
@@ -84,6 +88,13 @@ public class LocalJmsThriftClientServerImpl implements JmsThriftClientIF {
                     }
                 });
 
+                if (block)
+                    try {
+                        f.get();
+                    } catch (InterruptedException | ExecutionException e) {
+                        log.error("Exception", e);
+                    }
+                
                 throw new NullResult();
             }}));
     }
@@ -105,4 +116,13 @@ public class LocalJmsThriftClientServerImpl implements JmsThriftClientIF {
     public void setThriftProcessor(TProcessor thriftProcessor) {
         this.thriftProcessor = thriftProcessor;
     }
+    
+    public boolean isBlock() {
+        return block;
+    }
+
+    public void setBlock(boolean block) {
+        this.block = block;
+    }
+    
 }

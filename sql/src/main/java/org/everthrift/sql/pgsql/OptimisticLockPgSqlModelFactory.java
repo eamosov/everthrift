@@ -255,7 +255,7 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable,EN
 
     @Override
     @Transactional
-    public final ENTITY updateEntity(ENTITY e) throws UniqueException {
+    public final ENTITY updateEntity(ENTITY e, ENTITY old) throws UniqueException {
 
         final ENTITY before;
         if (e.getPk()!=null){
