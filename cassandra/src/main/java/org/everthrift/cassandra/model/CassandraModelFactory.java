@@ -495,6 +495,33 @@ public abstract class CassandraModelFactory<PK extends Serializable,ENTITY exten
             return ret;
         });
     }
+    
+    @Override
+    final public ListenableFuture<ENTITY> findEntityByIdAsync(PK id){
+
+        if (getCache() == null){
+            return mapper.getAsync(extractCompaundPk(id));
+        }
+
+        final Element cached = getCache().get(id);
+        
+        if (cached !=null)
+            return Futures.immediateFuture((ENTITY)cached.getObjectValue());
+        
+        return Futures.transform(mapper.getAsync(extractCompaundPk(id)), (ENTITY value) -> {
+            final Element toPut = new Element(id, value);
+            getCache().put(toPut);
+            
+            if (getCache().getCacheConfiguration().isCopyOnWrite()){
+                return value;
+            }else if (getCache().getCacheConfiguration().isCopyOnRead()){
+                final Element copy = getCache().getCacheConfiguration().getCopyStrategy().copyForRead(toPut, getClass().getClassLoader());
+                return (ENTITY)copy.getObjectValue();
+            }else{
+                return value;
+            }            
+        });
+    }    
 
     @Override
     public boolean lazyLoad(Registry r, XAwareIF<PK, ENTITY> m) {

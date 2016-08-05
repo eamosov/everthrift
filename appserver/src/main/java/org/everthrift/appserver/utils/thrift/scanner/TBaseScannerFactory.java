@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.WordUtils;
 import org.apache.thrift.TBase;
 import org.apache.thrift.TFieldIdEnum;
@@ -53,6 +54,8 @@ public class TBaseScannerFactory {
 
         String getterName;
         ReturnType getterType;
+        
+        String isSetName;
 
         String loaderName;
         ReturnType loaderType;
@@ -109,14 +112,6 @@ public class TBaseScannerFactory {
         }
 
         String mapApply(final String varName){
-            //			final java.util.Map _{0}=(java.util.Map)obj.get{1}();
-            //			{2}
-            //			if (_{0} != null && _{0}.size() !=0) '{'
-            //				final java.util.Iterator it = _{0}.entrySet().iterator();
-            //				while(it.hasNext())'{'
-            //					{3}
-            //				'}'
-            //			'}'
             final StringBuilder sb = new StringBuilder();
 
             sb.append(String.format("if (%s.size() !=0) {\n", varName));
@@ -175,6 +170,10 @@ public class TBaseScannerFactory {
                 if (getterName !=null){
                     sb.append(String.format("if (%s == null) {\n", getterVarName));
                     _indent ++;
+                }else if (isSetName !=null){
+                    sb.append(String.format("if (!obj.%s()) {\n", isSetName));
+                    _indent ++;
+                    
                 }
 
                 final StringBuilder _loader = new StringBuilder();
@@ -190,7 +189,7 @@ public class TBaseScannerFactory {
                     sb.append(indent(_indent, "\n}\n"));
                 }
 
-                if (getterName !=null){
+                if (getterName !=null || isSetName !=null){
                     sb.append("}");
                     _indent --;
                 }
@@ -362,6 +361,14 @@ public class TBaseScannerFactory {
                         pi = new PropertyInfo();
                         pi.name = fieldName;
                         props.put(pi.name, pi);
+                    }
+                    
+                    try {
+                        final String isSetName = "isSet" + StringUtils.capitalize(fieldName); 
+                        final Method isSetMethod = cls.getMethod(isSetName);
+                        if (isSetMethod.getReturnType() == Boolean.TYPE)
+                            pi.isSetName = isSetMethod.getName();
+                    } catch (NoSuchMethodException | SecurityException e) {                        
                     }
 
                     pi.loaderName = m.getName();
