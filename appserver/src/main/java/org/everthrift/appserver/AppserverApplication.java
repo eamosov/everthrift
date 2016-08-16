@@ -28,6 +28,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import org.everthrift.appserver.configs.AppserverConfig;
 import org.everthrift.appserver.configs.AsyncTcpThrift;
@@ -59,15 +63,21 @@ public class AppserverApplication {
 
     public final AnnotationConfigApplicationContext context;
     public final ConfigurableEnvironment env;
-    //	private ClassPathScanningCandidateComponentProvider scanner;
-    private final List<String> scanPathList = new ArrayList<String>();
-    @SuppressWarnings("rawtypes")
-    private final List<PropertySource> propertySourceList = new ArrayList<PropertySource>();
-
+    private final List<String> thriftScanPathList = new ArrayList<String>();    
     private boolean initialized = false;
+    
+    private static class AppResourcePropertySource extends ResourcePropertySource{
+        private final String location;
+        
+        public AppResourcePropertySource(String location) throws IOException {
+            super(location);
+            this.location = location;
+        }        
+    }
 
+    private final List<PropertySource<?>> propertySourceList = new ArrayList<>();
 
-    private List<Class> annotatedClasses = Lists.newArrayList(AppserverConfig.class);
+    private List<Class<?>> annotatedClasses = Lists.newArrayList(AppserverConfig.class);
 
     private AppserverApplication() {
 
@@ -77,7 +87,7 @@ public class AppserverApplication {
         context.registerShutdownHook();
         env = context.getEnvironment();
 
-        scanPathList.add("org.everthrift.appserver");
+        thriftScanPathList.add("org.everthrift.appserver");
     }
 
 
@@ -121,12 +131,34 @@ public class AppserverApplication {
             log.error("Coudn't load application.properties", e1);
         }
 
-        for (PropertySource p : propertySourceList)
-            env.getPropertySources().addFirst(p);
-
-        env.getPropertySources().addFirst(new SimpleCommandLinePropertySource(args));
-        env.getPropertySources().addLast(new MapPropertySource("thriftScanPathList", Collections.singletonMap("thrift.scan", (Object) scanPathList)));
+        final PropertySource sclps = new SimpleCommandLinePropertySource(args);
+        env.getPropertySources().addFirst(sclps);
+        env.getPropertySources().addLast(new MapPropertySource("thriftScanPathList", Collections.singletonMap("thrift.scan", (Object) thriftScanPathList)));
         env.getPropertySources().addLast(new MapPropertySource("version", Collections.singletonMap("version", (Object) version)));
+
+        PropertySource lastAdded = null;
+        final Pattern resourcePattern = Pattern.compile("(.+)\\.properties");
+        final String profile = env.getProperty("spring.profiles.active");
+        
+        for (PropertySource p : propertySourceList){
+            if (lastAdded == null){
+                env.getPropertySources().addAfter(sclps.getName(), p);    
+            }else{
+                env.getPropertySources().addBefore(lastAdded.getName(), p);    
+            }
+            lastAdded = p;
+            if (p instanceof AppResourcePropertySource && profile !=null){
+                final Matcher m = resourcePattern.matcher(((AppResourcePropertySource)p).location);
+                if (m.matches()){
+                    try {
+                        final String profileResourceName = String.format("%s-%s.properties", m.group(1), profile);
+                        env.getPropertySources().addBefore(lastAdded.getName(), (lastAdded = new ResourcePropertySource(profileResourceName)));    
+                        log.info("Added property source: {}", profileResourceName);
+                    } catch (IOException e) {                        
+                    }                                                    
+                }                                
+            }
+        }
 
         if (Boolean.parseBoolean(env.getProperty("sqlmigrator.run", "false"))) {
             try {
@@ -221,11 +253,16 @@ public class AppserverApplication {
             context.register(Class.forName("org.everthrift.cassandra.model.CassandraConfig"));
         } catch (ClassNotFoundException e) {
         }
-
+        
         context.refresh();
+        
+        final List<String> propertySources = StreamSupport.stream(context.getEnvironment().getPropertySources().spliterator(), false).map(PropertySource::getName).collect(Collectors.toList());
+        log.info("Used property sources:{}", propertySources);
+        
         initialized = true;
     }
 
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     private void runInContext(String xmlConfig, String className, String method) throws Exception {
 
         final Class<Callable> proc =  (Class)Class.forName(className);
@@ -261,22 +298,6 @@ public class AppserverApplication {
         runInContext("classpath:cassandra-migration-context.xml", "org.everthrift.cassandra.migrator.CMigrationProcessor", "migrate");
     }
 
-
-    private KeyStore loadJettyKeystore(final String jks, String keystorePassword) throws IOException, NoSuchAlgorithmException, CertificateException, KeyStoreException {
-        final InputStream inputStream = context.getResource(jks).getInputStream();
-        final KeyStore keyStore;
-
-        try {
-            keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-            keyStore.load(inputStream, keystorePassword != null ? keystorePassword.toCharArray() : null);
-        } finally {
-            if (inputStream != null)
-                inputStream.close();
-        }
-
-        return keyStore;
-    }
-
     public synchronized void start() {
     }
 
@@ -289,26 +310,37 @@ public class AppserverApplication {
      * Add path to thrift controllers scan path
      * @param p
      */
-    public synchronized void addScanPath(String p) {
-        scanPathList.add(p);
+    public synchronized void addThriftScanPath(String p) {
+        thriftScanPathList.add(p);
     }
 
-    public synchronized List<String> getScanPathList() {
-        return scanPathList;
+    public synchronized List<String> getThriftScanPathList() {
+        return thriftScanPathList;
     }
 
-    @SuppressWarnings("rawtypes")
-    public synchronized void addPropertySource(PropertySource ps) {
+    private synchronized void addPropertySource(PropertySource<?> ps) {
         if (!initialized)
             propertySourceList.add(ps);
-        else
+        else{
             env.getPropertySources().addFirst(ps);
+        }
     }
-
-    public synchronized void addPropertySource(String resourceName) throws IOException {
-        addPropertySource(new ResourcePropertySource(AppserverApplication.INSTANCE.context.getResource(resourceName)));
+        
+    public synchronized boolean addPropertySource(String resourceName, boolean ignoreNotExisting) throws IOException{
+        try{
+            addPropertySource(new AppResourcePropertySource(resourceName));
+            log.info("Added property source: {}", resourceName);
+            return true;
+        } catch (IOException e1) {
+            if (ignoreNotExisting){
+                log.warn("Property source {} not found", resourceName);
+                return false;
+            }else{
+                throw e1;
+            }
+        }
     }
-
+    
     public void registerAnnotatedClasses(Class<?>... annotatedClasses) {
         for (Class cls: annotatedClasses)
             this.annotatedClasses.add(cls);
