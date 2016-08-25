@@ -18,7 +18,7 @@
 					
 		<dependency>
 			<groupId>everthrift</groupId>
-			<artifactId>cassandra-driver</artifactId>
+			<artifactId>everthrift-cassandra-driver</artifactId>
 		</dependency>
 				
 		<dependency>

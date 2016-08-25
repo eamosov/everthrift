@@ -398,7 +398,7 @@
 	
 			<dependency>
 				<groupId>everthrift</groupId>
-				<artifactId>cassandra-driver</artifactId>
+				<artifactId>everthrift-cassandra-driver</artifactId>
 				<version>${everthrift.version}</version>
 			</dependency>
 

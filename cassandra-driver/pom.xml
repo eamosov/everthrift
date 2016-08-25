@@ -10,7 +10,7 @@
 		<relativePath>../pom.xml</relativePath>
 	</parent>
 
-	<artifactId>cassandra-driver</artifactId>
+	<artifactId>everthrift-cassandra-driver</artifactId>
 
 	<packaging>jar</packaging>
 
