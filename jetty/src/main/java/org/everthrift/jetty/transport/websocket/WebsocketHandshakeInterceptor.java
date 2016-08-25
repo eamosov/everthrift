@@ -22,14 +22,19 @@ public class WebsocketHandshakeInterceptor implements HandshakeInterceptor {
     }
 
     @Override
-    public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response, WebSocketHandler wsHandler, Map<String, Object> attributes) throws Exception {
+    public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response, WebSocketHandler wsHandler,
+                                   Map<String, Object> attributes) throws Exception {
 
         attributes.put(WebsocketThriftHandler.UUID, UUID.randomUUID().toString());
-        attributes.put(MessageWrapper.HTTP_REQUEST_PARAMS, Optional.fromNullable(((ServletServerHttpRequest)request).getServletRequest().getParameterMap()).or(Collections.emptyMap()));
-        attributes.put(MessageWrapper.HTTP_COOKIES,  Optional.fromNullable(((ServletServerHttpRequest)request).getServletRequest().getCookies()).or( () -> (new Cookie[0])));
+        attributes.put(MessageWrapper.HTTP_REQUEST_PARAMS,
+                       Optional.fromNullable(((ServletServerHttpRequest) request).getServletRequest().getParameterMap())
+                               .or(Collections.emptyMap()));
+        attributes.put(MessageWrapper.HTTP_COOKIES,
+                       Optional.fromNullable(((ServletServerHttpRequest) request).getServletRequest().getCookies())
+                               .or(() -> (new Cookie[0])));
 
         final String xRealIp = request.getHeaders().getFirst(WebsocketThriftHandler.HTTP_X_REAL_IP);
-        if (xRealIp !=null)
+        if (xRealIp != null)
             attributes.put(WebsocketThriftHandler.HTTP_X_REAL_IP, xRealIp);
 
         return true;

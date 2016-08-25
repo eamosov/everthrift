@@ -20,7 +20,8 @@ public class StringUuidCodec extends TypeCodec<String> {
     public String parse(String value) {
         try {
             return value == null || value.isEmpty() || value.equalsIgnoreCase("NULL") ? null : UUID.fromString(value).toString();
-        } catch (IllegalArgumentException e) {
+        }
+        catch (IllegalArgumentException e) {
             throw new InvalidTypeException(String.format("Cannot parse UUID value from \"%s\"", value), e);
         }
     }
@@ -37,20 +38,22 @@ public class StringUuidCodec extends TypeCodec<String> {
         if (value == null)
             return null;
 
-        try{
+        try {
             final UUID _value = UUID.fromString(value);
             ByteBuffer bb = ByteBuffer.allocate(16);
             bb.putLong(0, _value.getMostSignificantBits());
             bb.putLong(8, _value.getLeastSignificantBits());
             return bb;
-        } catch (IllegalArgumentException e) {
+        }
+        catch (IllegalArgumentException e) {
             throw new InvalidTypeException(String.format("Cannot parse UUID value from \"%s\"", value), e);
         }
     }
 
     @Override
     public String deserialize(ByteBuffer bytes, ProtocolVersion protocolVersion) {
-        return bytes == null || bytes.remaining() == 0 ? null : new UUID(bytes.getLong(bytes.position()), bytes.getLong(bytes.position() + 8)).toString();
+        return bytes == null
+               || bytes.remaining() == 0 ? null : new UUID(bytes.getLong(bytes.position()), bytes.getLong(bytes.position() + 8)).toString();
     }
 
 }

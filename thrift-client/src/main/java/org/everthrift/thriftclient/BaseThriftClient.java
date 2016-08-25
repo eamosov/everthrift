@@ -23,12 +23,15 @@ import org.apache.thrift.transport.TTransportException;
 import org.apache.thrift.transport.TTransportFactory;
 import org.everthrift.thriftclient.transport.TWsTransport;
 
-public class BaseThriftClient implements AutoCloseable{
+public class BaseThriftClient implements AutoCloseable {
 
-    public static class HostPort{
+    public static class HostPort {
         public final String addr;
+
         public final String host;
+
         public final int port;
+
         public final String descr;
 
         public HostPort(String addr, int port) {
@@ -48,38 +51,42 @@ public class BaseThriftClient implements AutoCloseable{
         }
     }
 
-
-    public static enum Transports{
-        HTTP,SOCKET, WEBSOCKET, WEBSOCKET_ZLIB, WEBSOCKET_SSL, WEBSOCKET_JS
+    public static enum Transports {
+        HTTP,
+        SOCKET,
+        WEBSOCKET,
+        WEBSOCKET_ZLIB,
+        WEBSOCKET_SSL,
+        WEBSOCKET_JS
     }
 
     private final TProtocol protocol;
 
-    //	public Client( TProtocol protocol, HostPort hostPort ) {
-    //		this.protocol = protocol;
-    //		this.hostPort = hostPort;
-    //	}
+    // public Client( TProtocol protocol, HostPort hostPort ) {
+    // this.protocol = protocol;
+    // this.hostPort = hostPort;
+    // }
 
-    //	public Client( TTransport transport, HostPort hostPort  ) {
-    //		this( new TBinaryProtocol( transport ), hostPort );
-    //	}
+    // public Client( TTransport transport, HostPort hostPort ) {
+    // this( new TBinaryProtocol( transport ), hostPort );
+    // }
 
     static final AtomicInteger nThread = new AtomicInteger(0);
 
-    private final static ExecutorService executor = new ThreadPoolExecutor(1, Integer.MAX_VALUE,
-            5L, TimeUnit.SECONDS,
-            new SynchronousQueue<Runnable>(),
-            new ThreadFactory(){
+    private final static ExecutorService executor = new ThreadPoolExecutor(1, Integer.MAX_VALUE, 5L, TimeUnit.SECONDS,
+                                                                           new SynchronousQueue<Runnable>(), new ThreadFactory() {
 
-        @Override
-        public Thread newThread(Runnable r) {
-            final Thread t = new Thread(r);
-            t.setName("BaseThriftClientExecutor-" + nThread.incrementAndGet());
-            t.setDaemon(true);
-            return t;
-        }});
+                                                                               @Override
+                                                                               public Thread newThread(Runnable r) {
+                                                                                   final Thread t = new Thread(r);
+                                                                                   t.setName("BaseThriftClientExecutor-"
+                                                                                             + nThread.incrementAndGet());
+                                                                                   t.setDaemon(true);
+                                                                                   return t;
+                                                                               }
+                                                                           });
 
-    public static BaseThriftClient httpClient(String url) throws TTransportException{
+    public static BaseThriftClient httpClient(String url) throws TTransportException {
         return new BaseThriftClient(url);
     }
 
@@ -89,79 +96,89 @@ public class BaseThriftClient implements AutoCloseable{
         protocol.getTransport().open();
     }
 
-    public static BaseThriftClient zlibWsClient(String url, TProcessor processor) throws TTransportException, URISyntaxException{
+    public static BaseThriftClient zlibWsClient(String url, TProcessor processor) throws TTransportException, URISyntaxException {
         return new BaseThriftClient(url, processor);
     }
 
     private BaseThriftClient(String url, TProcessor processor) throws TTransportException, URISyntaxException {
-        final TTransport transport = new TWsTransport(new URI(url), 5000, processor, new  TBinaryProtocol.Factory(), new TKnockZlibTransport.Factory(), null, executor);
+        final TTransport transport = new TWsTransport(new URI(url), 5000, processor, new TBinaryProtocol.Factory(),
+                                                      new TKnockZlibTransport.Factory(), null, executor);
         protocol = new TBinaryProtocol(new TKnockZlibTransport(transport));
         protocol.getTransport().open();
     }
 
     public BaseThriftClient(HostPort hostPort, Transports proto, TProcessor processor) throws TTransportException {
 
-        TTransport transport=null;
+        TTransport transport = null;
 
-        if (proto.equals(Transports.SOCKET)){
-            transport = new TFramedTransport(new TSocket( hostPort.addr, hostPort.port ));
+        if (proto.equals(Transports.SOCKET)) {
+            transport = new TFramedTransport(new TSocket(hostPort.addr, hostPort.port));
             protocol = new TBinaryProtocol(transport);
-        }else if (proto.equals(Transports.HTTP)){
+        } else if (proto.equals(Transports.HTTP)) {
             transport = new THttpClient("http://" + hostPort.addr + ":" + hostPort.port + "/");
             protocol = new TBinaryProtocol(transport);
-        }else if (proto.equals(Transports.WEBSOCKET)){
+        } else if (proto.equals(Transports.WEBSOCKET)) {
             try {
-                transport = new TWsTransport(new URI("ws://" + hostPort.addr + ":" + hostPort.port + "/thrift"), 5000, processor, new  TBinaryProtocol.Factory(), new TTransportFactory(), null, executor);
+                transport = new TWsTransport(new URI("ws://" + hostPort.addr + ":" + hostPort.port + "/thrift"), 5000, processor,
+                                             new TBinaryProtocol.Factory(), new TTransportFactory(), null, executor);
                 protocol = new TBinaryProtocol(transport);
-            } catch (URISyntaxException e) {
+            }
+            catch (URISyntaxException e) {
                 throw new RuntimeException(e);
             }
-        }else if (proto.equals(Transports.WEBSOCKET_ZLIB)){
+        } else if (proto.equals(Transports.WEBSOCKET_ZLIB)) {
             try {
-                transport = new TWsTransport(new URI("ws://" + hostPort.addr + ":" + hostPort.port + "/thrift_zlib"), 5000, processor, new  TBinaryProtocol.Factory(), new TKnockZlibTransport.Factory(), null, executor);
+                transport = new TWsTransport(new URI("ws://" + hostPort.addr + ":" + hostPort.port + "/thrift_zlib"), 5000, processor,
+                                             new TBinaryProtocol.Factory(), new TKnockZlibTransport.Factory(), null, executor);
                 protocol = new TBinaryProtocol(new TKnockZlibTransport(transport));
-            } catch (URISyntaxException e) {
+            }
+            catch (URISyntaxException e) {
                 throw new RuntimeException(e);
             }
-        }else if (proto.equals(Transports.WEBSOCKET_JS)){
+        } else if (proto.equals(Transports.WEBSOCKET_JS)) {
             try {
-                transport = new TWsTransport(new URI("ws://" + hostPort.addr + ":" + hostPort.port + "/thrift_js"), 5000, processor, new  TJSONProtocol.Factory(), new TTransportFactory(), null, executor);
+                transport = new TWsTransport(new URI("ws://" + hostPort.addr + ":" + hostPort.port + "/thrift_js"), 5000, processor,
+                                             new TJSONProtocol.Factory(), new TTransportFactory(), null, executor);
                 protocol = new TJSONProtocol(transport);
-            } catch (URISyntaxException e) {
+            }
+            catch (URISyntaxException e) {
                 throw new RuntimeException(e);
             }
-        }else if (proto.equals(Transports.WEBSOCKET_SSL)){
+        } else if (proto.equals(Transports.WEBSOCKET_SSL)) {
             try {
-                transport = new TWsTransport(new URI("wss://" + hostPort.addr + ":" + hostPort.port + "/thrift"), 5000, processor, new  TBinaryProtocol.Factory(), new TTransportFactory(), null, executor);
+                transport = new TWsTransport(new URI("wss://" + hostPort.addr + ":" + hostPort.port + "/thrift"), 5000, processor,
+                                             new TBinaryProtocol.Factory(), new TTransportFactory(), null, executor);
                 protocol = new TBinaryProtocol(transport);
-            } catch (URISyntaxException e) {
+            }
+            catch (URISyntaxException e) {
                 throw new RuntimeException(e);
             }
-        }else
+        } else
             throw new TTransportException("unknown proto");
 
         protocol.getTransport().open();
     }
 
     public BaseThriftClient(HostPort hostPort) throws TTransportException {
-        this( hostPort, Transports.SOCKET, null );
+        this(hostPort, Transports.SOCKET, null);
     }
 
-    public <ClientType extends TServiceClient> ClientType getService( Class<ClientType> clientClass ) {
+    public <ClientType extends TServiceClient> ClientType getService(Class<ClientType> clientClass) {
         try {
-            ClientType client = clientClass.getConstructor( TProtocol.class ).newInstance( protocol );
+            ClientType client = clientClass.getConstructor(TProtocol.class).newInstance(protocol);
             return client;
-        } catch ( Throwable e ) {
-            throw new RuntimeException( "Error opening service " + clientClass.getName(), e );
+        }
+        catch (Throwable e) {
+            throw new RuntimeException("Error opening service " + clientClass.getName(), e);
         }
     }
 
-    public TProtocol getProtocol(){
+    public TProtocol getProtocol() {
         return this.protocol;
     }
 
     @Override
-    public void close(){
+    public void close() {
         this.protocol.getTransport().close();
     }
 }

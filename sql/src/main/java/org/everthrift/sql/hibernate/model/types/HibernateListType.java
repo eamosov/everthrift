@@ -15,7 +15,6 @@ import org.hibernate.usertype.UserType;
 
 import com.google.common.collect.Lists;
 
-
 public abstract class HibernateListType<T> implements UserType {
 
     @Override
@@ -24,12 +23,14 @@ public abstract class HibernateListType<T> implements UserType {
     }
 
     @Override
-    public void nullSafeSet(final PreparedStatement statement, final Object object, final int i, final SharedSessionContractImplementor sessionImplementor) throws HibernateException, SQLException {
+    public void nullSafeSet(final PreparedStatement statement, final Object object, final int i,
+                            final SharedSessionContractImplementor sessionImplementor) throws HibernateException, SQLException {
         statement.setArray(i, object == null ? null : createArray((List<T>) object, statement.getConnection()));
     }
 
     @Override
-    public Object nullSafeGet(ResultSet rs, String[] names, SharedSessionContractImplementor session, Object owner) throws HibernateException, SQLException {
+    public Object nullSafeGet(ResultSet rs, String[] names, SharedSessionContractImplementor session,
+                              Object owner) throws HibernateException, SQLException {
         Array sqlArr = rs.getArray(names[0]);
         final List result = sqlArr == null ? null : Lists.newArrayList((Object[]) sqlArr.getArray());
         return result;
@@ -39,7 +40,6 @@ public abstract class HibernateListType<T> implements UserType {
     public Object assemble(final Serializable cached, final Object owner) throws HibernateException {
         return deepCopy(cached);
     }
-
 
     @Override
     public Serializable disassemble(final Object o) throws HibernateException {
@@ -53,12 +53,12 @@ public abstract class HibernateListType<T> implements UserType {
 
     @Override
     public int hashCode(final Object o) throws HibernateException {
-        return ((List)o).hashCode();
+        return ((List) o).hashCode();
     }
 
     @Override
     public Object deepCopy(Object o) throws HibernateException {
-        return o == null ? null : Lists.newArrayList((List)o);
+        return o == null ? null : Lists.newArrayList((List) o);
     }
 
     @Override
@@ -68,13 +68,13 @@ public abstract class HibernateListType<T> implements UserType {
 
     @Override
     public Object replace(final Object original, final Object target, final Object owner) throws HibernateException {
-        return original == null ? null: deepCopy(original);
+        return original == null ? null : deepCopy(original);
     }
 
     public abstract Array createArray(final List<T> object, Connection connection) throws SQLException;
 
     @Override
     public int[] sqlTypes() {
-        return new int[]{Types.ARRAY};
+        return new int[] { Types.ARRAY };
     }
 }

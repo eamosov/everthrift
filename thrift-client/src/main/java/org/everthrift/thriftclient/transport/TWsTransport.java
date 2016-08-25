@@ -51,11 +51,12 @@ public class TWsTransport extends TAsyncTransport {
     private static final Logger log = LoggerFactory.getLogger(TWsTransport.class);
 
     private URI uri;
+
     private long connectTimeout;
 
     private static final ByteBuffer EOF = ByteBuffer.wrap(new byte[1]);
 
-    private final ThreadLocal<ByteArrayOutputStream> requestBuffer_ = new ThreadLocal<ByteArrayOutputStream>(){
+    private final ThreadLocal<ByteArrayOutputStream> requestBuffer_ = new ThreadLocal<ByteArrayOutputStream>() {
         @Override
         protected ByteArrayOutputStream initialValue() {
             return new ByteArrayOutputStream();
@@ -65,17 +66,25 @@ public class TWsTransport extends TAsyncTransport {
     private Websocket websocket;
 
     private final LinkedBlockingDeque<ByteBuffer> queue = new LinkedBlockingDeque<ByteBuffer>();
+
     private byte[] pendingBytes;
+
     private int pendingBytesPos;
 
     private final TProtocolFactory protocolFactory;
+
     private final TTransportFactory transportFactory;
+
     private final TProcessor processor;
 
     private SettableFuture<Websocket> connectFuture;
+
     private boolean isConnected = false;
+
     private boolean isOpened = false;
+
     private boolean closed = false;
+
     private final AsyncRegister async;
 
     private TransportEventsIF eventsHandler;
@@ -83,23 +92,25 @@ public class TWsTransport extends TAsyncTransport {
     private final ExecutorService executor;
 
     /**
-     * Нужно сохранять идентификаторы отправленных пакетов, чтобы вызвать исключения в случае потери соединения
+     * Нужно сохранять идентификаторы отправленных пакетов, чтобы вызвать
+     * исключения в случае потери соединения
      */
     private Set<Integer> pendingRequests = Sets.newHashSet();
 
     /**
      *
      * @param uri
-     * @param connectTimeout  -  milliseconds
+     * @param connectTimeout - milliseconds
      * @param processor
      * @param protocolFactory
      * @param transportFactory
      * @param async
      * @param executor
      */
-    public TWsTransport(URI uri, long timeout, TProcessor processor, TProtocolFactory protocolFactory, TTransportFactory transportFactory, AsyncRegister async, ExecutorService executor) {
+    public TWsTransport(URI uri, long timeout, TProcessor processor, TProtocolFactory protocolFactory, TTransportFactory transportFactory,
+                        AsyncRegister async, ExecutorService executor) {
 
-        //WebSocketImpl.DEBUG = true;
+        // WebSocketImpl.DEBUG = true;
 
         this.uri = uri;
         this.connectTimeout = timeout;
@@ -137,70 +148,80 @@ public class TWsTransport extends TAsyncTransport {
 
         websocket = new Websocket(uri);
 
-        if (uri.getScheme().equalsIgnoreCase("wss")){
+        if (uri.getScheme().equalsIgnoreCase("wss")) {
 
             final SSLContext sslContext;
             try {
-                sslContext = SSLContext.getInstance( "TLS" );
-            } catch (NoSuchAlgorithmException e1) {
+                sslContext = SSLContext.getInstance("TLS");
+            }
+            catch (NoSuchAlgorithmException e1) {
                 throw new TTransportException(e1);
             }
 
             try {
-                sslContext.init( null, null, null );
-            } catch (KeyManagementException e1) {
+                sslContext.init(null, null, null);
+            }
+            catch (KeyManagementException e1) {
                 throw new TTransportException(e1);
             }
 
             final SSLSocketFactory factory = sslContext.getSocketFactory();
             try {
-                websocket.setSocket( factory.createSocket() );
-            } catch (IOException e1) {
+                websocket.setSocket(factory.createSocket());
+            }
+            catch (IOException e1) {
                 throw new TTransportException(e1);
             }
         }
 
         websocket.connect();
 
-        executor.submit(new Runnable(){
+        executor.submit(new Runnable() {
 
             @Override
             public void run() {
-                try{
+                try {
                     final Websocket s = connectFuture.get(connectTimeout, TimeUnit.MILLISECONDS);
                     log.trace("Handshake completed, sessionId={}", s.toString());
-                } catch (TimeoutException e){
+                }
+                catch (TimeoutException e) {
                     log.debug("Wait for connect:", e);
                     fireOnConnectError();
                     close();
-                } catch (InterruptedException e){
+                }
+                catch (InterruptedException e) {
                     log.debug("Wait for connect", e);
                     fireOnConnectError();
                     close();
-                } catch (ExecutionException e){
+                }
+                catch (ExecutionException e) {
                     log.debug("Wait for connect", e);
                     fireOnConnectError();
                     close();
                 }
 
-            }});
+            }
+        });
     }
 
-    public void waitForConnect() throws TTransportException{
-        try{
+    public void waitForConnect() throws TTransportException {
+        try {
             final Websocket s = connectFuture.get(connectTimeout, TimeUnit.MILLISECONDS);
             log.trace("Handshake completed, websocket={}", s.toString());
-        } catch (TimeoutException e){
+        }
+        catch (TimeoutException e) {
             log.debug("TimeoutException");
             close();
             throw new TTransportException(TTransportException.TIMED_OUT, "timed out");
-        } catch (InterruptedException e) {
+        }
+        catch (InterruptedException e) {
             close();
             throw new TTransportException(e);
-        } catch (ExecutionException e) {
+        }
+        catch (ExecutionException e) {
             close();
-            if (e.getCause() !=null && e.getCause() instanceof TTransportException)
-                throw (TTransportException)e.getCause();
+            if (e.getCause() != null && e.getCause() instanceof TTransportException)
+                throw (TTransportException) e.getCause();
             else
                 throw new TTransportException(e);
         }
@@ -220,47 +241,49 @@ public class TWsTransport extends TAsyncTransport {
 
         final TransportEventsIF h;
 
-        synchronized(this){
-            if (closed){
+        synchronized (this) {
+            if (closed) {
                 log.trace("allready closed");
                 return;
             }
 
             closed = true;
 
-            if (websocket != null){
+            if (websocket != null) {
                 try {
                     websocket.closeBlocking();
-                } catch (InterruptedException e) {
+                }
+                catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
             }
 
             try {
                 queue.put(EOF);
-            } catch (InterruptedException e) {
+            }
+            catch (InterruptedException e) {
                 log.error("InterruptedException", e);
             }
 
-            for (Integer i: pendingRequests){
+            for (Integer i : pendingRequests) {
                 log.debug("Throw TTransportException for call seqId={}", i);
                 final InvocationInfo<?> ii = async.pop(i);
-                if (ii !=null)
+                if (ii != null)
                     ii.setException(new TTransportException(TTransportException.END_OF_FILE, "closed"));
             }
 
             pendingRequests.clear();
 
-            if (isConnected){
+            if (isConnected) {
                 isConnected = false;
 
                 h = eventsHandler;
-            }else{
+            } else {
                 h = null;
             }
         }
 
-        if (h!=null)
+        if (h != null)
             h.onClose();
 
     }
@@ -268,18 +291,18 @@ public class TWsTransport extends TAsyncTransport {
     /**
      * Без синхронизации во избежании возможности дедлока
      */
-    private void fireOnConnect(){
+    private void fireOnConnect() {
 
         log.trace("fireOnConnect() : {}", websocket);
 
         final TransportEventsIF h;
 
-        synchronized(this){
-            if (isConnected == false && closed == false){
+        synchronized (this) {
+            if (isConnected == false && closed == false) {
                 isConnected = true;
 
                 h = eventsHandler;
-            }else{
+            } else {
                 h = null;
             }
         }
@@ -288,19 +311,19 @@ public class TWsTransport extends TAsyncTransport {
 
         log.trace("fireOnConnect() connectFuture.set : {}", s);
 
-        if (h!=null)
+        if (h != null)
             h.onConnect();
     }
 
-    private void fireOnConnectError(){
+    private void fireOnConnectError() {
 
         final TransportEventsIF h;
 
-        synchronized(this){
+        synchronized (this) {
             h = eventsHandler;
         }
 
-        if (h!=null)
+        if (h != null)
             h.onConnectError();
     }
 
@@ -310,8 +333,8 @@ public class TWsTransport extends TAsyncTransport {
         if (len == 0)
             return 0;
 
-        synchronized(this){
-            if (async !=null)
+        synchronized (this) {
+            if (async != null)
                 throw new UnsupportedOperationException();
 
             if (!isConnected)
@@ -320,14 +343,14 @@ public class TWsTransport extends TAsyncTransport {
 
         int read = 0;
 
-        if (pendingBytes !=null){
+        if (pendingBytes != null) {
             final int pendingBytesLen = pendingBytes.length - pendingBytesPos;
             final int l = pendingBytesLen <= len ? pendingBytesLen : len;
             System.arraycopy(pendingBytes, pendingBytesPos, buf, off, l);
             pendingBytesPos += l;
             read += l;
 
-            if (pendingBytesPos == pendingBytes.length){
+            if (pendingBytesPos == pendingBytes.length) {
                 pendingBytes = null;
                 pendingBytesPos = 0;
             }
@@ -336,20 +359,21 @@ public class TWsTransport extends TAsyncTransport {
                 return len;
         }
 
-        while(read < len){
+        while (read < len) {
 
             ByteBuffer b;
             try {
                 b = queue.poll(1000, TimeUnit.MILLISECONDS);
-            } catch (InterruptedException e) {
+            }
+            catch (InterruptedException e) {
                 throw new TTransportException(e);
             }
 
             if (b == EOF)
                 throw new TTransportException("No more data available.");
 
-            if (b == null){
-                synchronized(this){
+            if (b == null) {
+                synchronized (this) {
                     if (!isConnected)
                         throw new TTransportException(TTransportException.NOT_OPEN, "closed");
                 }
@@ -364,7 +388,7 @@ public class TWsTransport extends TAsyncTransport {
             System.arraycopy(bb, bb_off, buf, off + read, l);
             read += l;
 
-            if (l < bb_len){
+            if (l < bb_len) {
                 pendingBytes = bb;
                 pendingBytesPos = bb_off + l;
             }
@@ -381,8 +405,8 @@ public class TWsTransport extends TAsyncTransport {
     @Override
     public void flush(int seqId) throws TTransportException {
 
-        synchronized(this){
-            if (async!=null)
+        synchronized (this) {
+            if (async != null)
                 pendingRequests.add(seqId);
         }
 
@@ -396,65 +420,68 @@ public class TWsTransport extends TAsyncTransport {
         final byte[] data = rb.toByteArray();
         rb.reset();
 
-        synchronized(this){
+        synchronized (this) {
             if (!isConnected)
                 throw new TTransportException(TTransportException.NOT_OPEN, "closed");
 
             try {
                 websocket.send(data);
-            } catch (NotYetConnectedException e) {
+            }
+            catch (NotYetConnectedException e) {
                 close();
                 new TTransportException(e);
             }
         }
     }
 
-    private void onReadReply(TMessage msg, TTransport in, byte buf[], int offset, int length) throws IOException{
+    private void onReadReply(TMessage msg, TTransport in, byte buf[], int offset, int length) throws IOException {
 
         final AsyncRegister async;
 
-        synchronized(this){
+        synchronized (this) {
             async = this.async;
         }
 
-        if (async == null){
+        if (async == null) {
             queue.add(ByteBuffer.wrap(buf, offset, length));
-        }else{
+        } else {
             final InvocationInfo<?> ii = async.pop(msg.seqid);
-            if (ii==null){
+            if (ii == null) {
                 log.warn("Callback for seqId={} not found", msg.seqid);
-            }else{
+            } else {
                 try {
-                    synchronized(this){
+                    synchronized (this) {
                         pendingRequests.remove(msg.seqid);
                     }
                     ii.setReply(in, protocolFactory);
-                } catch (TException e) {
+                }
+                catch (TException e) {
 
                 }
             }
         }
     }
 
-    private synchronized void onReadRequest(TMessage msg, TTransport inWrapT) throws TException{
+    private synchronized void onReadRequest(TMessage msg, TTransport inWrapT) throws TException {
 
-        TMemoryBuffer outT  = null;
+        TMemoryBuffer outT = null;
         TTransport outWrapT = null;
 
-        try{
+        try {
             outT = new TMemoryBuffer(1024);
             outWrapT = transportFactory.getTransport(outT);
 
             final TProtocol inP = protocolFactory.getProtocol(inWrapT);
             final TProtocol outP = protocolFactory.getProtocol(outWrapT);
 
-            if (processor!=null){
+            if (processor != null) {
                 processor.process(inP, outP);
-            }else{
+            } else {
                 inP.readMessageBegin();
                 TProtocolUtil.skip(inP, TType.STRUCT);
                 inP.readMessageEnd();
-                TApplicationException x = new TApplicationException(TApplicationException.UNSUPPORTED_CLIENT_TYPE, "Invalid method name: '"+msg.name+"'");
+                TApplicationException x = new TApplicationException(TApplicationException.UNSUPPORTED_CLIENT_TYPE,
+                                                                    "Invalid method name: '" + msg.name + "'");
                 outP.writeMessageBegin(new TMessage(msg.name, TMessageType.EXCEPTION, msg.seqid));
                 x.write(outP);
                 outP.writeMessageEnd();
@@ -463,78 +490,84 @@ public class TWsTransport extends TAsyncTransport {
 
             try {
                 websocket.send(outT.toByteArray());
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 new TTransportException(e);
             }
-        }finally{
+        }
+        finally {
 
-            if (outWrapT !=null)
+            if (outWrapT != null)
                 outWrapT.close();
 
-            if (outT !=null)
+            if (outT != null)
                 outT.close();
         }
     }
 
-    private void onRead(byte buf[], int offset, int length) throws TException, IOException{
+    private void onRead(byte buf[], int offset, int length) throws TException, IOException {
         final TMemoryInputTransport inT = new TMemoryInputTransport(buf, offset, length);
         TTransport inWrapT = null;
-        try{
+        try {
             inWrapT = transportFactory.getTransport(inT);
 
             final TMessage msg = protocolFactory.getProtocol(inWrapT).readMessageBegin();
 
-            final TMemoryInputTransport copy = new TMemoryInputTransport(inWrapT.getBuffer(), 0, inWrapT.getBufferPosition() + inWrapT.getBytesRemainingInBuffer());
+            final TMemoryInputTransport copy = new TMemoryInputTransport(inWrapT.getBuffer(), 0,
+                                                                         inWrapT.getBufferPosition() + inWrapT.getBytesRemainingInBuffer());
 
-            if (msg.type == TMessageType.EXCEPTION || msg.type == TMessageType.REPLY){
+            if (msg.type == TMessageType.EXCEPTION || msg.type == TMessageType.REPLY) {
                 onReadReply(msg, copy, buf, offset, length);
-            }else{
+            } else {
                 onReadRequest(msg, copy);
             }
-        }finally{
-            if (inWrapT !=null)
+        }
+        finally {
+            if (inWrapT != null)
                 inWrapT.close();
 
             inT.close();
         }
     }
 
-
-    private class Websocket  extends WebSocketClient{
+    private class Websocket extends WebSocketClient {
 
         public Websocket(URI uri) {
-            super(uri,  new Draft_17());
+            super(uri, new Draft_17());
         }
 
         @Override
-        public void onOpen( ServerHandshake handshakedata ) {
+        public void onOpen(ServerHandshake handshakedata) {
 
             log.trace("onOpen: {}", handshakedata);
 
-            try{
-                executor.submit(new Runnable(){
+            try {
+                executor.submit(new Runnable() {
 
                     @Override
                     public void run() {
                         TWsTransport.this.fireOnConnect();
-                    }});
+                    }
+                });
 
-            }catch(RejectedExecutionException e){
+            }
+            catch (RejectedExecutionException e) {
 
             }
         }
 
         @Override
-        public void onMessage( String message ){
+        public void onMessage(String message) {
             final byte[] buf = message.getBytes(UTF_8);
 
-            executor.execute(new Runnable(){
+            executor.execute(new Runnable() {
 
                 @Override
                 public void run() {
                     try {
                         onRead(buf, 0, buf.length);
-                    } catch (Exception e) {
+                    }
+                    catch (Exception e) {
                         log.error("onMessage", e);
                     }
                 }
@@ -542,15 +575,16 @@ public class TWsTransport extends TAsyncTransport {
         }
 
         @Override
-        public void onMessage( final ByteBuffer bytes ) {
+        public void onMessage(final ByteBuffer bytes) {
 
-            executor.execute(new Runnable(){
+            executor.execute(new Runnable() {
 
                 @Override
                 public void run() {
                     try {
                         onRead(bytes.array(), 0, bytes.array().length);
-                    } catch (Exception e) {
+                    }
+                    catch (Exception e) {
                         log.error("onMessage", e);
                     }
                 }
@@ -558,27 +592,29 @@ public class TWsTransport extends TAsyncTransport {
         }
 
         @Override
-        public void onError( Exception ex ) {
-            log.error("onError" , ex);
+        public void onError(Exception ex) {
+            log.error("onError", ex);
 
-            executor.execute(new Runnable(){
+            executor.execute(new Runnable() {
 
                 @Override
                 public void run() {
                     TWsTransport.this.close();
-                }});
+                }
+            });
         }
 
         @Override
-        public void onClose( int code, String reason, boolean remote ) {
+        public void onClose(int code, String reason, boolean remote) {
             log.trace("onClose, code={}, reason={}", code, reason);
 
-            executor.execute(new Runnable(){
+            executor.execute(new Runnable() {
 
                 @Override
                 public void run() {
                     TWsTransport.this.close();
-                }});
+                }
+            });
         }
     }
 

@@ -28,12 +28,18 @@ public abstract class DaoCachedIndexModelFactory<K, V> extends CachedIndexModelF
 
     @Override
     protected Collection<Object[]> loadImpl(Collection<K> keys) {
-        return dao.findByCriteria(getCriterion(keys), Projections.projectionList().add(Projections.property(getPkProperty())).add(Projections.property(getIndexedProperty())), null, Collections.singletonList(getOrder()), null, null);
+        return dao.findByCriteria(getCriterion(keys),
+                                  Projections.projectionList().add(Projections.property(getPkProperty()))
+                                             .add(Projections.property(getIndexedProperty())),
+                                  null, Collections.singletonList(getOrder()), null, null);
     }
 
     protected abstract Criterion getCriterion(Collection<K> keys);
+
     protected abstract String getPkProperty();
+
     protected abstract String getIndexedProperty();
+
     protected abstract Order getOrder();
 
     @Override

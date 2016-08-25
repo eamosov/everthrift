@@ -1,6 +1,6 @@
 package org.everthrift.appserver.utils.thrift;
 
-public abstract class ThriftClient<S> implements ThriftClientIF{
+public abstract class ThriftClient<S> implements ThriftClientIF {
 
     protected final S sessionId;
 
@@ -12,8 +12,7 @@ public abstract class ThriftClient<S> implements ThriftClientIF{
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result
-                + ((sessionId == null) ? 0 : sessionId.hashCode());
+        result = prime * result + ((sessionId == null) ? 0 : sessionId.hashCode());
         return result;
     }
 

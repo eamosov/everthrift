@@ -21,43 +21,53 @@ public class TPersistWsTransport extends TTransport {
     private static final Logger log = LoggerFactory.getLogger(TPersistWsTransport.class);
 
     final URI uri;
+
     final TProcessor processor;
+
     final TProtocolFactory protocolFactory;
+
     final TTransportFactory transportFactory;
+
     final AsyncRegister async;
+
     final long reconnectTimeoutMs;
+
     final long connectTimeoutMs;
 
     boolean opened = false;
 
     private TWsTransport ws;
+
     private Future<?> future;
 
     private final ScheduledExecutorService scheduller;
+
     private final ExecutorService executor;
 
     private final AtomicReference<TransportEventsIF> eventsHandler = new AtomicReference<TransportEventsIF>();
 
-    private TransportEventsIF thisHandler = new TransportEventsIF(){
+    private TransportEventsIF thisHandler = new TransportEventsIF() {
 
         @Override
-        public void onConnect(){
+        public void onConnect() {
             TPersistWsTransport.this._onConnect();
         }
 
         @Override
-        public void onClose(){
+        public void onClose() {
             TPersistWsTransport.this._onClose();
         }
 
         @Override
-        public void onConnectError(){
+        public void onConnectError() {
             TPersistWsTransport.this._onConnectError();
         }
 
     };
 
-    public TPersistWsTransport(URI uri, TProcessor processor, TProtocolFactory protocolFactory, TTransportFactory transportFactory, AsyncRegister async, ScheduledExecutorService scheduller, ExecutorService executor, long reconnectTimeoutMs, long connectTimeoutMs) {
+    public TPersistWsTransport(URI uri, TProcessor processor, TProtocolFactory protocolFactory, TTransportFactory transportFactory,
+                               AsyncRegister async, ScheduledExecutorService scheduller, ExecutorService executor, long reconnectTimeoutMs,
+                               long connectTimeoutMs) {
         this.uri = uri;
         this.processor = processor;
         this.protocolFactory = protocolFactory;
@@ -75,17 +85,17 @@ public class TPersistWsTransport extends TTransport {
     }
 
     public synchronized boolean isConnected() {
-        return opened && ws!=null && ws.isOpen();
+        return opened && ws != null && ws.isOpen();
     }
 
-    private synchronized TWsTransport setWs(TWsTransport ws){
+    private synchronized TWsTransport setWs(TWsTransport ws) {
 
         final TWsTransport old = this.ws;
 
-        if (ws!=null){
+        if (ws != null) {
             this.ws = ws;
             this.ws.setEventsHandler(thisHandler);
-        }else if (this.ws !=null){
+        } else if (this.ws != null) {
             this.ws.setEventsHandler(null);
             this.ws = null;
         }
@@ -103,47 +113,48 @@ public class TPersistWsTransport extends TTransport {
         future = scheduleConnect(0);
     }
 
-    private synchronized Future<?> scheduleConnect(final long reconnectTimeoutMs){
+    private synchronized Future<?> scheduleConnect(final long reconnectTimeoutMs) {
 
         log.debug("schedulling connect in {} ms", reconnectTimeoutMs);
 
-        final Runnable run = new Runnable(){
+        final Runnable run = new Runnable() {
 
             @Override
             public void run() {
                 doConnect();
-            }};
+            }
+        };
 
-            if (reconnectTimeoutMs == 0)
-                return executor.submit(run);
-            else
-                return scheduller.schedule(run, reconnectTimeoutMs, TimeUnit.MILLISECONDS);
+        if (reconnectTimeoutMs == 0)
+            return executor.submit(run);
+        else
+            return scheduller.schedule(run, reconnectTimeoutMs, TimeUnit.MILLISECONDS);
 
     }
 
     /**
      * Без синхронизации во избежании возможности дедлока
      */
-    private void fireOnClose(){
+    private void fireOnClose() {
 
         final TransportEventsIF h = eventsHandler.get();
-        if (h!=null)
+        if (h != null)
             h.onClose();
     }
 
     /**
      * Без синхронизации во избежании возможности дедлока
      */
-    private void fireOnConnect(){
+    private void fireOnConnect() {
 
         final TransportEventsIF h = eventsHandler.get();
-        if (h!=null)
+        if (h != null)
             h.onConnect();
     }
 
-    private void _onConnectError(){
+    private void _onConnectError() {
 
-        synchronized(this){
+        synchronized (this) {
             setWs(null);
 
             if (future == null || future.isDone())
@@ -152,18 +163,18 @@ public class TPersistWsTransport extends TTransport {
 
     }
 
-    private void _onConnect(){
+    private void _onConnect() {
 
-        synchronized(this){
+        synchronized (this) {
             log.info("onConnect");
         }
 
         fireOnConnect();
     }
 
-    private final void _onClose(){
+    private final void _onClose() {
 
-        synchronized(this){
+        synchronized (this) {
             setWs(null);
 
             if (future == null || future.isDone())
@@ -175,13 +186,14 @@ public class TPersistWsTransport extends TTransport {
         fireOnClose();
     }
 
-    private synchronized boolean doConnect(){
+    private synchronized boolean doConnect() {
 
         setWs(new TWsTransport(uri, connectTimeoutMs, processor, protocolFactory, transportFactory, async, executor));
 
         try {
             ws.openAsync();
-        } catch (TTransportException e) {
+        }
+        catch (TTransportException e) {
             _onConnectError();
         }
         return true;
@@ -192,7 +204,7 @@ public class TPersistWsTransport extends TTransport {
 
         final boolean connected;
 
-        synchronized(this){
+        synchronized (this) {
             if (!opened)
                 return;
 
@@ -201,7 +213,7 @@ public class TPersistWsTransport extends TTransport {
             opened = false;
 
             final TWsTransport old = setWs(null);
-            if (old!=null){
+            if (old != null) {
                 old.close();
             }
 
@@ -230,7 +242,7 @@ public class TPersistWsTransport extends TTransport {
     }
 
     @Override
-    public synchronized void flush() throws TTransportException{
+    public synchronized void flush() throws TTransportException {
 
         if (!isConnected())
             throw new TTransportException(TTransportException.NOT_OPEN, "not connected");
@@ -239,7 +251,7 @@ public class TPersistWsTransport extends TTransport {
     }
 
     @Override
-    public synchronized void flush(int seqId) throws TTransportException{
+    public synchronized void flush(int seqId) throws TTransportException {
 
         if (!isConnected())
             throw new TTransportException(TTransportException.NOT_OPEN, "not connected");

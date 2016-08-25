@@ -30,14 +30,15 @@ public class AnnotationChecks {
     private static final Package MAPPING_PACKAGE = Table.class.getPackage();
 
     /**
-     * Checks that a class is decorated with the given annotation, and return the annotation instance.
-     * Also validates that no other mapping annotation is present.
+     * Checks that a class is decorated with the given annotation, and return
+     * the annotation instance. Also validates that no other mapping annotation
+     * is present.
      */
     public static <T extends Annotation> T getTypeAnnotation(Class<T> annotation, Class<?> annotatedClass) {
         T instance = annotatedClass.getAnnotation(annotation);
         if (instance == null)
-            throw new IllegalArgumentException(String.format("@%s annotation was not found on type %s",
-                    annotation.getSimpleName(), annotatedClass.getName()));
+            throw new IllegalArgumentException(String.format("@%s annotation was not found on type %s", annotation.getSimpleName(),
+                                                             annotatedClass.getName()));
 
         // Check that no other mapping annotations are present
         validateAnnotations(annotatedClass, annotation);
@@ -49,21 +50,19 @@ public class AnnotationChecks {
         @SuppressWarnings("unchecked")
         Class<? extends Annotation> invalid = validateAnnotations(clazz.getAnnotations(), allowed);
         if (invalid != null)
-            throw new IllegalArgumentException(String.format("Cannot have both @%s and @%s on type %s",
-                    allowed.getSimpleName(), invalid.getSimpleName(),
-                    clazz.getName()));
+            throw new IllegalArgumentException(String.format("Cannot have both @%s and @%s on type %s", allowed.getSimpleName(),
+                                                             invalid.getSimpleName(), clazz.getName()));
     }
 
     /**
-     * Checks that a field is only annotated with the given mapping annotations, and that its "frozen" annotations are valid.
+     * Checks that a field is only annotated with the given mapping annotations,
+     * and that its "frozen" annotations are valid.
      */
     public static void validateAnnotations(Field field, String classDescription, Class<? extends Annotation>... allowed) {
         Class<? extends Annotation> invalid = validateAnnotations(field.getAnnotations(), allowed);
         if (invalid != null)
-            throw new IllegalArgumentException(String.format("Annotation @%s is not allowed on field %s of %s %s",
-                    invalid.getSimpleName(),
-                    field.getName(), classDescription,
-                    field.getDeclaringClass().getName()));
+            throw new IllegalArgumentException(String.format("Annotation @%s is not allowed on field %s of %s %s", invalid.getSimpleName(),
+                                                             field.getName(), classDescription, field.getDeclaringClass().getName()));
 
         checkValidComputed(field);
     }
@@ -88,7 +87,8 @@ public class AnnotationChecks {
     static void checkValidComputed(Field field) {
         Computed computed = field.getAnnotation(Computed.class);
         if (computed != null && computed.value().isEmpty()) {
-            throw new IllegalArgumentException(String.format("Field %s: attribute 'value' of annotation @Computed is mandatory for computed fields", field.getName()));
+            throw new IllegalArgumentException(String.format("Field %s: attribute 'value' of annotation @Computed is mandatory for computed fields",
+                                                             field.getName()));
         }
     }
 }

@@ -14,20 +14,22 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 
 import net.sf.ehcache.Cache;
 
-public class PgSqlModelFactory<PK extends Serializable, ENTITY extends DaoEntityIF> extends AbstractPgSqlModelFactory<PK, ENTITY, TException>{
+public class PgSqlModelFactory<PK extends Serializable, ENTITY extends DaoEntityIF>
+        extends AbstractPgSqlModelFactory<PK, ENTITY, TException> {
 
     public PgSqlModelFactory(String cacheName, Class<ENTITY> entityClass) {
         super(cacheName, entityClass);
     }
 
-    public PgSqlModelFactory(Cache cache, Class<ENTITY> entityClass, ListeningExecutorService listeningExecutorService, SessionFactory sessionFactory, LocalEventBus localEventBus) {
+    public PgSqlModelFactory(Cache cache, Class<ENTITY> entityClass, ListeningExecutorService listeningExecutorService,
+                             SessionFactory sessionFactory, LocalEventBus localEventBus) {
         super(cache, entityClass, listeningExecutorService, sessionFactory, localEventBus);
     }
 
     @Override
     public final ENTITY insertEntity(ENTITY e) throws UniqueException {
         final ENTITY ret = getDao().save(e).first;
-        _invalidateEhCache((PK)ret.getPk());
+        _invalidateEhCache((PK) ret.getPk());
 
         localEventBus.postEntityEvent(insertEntityEvent(ret));
 
@@ -38,16 +40,16 @@ public class PgSqlModelFactory<PK extends Serializable, ENTITY extends DaoEntity
     @Transactional
     public final ENTITY updateEntity(ENTITY e, ENTITY old) throws UniqueException {
         final ENTITY before;
-        if (e.getPk()!=null){
-            before = getDao().findById((PK)e.getPk());
-        }else{
+        if (e.getPk() != null) {
+            before = getDao().findById((PK) e.getPk());
+        } else {
             before = null;
         }
 
         final Pair<ENTITY, Boolean> r = getDao().saveOrUpdate(e);
-        _invalidateEhCache((PK)r.first.getPk());
+        _invalidateEhCache((PK) r.first.getPk());
 
-        if (r.second){
+        if (r.second) {
             localEventBus.postEntityEvent(updateEntityEvent(before, r.first));
         }
         return r.first;

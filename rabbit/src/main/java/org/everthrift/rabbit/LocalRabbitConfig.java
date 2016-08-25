@@ -8,17 +8,17 @@ import org.springframework.context.annotation.Configuration;
 public class LocalRabbitConfig {
 
     @Bean
-    public RpcRabbitRegistry rpcRabbitRegistry(){
+    public RpcRabbitRegistry rpcRabbitRegistry() {
         return new RpcRabbitRegistry();
     }
 
     @Bean
-    public LocalRabbitThriftClientServerImpl localRabbitThriftClientServerImpl(@Qualifier("testMode") boolean testMode){
-        final LocalRabbitThriftClientServerImpl impl =  new LocalRabbitThriftClientServerImpl();
-        
+    public LocalRabbitThriftClientServerImpl localRabbitThriftClientServerImpl(@Qualifier("testMode") boolean testMode) {
+        final LocalRabbitThriftClientServerImpl impl = new LocalRabbitThriftClientServerImpl();
+
         if (testMode)
             impl.setBlock(true);
-        
+
         return impl;
     }
 

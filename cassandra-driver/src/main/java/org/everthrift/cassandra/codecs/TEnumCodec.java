@@ -11,7 +11,7 @@ import com.datastax.driver.core.ProtocolVersion;
 import com.datastax.driver.core.TypeCodec;
 import com.datastax.driver.core.exceptions.InvalidTypeException;
 
-public class TEnumCodec<T extends TEnum> extends TypeCodec<T>{
+public class TEnumCodec<T extends TEnum> extends TypeCodec<T> {
 
     private static class Factory<T> implements TypeCodecFactory<T> {
 
@@ -28,7 +28,7 @@ public class TEnumCodec<T extends TEnum> extends TypeCodec<T>{
         @SuppressWarnings({ "unchecked", "rawtypes" })
         @Override
         public TypeCodec<T> create(DataType cqlType, Class<?> javaType) {
-            return (TypeCodec)new TEnumCodec((Class)javaType);
+            return (TypeCodec) new TEnumCodec((Class) javaType);
         }
     }
 
@@ -41,15 +41,17 @@ public class TEnumCodec<T extends TEnum> extends TypeCodec<T>{
 
         try {
             findByValue = javaClass.getMethod("findByValue", Integer.TYPE);
-        } catch (NoSuchMethodException | SecurityException e) {
+        }
+        catch (NoSuchMethodException | SecurityException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private T byValue(int value) throws InvalidTypeException{
+    private T byValue(int value) throws InvalidTypeException {
         try {
-            return (T)findByValue.invoke(null, value);
-        } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+            return (T) findByValue.invoke(null, value);
+        }
+        catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
             throw new InvalidTypeException("coudn't convert " + value + " to " + javaType.toString(), e);
         }
     }
@@ -82,7 +84,8 @@ public class TEnumCodec<T extends TEnum> extends TypeCodec<T>{
 
         try {
             return value == null || value.isEmpty() || value.equalsIgnoreCase("NULL") ? null : byValue(Integer.parseInt(value));
-        } catch (NumberFormatException e) {
+        }
+        catch (NumberFormatException e) {
             throw new InvalidTypeException(String.format("Cannot parse 32-bits int value from \"%s\"", value));
         }
     }

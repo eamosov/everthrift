@@ -20,14 +20,15 @@ public class EnumController {
     @Autowired
     private ApplicationContext context;
 
-    @RequestMapping(value="/api/enum/{enumClassName}", method = RequestMethod.GET, produces="text/html")
-    public void getStruct(@PathVariable("enumClassName") String enumClassName, HttpServletRequest request, HttpServletResponse response) throws IOException {
+    @RequestMapping(value = "/api/enum/{enumClassName}", method = RequestMethod.GET, produces = "text/html")
+    public void getStruct(@PathVariable("enumClassName") String enumClassName, HttpServletRequest request,
+                          HttpServletResponse response) throws IOException {
 
         final String tbaseRoot = context.getEnvironment().getProperty("tbase.root");
 
-        if (enumClassName==null || !enumClassName.startsWith(tbaseRoot)){
+        if (enumClassName == null || !enumClassName.startsWith(tbaseRoot)) {
             response.setStatus(403);
-            response.getOutputStream().write(("Class '" +  enumClassName + "' not allowed").getBytes(StandardCharsets.UTF_8));
+            response.getOutputStream().write(("Class '" + enumClassName + "' not allowed").getBytes(StandardCharsets.UTF_8));
             response.flushBuffer();
             return;
         }
@@ -42,9 +43,10 @@ public class EnumController {
             response.getOutputStream().write(services);
             response.flushBuffer();
 
-        } catch (ClassNotFoundException e) {
+        }
+        catch (ClassNotFoundException e) {
             response.setStatus(404);
-            response.getOutputStream().write(("Class '" +  enumClassName + "' not found").getBytes(StandardCharsets.UTF_8));
+            response.getOutputStream().write(("Class '" + enumClassName + "' not found").getBytes(StandardCharsets.UTF_8));
             response.flushBuffer();
             return;
         }

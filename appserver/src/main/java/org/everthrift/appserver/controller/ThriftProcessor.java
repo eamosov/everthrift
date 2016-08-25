@@ -47,36 +47,37 @@ import com.google.common.util.concurrent.ListenableFuture;
  * @author fluder
  *
  */
-@SuppressWarnings({"rawtypes","unchecked"})
-public class ThriftProcessor implements TProcessor{
+@SuppressWarnings({ "rawtypes", "unchecked" })
+public class ThriftProcessor implements TProcessor {
 
     final public static Logger log = LoggerFactory.getLogger(ThriftProcessor.class);
 
     private final static Logger logControllerStart = LoggerFactory.getLogger("controller.start");
+
     private final static Logger logControllerEnd = LoggerFactory.getLogger("controller.end");
 
     private final ThriftControllerRegistry registry;
 
     @Qualifier("callerRunsBoundQueueExecutor")
     @Autowired
-    private  AsyncTaskExecutor executor;
+    private AsyncTaskExecutor executor;
 
     @Autowired
     protected ApplicationContext applicationContext;
 
-    @Autowired(required=false)
+    @Autowired(required = false)
     private RpsServletIF rpsServlet;
 
-    public static ThriftProcessor create(ApplicationContext context, ThriftControllerRegistry registry){
+    public static ThriftProcessor create(ApplicationContext context, ThriftControllerRegistry registry) {
         return context.getBean(ThriftProcessor.class, registry);
     }
 
-    public ThriftProcessor(ThriftControllerRegistry registry){
+    public ThriftProcessor(ThriftControllerRegistry registry) {
         this.registry = registry;
     }
 
-    public boolean processOnOpen(MessageWrapper in, ThriftClient thriftClient){
-        for (Class<ConnectionStateHandler> cls: registry.getStateHandlers()){
+    public boolean processOnOpen(MessageWrapper in, ThriftClient thriftClient) {
+        for (Class<ConnectionStateHandler> cls : registry.getStateHandlers()) {
             final ConnectionStateHandler h = applicationContext.getBean(cls);
             h.setup(in, thriftClient, registry.getType());
             if (!h.onOpen())
@@ -85,11 +86,11 @@ public class ThriftProcessor implements TProcessor{
         return true;
     }
 
-    private void stat(){
+    private void stat() {
 
         final Class<? extends Annotation> type = registry.getType();
 
-        if (rpsServlet !=null){
+        if (rpsServlet != null) {
             if (type == RpcSyncTcp.class || type == RpcAsyncTcp.class)
                 rpsServlet.incThrift(DsName.THRIFT_TCP);
             else if (type == RpcHttp.class)
@@ -103,9 +104,9 @@ public class ThriftProcessor implements TProcessor{
         }
     }
 
-    public <T> T process(ThriftProtocolSupportIF<T> tps, ThriftClient thriftClient) throws TException{
+    public <T> T process(ThriftProtocolSupportIF<T> tps, ThriftClient thriftClient) throws TException {
 
-        try{
+        try {
             stat();
 
             final TMessage msg = tps.getTMessage();
@@ -115,42 +116,51 @@ public class ThriftProcessor implements TProcessor{
 
             final ThriftControllerInfo controllerInfo = registry.getController(msg.name);
 
-            if (controllerInfo == null){
+            if (controllerInfo == null) {
                 tps.skip();
 
                 logNoController(thriftClient, msg.name, tps.getSessionId());
-                return tps.result(new TApplicationException( TApplicationException.UNKNOWN_METHOD, "No controllerCls for method " + msg.name), null);
+                return tps.result(new TApplicationException(TApplicationException.UNKNOWN_METHOD,
+                                                            "No controllerCls for method " + msg.name),
+                                  null);
             }
 
             final TBase args;
-            try{
+            try {
                 args = tps.readArgs(controllerInfo);
-            }catch(Exception e){
+            }
+            catch (Exception e) {
                 return tps.result(e, controllerInfo);
             }
 
             final Logger log = LoggerFactory.getLogger(controllerInfo.getControllerCls());
             logStart(log, thriftClient, msg.name, tps.getSessionId(), args);
-            final ThriftController controller = controllerInfo.makeController(args, tps, logEntry, msg.seqid, thriftClient, registry.getType(), tps.allowAsyncAnswer());
+            final ThriftController controller = controllerInfo.makeController(args, tps, logEntry, msg.seqid, thriftClient,
+                                                                              registry.getType(), tps.allowAsyncAnswer());
 
-            try{
+            try {
                 final Object ret = controller.handle(args);
-                try{
+                try {
                     return tps.result(ret, controllerInfo);
-                }finally{
+                }
+                finally {
                     logEnd(log, controller, msg.name, tps.getSessionId(), ret);
                 }
-            }catch(AsyncAnswer e){
+            }
+            catch (AsyncAnswer e) {
                 return null;
-            }catch(Exception e){
+            }
+            catch (Exception e) {
                 log.error("Exception while handle thrift request", e);
-                try{
+                try {
                     return tps.result(e, controllerInfo);
-                }finally{
+                }
+                finally {
                     logEnd(log, controller, msg.name, tps.getSessionId(), null);
                 }
             }
-        }catch(RuntimeException e){
+        }
+        catch (RuntimeException e) {
             log.error("Exception while serving thrift request", e);
             throw e;
         }
@@ -158,9 +168,10 @@ public class ThriftProcessor implements TProcessor{
 
     @Override
     public boolean process(TProtocol inp, TProtocol out) throws TException {
-        try{
+        try {
             process(inp, out, Collections.emptyMap());
-        }catch(RuntimeException e){
+        }
+        catch (RuntimeException e) {
         }
 
         return true;
@@ -174,11 +185,11 @@ public class ThriftProcessor implements TProcessor{
      * @return Controller result (success or Exception)
      * @throws TException
      */
-    public Object process(final TProtocol inp, TProtocol out, final Map<String,Object> attributes) throws TException {
+    public Object process(final TProtocol inp, TProtocol out, final Map<String, Object> attributes) throws TException {
 
         final TMessage msg = inp.readMessageBegin();
 
-        final ThriftClient<Object> thriftClient = new AbstractThriftClient<Object>(null){
+        final ThriftClient<Object> thriftClient = new AbstractThriftClient<Object>(null) {
 
             private SessionIF session;
 
@@ -200,19 +211,20 @@ public class ThriftProcessor implements TProcessor{
             @Override
             public String getClientIp() {
 
-                if (attributes !=null && attributes.containsKey(MessageWrapper.HTTP_X_REAL_IP))
-                    return (String)attributes.get(MessageWrapper.HTTP_X_REAL_IP);
+                if (attributes != null && attributes.containsKey(MessageWrapper.HTTP_X_REAL_IP))
+                    return (String) attributes.get(MessageWrapper.HTTP_X_REAL_IP);
 
                 TTransport inT = inp.getTransport();
-                if (inT instanceof TFramedTransport){
+                if (inT instanceof TFramedTransport) {
                     try {
                         Field f = TFramedTransport.class.getDeclaredField("transport_");
                         f.setAccessible(true);
-                        inT = (TTransport)f.get(inT);
-                        if (inT instanceof TSocket){
+                        inT = (TTransport) f.get(inT);
+                        if (inT instanceof TSocket) {
                             return ((TSocket) inT).getSocket().getRemoteSocketAddress().toString();
                         }
-                    } catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
+                    }
+                    catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
                         log.warn("cound't get remote address for transport of type {}", inT.getClass().getSimpleName());
                     }
                 }
@@ -224,7 +236,7 @@ public class ThriftProcessor implements TProcessor{
             }
 
             @Override
-            protected ListenableFuture thriftCall(Object sessionId,int timeout, InvocationInfo tInfo) throws TException {
+            protected ListenableFuture thriftCall(Object sessionId, int timeout, InvocationInfo tInfo) throws TException {
                 throw new NotImplementedException();
             }
 
@@ -234,7 +246,7 @@ public class ThriftProcessor implements TProcessor{
             }
         };
 
-        final ThriftProtocolSupportIF s = new ThriftProtocolSupportIF<Object>(){
+        final ThriftProtocolSupportIF s = new ThriftProtocolSupportIF<Object>() {
 
             @Override
             public String getSessionId() {
@@ -252,26 +264,27 @@ public class ThriftProcessor implements TProcessor{
             }
 
             @Override
-            public <T extends TBase> T readArgs(final ThriftControllerInfo tInfo) throws TException{
+            public <T extends TBase> T readArgs(final ThriftControllerInfo tInfo) throws TException {
                 final TBase args = tInfo.makeArgument();
                 args.read(inp);
                 inp.readMessageEnd();
-                return (T)args;
+                return (T) args;
             }
 
             @Override
             public void skip() throws TException {
-                TProtocolUtil.skip( inp, TType.STRUCT );
+                TProtocolUtil.skip(inp, TType.STRUCT);
                 inp.readMessageEnd();
             }
 
-            private Object result(TApplicationException o){
-                try{
-                    out.writeMessageBegin( new TMessage( msg.name, TMessageType.EXCEPTION, msg.seqid));
-                    ((TApplicationException)o).write(out);
+            private Object result(TApplicationException o) {
+                try {
+                    out.writeMessageBegin(new TMessage(msg.name, TMessageType.EXCEPTION, msg.seqid));
+                    ((TApplicationException) o).write(out);
                     out.writeMessageEnd();
                     out.getTransport().flush(msg.seqid);
-                }catch (TException e){
+                }
+                catch (TException e) {
                     throw new RuntimeException(e);
                 }
 
@@ -281,21 +294,22 @@ public class ThriftProcessor implements TProcessor{
             @Override
             public Object result(final Object o, final ThriftControllerInfo tInfo) {
 
-                if (o instanceof TApplicationException){
-                    return result((TApplicationException)o);
-                }else if (o instanceof TProtocolException) {
-                    return result(new TApplicationException(TApplicationException.PROTOCOL_ERROR, ((Exception)o).getMessage()));
-                }else if (o instanceof Exception && !(o instanceof TException)){
-                    return result(new TApplicationException(TApplicationException.INTERNAL_ERROR, ((Exception)o).getMessage()));
-                }else{
+                if (o instanceof TApplicationException) {
+                    return result((TApplicationException) o);
+                } else if (o instanceof TProtocolException) {
+                    return result(new TApplicationException(TApplicationException.PROTOCOL_ERROR, ((Exception) o).getMessage()));
+                } else if (o instanceof Exception && !(o instanceof TException)) {
+                    return result(new TApplicationException(TApplicationException.INTERNAL_ERROR, ((Exception) o).getMessage()));
+                } else {
                     final TBase result = tInfo.makeResult(o);
 
-                    try{
-                        out.writeMessageBegin( new TMessage( msg.name, TMessageType.REPLY, msg.seqid) );
+                    try {
+                        out.writeMessageBegin(new TMessage(msg.name, TMessageType.REPLY, msg.seqid));
                         result.write(out);
                         out.writeMessageEnd();
                         out.getTransport().flush(msg.seqid);
-                    }catch (TException e){
+                    }
+                    catch (TException e) {
                         throw new RuntimeException(e);
                     }
 
@@ -311,45 +325,59 @@ public class ThriftProcessor implements TProcessor{
             @Override
             public boolean allowAsyncAnswer() {
                 return false;
-            }};
+            }
+        };
 
-            return process(s, thriftClient);
+        return process(s, thriftClient);
     }
 
-    private static void logStart(Logger l, ThriftClient thriftClient, String method, String correlationId, Object args){
-        if(l.isDebugEnabled() || logControllerStart.isDebugEnabled()){
+    private static void logStart(Logger l, ThriftClient thriftClient, String method, String correlationId, Object args) {
+        if (l.isDebugEnabled() || logControllerStart.isDebugEnabled()) {
             final Logger _l = l.isDebugEnabled() ? l : logControllerStart;
             final String data = args == null ? null : args.toString();
-            final SessionIF session = thriftClient !=null ? thriftClient.getSession() : null;
-            _l.debug("user:{} ip:{} START method:{} args:{} correlationId:{}", session !=null ? session.getCredentials() : null, thriftClient !=null ? thriftClient.getClientIp() : null, method, data !=null ? ((data.length() > 200 && !(l.isTraceEnabled() || logControllerEnd.isTraceEnabled())) ? data.substring(0, 199) + "..." : data) : null, correlationId);
+            final SessionIF session = thriftClient != null ? thriftClient.getSession() : null;
+            _l.debug("user:{} ip:{} START method:{} args:{} correlationId:{}", session != null ? session.getCredentials() : null,
+                     thriftClient != null ? thriftClient.getClientIp() : null,
+                     method, data != null
+                                          ? ((data.length() > 200 && !(l.isTraceEnabled() || logControllerEnd.isTraceEnabled()))
+                                                                                                                                 ? data.substring(0,
+                                                                                                                                                  199)
+                                                                                                                                   + "..."
+                                                                                                                                 : data)
+                                          : null,
+                     correlationId);
         }
     }
 
-    private static void logNoController(ThriftClient thriftClient, String method, String correlationId){
-        if(log.isWarnEnabled() || logControllerStart.isWarnEnabled()){
+    private static void logNoController(ThriftClient thriftClient, String method, String correlationId) {
+        if (log.isWarnEnabled() || logControllerStart.isWarnEnabled()) {
             final Logger _l = log.isWarnEnabled() ? log : logControllerStart;
-            final SessionIF session = thriftClient !=null ? thriftClient.getSession() : null;
-            _l.warn("user:{} ip:{} No controllerCls for method:{} correlationId:{}", session != null ? session.getCredentials() : null, thriftClient !=null ? thriftClient.getClientIp(): null, method, correlationId);
+            final SessionIF session = thriftClient != null ? thriftClient.getSession() : null;
+            _l.warn("user:{} ip:{} No controllerCls for method:{} correlationId:{}", session != null ? session.getCredentials() : null,
+                    thriftClient != null ? thriftClient.getClientIp() : null, method, correlationId);
         }
     }
 
-    public static void logEnd(Logger l, AbstractThriftController c, String method, String correlationId, Object ret){
+    public static void logEnd(Logger l, AbstractThriftController c, String method, String correlationId, Object ret) {
 
-        if (l.isDebugEnabled() || logControllerEnd.isDebugEnabled() ||
-                (c.getExecutionMcs() > c.getWarnExecutionMcsLimit() && (l.isWarnEnabled() || logControllerEnd.isWarnEnabled()))){
+        if (l.isDebugEnabled() || logControllerEnd.isDebugEnabled()
+            || (c.getExecutionMcs() > c.getWarnExecutionMcsLimit() && (l.isWarnEnabled() || logControllerEnd.isWarnEnabled()))) {
 
             final boolean tracing = l.isTraceEnabled() || logControllerEnd.isTraceEnabled();
 
-            final String data = ret == null ? null : (tracing ? ret.toString() : (ret instanceof Exception ? ret.toString() : "<suppressed>"));
-            final SessionIF session = c.thriftClient !=null ? c.thriftClient.getSession() : null;
+            final String data = ret == null ? null
+                                            : (tracing ? ret.toString() : (ret instanceof Exception ? ret.toString() : "<suppressed>"));
+            final SessionIF session = c.thriftClient != null ? c.thriftClient.getSession() : null;
             final String format = "user:{} ip:{} END method:{} ctrl:{} delay:{} mcs correlationId: {} return: {}";
-            final Object args[] = new Object[]{session !=null ? session.getCredentials() : null, c.thriftClient !=null ? c.thriftClient.getClientIp() : null, method, c.ctrlLog(), c.getExecutionMcs(), correlationId, data};
+            final Object args[] = new Object[] { session != null ? session.getCredentials() : null,
+                                                 c.thriftClient != null ? c.thriftClient.getClientIp() : null, method, c.ctrlLog(),
+                                                 c.getExecutionMcs(), correlationId, data };
 
             final Logger _l;
-            if (c.getExecutionMcs() > c.getWarnExecutionMcsLimit()){
+            if (c.getExecutionMcs() > c.getWarnExecutionMcsLimit()) {
                 _l = l.isWarnEnabled() ? l : logControllerEnd;
                 _l.warn(format, args);
-            }else{
+            } else {
                 _l = l.isDebugEnabled() ? l : logControllerEnd;
                 _l.debug(format, args);
             }

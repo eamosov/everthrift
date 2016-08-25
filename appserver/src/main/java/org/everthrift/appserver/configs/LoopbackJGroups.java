@@ -9,12 +9,12 @@ import org.springframework.context.annotation.Configuration;
 public class LoopbackJGroups {
 
     @Bean
-    public RpcJGroupsRegistry RpcJGroupsRegistry(){
+    public RpcJGroupsRegistry RpcJGroupsRegistry() {
         return new RpcJGroupsRegistry();
     }
 
     @Bean
-    public LoopbackThriftClientServerImpl loopbackThriftClientServerImpl(){
+    public LoopbackThriftClientServerImpl loopbackThriftClientServerImpl() {
         return new LoopbackThriftClientServerImpl();
     }
 }

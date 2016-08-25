@@ -20,9 +20,10 @@ public class MigrationResources {
     }
 
     /**
-     * Add Migration object collection to migration collection (set is used as internal collection so no duplicates will
-     * be added and order will be preserved meaning that if migration was in collection on position it will stay on that
-     * position).
+     * Add Migration object collection to migration collection (set is used as
+     * internal collection so no duplicates will be added and order will be
+     * preserved meaning that if migration was in collection on position it will
+     * stay on that position).
      * @param migrations Migration object list
      */
     public void addMigrations(final Collection<Migration> migrations) {

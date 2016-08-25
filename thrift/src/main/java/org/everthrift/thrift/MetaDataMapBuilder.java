@@ -19,9 +19,9 @@ public class MetaDataMapBuilder {
         scanner.addIncludeFilter(new AssignableTypeFilter(TBase.class));
     }
 
-    public void build(String basePackage){
+    public void build(String basePackage) {
 
-        int i=0;
+        int i = 0;
         for (BeanDefinition b : scanner.findCandidateComponents(basePackage)) {
 
             log.debug("find {}", b.getBeanClassName());
@@ -30,7 +30,8 @@ public class MetaDataMapBuilder {
                 final Class cls = ClassUtils.resolveClassName(b.getBeanClassName(), ClassUtils.getDefaultClassLoader());
                 cls.newInstance();
                 i++;
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 log.error("Exception", e);
             }
         }

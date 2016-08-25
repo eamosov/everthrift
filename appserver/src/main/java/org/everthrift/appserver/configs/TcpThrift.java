@@ -11,12 +11,12 @@ import org.springframework.context.annotation.Configuration;
 public class TcpThrift {
 
     @Bean
-    public RpcSyncTcpRegistry rpcSyncTcpRegistry(){
+    public RpcSyncTcpRegistry rpcSyncTcpRegistry() {
         return new RpcSyncTcpRegistry();
     }
 
     @Bean
-    public ThriftServer ThriftServer(ApplicationContext context, RpcSyncTcpRegistry registry){
+    public ThriftServer ThriftServer(ApplicationContext context, RpcSyncTcpRegistry registry) {
         return new ThriftServer(context, new TBinaryProtocol.Factory(), registry);
     }
 }

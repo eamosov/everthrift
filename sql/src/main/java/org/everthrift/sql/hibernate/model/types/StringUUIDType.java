@@ -22,7 +22,7 @@ public class StringUUIDType implements UserType, Externalizable {
 
     @Override
     public int[] sqlTypes() {
-        return new int[]{Types.OTHER};
+        return new int[] { Types.OTHER };
     }
 
     @Override
@@ -37,13 +37,14 @@ public class StringUUIDType implements UserType, Externalizable {
 
     @Override
     public int hashCode(Object x) throws HibernateException {
-        return x == null ? 0: x.hashCode();
+        return x == null ? 0 : x.hashCode();
     }
 
     @Override
-    public Object nullSafeGet(ResultSet rs, String[] names, SharedSessionContractImplementor session, Object owner) throws HibernateException, SQLException {
+    public Object nullSafeGet(ResultSet rs, String[] names, SharedSessionContractImplementor session,
+                              Object owner) throws HibernateException, SQLException {
 
-        final UUID uuid = UUID.fromJdkUUID((java.util.UUID)rs.getObject(names[0]));
+        final UUID uuid = UUID.fromJdkUUID((java.util.UUID) rs.getObject(names[0]));
 
         if (uuid == null)
             return null;
@@ -52,12 +53,13 @@ public class StringUUIDType implements UserType, Externalizable {
     }
 
     @Override
-    public void nullSafeSet(PreparedStatement st, Object value, int index, SharedSessionContractImplementor session) throws HibernateException, SQLException {
+    public void nullSafeSet(PreparedStatement st, Object value, int index,
+                            SharedSessionContractImplementor session) throws HibernateException, SQLException {
 
         if (value == null)
             st.setObject(index, null);
         else
-            st.setObject(index, java.util.UUID.fromString((String)value));
+            st.setObject(index, java.util.UUID.fromString((String) value));
     }
 
     @Override
@@ -72,7 +74,7 @@ public class StringUUIDType implements UserType, Externalizable {
 
     @Override
     public Serializable disassemble(Object value) throws HibernateException {
-        return (Serializable)value;
+        return (Serializable) value;
     }
 
     @Override

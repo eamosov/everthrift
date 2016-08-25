@@ -15,7 +15,6 @@
  */
 package org.everthrift.cassandra.com.datastax.driver.mapping.annotations;
 
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -24,14 +23,17 @@ import java.lang.annotation.Target;
 import org.everthrift.cassandra.com.datastax.driver.mapping.Mapper;
 
 /**
- * Annotates a "computed" field, which gets filled from a CQL expression in the SELECT query
- * used to retrieve an entity.
+ * Annotates a "computed" field, which gets filled from a CQL expression in the
+ * SELECT query used to retrieve an entity.
  * <p/>
- * Note that such fields are only filled by default mapper operations ({@link Mapper#get(Object...)}),
- * they will be ignored in accessor queries and save operations.
+ * Note that such fields are only filled by default mapper operations
+ * ({@link Mapper#get(Object...)}), they will be ignored in accessor queries and
+ * save operations.
  * <p/>
- * As opposed to other mapper annotation, this one doesn't handle case sensitivity. If your expression
- * contains case-sensitive names, you'll need to quote them explicitly:
+ * As opposed to other mapper annotation, this one doesn't handle case
+ * sensitivity. If your expression contains case-sensitive names, you'll need to
+ * quote them explicitly:
+ * 
  * <pre>
  * {@code @Computed("\"caseSensitiveFunction\"(v)")}
  * </pre>
@@ -42,8 +44,8 @@ public @interface Computed {
     /**
      * The formula used to compute the field.
      * <p/>
-     * This is a CQL expression like you would use directly in a query, for instance
-     * "writetime(v)".
+     * This is a CQL expression like you would use directly in a query, for
+     * instance "writetime(v)".
      *
      * @return the formula.
      */

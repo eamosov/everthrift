@@ -21,19 +21,26 @@ import org.springframework.beans.BeanUtils;
 @SuppressWarnings("rawtypes")
 public abstract class BoxType implements UserType {
 
-    //private static final Logger log = LoggerFactory.getLogger(BoxType.class);
+    // private static final Logger log = LoggerFactory.getLogger(BoxType.class);
 
     final Constructor create;
+
     final Constructor copy;
 
     private final PropertyDescriptor min;
+
     private final Class minType;
+
     private final PropertyDescriptor minX;
+
     private final PropertyDescriptor minY;
 
     private final PropertyDescriptor max;
+
     private final Class maxType;
+
     private final PropertyDescriptor maxX;
+
     private final PropertyDescriptor maxY;
 
     private final static Pattern boxPattern = Pattern.compile("BOX\\(([0-9.-]+) ([0-9.-]+),([0-9.-]+) ([0-9.-]+)\\)");
@@ -85,7 +92,8 @@ public abstract class BoxType implements UserType {
             d.min.getWriteMethod().invoke(o, min);
             d.max.getWriteMethod().invoke(o, max);
             return true;
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             return false;
         }
     }
@@ -110,9 +118,8 @@ public abstract class BoxType implements UserType {
     }
 
     @Override
-    public Object nullSafeGet(ResultSet rs, String[] names,
-            SharedSessionContractImplementor session, Object owner)
-                    throws HibernateException, SQLException {
+    public Object nullSafeGet(ResultSet rs, String[] names, SharedSessionContractImplementor session,
+                              Object owner) throws HibernateException, SQLException {
 
         final Object value = rs.getObject(names[0]);
 
@@ -121,8 +128,7 @@ public abstract class BoxType implements UserType {
 
         final Matcher m = boxPattern.matcher(value.toString());
         if (!m.matches())
-            throw new HibernateException("invalid box2d presentation:"
-                    + value.toString());
+            throw new HibernateException("invalid box2d presentation:" + value.toString());
 
         Object ret;
         try {
@@ -139,8 +145,8 @@ public abstract class BoxType implements UserType {
             min.getWriteMethod().invoke(ret, _min);
             max.getWriteMethod().invoke(ret, _max);
 
-        } catch (InstantiationException | IllegalAccessException
-                | IllegalArgumentException | InvocationTargetException e) {
+        }
+        catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
             throw new SQLException(e);
         }
 
@@ -149,7 +155,7 @@ public abstract class BoxType implements UserType {
 
     @Override
     public void nullSafeSet(PreparedStatement st, Object value, int index,
-            SharedSessionContractImplementor session) throws HibernateException, SQLException {
+                            SharedSessionContractImplementor session) throws HibernateException, SQLException {
 
         if (value == null) {
             st.setNull(index, java.sql.Types.OTHER);
@@ -168,11 +174,11 @@ public abstract class BoxType implements UserType {
 
             final PGobject o = new PGobject();
             o.setType("box2d");
-            o.setValue(String.format(Locale.ENGLISH, "BOX(%f %f,%f %f)", _minX,
-                    _minY, _maxX, _maxY));
+            o.setValue(String.format(Locale.ENGLISH, "BOX(%f %f,%f %f)", _minX, _minY, _maxX, _maxY));
             st.setObject(index, o);
 
-        } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+        }
+        catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
             throw new HibernateException(e);
         }
     }
@@ -185,8 +191,8 @@ public abstract class BoxType implements UserType {
 
         try {
             return copy.newInstance(value);
-        } catch (InstantiationException | IllegalAccessException
-                | IllegalArgumentException | InvocationTargetException e) {
+        }
+        catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
             return new HibernateException(e);
         }
     }
@@ -207,8 +213,7 @@ public abstract class BoxType implements UserType {
     }
 
     @Override
-    public Object replace(Object original, Object target, Object owner)
-            throws HibernateException {
+    public Object replace(Object original, Object target, Object owner) throws HibernateException {
         return original == null ? null : deepCopy(original);
     }
 

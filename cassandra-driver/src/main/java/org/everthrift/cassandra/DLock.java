@@ -13,12 +13,13 @@ import com.datastax.driver.core.Statement;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.google.common.collect.Lists;
 
-public class DLock implements AutoCloseable{
+public class DLock implements AutoCloseable {
 
     private static final Logger log = LoggerFactory.getLogger(DLock.class);
 
-    public static class LockException extends RuntimeException{
+    public static class LockException extends RuntimeException {
         final String lockName;
+
         final String ownerName;
 
         LockException(String lockName, String ownerName, Exception e) {
@@ -37,19 +38,24 @@ public class DLock implements AutoCloseable{
     private static String TABLE_NAME = "locks";
 
     private final List<String> unlocked;
+
     private final List<String> locked;
+
     private final String ownerName;
+
     private final Session session;
+
     private final int ttl;
 
     public static final long minSleep = 10;
+
     public static final long maxSleep = 100;
 
     public static final int DEFAULT_TTL = 3 * 60;
+
     public static final long DEFAULT_TIMEOUT = DEFAULT_TTL * 600 - 1;
 
     private static final Random rnd = new Random();
-
 
     DLock(List<String> lockNames, String ownerName, Session session, int ttl) {
         super();
@@ -60,28 +66,30 @@ public class DLock implements AutoCloseable{
         this.ttl = ttl;
     }
 
-    private boolean tryLock(final String _lockName){
-        final Statement insert = QueryBuilder.insertInto(TABLE_NAME).value("name", _lockName).value("owner", ownerName).ifNotExists().using(QueryBuilder.ttl(ttl));
+    private boolean tryLock(final String _lockName) {
+        final Statement insert = QueryBuilder.insertInto(TABLE_NAME).value("name", _lockName).value("owner", ownerName).ifNotExists()
+                                             .using(QueryBuilder.ttl(ttl));
         final ResultSet rs = session.execute(insert);
         final boolean wasApplied = rs.wasApplied();
         log.debug("lock '{}' by '{}': {}", _lockName, ownerName, wasApplied);
         return wasApplied;
     }
 
-    private boolean unlock(String _lockName){
-        final ResultSet rs = session.execute(QueryBuilder.delete().from(TABLE_NAME).where(QueryBuilder.eq("name", _lockName)).onlyIf(QueryBuilder.eq("owner", ownerName)));
+    private boolean unlock(String _lockName) {
+        final ResultSet rs = session.execute(QueryBuilder.delete().from(TABLE_NAME).where(QueryBuilder.eq("name", _lockName))
+                                                         .onlyIf(QueryBuilder.eq("owner", ownerName)));
         final boolean wasApplied = rs.wasApplied();
         log.debug("unlock '{}' by '{}': {}", _lockName, ownerName, wasApplied);
         return wasApplied;
     }
 
-    void lock(){
+    void lock() {
         lock(DEFAULT_TIMEOUT);
     }
 
-    public void unlock(){
+    public void unlock() {
         final Iterator<String> it = locked.iterator();
-        while(it.hasNext()){
+        while (it.hasNext()) {
             final String lockName = it.next();
             unlock(lockName);
             it.remove();
@@ -89,18 +97,19 @@ public class DLock implements AutoCloseable{
         }
     }
 
-    void lock(long timeoutMillis){
+    void lock(long timeoutMillis) {
 
         if (timeoutMillis > ttl * 600)
             throw new IllegalArgumentException("timeoutMillis must be <=" + (ttl * 600));
 
         final long expiredTs = System.currentTimeMillis() + timeoutMillis;
         final Iterator<String> it = unlocked.iterator();
-        while(it.hasNext()){
+        while (it.hasNext()) {
             final String lockName = it.next();
-            try{
+            try {
                 lock(lockName, expiredTs);
-            }catch(LockException e){
+            }
+            catch (LockException e) {
                 unlock();
                 throw e;
             }
@@ -109,28 +118,29 @@ public class DLock implements AutoCloseable{
         }
     }
 
-    private void lock(final String _lockName, final long expiredTs){
+    private void lock(final String _lockName, final long expiredTs) {
         boolean locked = false;
-        while(locked == false && System.currentTimeMillis() < expiredTs){
+        while (locked == false && System.currentTimeMillis() < expiredTs) {
             locked = tryLock(_lockName);
             final long now = System.currentTimeMillis();
 
-            if (locked == false && expiredTs - now > minSleep ){
-                final long t = minSleep +  rnd.nextInt((int)Math.min(maxSleep, expiredTs - now));
+            if (locked == false && expiredTs - now > minSleep) {
+                final long t = minSleep + rnd.nextInt((int) Math.min(maxSleep, expiredTs - now));
                 try {
                     Thread.sleep(t);
-                } catch (InterruptedException e) {
+                }
+                catch (InterruptedException e) {
                     throw new LockException(_lockName, ownerName, e);
                 }
             }
         }
 
-        if  (locked == false)
+        if (locked == false)
             throw new LockException(_lockName, ownerName, null);
     }
 
     @Override
-    public void close(){
+    public void close() {
         unlock();
     }
 

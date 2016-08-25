@@ -28,14 +28,16 @@ public class LongTimestampCodec extends TypeCodec<Long> {
         if (ParseUtils.isLongLiteral(value)) {
             try {
                 return Long.parseLong(value);
-            } catch (NumberFormatException e) {
+            }
+            catch (NumberFormatException e) {
                 throw new InvalidTypeException(String.format("Cannot parse timestamp value from \"%s\"", value));
             }
         }
 
         try {
             return ParseUtils.parseDate(value).getTime();
-        } catch (ParseException e) {
+        }
+        catch (ParseException e) {
             throw new InvalidTypeException(String.format("Cannot parse timestamp value from \"%s\"", value));
         }
     }

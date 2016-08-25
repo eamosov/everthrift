@@ -21,7 +21,7 @@ import com.google.gson.reflect.TypeToken;
 /**
  * @author efreet (Amosov Evgeniy)
  */
-@SuppressWarnings({"rawtypes", "unchecked"})
+@SuppressWarnings({ "rawtypes", "unchecked" })
 public class GsonSerializer {
 
     public static class TBaseSerializer<T extends TBase> implements JsonSerializer<T> {
@@ -43,10 +43,11 @@ public class GsonSerializer {
 
             Map<? extends TFieldIdEnum, FieldMetaData> map = null;
             Class thriftClass = src.getClass();
-            while(map == null && thriftClass !=null){
-                try{
+            while (map == null && thriftClass != null) {
+                try {
                     map = FieldMetaData.getStructMetaDataMap(thriftClass);
-                }catch(Exception e){
+                }
+                catch (Exception e) {
                     map = null;
                 }
                 thriftClass = thriftClass.getSuperclass();
@@ -65,7 +66,8 @@ public class GsonSerializer {
 
                     if (v instanceof TBase) {
                         jo.add(f.getFieldName(), context.serialize(v, TBase.class));
-                    } else if (v instanceof Collection && !((Collection) v).isEmpty() && ((Collection) v).iterator().next() instanceof TBase) {
+                    } else if (v instanceof Collection && !((Collection) v).isEmpty()
+                               && ((Collection) v).iterator().next() instanceof TBase) {
                         jo.add(f.getFieldName(), context.serialize(v, tBaseCollection));
                     } else if (v instanceof String) {
                         jo.add(f.getFieldName(), context.serialize(((String) v).replace("%", "%25")));
@@ -81,7 +83,8 @@ public class GsonSerializer {
 
     }
 
-    private static Gson gson = new GsonBuilder().setPrettyPrinting().registerTypeHierarchyAdapter(TBase.class, new TBaseSerializer()).create();
+    private static Gson gson = new GsonBuilder().setPrettyPrinting().registerTypeHierarchyAdapter(TBase.class, new TBaseSerializer())
+                                                .create();
 
     public static Gson get() {
         return gson;

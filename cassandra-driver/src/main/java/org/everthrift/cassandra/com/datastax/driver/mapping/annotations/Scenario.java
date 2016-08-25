@@ -23,14 +23,14 @@ import java.lang.annotation.Target;
 import org.everthrift.cassandra.com.datastax.driver.mapping.EntityMapper;
 
 /**
- * Whenever this annotation is added on a field, the field will not be mapped
- * to any column (neither during reads nor writes).
+ * Whenever this annotation is added on a field, the field will not be mapped to
+ * any column (neither during reads nor writes).
  * <p/>
  * Please note that it is thus illegal to have a field that has both the
- * {@code Transcient} annotation and one of the {@link Column}, {@link PartitionKey}
- * or {@link ClusteringColumn} annotation.
+ * {@code Transcient} annotation and one of the {@link Column},
+ * {@link PartitionKey} or {@link ClusteringColumn} annotation.
  */
-@Target({ElementType.FIELD, ElementType.METHOD})
+@Target({ ElementType.FIELD, ElementType.METHOD })
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Scenario {
     EntityMapper.ColumnScenario value() default EntityMapper.ColumnScenario.COMMON;

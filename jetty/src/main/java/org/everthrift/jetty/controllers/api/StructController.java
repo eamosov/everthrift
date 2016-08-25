@@ -20,14 +20,15 @@ public class StructController {
     @Autowired
     private ApplicationContext context;
 
-    @RequestMapping(value="/api/struct/{structClassName}", method = RequestMethod.GET, produces="text/html")
-    public void getStruct(@PathVariable("structClassName") String structClassName, HttpServletRequest request, HttpServletResponse response) throws IOException {
+    @RequestMapping(value = "/api/struct/{structClassName}", method = RequestMethod.GET, produces = "text/html")
+    public void getStruct(@PathVariable("structClassName") String structClassName, HttpServletRequest request,
+                          HttpServletResponse response) throws IOException {
 
         final String tbaseRoot = context.getEnvironment().getProperty("tbase.root");
 
-        if (structClassName==null || !structClassName.startsWith(tbaseRoot)){
+        if (structClassName == null || !structClassName.startsWith(tbaseRoot)) {
             response.setStatus(403);
-            response.getOutputStream().write(("Class '" +  structClassName + "' not allowed").getBytes(StandardCharsets.UTF_8));
+            response.getOutputStream().write(("Class '" + structClassName + "' not allowed").getBytes(StandardCharsets.UTF_8));
             response.flushBuffer();
             return;
         }
@@ -42,9 +43,10 @@ public class StructController {
             response.getOutputStream().write(services);
             response.flushBuffer();
 
-        } catch (ClassNotFoundException e) {
+        }
+        catch (ClassNotFoundException e) {
             response.setStatus(404);
-            response.getOutputStream().write(("Class '" +  structClassName + "' not found").getBytes(StandardCharsets.UTF_8));
+            response.getOutputStream().write(("Class '" + structClassName + "' not found").getBytes(StandardCharsets.UTF_8));
             response.flushBuffer();
             return;
         }

@@ -32,7 +32,7 @@ import org.springframework.jms.listener.SessionAwareMessageListener;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
-public class JmsThriftClientServerImpl implements InitializingBean, DisposableBean, JmsThriftClientIF{
+public class JmsThriftClientServerImpl implements InitializingBean, DisposableBean, JmsThriftClientIF {
 
     private final static Logger log = LoggerFactory.getLogger(JmsThriftClientServerImpl.class);
 
@@ -52,7 +52,7 @@ public class JmsThriftClientServerImpl implements InitializingBean, DisposableBe
 
     private List<AbstractMessageListenerContainer> listeners = Lists.newArrayList();
 
-    private SessionAwareMessageListener<Message> listener = new SessionAwareMessageListener<Message>(){
+    private SessionAwareMessageListener<Message> listener = new SessionAwareMessageListener<Message>() {
 
         @Override
         public void onMessage(final Message message, Session session) throws JMSException {
@@ -62,136 +62,142 @@ public class JmsThriftClientServerImpl implements InitializingBean, DisposableBe
             if (!(message instanceof BytesMessage))
                 throw new JMSException("invalid message class: " + message.getClass().getSimpleName());
 
-
             try {
-                final Object ret = thriftProcessor.process(
-                        binaryProtocolFactory.getProtocol(
-                                new TTransport(){
+                final Object ret = thriftProcessor.process(binaryProtocolFactory.getProtocol(new TTransport() {
 
-                                    @Override
-                                    public boolean isOpen() {return true;}
+                    @Override
+                    public boolean isOpen() {
+                        return true;
+                    }
 
-                                    @Override
-                                    public void open() throws TTransportException {}
+                    @Override
+                    public void open() throws TTransportException {
+                    }
 
-                                    @Override
-                                    public void close() {}
+                    @Override
+                    public void close() {
+                    }
 
-                                    @Override
-                                    public int read(byte[] buf, int off, int len) throws TTransportException {
-                                        try {
-                                            if (off == 0){
-                                                return ((BytesMessage)message).readBytes(buf, len);
-                                            }else{
-                                                final byte b[] = new byte[len];
-                                                final int r = ((BytesMessage)message).readBytes(b, len);
-                                                if (r>0)
-                                                    System.arraycopy(b, 0, buf, off, r);
-                                                return r;
-                                            }
-                                        } catch (JMSException e) {
-                                            throw new TTransportException(e);
-                                        }
-                                    }
+                    @Override
+                    public int read(byte[] buf, int off, int len) throws TTransportException {
+                        try {
+                            if (off == 0) {
+                                return ((BytesMessage) message).readBytes(buf, len);
+                            } else {
+                                final byte b[] = new byte[len];
+                                final int r = ((BytesMessage) message).readBytes(b, len);
+                                if (r > 0)
+                                    System.arraycopy(b, 0, buf, off, r);
+                                return r;
+                            }
+                        }
+                        catch (JMSException e) {
+                            throw new TTransportException(e);
+                        }
+                    }
 
-                                    @Override
-                                    public void write(byte[] buf, int off, int len) throws TTransportException {
-                                        throw new TTransportException("not implemented");
-                                    }
-                                }),
+                    @Override
+                    public void write(byte[] buf, int off, int len) throws TTransportException {
+                        throw new TTransportException("not implemented");
+                    }
+                }),
 
-                        binaryProtocolFactory.getProtocol(
-                                new TTransport(){
+                                                           binaryProtocolFactory.getProtocol(new TTransport() {
 
-                                    @Override
-                                    public boolean isOpen() {return true;}
+                                                               @Override
+                                                               public boolean isOpen() {
+                                                                   return true;
+                                                               }
 
-                                    @Override
-                                    public void open() throws TTransportException {}
+                                                               @Override
+                                                               public void open() throws TTransportException {
+                                                               }
 
-                                    @Override
-                                    public void close() {}
+                                                               @Override
+                                                               public void close() {
+                                                               }
 
-                                    @Override
-                                    public int read(byte[] buf, int off, int len) throws TTransportException {
-                                        throw new TTransportException("not implemented");
-                                    }
+                                                               @Override
+                                                               public int read(byte[] buf, int off, int len) throws TTransportException {
+                                                                   throw new TTransportException("not implemented");
+                                                               }
 
-                                    @Override
-                                    public void write(byte[] buf, int off, int len)	throws TTransportException {
-                                    }
-                                }),
-                        null);
+                                                               @Override
+                                                               public void write(byte[] buf, int off, int len) throws TTransportException {
+                                                               }
+                                                           }), null);
 
-                if (ret instanceof TApplicationException){
-                    throw asJMSException((TApplicationException)ret);
-                }else if (ret instanceof TException){
+                if (ret instanceof TApplicationException) {
+                    throw asJMSException((TApplicationException) ret);
+                } else if (ret instanceof TException) {
                     return;
-                }else if (ret instanceof Exception)
-                    throw asJMSException((Exception)ret);
-            } catch (TException e) {
+                } else if (ret instanceof Exception)
+                    throw asJMSException((Exception) ret);
+            }
+            catch (TException e) {
                 throw asJMSException(e);
             }
-        }};
-
-
-        public JmsThriftClientServerImpl(ConnectionFactory jmsConnectionFactory){
-            this.jmsConnectionFactory = jmsConnectionFactory;
-            this.jmsThriftClient = new JmsThriftClientImpl(jmsConnectionFactory);
         }
+    };
 
-        private JMSException asJMSException(Exception e){
+    public JmsThriftClientServerImpl(ConnectionFactory jmsConnectionFactory) {
+        this.jmsConnectionFactory = jmsConnectionFactory;
+        this.jmsThriftClient = new JmsThriftClientImpl(jmsConnectionFactory);
+    }
 
-            if (e instanceof JMSException)
-                return (JMSException)e;
+    private JMSException asJMSException(Exception e) {
 
-            if (e.getCause() !=null && e.getCause() instanceof JMSException)
-                return (JMSException)e.getCause();
+        if (e instanceof JMSException)
+            return (JMSException) e;
 
-            if (e.getSuppressed() != null){
-                for (Throwable s: e.getSuppressed()){
-                    if (s !=null && s instanceof JMSException)
-                        return (JMSException)s;
-                }
+        if (e.getCause() != null && e.getCause() instanceof JMSException)
+            return (JMSException) e.getCause();
+
+        if (e.getSuppressed() != null) {
+            for (Throwable s : e.getSuppressed()) {
+                if (s != null && s instanceof JMSException)
+                    return (JMSException) s;
             }
-
-            final JMSException je = new JMSException(e.getMessage());
-            je.setLinkedException(e);
-            return je;
         }
 
-        @Override
-        public void afterPropertiesSet() throws Exception {
+        final JMSException je = new JMSException(e.getMessage());
+        je.setLinkedException(e);
+        return je;
+    }
 
-            thriftProcessor = ThriftProcessor.create(context, rpcJmsRegistry);
+    @Override
+    public void afterPropertiesSet() throws Exception {
 
-            final Set<String> services = Sets.newHashSet();
-            for (ThriftControllerInfo i:rpcJmsRegistry.getControllers().values())
-                services.add(i.getServiceName());
+        thriftProcessor = ThriftProcessor.create(context, rpcJmsRegistry);
 
-            for(String s: services)
-                addJmsListener(s);
+        final Set<String> services = Sets.newHashSet();
+        for (ThriftControllerInfo i : rpcJmsRegistry.getControllers().values())
+            services.add(i.getServiceName());
 
+        for (String s : services)
+            addJmsListener(s);
+
+    }
+
+    private synchronized DefaultMessageListenerContainer addJmsListener(String queueName) {
+        DefaultMessageListenerContainer l = (DefaultMessageListenerContainer) context.getBean("thriftJmsMessageListener", queueName,
+                                                                                              jmsConnectionFactory, listener);
+        listeners.add(l);
+        return l;
+    }
+
+    @Override
+    public synchronized void destroy() throws Exception {
+        for (AbstractMessageListenerContainer l : listeners) {
+            l.stop();
+            l.destroy();
         }
+        listeners.clear();
+    }
 
-        private synchronized DefaultMessageListenerContainer addJmsListener(String queueName){
-            DefaultMessageListenerContainer l  = (DefaultMessageListenerContainer)context.getBean("thriftJmsMessageListener", queueName, jmsConnectionFactory, listener);
-            listeners.add(l);
-            return l;
-        }
-
-        @Override
-        public synchronized void destroy() throws Exception {
-            for (AbstractMessageListenerContainer l :listeners){
-                l.stop();
-                l.destroy();
-            }
-            listeners.clear();
-        }
-
-        @Override
-        public <T> T onIface(Class<T> cls) {
-            return jmsThriftClient.onIface(cls);
-        }
+    @Override
+    public <T> T onIface(Class<T> cls) {
+        return jmsThriftClient.onIface(cls);
+    }
 
 }

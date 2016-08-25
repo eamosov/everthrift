@@ -19,10 +19,11 @@ public class ApiController {
     @Autowired
     private RpcHttpRegistry rpcHttpRegistry;
 
-    @RequestMapping(value="/api", method = RequestMethod.GET, produces="text/html")
+    @RequestMapping(value = "/api", method = RequestMethod.GET, produces = "text/html")
     public void getServices(HttpServletRequest request, HttpServletResponse response) throws IOException {
 
-        final byte[] services = new ThriftFormatter("/api/").formatServices(rpcHttpRegistry.getControllers().values()).getBytes(StandardCharsets.UTF_8);
+        final byte[] services = new ThriftFormatter("/api/").formatServices(rpcHttpRegistry.getControllers().values())
+                                                            .getBytes(StandardCharsets.UTF_8);
 
         response.setContentType("text/html");
         response.setContentLength(services.length);

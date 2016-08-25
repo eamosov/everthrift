@@ -13,13 +13,13 @@ import com.datastax.driver.core.TypeCodec;
 import com.datastax.driver.core.exceptions.InvalidTypeException;
 import com.google.common.reflect.TypeToken;
 
-public class TBaseModelCodec<T extends TBaseModel<?,?>> extends TypeCodec<T> {
+public class TBaseModelCodec<T extends TBaseModel<?, ?>> extends TypeCodec<T> {
 
-    private static class Factory<T extends TBaseModel<?,?>> implements TypeCodecFactory<T> {
+    private static class Factory<T extends TBaseModel<?, ?>> implements TypeCodecFactory<T> {
 
         @Override
         public boolean accepts(Class<?> javaType) {
-            return TBaseModel.class.isAssignableFrom(javaType) || (TBaseHasModel.getModel((Class)javaType) !=null);
+            return TBaseModel.class.isAssignableFrom(javaType) || (TBaseHasModel.getModel((Class) javaType) != null);
         }
 
         @Override
@@ -30,11 +30,12 @@ public class TBaseModelCodec<T extends TBaseModel<?,?>> extends TypeCodec<T> {
         @SuppressWarnings({ "unchecked", "rawtypes" })
         @Override
         public TypeCodec<T> create(DataType cqlType, Class<?> javaType) {
-            return (TypeCodec)new TBaseModelCodec((Class)(TBaseModel.class.isAssignableFrom(javaType) ? javaType : TBaseHasModel.getModel((Class)javaType)));
+            return (TypeCodec) new TBaseModelCodec((Class) (TBaseModel.class.isAssignableFrom(javaType) ? javaType
+                                                                                                        : TBaseHasModel.getModel((Class) javaType)));
         }
     }
 
-    public static final TypeCodecFactory<? extends TBaseModel<?,?>> factory = new Factory<TBaseModel<?,?>>();
+    public static final TypeCodecFactory<? extends TBaseModel<?, ?>> factory = new Factory<TBaseModel<?, ?>>();
 
     public TBaseModelCodec(Class<T> javaClass) {
         super(DataType.blob(), javaClass);
@@ -45,7 +46,6 @@ public class TBaseModelCodec<T extends TBaseModel<?,?>> extends TypeCodec<T> {
         checkNotNull(javaType, "Parameter javaType cannot be null");
         return javaType.getRawType().isAssignableFrom(this.javaType.getRawType());
     }
-
 
     @Override
     public ByteBuffer serialize(T value, ProtocolVersion protocolVersion) throws InvalidTypeException {
@@ -59,10 +59,11 @@ public class TBaseModelCodec<T extends TBaseModel<?,?>> extends TypeCodec<T> {
             return null;
 
         try {
-            final T entity = (T)(((Class)javaType.getRawType()).newInstance());
+            final T entity = (T) (((Class) javaType.getRawType()).newInstance());
             entity.read(bytes.array(), bytes.arrayOffset() + bytes.position());
             return entity;
-        } catch (InstantiationException | IllegalAccessException e) {
+        }
+        catch (InstantiationException | IllegalAccessException e) {
             throw new InvalidTypeException("", e);
         }
     }

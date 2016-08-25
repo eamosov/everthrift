@@ -21,7 +21,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
 
-@SuppressWarnings({"unchecked"})
+@SuppressWarnings({ "unchecked" })
 public abstract class JsonType implements UserType {
 
     private static final Logger log = LoggerFactory.getLogger(JsonType.class);
@@ -30,7 +30,7 @@ public abstract class JsonType implements UserType {
 
     @Override
     public int[] sqlTypes() {
-        return new int[]{Types.OTHER};
+        return new int[] { Types.OTHER };
     }
 
     @Override
@@ -48,23 +48,26 @@ public abstract class JsonType implements UserType {
     }
 
     @Override
-    public Object nullSafeGet(ResultSet rs, String[] names, SharedSessionContractImplementor session, Object owner) throws HibernateException, SQLException {
+    public Object nullSafeGet(ResultSet rs, String[] names, SharedSessionContractImplementor session,
+                              Object owner) throws HibernateException, SQLException {
 
-        final PGobject json = (PGobject)rs.getObject(names[0]);
+        final PGobject json = (PGobject) rs.getObject(names[0]);
 
         if (json == null)
             return null;
 
-        try{
+        try {
             return gson.fromJson(json.getValue(), returnedClass());
-        }catch(JsonSyntaxException e){
+        }
+        catch (JsonSyntaxException e) {
             log.error("Coudn't parse '{}' in {}", json.getValue(), this.returnedClass().getSimpleName());
             throw new HibernateException(e);
         }
     }
 
     @Override
-    public void nullSafeSet(PreparedStatement st, Object value, int index, SharedSessionContractImplementor session) throws HibernateException, SQLException {
+    public void nullSafeSet(PreparedStatement st, Object value, int index,
+                            SharedSessionContractImplementor session) throws HibernateException, SQLException {
 
         final PGobject json = new PGobject();
         json.setType("jsonb");
@@ -75,10 +78,10 @@ public abstract class JsonType implements UserType {
     @Override
     public Object deepCopy(Object value) throws HibernateException {
         try {
-            return value==null ? null : value.getClass().getConstructor(value.getClass()).newInstance(value);
-        } catch (InstantiationException | IllegalAccessException
-                | IllegalArgumentException | InvocationTargetException
-                | NoSuchMethodException | SecurityException e) {
+            return value == null ? null : value.getClass().getConstructor(value.getClass()).newInstance(value);
+        }
+        catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
+               | NoSuchMethodException | SecurityException e) {
             throw new HibernateException(e);
         }
     }
@@ -93,7 +96,6 @@ public abstract class JsonType implements UserType {
         return deepCopy(cached);
     }
 
-
     @Override
     public Serializable disassemble(final Object o) throws HibernateException {
         return (Serializable) deepCopy(o);
@@ -101,7 +103,7 @@ public abstract class JsonType implements UserType {
 
     @Override
     public Object replace(Object original, Object target, Object owner) throws HibernateException {
-        return original == null ? null: deepCopy(original);
+        return original == null ? null : deepCopy(original);
     }
 
 }

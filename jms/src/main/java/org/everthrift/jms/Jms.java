@@ -15,13 +15,14 @@ import org.springframework.jms.listener.SessionAwareMessageListener;
 public class Jms {
 
     @Bean
-    public RpcJmsRegistry RpcJmsRegistry(){
+    public RpcJmsRegistry RpcJmsRegistry() {
         return new RpcJmsRegistry();
     }
 
     @Bean
     @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-    public DefaultMessageListenerContainer thriftJmsMessageListener(String destination, ConnectionFactory connectionFactory, SessionAwareMessageListener listener){
+    public DefaultMessageListenerContainer thriftJmsMessageListener(String destination, ConnectionFactory connectionFactory,
+                                                                    SessionAwareMessageListener listener) {
         final DefaultMessageListenerContainer container = new DefaultMessageListenerContainer();
 
         container.setConnectionFactory(connectionFactory);
@@ -34,7 +35,7 @@ public class Jms {
     }
 
     @Bean
-    public JmsThriftClientServerImpl jmsThriftClientServerImpl(ConnectionFactory jmsConnectionFactory){
+    public JmsThriftClientServerImpl jmsThriftClientServerImpl(ConnectionFactory jmsConnectionFactory) {
         return new JmsThriftClientServerImpl(jmsConnectionFactory);
     }
 

@@ -14,21 +14,21 @@ import org.hibernate.usertype.UserType;
 
 import gnu.trove.impl.hash.THash;
 
-@SuppressWarnings({"rawtypes","unchecked"})
+@SuppressWarnings({ "rawtypes", "unchecked" })
 public abstract class Trove4jHstoreType<T extends THash> implements UserType {
 
     @Override
     public int[] sqlTypes() {
-        return new int[]{Types.OTHER};
+        return new int[] { Types.OTHER };
     }
 
     @Override
     public boolean equals(Object x, Object y) throws HibernateException {
 
-        if (x==null && y == null)
+        if (x == null && y == null)
             return true;
 
-        if ((x == null && y!=null) || (x!=null && y==null))
+        if ((x == null && y != null) || (x != null && y == null))
             return false;
 
         return x.equals(y);
@@ -37,19 +37,21 @@ public abstract class Trove4jHstoreType<T extends THash> implements UserType {
     @Override
     public int hashCode(Object x) throws HibernateException {
 
-        if (x == null || ((T)x).size() == 0)
+        if (x == null || ((T) x).size() == 0)
             return 0;
 
         return x.hashCode();
     }
 
-    protected abstract T transform(Map<String,String> input);
+    protected abstract T transform(Map<String, String> input);
+
     protected abstract Map transformReverse(T input);
 
     @Override
-    public Object nullSafeGet(ResultSet rs, String[] names, SharedSessionContractImplementor session, Object owner) throws HibernateException, SQLException {
+    public Object nullSafeGet(ResultSet rs, String[] names, SharedSessionContractImplementor session,
+                              Object owner) throws HibernateException, SQLException {
 
-        final Map<String,String> hstore = (Map<String,String>)rs.getObject(names[0]);
+        final Map<String, String> hstore = (Map<String, String>) rs.getObject(names[0]);
 
         if (hstore == null)
             return null;
@@ -58,14 +60,15 @@ public abstract class Trove4jHstoreType<T extends THash> implements UserType {
     }
 
     @Override
-    public void nullSafeSet(PreparedStatement st, Object value, int index, SharedSessionContractImplementor session) throws HibernateException, SQLException {
-        st.setString(index, value==null ? null:(String)SqlUtils.toSqlParam(transformReverse((T)value)));
+    public void nullSafeSet(PreparedStatement st, Object value, int index,
+                            SharedSessionContractImplementor session) throws HibernateException, SQLException {
+        st.setString(index, value == null ? null : (String) SqlUtils.toSqlParam(transformReverse((T) value)));
     }
 
-    //	@Override
-    //	public Object deepCopy(Object value) throws HibernateException {
-    //		return value==null?new HashMap<>():new HashMap((Map)value);
-    //	}
+    // @Override
+    // public Object deepCopy(Object value) throws HibernateException {
+    // return value==null?new HashMap<>():new HashMap((Map)value);
+    // }
 
     @Override
     public boolean isMutable() {
@@ -77,7 +80,6 @@ public abstract class Trove4jHstoreType<T extends THash> implements UserType {
         return deepCopy(cached);
     }
 
-
     @Override
     public Serializable disassemble(final Object o) throws HibernateException {
         return (Serializable) deepCopy(o);
@@ -85,7 +87,7 @@ public abstract class Trove4jHstoreType<T extends THash> implements UserType {
 
     @Override
     public Object replace(Object original, Object target, Object owner) throws HibernateException {
-        return original == null ? null: deepCopy(original);
+        return original == null ? null : deepCopy(original);
     }
 
 }

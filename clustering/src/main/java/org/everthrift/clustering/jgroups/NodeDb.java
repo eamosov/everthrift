@@ -26,11 +26,15 @@ public class NodeDb {
 
     private final Random rnd = new Random();
 
-    private static class NodeDesc{
+    private static class NodeDesc {
         final Address address;
+
         final String sAddress;
+
         Node node;
+
         long failedAt;
+
         long successedAt;
 
         NodeDesc(Address address, Node node) {
@@ -40,11 +44,11 @@ public class NodeDb {
             setNode(node);
         }
 
-        void setNode(Node node){
-            this.node = node !=null ? new Node(node) : null;
+        void setNode(Node node) {
+            this.node = node != null ? new Node(node) : null;
         }
 
-        Address getAddress(){
+        Address getAddress() {
             return address;
         }
 
@@ -75,82 +79,87 @@ public class NodeDb {
 
         @Override
         public String toString() {
-            return "NodeDesc [address=" + address + ", node=" + node + ", failedAt=" + failedAt + ", successedAt="
-                    + successedAt + "]";
+            return "NodeDesc [address=" + address + ", node=" + node + ", failedAt=" + failedAt + ", successedAt=" + successedAt + "]";
         }
 
     }
 
-    private Multimap<String, NodeDesc> methodsMap = ArrayListMultimap.create(); //Method name -> List<NodeDescr>
-    private Map<String, NodeDesc> addresses = Maps.newHashMap();				// address -> NodeDescr
+    private Multimap<String, NodeDesc> methodsMap = ArrayListMultimap.create(); // Method
+                                                                                // name
+                                                                                // ->
+                                                                                // List<NodeDescr>
 
-    private void _removeNode(String _a){
+    private Map<String, NodeDesc> addresses = Maps.newHashMap(); // address ->
+                                                                 // NodeDescr
+
+    private void _removeNode(String _a) {
         final NodeDesc d = addresses.remove(_a);
-        if (d!=null && d.node.isSetControllers()){
+        if (d != null && d.node.isSetControllers()) {
             d.node.getControllers().forEach(m -> methodsMap.remove(m, d));
         }
     }
 
-    public synchronized void removeNode(Address a){
+    public synchronized void removeNode(Address a) {
         _removeNode(a.toString());
     }
 
-    public synchronized void addNode(Address a, Node n){
+    public synchronized void addNode(Address a, Node n) {
         final String _a = a.toString();
         NodeDesc d = addresses.get(_a);
 
-        if (d !=null){
+        if (d != null) {
             if (n.equals(d.node))
                 return;
 
-            if (d.node.isSetControllers()){
-                for (String m :d.node.getControllers())
+            if (d.node.isSetControllers()) {
+                for (String m : d.node.getControllers())
                     methodsMap.remove(m, d);
             }
 
             d.setNode(n);
-        }else{
+        } else {
             d = new NodeDesc(a, n);
         }
 
         addresses.put(_a, d);
-        if (d.node.isSetControllers()){
-            for (String m: d.node.getControllers())
+        if (d.node.isSetControllers()) {
+            for (String m : d.node.getControllers())
                 methodsMap.put(m, d);
         }
     }
 
-    public synchronized List<Address> getNode(String methodName){
+    public synchronized List<Address> getNode(String methodName) {
         final long now = System.currentTimeMillis();
 
         @SuppressWarnings({ "rawtypes", "unchecked" })
-        final List<NodeDesc> nodes =(List)methodsMap.get(methodName);
+        final List<NodeDesc> nodes = (List) methodsMap.get(methodName);
         if (nodes == null)
             return Collections.emptyList();
 
-        final List<Address> aa =  Lists.newArrayList(Iterables.transform(Iterables.filter(nodes, n -> (n.failedAt < now - failedTimeout)), NodeDesc::getAddress));
+        final List<Address> aa = Lists.newArrayList(Iterables.transform(Iterables.filter(nodes, n -> (n.failedAt < now - failedTimeout)),
+                                                                        NodeDesc::getAddress));
         Collections.shuffle(aa, rnd);
         return aa;
     }
 
-    public synchronized void failed(Address a){
+    public synchronized void failed(Address a) {
         final NodeDesc d = addresses.get(a.toString());
-        if (d !=null){
+        if (d != null) {
             d.failedAt = System.currentTimeMillis();
         }
     }
 
-    public synchronized void success(Address a){
+    public synchronized void success(Address a) {
         final NodeDesc d = addresses.get(a.toString());
-        if (d !=null){
+        if (d != null) {
             d.successedAt = System.currentTimeMillis();
         }
     }
 
-    public synchronized void retain(List<Address> aa){
+    public synchronized void retain(List<Address> aa) {
         final Set<String> _aa = ImmutableSet.copyOf(Lists.transform(aa, Address::toString));
-        for (String a: ImmutableList.copyOf(addresses.keySet())){
-            if (!_aa.contains(a)){
+        for (String a : ImmutableList.copyOf(addresses.keySet())) {
+            if (!_aa.contains(a)) {
                 log.debug("remove {}", a);
                 _removeNode(a);
             }
@@ -161,6 +170,5 @@ public class NodeDb {
     public String toString() {
         return "NodeDb [methodsMap=" + methodsMap + "]";
     }
-
 
 }

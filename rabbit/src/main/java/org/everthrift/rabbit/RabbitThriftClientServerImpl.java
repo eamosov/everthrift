@@ -37,7 +37,7 @@ import com.google.common.collect.Sets;
 import com.rabbitmq.client.AMQP.Exchange.DeclareOk;
 import com.rabbitmq.client.Channel;
 
-public class RabbitThriftClientServerImpl implements RabbitThriftClientIF{
+public class RabbitThriftClientServerImpl implements RabbitThriftClientIF {
 
     private static final Logger log = LoggerFactory.getLogger(RabbitThriftClientServerImpl.class);
 
@@ -51,67 +51,71 @@ public class RabbitThriftClientServerImpl implements RabbitThriftClientIF{
     private RpcRabbitRegistry rpcRabbitRegistry;
 
     private List<SimpleMessageListenerContainer> listeners = Lists.newArrayList();
+
     private final TProtocolFactory binaryProtocolFactory = new TBinaryProtocol.Factory();
 
     private ThriftProcessor thriftProcessor;
+
     private final RabbitThriftClientIF rabbitThriftClient;
+
     private final RabbitAdmin admin;
 
-    private MessageListener listener = new MessageListener(){
+    private MessageListener listener = new MessageListener() {
 
         @Override
         public void onMessage(Message message) {
 
             log.debug("onMessage:{}", message);
 
-            final TTransport t =  new TMemoryInputTransport(message.getBody());
+            final TTransport t = new TMemoryInputTransport(message.getBody());
 
             try {
-                final Object ret = thriftProcessor.process(
-                        binaryProtocolFactory.getProtocol(t),
-                        binaryProtocolFactory.getProtocol(
-                                new TTransport(){
+                final Object ret = thriftProcessor.process(binaryProtocolFactory.getProtocol(t),
+                                                           binaryProtocolFactory.getProtocol(new TTransport() {
 
-                                    @Override
-                                    public boolean isOpen() {return true;}
+                                                               @Override
+                                                               public boolean isOpen() {
+                                                                   return true;
+                                                               }
 
-                                    @Override
-                                    public void open() throws TTransportException {}
+                                                               @Override
+                                                               public void open() throws TTransportException {
+                                                               }
 
-                                    @Override
-                                    public void close() {}
+                                                               @Override
+                                                               public void close() {
+                                                               }
 
-                                    @Override
-                                    public int read(byte[] buf, int off, int len) throws TTransportException {
-                                        throw new TTransportException("not implemented");
-                                    }
+                                                               @Override
+                                                               public int read(byte[] buf, int off, int len) throws TTransportException {
+                                                                   throw new TTransportException("not implemented");
+                                                               }
 
-                                    @Override
-                                    public void write(byte[] buf, int off, int len)	throws TTransportException {
-                                    }
-                                }),
-                        null);
+                                                               @Override
+                                                               public void write(byte[] buf, int off, int len) throws TTransportException {
+                                                               }
+                                                           }), null);
 
-                if (ret instanceof TApplicationException){
-                    throw new RuntimeException((TApplicationException)ret);
-                }else if (ret instanceof TException){
+                if (ret instanceof TApplicationException) {
+                    throw new RuntimeException((TApplicationException) ret);
+                } else if (ret instanceof TException) {
                     return;
-                }else if (ret instanceof Exception)
-                    throw Throwables.propagate((Exception)ret);
-            } catch (TException e) {
-                throw new RuntimeException((TException)e);
+                } else if (ret instanceof Exception)
+                    throw Throwables.propagate((Exception) ret);
+            }
+            catch (TException e) {
+                throw new RuntimeException((TException) e);
             }
         }
 
     };
 
-    public RabbitThriftClientServerImpl(ConnectionFactory connectionFactory){
+    public RabbitThriftClientServerImpl(ConnectionFactory connectionFactory) {
         this.cf = connectionFactory;
         this.rabbitThriftClient = new RabbitThriftClientImpl(cf);
         this.admin = new RabbitAdmin(cf);
-        //this.admin.setIgnoreDeclarationExceptions(true);
+        // this.admin.setIgnoreDeclarationExceptions(true);
     }
-
 
     @PostConstruct
     public void attachListeners() throws Exception {
@@ -119,51 +123,53 @@ public class RabbitThriftClientServerImpl implements RabbitThriftClientIF{
         thriftProcessor = ThriftProcessor.create(context, rpcRabbitRegistry);
 
         final Set<String> services = Sets.newHashSet();
-        for (ThriftControllerInfo i:rpcRabbitRegistry.getControllers().values())
+        for (ThriftControllerInfo i : rpcRabbitRegistry.getControllers().values())
             services.add(i.getServiceName());
 
-        for(String s: services)
+        for (String s : services)
             addListener(s);
     }
 
     @PreDestroy
     public synchronized void destroy() throws Exception {
-        for (SimpleMessageListenerContainer l :listeners){
+        for (SimpleMessageListenerContainer l : listeners) {
             l.stop();
             l.destroy();
         }
         listeners.clear();
     }
 
-    private synchronized SimpleMessageListenerContainer addListener(final String queueName){
+    private synchronized SimpleMessageListenerContainer addListener(final String queueName) {
 
-        final String bindQueueName =  context.getEnvironment().getProperty("rabbit.rpc." + queueName + ".queue");
+        final String bindQueueName = context.getEnvironment().getProperty("rabbit.rpc." + queueName + ".queue");
 
-        final Queue queue = new Queue(bindQueueName !=null ? bindQueueName : queueName);
+        final Queue queue = new Queue(bindQueueName != null ? bindQueueName : queueName);
         admin.declareQueue(queue);
 
-        if (bindQueueName == null){
-            //Автоматически создавать exchange/binding только для конфигурации по-умолчанию
+        if (bindQueueName == null) {
+            // Автоматически создавать exchange/binding только для конфигурации
+            // по-умолчанию
 
             final String exchangeName = queueName;
 
-            if (!isExchangeExists(exchangeName)){
+            if (!isExchangeExists(exchangeName)) {
                 log.info("Creating exchange '{}'", exchangeName);
                 final FanoutExchange exchange = new FanoutExchange(exchangeName);
                 admin.declareExchange(exchange);
 
                 admin.declareBinding(BindingBuilder.bind(queue).to(exchange));
-            }else{
+            } else {
                 log.debug("Exchange '{}' has been allready existed");
             }
         }
 
-        final SimpleMessageListenerContainer l  = (SimpleMessageListenerContainer)context.getBean("thriftRabbitMessageListener", queue.getName(), cf, listener);
+        final SimpleMessageListenerContainer l = (SimpleMessageListenerContainer) context.getBean("thriftRabbitMessageListener",
+                                                                                                  queue.getName(), cf, listener);
         listeners.add(l);
         return l;
     }
 
-    public boolean isExchangeExists(final String exchange){
+    public boolean isExchangeExists(final String exchange) {
         return admin.getRabbitTemplate().execute(new ChannelCallback<DeclareOk>() {
             @Override
             public DeclareOk doInRabbit(Channel channel) throws Exception {

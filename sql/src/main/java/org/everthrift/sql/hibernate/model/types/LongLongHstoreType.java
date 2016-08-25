@@ -15,12 +15,12 @@ import org.hibernate.usertype.UserType;
 
 import com.google.common.collect.Maps;
 
-@SuppressWarnings({"rawtypes","unchecked"})
+@SuppressWarnings({ "rawtypes", "unchecked" })
 public class LongLongHstoreType implements UserType {
 
     @Override
     public int[] sqlTypes() {
-        return new int[]{Types.OTHER};
+        return new int[] { Types.OTHER };
     }
 
     @Override
@@ -31,28 +31,29 @@ public class LongLongHstoreType implements UserType {
     @Override
     public boolean equals(Object x, Object y) throws HibernateException {
 
-        if (x==null && y == null)
+        if (x == null && y == null)
             return true;
 
-        if ((x == null && y!=null) || (x!=null && y==null))
+        if ((x == null && y != null) || (x != null && y == null))
             return false;
 
-        return ((Map)x).equals(y);
+        return ((Map) x).equals(y);
     }
 
     @Override
     public int hashCode(Object x) throws HibernateException {
 
-        if (x == null || ((Map)x).size() == 0)
+        if (x == null || ((Map) x).size() == 0)
             return 0;
 
-        return ((Map)x).hashCode();
+        return ((Map) x).hashCode();
     }
 
     @Override
-    public Object nullSafeGet(ResultSet rs, String[] names, SharedSessionContractImplementor session, Object owner) throws HibernateException, SQLException {
+    public Object nullSafeGet(ResultSet rs, String[] names, SharedSessionContractImplementor session,
+                              Object owner) throws HibernateException, SQLException {
 
-        final Map<String,String> hstore = (Map<String,String>)rs.getObject(names[0]);
+        final Map<String, String> hstore = (Map<String, String>) rs.getObject(names[0]);
 
         if (hstore == null)
             return null;
@@ -60,8 +61,8 @@ public class LongLongHstoreType implements UserType {
         if (hstore.isEmpty())
             return new HashMap();
 
-        final Map<Long,Long> ret = Maps.newHashMap();
-        for (Map.Entry<String, String> e: hstore.entrySet()){
+        final Map<Long, Long> ret = Maps.newHashMap();
+        for (Map.Entry<String, String> e : hstore.entrySet()) {
             ret.put(Long.parseLong(e.getKey()), Long.parseLong(e.getValue()));
         }
 
@@ -69,13 +70,14 @@ public class LongLongHstoreType implements UserType {
     }
 
     @Override
-    public void nullSafeSet(PreparedStatement st, Object value, int index, SharedSessionContractImplementor session) throws HibernateException, SQLException {
-        st.setString(index, value==null?null:(String)SqlUtils.toSqlParam((Map)value));
+    public void nullSafeSet(PreparedStatement st, Object value, int index,
+                            SharedSessionContractImplementor session) throws HibernateException, SQLException {
+        st.setString(index, value == null ? null : (String) SqlUtils.toSqlParam((Map) value));
     }
 
     @Override
     public Object deepCopy(Object value) throws HibernateException {
-        return value==null ? null :new HashMap((Map)value);
+        return value == null ? null : new HashMap((Map) value);
     }
 
     @Override
@@ -88,7 +90,6 @@ public class LongLongHstoreType implements UserType {
         return deepCopy(cached);
     }
 
-
     @Override
     public Serializable disassemble(final Object o) throws HibernateException {
         return (Serializable) deepCopy(o);
@@ -96,7 +97,7 @@ public class LongLongHstoreType implements UserType {
 
     @Override
     public Object replace(Object original, Object target, Object owner) throws HibernateException {
-        return original == null ? null: deepCopy(original);
+        return original == null ? null : deepCopy(original);
     }
 
 }

@@ -22,7 +22,7 @@ import org.springframework.context.annotation.ClassPathScanningCandidateComponen
 import org.springframework.core.type.filter.AnnotationTypeFilter;
 import org.springframework.util.ClassUtils;
 
-public abstract class ThriftControllerRegistry implements InitializingBean{
+public abstract class ThriftControllerRegistry implements InitializingBean {
 
     public final Logger log = LoggerFactory.getLogger(this.getClass());
 
@@ -30,20 +30,21 @@ public abstract class ThriftControllerRegistry implements InitializingBean{
     protected ApplicationContext applicationContext;
 
     private Map<String, ThriftControllerInfo> map = Collections.synchronizedMap(new HashMap<String, ThriftControllerInfo>());
-    private List<Class<ConnectionStateHandler>> stateHandlers =  new CopyOnWriteArrayList<Class<ConnectionStateHandler>>();
+
+    private List<Class<ConnectionStateHandler>> stateHandlers = new CopyOnWriteArrayList<Class<ConnectionStateHandler>>();
 
     private final Class<? extends Annotation> annotationType;
 
-    public ThriftControllerRegistry(Class<? extends Annotation> annotationType){
-        //scanThriftControllers(annotationType);
+    public ThriftControllerRegistry(Class<? extends Annotation> annotationType) {
+        // scanThriftControllers(annotationType);
         this.annotationType = annotationType;
     }
 
-    public Class<? extends Annotation> getType(){
+    public Class<? extends Annotation> getType() {
         return annotationType;
     }
 
-    private void scanThriftControllers(Class<? extends Annotation> annotationType){
+    private void scanThriftControllers(Class<? extends Annotation> annotationType) {
 
         final ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
 
@@ -51,28 +52,28 @@ public abstract class ThriftControllerRegistry implements InitializingBean{
 
         final List<String> l = applicationContext.getEnvironment().getProperty("thrift.scan", List.class);
 
-        for (String p:l)
+        for (String p : l)
             scanThriftControllers(scanner, p);
     }
 
-
-    private void scanThriftControllers(ClassPathScanningCandidateComponentProvider scanner, String basePath){
-        for (BeanDefinition b : scanner.findCandidateComponents(basePath)){
+    private void scanThriftControllers(ClassPathScanningCandidateComponentProvider scanner, String basePath) {
+        for (BeanDefinition b : scanner.findCandidateComponents(basePath)) {
             final Class cls = ClassUtils.resolveClassName(b.getBeanClassName(), ClassUtils.getDefaultClassLoader());
 
-            if (ConnectionStateHandler.class.isAssignableFrom(cls)){
+            if (ConnectionStateHandler.class.isAssignableFrom(cls)) {
 
-                stateHandlers.add((Class<ConnectionStateHandler>)cls);
+                stateHandlers.add((Class<ConnectionStateHandler>) cls);
 
-            }else if (ThriftController.class.isAssignableFrom(cls)){
-                for (Method m: cls.getMethods()){
-                    if (m.getName().equals("setup")){
-                        try{
+            } else if (ThriftController.class.isAssignableFrom(cls)) {
+                for (Method m : cls.getMethods()) {
+                    if (m.getName().equals("setup")) {
+                        try {
                             final ThriftControllerInfo i = tryRegisterController(cls, m.getParameterTypes()[0]);
                             log.debug("Find ThriftController: {}", i);
                             map.put(i.getName(), i);
                             break;
-                        }catch(IllegalArgumentException e){
+                        }
+                        catch (IllegalArgumentException e) {
                         }
                     }
                 }
@@ -80,60 +81,65 @@ public abstract class ThriftControllerRegistry implements InitializingBean{
         }
     }
 
-    public ThriftControllerInfo getController(String name){
+    public ThriftControllerInfo getController(String name) {
         return map.get(name);
     }
 
-    public Set<String> getContollerNames(){
+    public Set<String> getContollerNames() {
         return map.keySet();
     }
 
-    public Map<String, ThriftControllerInfo> getControllers(){
+    public Map<String, ThriftControllerInfo> getControllers() {
         return map;
     }
 
-    private ThriftControllerInfo tryRegisterController(final Class cls, Class argument){
+    private ThriftControllerInfo tryRegisterController(final Class cls, Class argument) {
 
-        if (!TBase.class.isAssignableFrom(argument)){
+        if (!TBase.class.isAssignableFrom(argument)) {
             log.debug("Result class {} is not TBase", argument.getSimpleName());
-            throw new IllegalArgumentException ();
+            throw new IllegalArgumentException();
         }
 
         final Pattern serviceArgs = Pattern.compile("(.*)\\.([a-zA-Z0-9_-]+)\\.([a-zA-Z0-9_-]+)_args");
         final Matcher m = serviceArgs.matcher(argument.getCanonicalName());
 
-        if (!m.matches()){
+        if (!m.matches()) {
             log.trace("Argument '{}' not matches pattern", argument.getCanonicalName());
-            throw new IllegalArgumentException ();
+            throw new IllegalArgumentException();
         }
 
-        final String service= m.group(2);
+        final String service = m.group(2);
         final String method = m.group(3);
-        final Class<?> resultWrap = ClassUtils.resolveClassName(m.group(1) + "." + m.group(2) + "." + m.group(3) + "_result", ClassUtils.getDefaultClassLoader());
+        final Class<?> resultWrap = ClassUtils.resolveClassName(m.group(1) + "." + m.group(2) + "." + m.group(3) + "_result",
+                                                                ClassUtils.getDefaultClassLoader());
 
         Method findResultFieldByName = null;
 
-        for (Class i: resultWrap.getDeclaredClasses()){
-            if (i.getCanonicalName().endsWith("_Fields")){
+        for (Class i : resultWrap.getDeclaredClasses()) {
+            if (i.getCanonicalName().endsWith("_Fields")) {
 
                 try {
                     findResultFieldByName = i.getMethod("findByName", String.class);
-                } catch (SecurityException e) {
-                    throw new IllegalArgumentException ();
-                } catch (NoSuchMethodException e) {
-                    throw new IllegalArgumentException ();
+                }
+                catch (SecurityException e) {
+                    throw new IllegalArgumentException();
+                }
+                catch (NoSuchMethodException e) {
+                    throw new IllegalArgumentException();
                 }
 
                 break;
             }
         }
 
-        if (findResultFieldByName == null){
+        if (findResultFieldByName == null) {
             log.error("Coudn't find {}._Fields", resultWrap.getCanonicalName());
-            throw new IllegalArgumentException ();
+            throw new IllegalArgumentException();
         }
 
-        final ThriftControllerInfo i = new ThriftControllerInfo(applicationContext, (Class<? extends ThriftController>)cls, service, method, (Class<? extends TBase>)argument, (Class<? extends TBase>)resultWrap, findResultFieldByName);
+        final ThriftControllerInfo i = new ThriftControllerInfo(applicationContext, (Class<? extends ThriftController>) cls, service,
+                                                                method, (Class<? extends TBase>) argument,
+                                                                (Class<? extends TBase>) resultWrap, findResultFieldByName);
         return i;
     }
 

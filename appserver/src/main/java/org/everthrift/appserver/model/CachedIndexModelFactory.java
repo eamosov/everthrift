@@ -12,7 +12,8 @@ import com.google.common.collect.Maps;
 
 import net.sf.ehcache.Cache;
 
-public abstract class CachedIndexModelFactory<PK, ENTITY> extends AbstractCachedModelFactory<PK, List<ENTITY>> implements RoModelFactoryIF<PK, List<ENTITY>> {
+public abstract class CachedIndexModelFactory<PK, ENTITY> extends AbstractCachedModelFactory<PK, List<ENTITY>>
+        implements RoModelFactoryIF<PK, List<ENTITY>> {
 
     /**
      *
@@ -21,11 +22,11 @@ public abstract class CachedIndexModelFactory<PK, ENTITY> extends AbstractCached
      */
     protected abstract Collection<Object[]> loadImpl(Collection<PK> keys);
 
-    public CachedIndexModelFactory(Cache cache){
+    public CachedIndexModelFactory(Cache cache) {
         super(cache);
     }
 
-    public CachedIndexModelFactory(String cache){
+    public CachedIndexModelFactory(String cache) {
         super(cache);
     }
 
@@ -36,8 +37,8 @@ public abstract class CachedIndexModelFactory<PK, ENTITY> extends AbstractCached
             return Collections.emptyList();
 
         final List<ENTITY> ret = Lists.newArrayList();
-        for (Object[] o: c)
-            ret.add((ENTITY)o[0]);
+        for (Object[] o : c)
+            ret.add((ENTITY) o[0]);
 
         return ret;
     }
@@ -51,12 +52,12 @@ public abstract class CachedIndexModelFactory<PK, ENTITY> extends AbstractCached
         final Collection<Object[]> c = loadImpl(ids);
         final Map<PK, List<ENTITY>> ret = Maps.newHashMapWithExpectedSize(ids.size());
 
-        if (!CollectionUtils.isEmpty(c)){
-            for (final Object[] o: c){
-                final ENTITY v = (ENTITY)o[0];
-                final PK k = (PK)o[1];
+        if (!CollectionUtils.isEmpty(c)) {
+            for (final Object[] o : c) {
+                final ENTITY v = (ENTITY) o[0];
+                final PK k = (PK) o[1];
                 List<ENTITY> vv = ret.get(k);
-                if (vv == null){
+                if (vv == null) {
                     vv = Lists.newArrayList();
                     ret.put(k, vv);
                 }
@@ -64,7 +65,7 @@ public abstract class CachedIndexModelFactory<PK, ENTITY> extends AbstractCached
             }
         }
 
-        for (PK id: ids){
+        for (PK id : ids) {
             if (!ret.containsKey(id))
                 ret.put(id, Collections.EMPTY_LIST);
         }

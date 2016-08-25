@@ -45,29 +45,38 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
 
-public class ThriftContext implements Closeable{
+public class ThriftContext implements Closeable {
 
     private static final Logger log = LoggerFactory.getLogger(ThriftContext.class);
 
     private ScheduledExecutorService scheduller;
+
     private ListeningExecutorService executor;
+
     private AsyncRegister async;
+
     private TPersistWsTransport tPersistWsTransport;
+
     private THttpClient tHttpTransport;
 
     private final AtomicInteger nThread = new AtomicInteger(0);
 
     private URI httpUri;
+
     private HttpClient httpClient;
 
     private URI wsUri;
+
     private final TProcessor processor;
+
     private final TProtocolFactory protocolFactory = new TBinaryProtocol.Factory();
+
     private final TTransportFactory transportFactory = new TKnockZlibTransport.Factory();
 
     private final ThreadLocal<InvocationInfo<?>> invocationInfo = new ThreadLocal<InvocationInfo<?>>();
 
     private long wsReconnectTimeout = 5000;
+
     private long wsConnectTimeoutMs = 5000;
 
     private long asyncCallTimeout = 15000;
@@ -75,20 +84,24 @@ public class ThriftContext implements Closeable{
     private boolean opened = false;
 
     private final Object wsIsConnectedLock = new Object();
+
     private boolean wsIsConnected = false;
 
-    public static interface ThriftContextCallback{
+    public static interface ThriftContextCallback {
         void call(ThriftContext tc) throws TException;
+
         void error(Throwable e);
     }
 
     private ThriftContextCallback onWsConnect;
+
     private ThriftContextCallback onWsDisconnect;
 
     private List<ThriftContextCallback> onConnectList = new ArrayList<ThriftContextCallback>();
+
     private List<SettableFuture<ThriftContext>> onConnectFutures = new ArrayList<SettableFuture<ThriftContext>>();
 
-    public static enum Transport{
+    public static enum Transport {
         HTTP,
         WEBSOCKET,
         ANY
@@ -102,7 +115,8 @@ public class ThriftContext implements Closeable{
         this(httpUri, httpClient, wsUri, processor, null, null);
     }
 
-    public ThriftContext(URI httpUri, HttpClient httpClient, URI wsUri, TProcessor processor, ThriftContextCallback onWsConnect, ThriftContextCallback onWsDisconnect) {
+    public ThriftContext(URI httpUri, HttpClient httpClient, URI wsUri, TProcessor processor, ThriftContextCallback onWsConnect,
+                         ThriftContextCallback onWsDisconnect) {
         this.httpUri = httpUri;
         this.httpClient = httpClient;
         this.wsUri = wsUri;
@@ -111,9 +125,9 @@ public class ThriftContext implements Closeable{
         this.onWsDisconnect = onWsDisconnect;
     }
 
-    public synchronized ListenableFuture<ThriftContext> open(boolean withWebsocket) throws TTransportException{
+    public synchronized ListenableFuture<ThriftContext> open(boolean withWebsocket) throws TTransportException {
 
-        scheduller = Executors.newSingleThreadScheduledExecutor(new ThreadFactory(){
+        scheduller = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
 
             @Override
             public Thread newThread(Runnable r) {
@@ -121,90 +135,96 @@ public class ThriftContext implements Closeable{
                 t.setName("ThriftClientScheduller");
                 t.setDaemon(true);
                 return t;
-            }});
+            }
+        });
 
-        executor = MoreExecutors.listeningDecorator(new ThreadPoolExecutor(1, Integer.MAX_VALUE,
-                5L, TimeUnit.SECONDS,
-                new SynchronousQueue<Runnable>(),
-                new ThreadFactory(){
+        executor = MoreExecutors.listeningDecorator(new ThreadPoolExecutor(1, Integer.MAX_VALUE, 5L, TimeUnit.SECONDS,
+                                                                           new SynchronousQueue<Runnable>(), new ThreadFactory() {
 
-            @Override
-            public Thread newThread(Runnable r) {
-                final Thread t = new Thread(r);
-                t.setName("ThriftClientExecutor-" + nThread.incrementAndGet());
-                t.setDaemon(true);
-                return t;
-            }}));
+                                                                               @Override
+                                                                               public Thread newThread(Runnable r) {
+                                                                                   final Thread t = new Thread(r);
+                                                                                   t.setName("ThriftClientExecutor-"
+                                                                                             + nThread.incrementAndGet());
+                                                                                   t.setDaemon(true);
+                                                                                   return t;
+                                                                               }
+                                                                           }));
 
         async = new AsyncRegister(MoreExecutors.listeningDecorator(scheduller));
 
-        if (wsUri !=null)
+        if (wsUri != null)
             createWebSocket();
 
-        if (httpUri !=null)
+        if (httpUri != null)
             openTHttpClient();
 
         opened = true;
 
-        return (wsUri != null && withWebsocket) ? openWebSocket() : null ;
+        return (wsUri != null && withWebsocket) ? openWebSocket() : null;
     }
 
-    private void destroyTHttp(){
-        if (tHttpTransport !=null){
+    private void destroyTHttp() {
+        if (tHttpTransport != null) {
             tHttpTransport.close();
             tHttpTransport = null;
         }
     }
 
-    private void createWebSocket(){
-        tPersistWsTransport =  new TPersistWsTransport(wsUri, processor, protocolFactory, transportFactory, async, scheduller, executor, wsReconnectTimeout, wsConnectTimeoutMs);
-        tPersistWsTransport.setEventsHandler(new TransportEventsIF(){
+    private void createWebSocket() {
+        tPersistWsTransport = new TPersistWsTransport(wsUri, processor, protocolFactory, transportFactory, async, scheduller, executor,
+                                                      wsReconnectTimeout, wsConnectTimeoutMs);
+        tPersistWsTransport.setEventsHandler(new TransportEventsIF() {
 
             @Override
             public void onConnect() {
                 final List<SettableFuture<ThriftContext>> sf;
-                synchronized(wsIsConnectedLock){
+                synchronized (wsIsConnectedLock) {
 
                     sf = new ArrayList<SettableFuture<ThriftContext>>(onConnectFutures.size());
 
                     wsIsConnected = true;
 
-                    if (onWsConnect !=null)
+                    if (onWsConnect != null)
                         try {
                             onWsConnect.call(ThriftContext.this);
-                        } catch (TException e) {
+                        }
+                        catch (TException e) {
                             onWsConnect.error(e);
                         }
 
-                    for(final ThriftContextCallback c : onConnectList)
-                        executor.submit(new Runnable(){
+                    for (final ThriftContextCallback c : onConnectList)
+                        executor.submit(new Runnable() {
                             @Override
                             public void run() {
                                 try {
                                     c.call(ThriftContext.this);
-                                } catch (TException e) {
+                                }
+                                catch (TException e) {
                                     c.error(e);
                                 }
-                            }});
+                            }
+                        });
 
                     sf.addAll(onConnectFutures);
                     onConnectFutures.clear();
                 }
 
-                for (SettableFuture<ThriftContext> f : sf){
+                for (SettableFuture<ThriftContext> f : sf) {
                     f.set(ThriftContext.this);
                 }
             }
 
             @Override
             public void onClose() {
-                synchronized(wsIsConnectedLock){
+                synchronized (wsIsConnectedLock) {
                     wsIsConnected = false;
 
-                    if (onWsDisconnect !=null)
+                    if (onWsDisconnect != null)
                         try {
                             onWsDisconnect.call(ThriftContext.this);
-                        } catch (TException e) {
+                        }
+                        catch (TException e) {
                             onWsDisconnect.error(e);
                         }
                 }
@@ -213,21 +233,22 @@ public class ThriftContext implements Closeable{
             @Override
             public void onConnectError() {
 
-            }});
+            }
+        });
     }
 
-    private void destroyWebsocket(){
+    private void destroyWebsocket() {
         closeWebSocket();
         tPersistWsTransport = null;
     }
 
     @Override
-    public synchronized void close(){
+    public synchronized void close() {
 
         destroyWebsocket();
         destroyTHttp();
 
-        for (InvocationInfo ii: async.popAll()){
+        for (InvocationInfo ii : async.popAll()) {
             ii.setException(new TTransportException(TTransportException.END_OF_FILE, "closed"));
         }
 
@@ -241,7 +262,7 @@ public class ThriftContext implements Closeable{
         opened = false;
     }
 
-    private <R> R httpClientCall(InvocationInfo<R> ii, int seqId) throws TException{
+    private <R> R httpClientCall(InvocationInfo<R> ii, int seqId) throws TException {
 
         log.debug("httpClientCall: ii={}, seqId={}", ii, seqId);
 
@@ -251,18 +272,19 @@ public class ThriftContext implements Closeable{
         final AutoExpandingBufferWriteTransport t = new AutoExpandingBufferWriteTransport(1024, 2);
         final byte[] tmpBuf = new byte[1024];
         int read;
-        try{
-            while ((read = tHttpTransport.read(tmpBuf, 0, tmpBuf.length))> 0){
+        try {
+            while ((read = tHttpTransport.read(tmpBuf, 0, tmpBuf.length)) > 0) {
                 t.write(tmpBuf, 0, read);
             }
-        }catch(TTransportException e){
+        }
+        catch (TTransportException e) {
         }
 
         t.close();
         return ii.setReply(t.getBuf().array(), 0, t.getPos(), protocolFactory);
     }
 
-    private <R> InvocationInfo<R> websocketCall(InvocationInfo<R> ii, int seqId, long tmMs) throws TTransportException{
+    private <R> InvocationInfo<R> websocketCall(InvocationInfo<R> ii, int seqId, long tmMs) throws TTransportException {
 
         log.debug("websocketCall: ii={}, seqId={}", ii, seqId);
 
@@ -277,7 +299,7 @@ public class ThriftContext implements Closeable{
         return ii;
     }
 
-    public <T> T onIface(Class<T> cls){
+    public <T> T onIface(Class<T> cls) {
         return onIface(cls, Transport.ANY);
     }
 
@@ -288,32 +310,37 @@ public class ThriftContext implements Closeable{
      * @return сервис
      */
     @SuppressWarnings("unchecked")
-    public <T> T onIface(Class<T> cls, final Transport use){
-        return (T)Proxy.newProxyInstance(ThriftContext.class.getClassLoader(), new Class[]{cls}, new ServiceIfaceProxy(cls, new InvocationCallback(){
+    public <T> T onIface(Class<T> cls, final Transport use) {
+        return (T) Proxy.newProxyInstance(ThriftContext.class.getClassLoader(), new Class[] { cls },
+                                          new ServiceIfaceProxy(cls, new InvocationCallback() {
 
-            @Override
-            @SuppressWarnings("rawtypes")
-            public Object call(InvocationInfo ii) throws NullResult, TException {
+                                              @Override
+                                              @SuppressWarnings("rawtypes")
+                                              public Object call(InvocationInfo ii) throws NullResult, TException {
 
-                if (!opened)
-                    throw new TTransportException(TTransportException.NOT_OPEN);
+                                                  if (!opened)
+                                                      throw new TTransportException(TTransportException.NOT_OPEN);
 
-                final int seqId = async.nextSeqId();
+                                                  final int seqId = async.nextSeqId();
 
-                if ((use == Transport.WEBSOCKET || use == Transport.ANY) && tPersistWsTransport !=null && tPersistWsTransport.isConnected()){
-                    try {
-                        return websocketCall(ii, seqId, asyncCallTimeout).get();
-                    } catch (InterruptedException e) {
-                        throw new TTransportException(e);
-                    } catch (ExecutionException e){
-                        throw new TTransportException(e);
-                    }
-                }else if ((use == Transport.HTTP || use == Transport.ANY) && tHttpTransport !=null){
-                    return httpClientCall(ii, seqId);
-                }else{
-                    throw new TTransportException(TTransportException.NOT_OPEN);
-                }
-            }}));
+                                                  if ((use == Transport.WEBSOCKET || use == Transport.ANY) && tPersistWsTransport != null
+                                                      && tPersistWsTransport.isConnected()) {
+                                                      try {
+                                                          return websocketCall(ii, seqId, asyncCallTimeout).get();
+                                                      }
+                                                      catch (InterruptedException e) {
+                                                          throw new TTransportException(e);
+                                                      }
+                                                      catch (ExecutionException e) {
+                                                          throw new TTransportException(e);
+                                                      }
+                                                  } else if ((use == Transport.HTTP || use == Transport.ANY) && tHttpTransport != null) {
+                                                      return httpClientCall(ii, seqId);
+                                                  } else {
+                                                      throw new TTransportException(TTransportException.NOT_OPEN);
+                                                  }
+                                              }
+                                          }));
     }
 
     /**
@@ -324,131 +351,143 @@ public class ThriftContext implements Closeable{
      * @return сервис
      */
     @SuppressWarnings("unchecked")
-    public <T> T onAsyncIface(Class<T> cls, final long tmMs, final Transport use){
-        return (T)Proxy.newProxyInstance(ThriftContext.class.getClassLoader(), new Class[]{cls}, new ServiceAsyncIfaceProxy(cls, new InvocationCallback(){
+    public <T> T onAsyncIface(Class<T> cls, final long tmMs, final Transport use) {
+        return (T) Proxy.newProxyInstance(ThriftContext.class.getClassLoader(), new Class[] { cls },
+                                          new ServiceAsyncIfaceProxy(cls, new InvocationCallback() {
 
-            @Override
-            @SuppressWarnings("rawtypes")
-            public Object call(final InvocationInfo ii) throws NullResult, TException {
+                                              @Override
+                                              @SuppressWarnings("rawtypes")
+                                              public Object call(final InvocationInfo ii) throws NullResult, TException {
 
-                if (!opened)
-                    throw new TTransportException(TTransportException.NOT_OPEN);
+                                                  if (!opened)
+                                                      throw new TTransportException(TTransportException.NOT_OPEN);
 
-                final int seqId = async.nextSeqId();
+                                                  final int seqId = async.nextSeqId();
 
-                final ListenableFuture<T> future;
+                                                  final ListenableFuture<T> future;
 
-                if ((use == Transport.WEBSOCKET || use == Transport.ANY) && tPersistWsTransport !=null && tPersistWsTransport.isConnected()){
-                    future =  websocketCall(ii, seqId, tmMs);
+                                                  if ((use == Transport.WEBSOCKET || use == Transport.ANY) && tPersistWsTransport != null
+                                                      && tPersistWsTransport.isConnected()) {
+                                                      future = websocketCall(ii, seqId, tmMs);
 
-                }else if ((use == Transport.HTTP || use == Transport.ANY) && tHttpTransport !=null){
+                                                  } else if ((use == Transport.HTTP || use == Transport.ANY) && tHttpTransport != null) {
 
-                    future = executor.submit(new Callable<T>(){
+                                                      future = executor.submit(new Callable<T>() {
 
-                        @Override
-                        public T call() throws Exception {
-                            return (T)httpClientCall(ii, seqId);
-                        }});
-                }else{
-                    throw new TTransportException(TTransportException.NOT_OPEN);
-                }
+                                                          @Override
+                                                          public T call() throws Exception {
+                                                              return (T) httpClientCall(ii, seqId);
+                                                          }
+                                                      });
+                                                  } else {
+                                                      throw new TTransportException(TTransportException.NOT_OPEN);
+                                                  }
 
-                if (ii.asyncMethodCallback !=null)
-                    Futures.addCallback(future, new FutureCallback<T>(){
+                                                  if (ii.asyncMethodCallback != null)
+                                                      Futures.addCallback(future, new FutureCallback<T>() {
 
-                        @Override
-                        public void onSuccess(T result) {
-                            ii.asyncMethodCallback.onComplete(result);
-                        }
+                                                          @Override
+                                                          public void onSuccess(T result) {
+                                                              ii.asyncMethodCallback.onComplete(result);
+                                                          }
 
-                        @Override
-                        public void onFailure(Throwable t) {
-                            ii.asyncMethodCallback.onError(t instanceof Exception ? (Exception)t : new Exception(t));
-                        }}, executor);
+                                                          @Override
+                                                          public void onFailure(Throwable t) {
+                                                              ii.asyncMethodCallback.onError(t instanceof Exception ? (Exception) t
+                                                                                                                    : new Exception(t));
+                                                          }
+                                                      }, executor);
 
-                throw new NullResult();
+                                                  throw new NullResult();
 
-            }}));
+                                              }
+                                          }));
 
     }
 
     /**
-     * Получение ссылку на сервис для асинхронных вызовов.
-     * Вызом любого метода такого сервиса регистрирует вызов и аргументы.
-     * Непосредственно для асинхронной отправки данных и получение ответа нужно вызвать метод result
+     * Получение ссылку на сервис для асинхронных вызовов. Вызом любого метода
+     * такого сервиса регистрирует вызов и аргументы. Непосредственно для
+     * асинхронной отправки данных и получение ответа нужно вызвать метод result
      * Удобно комбинировать два этих метода в одной строке, н-р:
      *
-     *   tc.result(rc.asyncService(AccountService.IFace.class).getMe(), 1000, Transport.ANY);
+     * tc.result(rc.asyncService(AccountService.IFace.class).getMe(), 1000,
+     * Transport.ANY);
      *
      * @param cls интерфейс сервиса
      * @return сервис
      */
     @SuppressWarnings("unchecked")
-    public <T> T onIfaceAsAsync(Class<T> cls){
+    public <T> T onIfaceAsAsync(Class<T> cls) {
 
-        return (T)Proxy.newProxyInstance(ThriftContext.class.getClassLoader(), new Class[]{cls}, new ServiceIfaceProxy(cls, new InvocationCallback(){
+        return (T) Proxy.newProxyInstance(ThriftContext.class.getClassLoader(), new Class[] { cls },
+                                          new ServiceIfaceProxy(cls, new InvocationCallback() {
 
-            @Override
-            @SuppressWarnings("rawtypes")
-            public Object call(InvocationInfo ii) throws NullResult {
-                invocationInfo.set(ii);
-                throw new NullResult();
-            }}));
+                                              @Override
+                                              @SuppressWarnings("rawtypes")
+                                              public Object call(InvocationInfo ii) throws NullResult {
+                                                  invocationInfo.set(ii);
+                                                  throw new NullResult();
+                                              }
+                                          }));
     }
 
-    public <R> ListenableFuture<R> result(R unused) throws TTransportException{
+    public <R> ListenableFuture<R> result(R unused) throws TTransportException {
         return result(unused, asyncCallTimeout, Transport.ANY);
     }
 
     /**
-     * Отправка на сервер данных и получение ответа (асинхронно) для асинхронного сервиса,
-     * полученного ранее через метод asyncService(Class cls).
+     * Отправка на сервер данных и получение ответа (асинхронно) для
+     * асинхронного сервиса, полученного ранее через метод asyncService(Class
+     * cls).
      *
-     * @param unused	не используется, служет для удобной записи в одну строчку result(asyncService(..), ...)
+     * @param unused не используется, служет для удобной записи в одну строчку
+     * result(asyncService(..), ...)
      * @param tmMs
      * @param use
      * @return
      * @throws TTransportException
      */
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    public <R> ListenableFuture<R> result(R unused, long tmMs, Transport use) throws TTransportException{
+    public <R> ListenableFuture<R> result(R unused, long tmMs, Transport use) throws TTransportException {
 
         if (!opened)
             throw new TTransportException(TTransportException.NOT_OPEN);
 
-        final InvocationInfo<R> ii = (InvocationInfo)invocationInfo.get();
+        final InvocationInfo<R> ii = (InvocationInfo) invocationInfo.get();
         final int seqId = async.nextSeqId();
 
-        if ((use == Transport.WEBSOCKET || use == Transport.ANY) && tPersistWsTransport !=null && tPersistWsTransport.isConnected()){
+        if ((use == Transport.WEBSOCKET || use == Transport.ANY) && tPersistWsTransport != null && tPersistWsTransport.isConnected()) {
             return websocketCall(ii, seqId, tmMs);
-        }else if ((use == Transport.HTTP || use == Transport.ANY) && tHttpTransport !=null){
+        } else if ((use == Transport.HTTP || use == Transport.ANY) && tHttpTransport != null) {
 
-            return executor.submit(new Callable<R>(){
+            return executor.submit(new Callable<R>() {
 
                 @Override
                 public R call() throws Exception {
                     return httpClientCall(ii, seqId);
-                }});
-        }else{
+                }
+            });
+        } else {
             throw new TTransportException(TTransportException.NOT_OPEN);
         }
     }
 
-    private void openTHttpClient() throws TTransportException{
+    private void openTHttpClient() throws TTransportException {
         tHttpTransport = new THttpClient(httpUri.toString(), httpClient);
     }
 
-    public ListenableFuture<ThriftContext> openWebSocket() throws TTransportException{
-        synchronized(this){
-            if (tPersistWsTransport!=null){
+    public ListenableFuture<ThriftContext> openWebSocket() throws TTransportException {
+        synchronized (this) {
+            if (tPersistWsTransport != null) {
                 tPersistWsTransport.open();
             }
         }
 
-        synchronized(wsIsConnectedLock){
-            if (wsIsConnected){
+        synchronized (wsIsConnectedLock) {
+            if (wsIsConnected) {
                 return Futures.immediateFuture(this);
-            }else{
+            } else {
                 final SettableFuture<ThriftContext> f = SettableFuture.create();
                 onConnectFutures.add(f);
                 return f;
@@ -456,8 +495,8 @@ public class ThriftContext implements Closeable{
         }
     }
 
-    public synchronized void closeWebSocket(){
-        if (tPersistWsTransport!=null)
+    public synchronized void closeWebSocket() {
+        if (tPersistWsTransport != null)
             tPersistWsTransport.close();
     }
 
@@ -469,7 +508,7 @@ public class ThriftContext implements Closeable{
         destroyTHttp();
         this.httpUri = httpUri;
         this.httpClient = client;
-        if (opened && httpUri !=null)
+        if (opened && httpUri != null)
             openTHttpClient();
     }
 
@@ -483,13 +522,13 @@ public class ThriftContext implements Closeable{
      * @param wsUri
      * @throws TTransportException
      */
-    public ListenableFuture<ThriftContext> setWsUri(URI wsUri) throws TTransportException{
+    public ListenableFuture<ThriftContext> setWsUri(URI wsUri) throws TTransportException {
 
-        synchronized (this){
-            if (!Objects.equals(this.wsUri, wsUri)){
+        synchronized (this) {
+            if (!Objects.equals(this.wsUri, wsUri)) {
                 destroyWebsocket();
                 this.wsUri = wsUri;
-                if (opened && wsUri !=null)
+                if (opened && wsUri != null)
                     createWebSocket();
             }
         }
@@ -530,23 +569,26 @@ public class ThriftContext implements Closeable{
     }
 
     /**
-     * Вызвать callback сразу после открытия websocket или немедленно, если webcoket уже открыт
-     * callback всегда вызывается асинхронно вызвавшему потоку
+     * Вызвать callback сразу после открытия websocket или немедленно, если
+     * webcoket уже открыт callback всегда вызывается асинхронно вызвавшему
+     * потоку
      * @param callback
      */
-    public void onWsConnect(final ThriftContextCallback callback){
+    public void onWsConnect(final ThriftContextCallback callback) {
 
-        synchronized(wsIsConnectedLock){
+        synchronized (wsIsConnectedLock) {
             if (wsIsConnected)
-                executor.submit(new Runnable(){
+                executor.submit(new Runnable() {
                     @Override
                     public void run() {
                         try {
                             callback.call(ThriftContext.this);
-                        } catch (TException e) {
+                        }
+                        catch (TException e) {
                             callback.error(e);
                         }
-                    }});
+                    }
+                });
 
             onConnectList.add(callback);
         }

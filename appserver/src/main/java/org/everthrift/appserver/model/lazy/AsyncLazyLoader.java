@@ -9,12 +9,14 @@ import com.google.common.util.concurrent.ListenableFuture;
 public interface AsyncLazyLoader<K> extends LazyLoader<K> {
 
     @Override
-    default int process(List<K> entities){
+    default int process(List<K> entities) {
         try {
             return processAsync(entities).get();
-        } catch (ExecutionException e) {
+        }
+        catch (ExecutionException e) {
             throw Throwables.propagate(e.getCause());
-        } catch (InterruptedException e) {
+        }
+        catch (InterruptedException e) {
             throw Throwables.propagate(e);
         }
     }

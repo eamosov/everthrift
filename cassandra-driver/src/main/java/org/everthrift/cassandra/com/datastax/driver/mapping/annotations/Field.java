@@ -55,8 +55,8 @@ public @interface Field {
     /**
      * A custom codec that will be used to serialize and deserialize the column.
      *
-     * @return the codec's class. It must have a no-argument constructor (the mapper
-     * will create an instance and cache it).
+     * @return the codec's class. It must have a no-argument constructor (the
+     * mapper will create an instance and cache it).
      */
     Class<? extends TypeCodec<?>> codec() default Defaults.NoCodec.class;
 }

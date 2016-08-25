@@ -11,7 +11,7 @@ public class ApplicationPropertiesModelFactory extends PgSqlModelFactory<String,
         super(null, ApplicationPropertiesModel.class);
     }
 
-    public List<ApplicationPropertiesModel> findByPersistanceName(String persistanceName){
+    public List<ApplicationPropertiesModel> findByPersistanceName(String persistanceName) {
         return this.getDao().findByCriteria(Restrictions.eq("persistanceName", persistanceName), null);
     }
 

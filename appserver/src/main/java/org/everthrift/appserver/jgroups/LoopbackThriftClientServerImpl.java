@@ -50,7 +50,8 @@ public class LoopbackThriftClientServerImpl extends ClusterThriftClientImpl {
     }
 
     @Override
-    public <T> ListenableFuture<Map<Address, Reply<T>>> call(Collection<Address> dest, Collection<Address> exclusionList, InvocationInfo tInfo, Options... options) throws TException {
+    public <T> ListenableFuture<Map<Address, Reply<T>>> call(Collection<Address> dest, Collection<Address> exclusionList,
+                                                             InvocationInfo tInfo, Options... options) throws TException {
 
         if (isLoopback(options) == false)
             return Futures.immediateFuture(Collections.emptyMap());
@@ -61,7 +62,7 @@ public class LoopbackThriftClientServerImpl extends ClusterThriftClientImpl {
         final TProtocol outP = binary.getProtocol(out);
 
         thriftProcessor.process(inP, outP);
-        return Futures.immediateFuture(Collections.singletonMap(new Address(){
+        return Futures.immediateFuture(Collections.singletonMap(new Address() {
 
             @Override
             public void writeTo(DataOutput out) throws Exception {
@@ -87,11 +88,12 @@ public class LoopbackThriftClientServerImpl extends ClusterThriftClientImpl {
             @Override
             public int size() {
                 return 0;
-            }}, new ReplyImpl<T>( () -> (T)tInfo.setReply(out, binary))));
+            }
+        }, new ReplyImpl<T>(() -> (T) tInfo.setReply(out, binary))));
     }
 
     @PostConstruct
-    private void postConstruct(){
+    private void postConstruct() {
         thriftProcessor = ThriftProcessor.create(applicationContext, rpcJGroupsRegistry);
     }
 
@@ -107,6 +109,5 @@ public class LoopbackThriftClientServerImpl extends ClusterThriftClientImpl {
     public JChannel getCluster() {
         throw new NotImplementedException();
     }
-
 
 }

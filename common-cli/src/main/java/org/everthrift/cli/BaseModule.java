@@ -18,7 +18,9 @@ public abstract class BaseModule<T extends TServiceClient> {
     public static final Comparator VERSION_COMPARATOR = new VersionComparator();
 
     protected String infonodeHost;
+
     protected int infonodePort;
+
     protected String jsonConfig;
 
     public void init(String host, int port) {
@@ -26,14 +28,13 @@ public abstract class BaseModule<T extends TServiceClient> {
         this.infonodePort = port;
     }
 
-    public void init(String clusterConfJson){
+    public void init(String clusterConfJson) {
         this.jsonConfig = clusterConfJson;
     }
 
-    private String lastVersion(Collection<String> versions){
-        return  Collections.<String>max(versions, VERSION_COMPARATOR);
+    private String lastVersion(Collection<String> versions) {
+        return Collections.<String> max(versions, VERSION_COMPARATOR);
     }
-
 
     public T getClient(String host, int port) throws TTransportException {
         return newClient(host, port);
@@ -57,9 +58,12 @@ public abstract class BaseModule<T extends TServiceClient> {
             while ((o1iter.hasNext() && o2iter.hasNext()) && result != 0) {
                 result = Integer.compare(o1iter.next(), o2iter.next());
             }
-            if (result != 0) return result;
-            else if (o1iter.hasNext()) return 1;
-            else if (o2iter.hasNext()) return -1;
+            if (result != 0)
+                return result;
+            else if (o1iter.hasNext())
+                return 1;
+            else if (o2iter.hasNext())
+                return -1;
             return result;
         }
 
@@ -71,7 +75,6 @@ public abstract class BaseModule<T extends TServiceClient> {
             }
             return res;
         }
-
 
     }
 

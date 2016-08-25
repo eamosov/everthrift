@@ -57,16 +57,20 @@ public @interface Table {
     boolean caseSensitiveTable() default false;
 
     /**
-     * The consistency level to use for the write operations provded by the {@link Mapper} class.
+     * The consistency level to use for the write operations provded by the
+     * {@link Mapper} class.
      *
-     * @return the consistency level to use for the write operations provded by the {@link Mapper} class.
+     * @return the consistency level to use for the write operations provded by
+     * the {@link Mapper} class.
      */
     String writeConsistency() default "";
 
     /**
-     * The consistency level to use for the read operations provded by the {@link Mapper} class.
+     * The consistency level to use for the read operations provded by the
+     * {@link Mapper} class.
      *
-     * @return the consistency level to use for the read operations provded by the {@link Mapper} class.
+     * @return the consistency level to use for the read operations provded by
+     * the {@link Mapper} class.
      */
     String readConsistency() default "";
 

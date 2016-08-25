@@ -35,8 +35,11 @@ import com.datastax.driver.core.TypeCodec;
 public class Result<T> implements Iterable<T> {
 
     private final ResultSet rs;
+
     private final EntityMapper<T> mapper;
+
     private final ProtocolVersion protocolVersion;
+
     private final boolean useAlias;
 
     Result(ResultSet rs, EntityMapper<T> mapper, ProtocolVersion protocolVersion) {
@@ -91,10 +94,11 @@ public class Result<T> implements Iterable<T> {
     }
 
     /**
-     * Returns the next result (i.e. the entity corresponding to the next row
-     * in the result set).
+     * Returns the next result (i.e. the entity corresponding to the next row in
+     * the result set).
      *
-     * @return the next result in this mapped result set or null if it is exhausted.
+     * @return the next result in this mapped result set or null if it is
+     * exhausted.
      */
     public T one() {
         Row row = rs.one();
@@ -102,8 +106,8 @@ public class Result<T> implements Iterable<T> {
     }
 
     /**
-     * Returns all the remaining results (entities) in this mapped result set
-     * as a list.
+     * Returns all the remaining results (entities) in this mapped result set as
+     * a list.
      *
      * @return a list containing the remaining results of this mapped result
      * set. The returned list is empty if and only the result set is exhausted.
@@ -124,7 +128,8 @@ public class Result<T> implements Iterable<T> {
      * So this iterator will consume results and after a full iteration, the
      * mapped result set (and underlying {@code ResultSet}) will be empty.
      * <p/>
-     * The returned iterator does not support the {@link Iterator#remove} method.
+     * The returned iterator does not support the {@link Iterator#remove}
+     * method.
      *
      * @return an iterator that will consume and return the remaining rows of
      * this mapped result set.

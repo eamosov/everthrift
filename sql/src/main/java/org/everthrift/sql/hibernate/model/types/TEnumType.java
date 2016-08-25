@@ -19,17 +19,18 @@ public abstract class TEnumType<T extends TEnum> implements UserType {
 
     private final Method findByValue;
 
-    public TEnumType(){
+    public TEnumType() {
         try {
             findByValue = getTEnumClass().getMethod("findByValue", Integer.TYPE);
-        } catch (NoSuchMethodException | SecurityException e) {
+        }
+        catch (NoSuchMethodException | SecurityException e) {
             throw new RuntimeException(e);
         }
     }
 
     @Override
     public int[] sqlTypes() {
-        return new int[]{Types.INTEGER};
+        return new int[] { Types.INTEGER };
     }
 
     @Override
@@ -39,10 +40,10 @@ public abstract class TEnumType<T extends TEnum> implements UserType {
 
     @Override
     public boolean equals(Object x, Object y) throws HibernateException {
-        if (x==null && y == null)
+        if (x == null && y == null)
             return true;
 
-        if ((x == null && y!=null) || (x!=null && y==null))
+        if ((x == null && y != null) || (x != null && y == null))
             return false;
 
         return x.equals(y);
@@ -57,26 +58,29 @@ public abstract class TEnumType<T extends TEnum> implements UserType {
     }
 
     @Override
-    public Object nullSafeGet(ResultSet rs, String[] names, SharedSessionContractImplementor session, Object owner) throws HibernateException, SQLException {
+    public Object nullSafeGet(ResultSet rs, String[] names, SharedSessionContractImplementor session,
+                              Object owner) throws HibernateException, SQLException {
 
-        final Integer value  = (Integer)rs.getObject(names[0]);
+        final Integer value = (Integer) rs.getObject(names[0]);
 
         if (value == null)
             return null;
 
         try {
             return findByValue.invoke(null, value.intValue());
-        } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+        }
+        catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
             throw new SQLException(e);
         }
     }
 
     @Override
-    public void nullSafeSet(PreparedStatement st, Object value, int index, SharedSessionContractImplementor session) throws HibernateException, SQLException {
+    public void nullSafeSet(PreparedStatement st, Object value, int index,
+                            SharedSessionContractImplementor session) throws HibernateException, SQLException {
         if (value == null)
             st.setNull(index, java.sql.Types.INTEGER);
         else
-            st.setInt(index, ((TEnum)value).getValue());
+            st.setInt(index, ((TEnum) value).getValue());
     }
 
     @Override

@@ -11,5 +11,6 @@ import java.lang.annotation.Target;
 @Repeatable(UniqueKeys.class)
 public @interface Unique {
     String value();
+
     String clause() default "";
 }

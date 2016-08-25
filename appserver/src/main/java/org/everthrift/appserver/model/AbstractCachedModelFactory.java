@@ -18,16 +18,16 @@ import net.sf.ehcache.Element;
 import net.sf.ehcache.Status;
 import net.sf.ehcache.loader.CacheLoader;
 
-public abstract class AbstractCachedModelFactory<PK,ENTITY> extends RoModelFactoryImpl<PK, ENTITY>{
+public abstract class AbstractCachedModelFactory<PK, ENTITY> extends RoModelFactoryImpl<PK, ENTITY> {
 
-    @Autowired(required=false)
+    @Autowired(required = false)
     private CacheManager cm;
 
     private Cache cache;
 
     protected final String cacheName;
 
-    private class CacheLoaderDecorator implements CacheLoader{
+    private class CacheLoaderDecorator implements CacheLoader {
 
         private final CacheLoader orig;
 
@@ -69,7 +69,7 @@ public abstract class AbstractCachedModelFactory<PK,ENTITY> extends RoModelFacto
 
         @Override
         public Object load(Object arg0, Object arg1) {
-            return ((CacheLoader)arg1).load(arg0);
+            return ((CacheLoader) arg1).load(arg0);
         }
 
         @Override
@@ -82,11 +82,11 @@ public abstract class AbstractCachedModelFactory<PK,ENTITY> extends RoModelFacto
 
         @Override
         public Map loadAll(Collection arg0, Object arg1) {
-            return ((CacheLoader)arg1).loadAll(arg0);
+            return ((CacheLoader) arg1).loadAll(arg0);
         }
     }
 
-    private CacheLoader _loader = new CacheLoader(){
+    private CacheLoader _loader = new CacheLoader() {
         @Override
         public CacheLoader clone(Ehcache arg0) throws CloneNotSupportedException {
             throw new CloneNotSupportedException();
@@ -119,7 +119,7 @@ public abstract class AbstractCachedModelFactory<PK,ENTITY> extends RoModelFacto
 
         @Override
         public Object load(Object arg0) throws CacheException {
-            return fetchEntityById((PK)arg0);
+            return fetchEntityById((PK) arg0);
         }
 
         @Override
@@ -133,7 +133,7 @@ public abstract class AbstractCachedModelFactory<PK,ENTITY> extends RoModelFacto
             if (CollectionUtils.isEmpty(keys))
                 return Collections.emptyMap();
 
-            if (keys.size() == 1){
+            if (keys.size() == 1) {
                 final Object key = keys.iterator().next();
                 return Collections.singletonMap(key, load(key));
             }
@@ -144,20 +144,19 @@ public abstract class AbstractCachedModelFactory<PK,ENTITY> extends RoModelFacto
 
     /**
      * Конструктор создания фабрики не как Spring-bean
-     * */
-    public AbstractCachedModelFactory(Cache cache){
+     */
+    public AbstractCachedModelFactory(Cache cache) {
         super();
 
-        if (cache !=null){
+        if (cache != null) {
             this.cacheName = cache.getName();
             this.cache = cache;
-        }else{
+        } else {
             cacheName = null;
         }
 
         _afterPropertiesSet();
     }
-
 
     /**
      * Spring-bean
@@ -168,13 +167,13 @@ public abstract class AbstractCachedModelFactory<PK,ENTITY> extends RoModelFacto
      * @param optimisticUpdateFailExceptions
      * @param keyExtractor
      */
-    public AbstractCachedModelFactory(String cacheName){
+    public AbstractCachedModelFactory(String cacheName) {
         super();
         this.cacheName = cacheName;
     }
 
-    private void _afterPropertiesSet(){
-        if (cacheName !=null && cache == null){
+    private void _afterPropertiesSet() {
+        if (cacheName != null && cache == null) {
             if (cm == null)
                 throw new RuntimeException("CacheManager is NULL while cacheName=" + cacheName);
 
@@ -183,91 +182,96 @@ public abstract class AbstractCachedModelFactory<PK,ENTITY> extends RoModelFacto
                 throw new RuntimeException("Cache with name '" + cacheName + "' not found");
         }
 
-        if (cache !=null){
+        if (cache != null) {
             final List<CacheLoader> origLoaders = cache.getRegisteredCacheLoaders();
-            if (CollectionUtils.isEmpty(origLoaders)){
+            if (CollectionUtils.isEmpty(origLoaders)) {
                 cache.registerCacheLoader(new CacheLoaderDecorator(null));
-            }else if (origLoaders.size() == 1 && origLoaders.get(0).getClass().equals(CacheLoaderDecorator.class)){
+            } else if (origLoaders.size() == 1 && origLoaders.get(0).getClass().equals(CacheLoaderDecorator.class)) {
                 log.debug("CacheLoaderDecorator has been allready set");
-            }else{
+            } else {
                 log.error("origLoaders:{}", origLoaders);
                 throw new RuntimeException("unexpected cache loader");
             }
-            //cache.registerCacheLoader(new CacheLoaderDecorator(CollectionUtils.isEmpty(origLoaders) ? null : origLoaders.get(0)));
-        }else{
+            // cache.registerCacheLoader(new
+            // CacheLoaderDecorator(CollectionUtils.isEmpty(origLoaders) ? null
+            // : origLoaders.get(0)));
+        } else {
             log.info("cache is disabled");
         }
     }
 
     @PostConstruct
-    private void afterPropertiesSet(){
+    private void afterPropertiesSet() {
         _afterPropertiesSet();
     }
 
-    public void invalidate(PK id){
-        if (cache!=null)
+    public void invalidate(PK id) {
+        if (cache != null)
             cache.remove(id);
     }
 
-    public void invalidateLocal(PK id){
-        if (cache!=null)
+    public void invalidateLocal(PK id) {
+        if (cache != null)
             cache.remove(id, true);
     }
 
-    //	/**
-    //	 * Использовать этот метод нужно с большой осторожностью, т.к. если далее объект, положенный в кэш, будет изменен (н-р в результате lazyLoad),
-    //	 * то такие изменения проникнут и в кеш. Хорошим решением является всегда передавать в этот метод свежую копию объекта
-    //	 *
-    //	 * По аналогичным причинам нужно быть уверенным, что передается чистый объект, не испорченный каким-нибудь load***
-    //	 * @param e
-    //	 */
-    //	public void refresh(ENTITY e){
-    //		if (cache!=null){
-    //			final Element el = new Element(e.getPk(), e);
-    //			cache.put(el);
-    //		}
-    //	}
+    // /**
+    // * Использовать этот метод нужно с большой осторожностью, т.к. если далее
+    // объект, положенный в кэш, будет изменен (н-р в результате lazyLoad),
+    // * то такие изменения проникнут и в кеш. Хорошим решением является всегда
+    // передавать в этот метод свежую копию объекта
+    // *
+    // * По аналогичным причинам нужно быть уверенным, что передается чистый
+    // объект, не испорченный каким-нибудь load***
+    // * @param e
+    // */
+    // public void refresh(ENTITY e){
+    // if (cache!=null){
+    // final Element el = new Element(e.getPk(), e);
+    // cache.put(el);
+    // }
+    // }
 
     public void invalidate(Collection<PK> ids) {
-        if (cache!=null)
+        if (cache != null)
             cache.removeAll(ids);
     }
 
     protected abstract Map<PK, ENTITY> fetchEntityByIdAsMap(Collection<PK> ids);
+
     protected abstract ENTITY fetchEntityById(PK id);
 
     @Override
-    final public ENTITY findEntityById(PK id){
+    final public ENTITY findEntityById(PK id) {
         if (id == null)
             return null;
 
-        if (cache == null){
-            return (ENTITY)fetchEntityById(id);
+        if (cache == null) {
+            return (ENTITY) fetchEntityById(id);
         }
 
         final Element e = cache.getWithLoader(id, null, _loader);
         if (e == null || e.getObjectValue() == null)
             return null;
 
-        return (ENTITY)e.getObjectValue();
+        return (ENTITY) e.getObjectValue();
     }
 
-
     @Override
-    final public Map<PK, ENTITY> findEntityByIdAsMap(Collection<PK> ids){
+    final public Map<PK, ENTITY> findEntityByIdAsMap(Collection<PK> ids) {
         if (CollectionUtils.isEmpty(ids))
             return Collections.emptyMap();
 
-        if (cache == null){
-            if (ids.size() == 1){
+        if (cache == null) {
+            if (ids.size() == 1) {
                 final PK id = ids.iterator().next();
                 return Collections.singletonMap(id, fetchEntityById(id));
-            }else{
+            } else {
                 return fetchEntityByIdAsMap(ids);
             }
         }
 
-        return (Map)cache.getAllWithLoader(ids, _loader);
+        return (Map) cache.getAllWithLoader(ids, _loader);
     }
 
     final public CacheManager getCm() {
@@ -278,7 +282,7 @@ public abstract class AbstractCachedModelFactory<PK,ENTITY> extends RoModelFacto
         this.cm = cm;
     }
 
-    final public Cache getCache(){
+    final public Cache getCache() {
         return cache;
     }
 
@@ -286,13 +290,13 @@ public abstract class AbstractCachedModelFactory<PK,ENTITY> extends RoModelFacto
         this.cache = cache;
         _afterPropertiesSet();
     }
-    
-    protected void setCreatedAt(ENTITY e){
+
+    protected void setCreatedAt(ENTITY e) {
         CreatedAtIF.setCreatedAt(e);
     }
-    
-    protected void setUpdatedAt(ENTITY e){
+
+    protected void setUpdatedAt(ENTITY e) {
         CreatedAtIF.setUpdatedAt(e);
     }
-    
+
 }

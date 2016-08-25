@@ -41,6 +41,7 @@ public class MigrationProcessor {
     private ConfigurableApplicationContext context;
 
     public static final String GET_EXIST_MIGRATIONS_FROM_DB_QUERY = "select * from yii_migration where version in ( :versions ) ";
+
     private static Comparator<String> BY_VERSION_DATETIME = new Comparator<String>() {
         SimpleDateFormat sdf = new SimpleDateFormat("'m'yyMMdd_HHmmss");
 
@@ -49,12 +50,14 @@ public class MigrationProcessor {
             long l1, l2 = 0;
             try {
                 l1 = sdf.parse(o1.substring(0, 14)).getTime() / 1000;
-            } catch (ParseException e) {
+            }
+            catch (ParseException e) {
                 l1 = Long.MAX_VALUE;
             }
             try {
                 l2 = sdf.parse(o2.substring(0, 14)).getTime() / 1000;
-            } catch (ParseException e) {
+            }
+            catch (ParseException e) {
                 l1 = Long.MAX_VALUE;
             }
             return Long.compare(l1, l2);
@@ -62,13 +65,14 @@ public class MigrationProcessor {
     };
 
     private JdbcTemplate jdbcTemplate;
+
     private Map<String, org.everthrift.sql.migration.AbstractMigration> availableMigrations = new TreeMap(MigrationProcessor.BY_VERSION_DATETIME);
 
     public MigrationProcessor(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
 
-    public Map<String,Result> process(boolean force, List<String> migrationNames, boolean down) {
+    public Map<String, Result> process(boolean force, List<String> migrationNames, boolean down) {
         findMigrations(migrationNames);
         if (down) {
             retainExistedInDb(new ArrayList(availableMigrations.keySet()));
@@ -85,7 +89,7 @@ public class MigrationProcessor {
         scanner.addIncludeFilter(new AnnotationTypeFilter(Migration.class));
         final String root = context.getEnvironment().getProperty("sqlmigrator.root");
 
-        if (root ==null)
+        if (root == null)
             throw new RuntimeException("sqlmigrator.root is NULL");
 
         for (String s : root.split(",")) {
@@ -105,7 +109,7 @@ public class MigrationProcessor {
     private Map<String, AbstractMigration> scanMigrationClasses(ClassPathScanningCandidateComponentProvider scanner, String basePath) {
 
         final Map<String, AbstractMigration> migrations4Path = new HashMap<>();
-        final DefaultListableBeanFactory beanFactory = (DefaultListableBeanFactory)context.getBeanFactory();
+        final DefaultListableBeanFactory beanFactory = (DefaultListableBeanFactory) context.getBeanFactory();
 
         for (BeanDefinition b : scanner.findCandidateComponents(basePath)) {
 
@@ -119,13 +123,15 @@ public class MigrationProcessor {
                 throw new RuntimeException("cound't get bean:" + cls.getSimpleName());
 
             migration.setJdbcTemplate(jdbcTemplate);
-            migrations4Path.put(((Migration)cls.getAnnotation(Migration.class)).version(), migration);
+            migrations4Path.put(((Migration) cls.getAnnotation(Migration.class)).version(), migration);
         }
         return migrations4Path;
     }
 
     public enum Result {
-        SUCCESS, FAIL, SKIP;
+        SUCCESS,
+        FAIL,
+        SKIP;
 
         private Exception e;
 
@@ -144,8 +150,8 @@ public class MigrationProcessor {
         }
     }
 
-    private Map<String,Result> executeMigrations(boolean force, boolean down) {
-        Map<String,Result> migrationResults = new HashMap<>();
+    private Map<String, Result> executeMigrations(boolean force, boolean down) {
+        Map<String, Result> migrationResults = new HashMap<>();
         for (String key : availableMigrations.keySet()) {
             ConsoleUtils.printString("%s \n", key);
         }
@@ -158,11 +164,14 @@ public class MigrationProcessor {
         if (force) {
             for (Map.Entry<String, AbstractMigration> entry : availableMigrations.entrySet()) {
                 try {
-                    //ConsoleUtils.printString(entry.getKey() + "\t\t" + executeMigration(entry, down) + " \n");
-                    migrationResults.put(entry.getKey(),executeMigration(entry, down));
-                } catch (Exception e) {
-                    //ConsoleUtils.printString(entry.getKey() + "\t\t" + Result.FAIL.setMessage(e.getMessage()) + " \n");
-                    migrationResults.put(entry.getKey(),Result.FAIL.setException(e));
+                    // ConsoleUtils.printString(entry.getKey() + "\t\t" +
+                    // executeMigration(entry, down) + " \n");
+                    migrationResults.put(entry.getKey(), executeMigration(entry, down));
+                }
+                catch (Exception e) {
+                    // ConsoleUtils.printString(entry.getKey() + "\t\t" +
+                    // Result.FAIL.setMessage(e.getMessage()) + " \n");
+                    migrationResults.put(entry.getKey(), Result.FAIL.setException(e));
                     break;
                 }
             }
@@ -192,12 +201,13 @@ public class MigrationProcessor {
             return;
         }
         NamedParameterJdbcTemplate namedJdbcTemplate = new NamedParameterJdbcTemplate(jdbcTemplate);
-        namedJdbcTemplate.query(MigrationProcessor.GET_EXIST_MIGRATIONS_FROM_DB_QUERY, Collections.singletonMap("versions", migrationVersions), new RowMapper<Object>() {
-            @Override
-            public Object mapRow(ResultSet rs, int rowNum) throws SQLException {
-                return availableMigrations.remove(rs.getString("version"));
-            }
-        });
+        namedJdbcTemplate.query(MigrationProcessor.GET_EXIST_MIGRATIONS_FROM_DB_QUERY,
+                                Collections.singletonMap("versions", migrationVersions), new RowMapper<Object>() {
+                                    @Override
+                                    public Object mapRow(ResultSet rs, int rowNum) throws SQLException {
+                                        return availableMigrations.remove(rs.getString("version"));
+                                    }
+                                });
     }
 
     private void retainExistedInDb(final List<String> migrationVersions) {
@@ -208,12 +218,13 @@ public class MigrationProcessor {
         tmpMigrations.putAll(availableMigrations);
         availableMigrations.clear();
         final NamedParameterJdbcTemplate namedJdbcTemplate = new NamedParameterJdbcTemplate(jdbcTemplate);
-        namedJdbcTemplate.query(MigrationProcessor.GET_EXIST_MIGRATIONS_FROM_DB_QUERY, Collections.singletonMap("versions", migrationVersions), new RowMapper<Object>() {
-            @Override
-            public Object mapRow(ResultSet rs, int rowNum) throws SQLException {
-                return availableMigrations.put(rs.getString("version"), tmpMigrations.get(rs.getString("version")));
-            }
-        });
+        namedJdbcTemplate.query(MigrationProcessor.GET_EXIST_MIGRATIONS_FROM_DB_QUERY,
+                                Collections.singletonMap("versions", migrationVersions), new RowMapper<Object>() {
+                                    @Override
+                                    public Object mapRow(ResultSet rs, int rowNum) throws SQLException {
+                                        return availableMigrations.put(rs.getString("version"), tmpMigrations.get(rs.getString("version")));
+                                    }
+                                });
     }
 
     public void migrate() throws Exception {

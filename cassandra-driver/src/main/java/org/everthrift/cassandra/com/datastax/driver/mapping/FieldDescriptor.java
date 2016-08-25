@@ -9,10 +9,15 @@ import com.google.common.reflect.TypeToken;
 public class FieldDescriptor {
 
     private String columnName;
+
     private String fieldName;
+
     private Kind kind;
+
     private TypeToken<Object> fieldType;
+
     private TypeCodec<Object> customCodec;
+
     private ColumnScenario columnScenario;
 
     public static String newAlias(FieldDescriptor field, int columnNumber) {
@@ -20,7 +25,8 @@ public class FieldDescriptor {
 
     }
 
-    public FieldDescriptor(String columnName, String fieldName, Kind kind, ColumnScenario columnScenario, TypeToken<Object> fieldType, TypeCodec<Object> customCodec) {
+    public FieldDescriptor(String columnName, String fieldName, Kind kind, ColumnScenario columnScenario, TypeToken<Object> fieldType,
+                           TypeCodec<Object> customCodec) {
         super();
         this.columnName = columnName;
         this.fieldName = fieldName;

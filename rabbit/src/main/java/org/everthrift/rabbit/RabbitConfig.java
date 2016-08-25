@@ -14,18 +14,20 @@ import org.springframework.context.annotation.Scope;
 public class RabbitConfig {
 
     @Bean
-    public RpcRabbitRegistry rpcRabbitRegistry(){
+    public RpcRabbitRegistry rpcRabbitRegistry() {
         return new RpcRabbitRegistry();
     }
 
     @Bean
-    public ConnectionFactory rabbitConnectionFactory(@Value("${rabbit.host}") String rabbitHost, @Value("${rabbit.port:5672}") String rabbitPort){
+    public ConnectionFactory rabbitConnectionFactory(@Value("${rabbit.host}") String rabbitHost,
+                                                     @Value("${rabbit.port:5672}") String rabbitPort) {
         return new CachingConnectionFactory(rabbitHost, Integer.parseInt(rabbitPort));
     }
 
     @Bean
     @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-    public SimpleMessageListenerContainer thriftRabbitMessageListener(String destination, ConnectionFactory connectionFactory, MessageListener listener){
+    public SimpleMessageListenerContainer thriftRabbitMessageListener(String destination, ConnectionFactory connectionFactory,
+                                                                      MessageListener listener) {
         final SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
 
         container.setConnectionFactory(connectionFactory);
@@ -37,7 +39,7 @@ public class RabbitConfig {
     }
 
     @Bean
-    public RabbitThriftClientServerImpl rabbitThriftClientServerImpl(ConnectionFactory connectionFactory){
+    public RabbitThriftClientServerImpl rabbitThriftClientServerImpl(ConnectionFactory connectionFactory) {
         return new RabbitThriftClientServerImpl(connectionFactory);
     }
 

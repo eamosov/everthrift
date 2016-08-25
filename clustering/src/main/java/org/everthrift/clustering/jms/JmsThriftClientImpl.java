@@ -24,12 +24,13 @@ import org.springframework.jms.support.converter.MessageConverter;
 public class JmsThriftClientImpl implements JmsThriftClientIF {
 
     private JmsTemplate jmsTemplate;
-    private TProtocolFactory  protocolFactory = new TBinaryProtocol.Factory();
 
-    public JmsThriftClientImpl(final ConnectionFactory jmsConnectionFactory){
+    private TProtocolFactory protocolFactory = new TBinaryProtocol.Factory();
+
+    public JmsThriftClientImpl(final ConnectionFactory jmsConnectionFactory) {
 
         jmsTemplate = new JmsTemplate(jmsConnectionFactory);
-        jmsTemplate.setMessageConverter(new MessageConverter(){
+        jmsTemplate.setMessageConverter(new MessageConverter() {
 
             @SuppressWarnings("rawtypes")
             @Override
@@ -44,28 +45,36 @@ public class JmsThriftClientImpl implements JmsThriftClientIF {
                 bm.setStringProperty("method", ii.fullMethodName);
                 bm.setStringProperty("args", ii.args.toString());
 
-                ii.buildCall(0, new TTransport(){
+                ii.buildCall(0, new TTransport() {
 
                     @Override
-                    public boolean isOpen() {return true;}
+                    public boolean isOpen() {
+                        return true;
+                    }
 
                     @Override
-                    public void open() throws TTransportException {}
+                    public void open() throws TTransportException {
+                    }
 
                     @Override
-                    public void close() {}
+                    public void close() {
+                    }
 
                     @Override
-                    public int read(byte[] buf, int off, int len) throws TTransportException { throw new TTransportException("not implemented");}
+                    public int read(byte[] buf, int off, int len) throws TTransportException {
+                        throw new TTransportException("not implemented");
+                    }
 
                     @Override
                     public void write(byte[] buf, int off, int len) throws TTransportException {
                         try {
                             bm.writeBytes(buf, off, len);
-                        } catch (JMSException e) {
+                        }
+                        catch (JMSException e) {
                             throw new TTransportException(e);
                         }
-                    }}, protocolFactory);
+                    }
+                }, protocolFactory);
 
                 return bm;
             }
@@ -73,23 +82,25 @@ public class JmsThriftClientImpl implements JmsThriftClientIF {
             @Override
             public Object fromMessage(Message message) throws JMSException, MessageConversionException {
                 return null;
-            }});
+            }
+        });
 
     }
 
-
     @Override
     @SuppressWarnings("unchecked")
-    public <T> T onIface(Class<T> cls){
+    public <T> T onIface(Class<T> cls) {
 
-        return (T)Proxy.newProxyInstance(ThriftProxyFactory.class.getClassLoader(), new Class[]{cls}, new ServiceIfaceProxy(cls, new InvocationCallback(){
+        return (T) Proxy.newProxyInstance(ThriftProxyFactory.class.getClassLoader(), new Class[] { cls },
+                                          new ServiceIfaceProxy(cls, new InvocationCallback() {
 
-            @SuppressWarnings("rawtypes")
-            @Override
-            public Object call(InvocationInfo ii) throws NullResult {
-                jmsTemplate.convertAndSend(ii.serviceName, ii);
-                throw new NullResult();
-            }}));
+                                              @SuppressWarnings("rawtypes")
+                                              @Override
+                                              public Object call(InvocationInfo ii) throws NullResult {
+                                                  jmsTemplate.convertAndSend(ii.serviceName, ii);
+                                                  throw new NullResult();
+                                              }
+                                          }));
     }
 
 }

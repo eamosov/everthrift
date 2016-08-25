@@ -18,14 +18,15 @@ public class RecursiveWalker implements WalkerIF {
 
     public static String SCENARIO_DEFAULT = "default";
 
-
     private final static TBaseScannerFactory scannerFactory = new TBaseScannerFactory();
-    private static final String defaultFields[] = new String[]{"*"};
+
+    private static final String defaultFields[] = new String[] { "*" };
 
     private final Registry registry;
+
     private final String scenario;
 
-    private final TBaseScanHandler tBaseScanHandler = new TBaseScanHandler(){
+    private final TBaseScanHandler tBaseScanHandler = new TBaseScanHandler() {
 
         @Override
         public void apply(Object parent, Object o) {
@@ -39,7 +40,7 @@ public class RecursiveWalker implements WalkerIF {
 
             final TBaseScanner s = scannerFactory.create(cls, scenario);
 
-            if (s == null){
+            if (s == null) {
                 log.error("Coudn't get TBaseScanner for class={} and scenario={}", o.getClass().getSimpleName(), scenario);
                 return;
             }
@@ -48,7 +49,7 @@ public class RecursiveWalker implements WalkerIF {
         }
     };
 
-    public RecursiveWalker(Registry registry, String scenario){
+    public RecursiveWalker(Registry registry, String scenario) {
         this.registry = registry;
         this.scenario = scenario;
     }
@@ -59,32 +60,32 @@ public class RecursiveWalker implements WalkerIF {
         recursive(o);
     }
 
-    private void recursive(final Object o){
+    private void recursive(final Object o) {
 
         if (o == null)
             return;
 
-        if (o instanceof RandomAccess){
-            final List _l = (List)o;
-            for (int i=0; i<_l.size(); i++){
+        if (o instanceof RandomAccess) {
+            final List _l = (List) o;
+            for (int i = 0; i < _l.size(); i++) {
                 final Object j = _l.get(i);
-                if (j!=null)
+                if (j != null)
                     recursive(j);
             }
 
-        }else if (o instanceof Iterable){
-            for (Object i: ((Iterable)o))
-                if (i!=null)
+        } else if (o instanceof Iterable) {
+            for (Object i : ((Iterable) o))
+                if (i != null)
                     recursive(i);
-        }else if (o instanceof Map){
-            for (Object i: ((Map)o).values()){
-                if (i!=null)
+        } else if (o instanceof Map) {
+            for (Object i : ((Map) o).values()) {
+                if (i != null)
                     recursive(i);
             }
-        }else{
+        } else {
 
-            if (o instanceof TBase){
-                scannerFactory.create((Class)o.getClass(), scenario).scan(null, (TBase)o, tBaseScanHandler, registry);
+            if (o instanceof TBase) {
+                scannerFactory.create((Class) o.getClass(), scenario).scan(null, (TBase) o, tBaseScanHandler, registry);
             }
 
         }

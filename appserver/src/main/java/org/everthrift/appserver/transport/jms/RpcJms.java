@@ -12,6 +12,6 @@ import org.springframework.stereotype.Component;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Component
-@Scope(value=ConfigurableBeanFactory.SCOPE_PROTOTYPE)
+@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public @interface RpcJms {
 }

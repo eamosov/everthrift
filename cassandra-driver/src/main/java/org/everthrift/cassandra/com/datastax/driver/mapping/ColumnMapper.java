@@ -25,31 +25,40 @@ import com.google.common.reflect.TypeToken;
 
 public abstract class ColumnMapper<T> {
 
-    public enum Kind {PARTITION_KEY, CLUSTERING_COLUMN, REGULAR, COMPUTED}
+    public enum Kind {
+        PARTITION_KEY,
+        CLUSTERING_COLUMN,
+        REGULAR,
+        COMPUTED
+    }
 
     ;
 
     private final String columnName;
+
     private final String alias;
+
     protected final String fieldName;
+
     /**
      * The type of the Java field in the mapped class
      */
     protected final TypeToken<Object> fieldType;
+
     protected final Kind kind;
+
     protected final TypeCodec<Object> customCodec;
+
     protected final ColumnScenario columnScenario;
 
     protected ColumnMapper(FieldDescriptor field, AtomicInteger columnCounter) {
         this.columnName = field.getColumnName();
-        this.alias = (columnCounter != null)
-                ? FieldDescriptor.newAlias(field, columnCounter.incrementAndGet())
-                        : null;
-                this.fieldName = field.getFieldName();
-                this.fieldType = field.getFieldType();
-                this.kind = field.getKind();
-                this.customCodec = field.getCustomCodec();
-                this.columnScenario = field.getColumnScenario();
+        this.alias = (columnCounter != null) ? FieldDescriptor.newAlias(field, columnCounter.incrementAndGet()) : null;
+        this.fieldName = field.getFieldName();
+        this.fieldType = field.getFieldType();
+        this.kind = field.getKind();
+        this.customCodec = field.getCustomCodec();
+        this.columnScenario = field.getColumnScenario();
     }
 
     public abstract Object getValue(T entity);
@@ -57,9 +66,7 @@ public abstract class ColumnMapper<T> {
     public abstract void setValue(T entity, Object value);
 
     public String getColumnName() {
-        return kind == Kind.COMPUTED
-                ? columnName
-                        : Metadata.quote(columnName);
+        return kind == Kind.COMPUTED ? columnName : Metadata.quote(columnName);
     }
 
     public String getAlias() {
@@ -77,7 +84,7 @@ public abstract class ColumnMapper<T> {
         return fieldType;
     }
 
-    public String getColumnNameUnquoted(){
+    public String getColumnNameUnquoted() {
         return columnName;
     }
 

@@ -1,7 +1,8 @@
 package io.smartcat.migration.exceptions;
 
 /**
- * Schema agreement exception which wraps exceptions while schema is propagated on all nodes.
+ * Schema agreement exception which wraps exceptions while schema is propagated
+ * on all nodes.
  */
 public class SchemaAgreementException extends MigrationException {
 
@@ -16,7 +17,8 @@ public class SchemaAgreementException extends MigrationException {
     }
 
     /**
-     * Create schema agreement exception with provided message and original cause.
+     * Create schema agreement exception with provided message and original
+     * cause.
      * @param message Message for this exception
      * @param throwable Throwable wrapping original cause
      */

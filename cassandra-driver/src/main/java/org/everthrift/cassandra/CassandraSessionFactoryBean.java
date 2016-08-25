@@ -5,9 +5,10 @@ import org.springframework.beans.factory.FactoryBean;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
 
-public class CassandraSessionFactoryBean implements FactoryBean<Session>{
+public class CassandraSessionFactoryBean implements FactoryBean<Session> {
 
     private final Cluster cluster;
+
     private final String keyspace;
 
     public CassandraSessionFactoryBean(Cluster cluster, String keyspace) {

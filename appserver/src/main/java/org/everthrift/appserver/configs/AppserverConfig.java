@@ -24,17 +24,17 @@ import com.google.common.util.concurrent.MoreExecutors;
 @ImportResource("classpath:app-context.xml")
 public class AppserverConfig {
 
-    public AppserverConfig(){
+    public AppserverConfig() {
 
     }
 
     @Bean
-    public ListeningExecutorService listeningCallerRunsBoundQueueExecutor(@Qualifier("callerRunsBoundQueueExecutor") ThreadPoolTaskExecutor executor){
+    public ListeningExecutorService listeningCallerRunsBoundQueueExecutor(@Qualifier("callerRunsBoundQueueExecutor") ThreadPoolTaskExecutor executor) {
         return MoreExecutors.listeningDecorator(executor.getThreadPoolExecutor());
     }
 
     @Bean
-    public ListeningScheduledExecutorService listeningScheduledExecutorService(@Qualifier("myScheduler") ThreadPoolTaskScheduler scheduler){
+    public ListeningScheduledExecutorService listeningScheduledExecutorService(@Qualifier("myScheduler") ThreadPoolTaskScheduler scheduler) {
         return MoreExecutors.listeningDecorator(scheduler.getScheduledThreadPoolExecutor());
     }
 
@@ -45,29 +45,29 @@ public class AppserverConfig {
     }
 
     @Bean
-    public LocalEventBus LocalEventBus(){
+    public LocalEventBus LocalEventBus() {
         return new LocalEventBus();
     }
 
     @Bean
-    public ThriftControllerJmx ThriftControllerJmx(){
+    public ThriftControllerJmx ThriftControllerJmx() {
         return new ThriftControllerJmx();
     }
 
     @Bean
-    @Scope(value=ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-    public GetNodeConfigurationController getNodeConfigurationController(){
+    @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
+    public GetNodeConfigurationController getNodeConfigurationController() {
         return new GetNodeConfigurationController();
     }
 
     @Bean
-    @Scope(value=ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-    public OnNodeConfigurationController getOnNodeConfigurationController(){
+    @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
+    public OnNodeConfigurationController getOnNodeConfigurationController() {
         return new OnNodeConfigurationController();
     }
 
     @Bean
-    public Boolean testMode(@Value("${app.testMode:false}") String value){
+    public Boolean testMode(@Value("${app.testMode:false}") String value) {
         return Boolean.parseBoolean(value);
-    }    
+    }
 }

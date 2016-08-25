@@ -24,14 +24,14 @@ public class EntityInterceptor extends EmptyInterceptor {
 
     public static final EntityInterceptor INSTANCE = new EntityInterceptor();
 
-    private final ThreadLocal<Set<Pair<String, Serializable>>> dirty = new ThreadLocal<Set<Pair<String, Serializable>>>(){
+    private final ThreadLocal<Set<Pair<String, Serializable>>> dirty = new ThreadLocal<Set<Pair<String, Serializable>>>() {
         @Override
-        protected Set<Pair<String, Serializable>> initialValue(){
+        protected Set<Pair<String, Serializable>> initialValue() {
             return Sets.newHashSet();
         }
     };
 
-    private EntityInterceptor(){
+    private EntityInterceptor() {
 
     }
 
@@ -47,35 +47,30 @@ public class EntityInterceptor extends EmptyInterceptor {
         dirty.get().clear();
     }
 
-    public boolean isDirty(Object entity){
-        return dirty.get().contains(Pair.create(entity.getClass().getName(), ((DaoEntityIF)entity).getPk()));
+    public boolean isDirty(Object entity) {
+        return dirty.get().contains(Pair.create(entity.getClass().getName(), ((DaoEntityIF) entity).getPk()));
     }
 
     @Override
-    public boolean onFlushDirty(
-            Object entity,
-            Serializable id,
-            Object[] currentState,
-            Object[] previousState,
-            String[] propertyNames,
-            Type[] types) {
+    public boolean onFlushDirty(Object entity, Serializable id, Object[] currentState, Object[] previousState, String[] propertyNames,
+                                Type[] types) {
 
         if (log.isDebugEnabled())
             log.debug("onFlushDirty, class={}, object={}, id={}", entity.getClass().getSimpleName(), System.identityHashCode(entity), id);
 
-        dirty.get().add(Pair.create(entity.getClass().getName(), ((DaoEntityIF)entity).getPk()));
+        dirty.get().add(Pair.create(entity.getClass().getName(), ((DaoEntityIF) entity).getPk()));
 
         boolean updated = false;
 
-        if (entity instanceof UpdatedAtIF){
+        if (entity instanceof UpdatedAtIF) {
 
             final int idx = ArrayUtils.indexOf(propertyNames, "updatedAt");
-            if (idx>0){
+            if (idx > 0) {
                 final Long now = Long.valueOf(LongTimestamp.now());
-                if (!now.equals(currentState[idx])){
+                if (!now.equals(currentState[idx])) {
                     currentState[idx] = now;
                     updated = true;
-                }else{
+                } else {
                     updated = false;
                 }
             }

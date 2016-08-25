@@ -17,10 +17,10 @@ public class CustomTypeFactory {
 
     private static final Map<Class, Class<? extends UserType>> map = Maps.newIdentityHashMap();
 
-    public static synchronized Class<? extends UserType> create(Class javaType, Class<? extends UserType> prototype){
+    public static synchronized Class<? extends UserType> create(Class javaType, Class<? extends UserType> prototype) {
 
         Class<? extends UserType> cls = map.get(javaType);
-        if (cls !=null)
+        if (cls != null)
             return cls;
 
         cls = compile(javaType, prototype);
@@ -29,14 +29,17 @@ public class CustomTypeFactory {
     }
 
     @SuppressWarnings("unchecked")
-    private static Class<? extends UserType> compile(Class javaType, Class<? extends UserType> prototype){
+    private static Class<? extends UserType> compile(Class javaType, Class<? extends UserType> prototype) {
         final ClassPool pool = ClassPool.getDefault();
         final CtClass cc = pool.makeClass(javaType.getCanonicalName() + "HibernateType");
         try {
             cc.setSuperclass(pool.get(prototype.getName()));
-            cc.addMethod(CtMethod.make("public Class returnedClass() { try { return (Class)(Thread.currentThread().getContextClassLoader().loadClass(\"" + javaType.getName() + "\")); } catch (ClassNotFoundException e) {throw new RuntimeException(e);}}", cc));
+            cc.addMethod(CtMethod.make("public Class returnedClass() { try { return (Class)(Thread.currentThread().getContextClassLoader().loadClass(\""
+                                       + javaType.getName() + "\")); } catch (ClassNotFoundException e) {throw new RuntimeException(e);}}",
+                                       cc));
             return cc.toClass();
-        } catch (CannotCompileException | NotFoundException e) {
+        }
+        catch (CannotCompileException | NotFoundException e) {
             throw new RuntimeException(e);
         }
     }

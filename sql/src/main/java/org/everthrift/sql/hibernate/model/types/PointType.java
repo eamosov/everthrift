@@ -21,9 +21,11 @@ import org.springframework.beans.BeanUtils;
 public abstract class PointType implements UserType {
 
     final Constructor create;
+
     final Constructor copy;
 
     private final PropertyDescriptor x;
+
     private final PropertyDescriptor y;
 
     private final static Pattern pointPattern = Pattern.compile("POINT\\(([0-9.-]+) ([0-9.-]+)\\)");
@@ -39,8 +41,8 @@ public abstract class PointType implements UserType {
         create = returnedClass().getConstructor();
         copy = returnedClass().getConstructor(returnedClass());
 
-        x = BeanUtils.getPropertyDescriptor(returnedClass(),"x");
-        y = BeanUtils.getPropertyDescriptor(returnedClass(),"y");
+        x = BeanUtils.getPropertyDescriptor(returnedClass(), "x");
+        y = BeanUtils.getPropertyDescriptor(returnedClass(), "y");
     }
 
     public static boolean isCompatible(final Class cls) {
@@ -58,7 +60,8 @@ public abstract class PointType implements UserType {
             d.x.getWriteMethod().invoke(o, 0.0);
             d.y.getWriteMethod().invoke(o, 0.0);
             return true;
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             return false;
         }
     }
@@ -83,9 +86,8 @@ public abstract class PointType implements UserType {
     }
 
     @Override
-    public Object nullSafeGet(ResultSet rs, String[] names,
-            SharedSessionContractImplementor session, Object owner)
-                    throws HibernateException, SQLException {
+    public Object nullSafeGet(ResultSet rs, String[] names, SharedSessionContractImplementor session,
+                              Object owner) throws HibernateException, SQLException {
 
         final Object value = rs.getObject(names[0]);
 
@@ -94,16 +96,15 @@ public abstract class PointType implements UserType {
 
         final Matcher m = pointPattern.matcher(value.toString());
         if (!m.matches())
-            throw new HibernateException("invalid POINT presentation:"
-                    + value.toString());
+            throw new HibernateException("invalid POINT presentation:" + value.toString());
 
         Object ret;
         try {
             ret = create.newInstance();
             x.getWriteMethod().invoke(ret, Double.parseDouble(m.group(1)));
             y.getWriteMethod().invoke(ret, Double.parseDouble(m.group(2)));
-        } catch (InstantiationException | IllegalAccessException
-                | IllegalArgumentException | InvocationTargetException e) {
+        }
+        catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
             throw new SQLException(e);
         }
 
@@ -112,7 +113,7 @@ public abstract class PointType implements UserType {
 
     @Override
     public void nullSafeSet(PreparedStatement st, Object value, int index,
-            SharedSessionContractImplementor session) throws HibernateException, SQLException {
+                            SharedSessionContractImplementor session) throws HibernateException, SQLException {
 
         if (value == null) {
             st.setNull(index, java.sql.Types.OTHER);
@@ -120,11 +121,12 @@ public abstract class PointType implements UserType {
         }
 
         try {
-            final Double _x = (Double)x.getReadMethod().invoke(value);
-            final Double _y = (Double)y.getReadMethod().invoke(value);
+            final Double _x = (Double) x.getReadMethod().invoke(value);
+            final Double _y = (Double) y.getReadMethod().invoke(value);
 
             st.setString(index, String.format(Locale.ENGLISH, "SRID=4326;POINT(%f %f)", _x, _y));
-        } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+        }
+        catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
             throw new HibernateException(e);
         }
     }
@@ -137,8 +139,8 @@ public abstract class PointType implements UserType {
 
         try {
             return copy.newInstance(value);
-        } catch (InstantiationException | IllegalAccessException
-                | IllegalArgumentException | InvocationTargetException e) {
+        }
+        catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
             return new HibernateException(e);
         }
     }
@@ -159,8 +161,7 @@ public abstract class PointType implements UserType {
     }
 
     @Override
-    public Object replace(Object original, Object target, Object owner)
-            throws HibernateException {
+    public Object replace(Object original, Object target, Object owner) throws HibernateException {
         return original == null ? null : deepCopy(original);
     }
 

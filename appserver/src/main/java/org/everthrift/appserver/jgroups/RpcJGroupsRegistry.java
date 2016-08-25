@@ -5,13 +5,13 @@ import org.everthrift.services.thrift.cluster.Node;
 
 import com.google.common.collect.Lists;
 
-public class RpcJGroupsRegistry extends ThriftControllerRegistry{
+public class RpcJGroupsRegistry extends ThriftControllerRegistry {
 
     public RpcJGroupsRegistry() {
         super(RpcJGroups.class);
     }
 
-    public Node getNodeConfiguration(){
+    public Node getNodeConfiguration() {
         return new Node(Lists.newArrayList(getContollerNames()));
     }
 }

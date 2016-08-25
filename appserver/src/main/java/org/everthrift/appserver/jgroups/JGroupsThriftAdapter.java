@@ -14,11 +14,11 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 
-public class JGroupsThriftAdapter implements InitializingBean{
+public class JGroupsThriftAdapter implements InitializingBean {
 
     public static Logger log = LoggerFactory.getLogger(JGroupsThriftAdapter.class);
 
-    public static final String HEADER_JRESPONSE="jResponse";
+    public static final String HEADER_JRESPONSE = "jResponse";
 
     @Autowired
     private ApplicationContext applicationContext;
@@ -30,9 +30,9 @@ public class JGroupsThriftAdapter implements InitializingBean{
 
     private ThriftProcessor thriftProcessor;
 
-    public Object handleIn(Message<MessageWrapper> m){
+    public Object handleIn(Message<MessageWrapper> m) {
 
-        log.debug("handleIn: {}, adapter={}, processor={}", new Object[]{m, this, thriftProcessor});
+        log.debug("handleIn: {}, adapter={}, processor={}", new Object[] { m, this, thriftProcessor });
 
         if (m.getHeaders().getReplyChannel() == null)
             log.warn("reply channel is null for message: {}", m);
@@ -40,31 +40,31 @@ public class JGroupsThriftAdapter implements InitializingBean{
         try {
             final MessageWrapper w = m.getPayload();
             w.setMessageHeaders(m.getHeaders());
-            w.setOutChannel(applicationContext.getBean((String)m.getHeaders().getReplyChannel(), MessageChannel.class));
+            w.setOutChannel(applicationContext.getBean((String) m.getHeaders().getReplyChannel(), MessageChannel.class));
 
             return thriftProcessor.process(new DefaultTProtocolSupport(w, protocolFactory), null);
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             log.error("Exception while execution thrift processor:", e);
             return null;
         }
     }
 
-    public Object handleOut(Message<MessageWrapper> m) throws Exception{
+    public Object handleOut(Message<MessageWrapper> m) throws Exception {
 
-        log.debug("handleOut: {}, adapter={}, processor={}", new Object[]{m, this, thriftProcessor});
+        log.debug("handleOut: {}, adapter={}, processor={}", new Object[] { m, this, thriftProcessor });
 
         final MessageWrapper w = m.getPayload();
 
-        final Response jResponse = (Response)w.removeAttribute(HEADER_JRESPONSE);
+        final Response jResponse = (Response) w.removeAttribute(HEADER_JRESPONSE);
 
-        if (jResponse!=null)
+        if (jResponse != null)
             jResponse.send(w, false);
         else
             log.debug("jResponse IS NULL, no answer has been sended");
 
         return null;
     }
-
 
     @Override
     public void afterPropertiesSet() throws Exception {

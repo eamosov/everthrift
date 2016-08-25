@@ -20,12 +20,13 @@ import org.springframework.amqp.support.converter.MessageConverter;
 public class RabbitThriftClientImpl implements RabbitThriftClientIF {
 
     private RabbitTemplate rabbitTemplate;
-    private TProtocolFactory  protocolFactory = new TBinaryProtocol.Factory();
 
-    public RabbitThriftClientImpl(final ConnectionFactory rabbitConnectionFactory){
+    private TProtocolFactory protocolFactory = new TBinaryProtocol.Factory();
+
+    public RabbitThriftClientImpl(final ConnectionFactory rabbitConnectionFactory) {
 
         rabbitTemplate = new RabbitTemplate(rabbitConnectionFactory);
-        rabbitTemplate.setMessageConverter(new MessageConverter(){
+        rabbitTemplate.setMessageConverter(new MessageConverter() {
 
             @SuppressWarnings("rawtypes")
             @Override
@@ -36,8 +37,8 @@ public class RabbitThriftClientImpl implements RabbitThriftClientIF {
 
                 final InvocationInfo ii = (InvocationInfo) object;
 
-                //				bm.setStringProperty("method", ii.fullMethodName);
-                //				bm.setStringProperty("args", ii.args.toString());
+                // bm.setStringProperty("method", ii.fullMethodName);
+                // bm.setStringProperty("args", ii.args.toString());
 
                 final TMemoryBuffer bytes = ii.buildCall(0, protocolFactory);
                 return new Message(bytes.toByteArray(), messageProperties);
@@ -47,23 +48,25 @@ public class RabbitThriftClientImpl implements RabbitThriftClientIF {
             public Object fromMessage(Message message) throws MessageConversionException {
 
                 return null;
-            }});
+            }
+        });
 
     }
 
-
     @Override
     @SuppressWarnings("unchecked")
-    public <T> T onIface(Class<T> cls){
+    public <T> T onIface(Class<T> cls) {
 
-        return (T)Proxy.newProxyInstance(ThriftProxyFactory.class.getClassLoader(), new Class[]{cls}, new ServiceIfaceProxy(cls, new InvocationCallback(){
+        return (T) Proxy.newProxyInstance(ThriftProxyFactory.class.getClassLoader(), new Class[] { cls },
+                                          new ServiceIfaceProxy(cls, new InvocationCallback() {
 
-            @SuppressWarnings("rawtypes")
-            @Override
-            public Object call(InvocationInfo ii) throws NullResult {
-                rabbitTemplate.convertAndSend(ii.serviceName, ii.methodName, ii);
-                throw new NullResult();
-            }}));
+                                              @SuppressWarnings("rawtypes")
+                                              @Override
+                                              public Object call(InvocationInfo ii) throws NullResult {
+                                                  rabbitTemplate.convertAndSend(ii.serviceName, ii.methodName, ii);
+                                                  throw new NullResult();
+                                              }
+                                          }));
     }
 
 }

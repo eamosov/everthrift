@@ -29,7 +29,8 @@ public class ThriftPropertyAccess implements PropertyAccess {
         public void set(Object target, Object value, SessionFactoryImplementor factory) throws HibernateException {
             try {
                 writeMethod.invoke(target, value);
-            } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+            }
+            catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
                 throw new HibernateException(e);
             }
         }
@@ -64,7 +65,8 @@ public class ThriftPropertyAccess implements PropertyAccess {
         public Object get(Object target) throws HibernateException {
             try {
                 return readMethod.invoke(target);
-            } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+            }
+            catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
                 throw new HibernateException(e);
             }
         }
@@ -74,7 +76,7 @@ public class ThriftPropertyAccess implements PropertyAccess {
          */
         @Override
         public Object getForInsert(Object target, Map mergeMap, SharedSessionContractImplementor session) {
-            return get( target );
+            return get(target);
         }
 
         /**
@@ -117,7 +119,9 @@ public class ThriftPropertyAccess implements PropertyAccess {
     }
 
     private final Setter setter;
+
     private final Getter getter;
+
     private PropertyAccessStrategy strategy;
 
     public ThriftPropertyAccess(PropertyAccessStrategy strategy, Class theClass, String propertyName) {

@@ -9,23 +9,29 @@ public class ApplicationPropertiesModel implements DaoEntityIF {
     private static final long serialVersionUID = 1L;
 
     private String id;
+
     private String persistanceName;
+
     private String propertyName;
+
     private String propertyValue;
 
-    public ApplicationPropertiesModel(){
+    public ApplicationPropertiesModel() {
 
     }
 
     public String getPropertyName() {
         return propertyName;
     }
+
     public void setPropertyName(String propertyName) {
         this.propertyName = propertyName;
     }
+
     public String getPropertyValue() {
         return propertyValue;
     }
+
     public void setPropertyValue(String propertyValue) {
         this.propertyValue = propertyValue;
     }
@@ -34,9 +40,10 @@ public class ApplicationPropertiesModel implements DaoEntityIF {
     public Serializable getPk() {
         return id;
     }
+
     @Override
     public void setPk(Serializable identifier) {
-        id = (String)identifier;
+        id = (String) identifier;
     }
 
     public String getId() {

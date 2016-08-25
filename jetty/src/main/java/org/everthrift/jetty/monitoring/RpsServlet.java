@@ -27,8 +27,7 @@ import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.scheduling.TaskScheduler;
 
-
-public class RpsServlet extends HttpServlet implements InitializingBean, DisposableBean, RpsServletIF{
+public class RpsServlet extends HttpServlet implements InitializingBean, DisposableBean, RpsServletIF {
 
     private final static Logger log = LoggerFactory.getLogger(RpsServlet.class);
 
@@ -36,16 +35,20 @@ public class RpsServlet extends HttpServlet implements InitializingBean, Disposa
 
     public final int step = 5;
 
-    public final int arch1_size = 3600*24;	// 24 hour
-    public final int arch1_step = 5;		// 5 seconds average
+    public final int arch1_size = 3600 * 24; // 24 hour
+
+    public final int arch1_step = 5; // 5 seconds average
 
     public final int arch2_size = 3600 * 24 * 7; // week
-    public final int arch2_step = 60;		 	 // minute average
+
+    public final int arch2_step = 60; // minute average
 
     private RrdDb rrdDb;
+
     private Sample sample;
 
     private long counters[] = new long[DsName.values().length];
+
     private DsName dsNames[] = new DsName[DsName.values().length];
 
     @Resource
@@ -64,7 +67,7 @@ public class RpsServlet extends HttpServlet implements InitializingBean, Disposa
         rrdDef.addArchive(ConsolFun.AVERAGE, 0.5, arch1_step / step, arch1_size / arch1_step);
         rrdDef.addArchive(ConsolFun.AVERAGE, 0.5, arch2_step / step, arch2_size / arch2_step);
 
-        for (DsName n : DsName.values()){
+        for (DsName n : DsName.values()) {
             dsNames[n.ordinal()] = n;
             rrdDef.addDatasource(n.dsName, DsType.COUNTER, step * 2, 0, Long.MAX_VALUE);
         }
@@ -75,22 +78,23 @@ public class RpsServlet extends HttpServlet implements InitializingBean, Disposa
         myScheduler.scheduleAtFixedRate(this::sample, new Date(System.currentTimeMillis() + step * 1000), step * 1000L);
     }
 
-    private synchronized void sample(){
+    private synchronized void sample() {
         sample.setTime(System.currentTimeMillis() / 1000);
 
-        for (int i=0; i< counters.length; i++){
+        for (int i = 0; i < counters.length; i++) {
             sample.setValue(dsNames[i].dsName, counters[i]);
         }
 
         try {
             sample.update();
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             log.error("Exception in sample()", e);
         }
     }
 
     @Override
-    public void incThrift(DsName dsName){
+    public void incThrift(DsName dsName) {
         counters[dsName.ordinal()]++;
     }
 
@@ -101,11 +105,12 @@ public class RpsServlet extends HttpServlet implements InitializingBean, Disposa
 
         try {
             rrdDb.close();
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
         }
     }
 
-    private byte[] makeGraph(DsName dsName, long startMillis, long endMillis, int width, int height) throws IOException{
+    private byte[] makeGraph(DsName dsName, long startMillis, long endMillis, int width, int height) throws IOException {
 
         final RrdGraphDef gDef = new RrdGraphDef();
         gDef.setWidth(width);
@@ -128,7 +133,7 @@ public class RpsServlet extends HttpServlet implements InitializingBean, Disposa
     }
 
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse response) throws IOException{
+    protected void doGet(HttpServletRequest req, HttpServletResponse response) throws IOException {
 
         response.setContentType("text/html");
 
@@ -144,15 +149,20 @@ public class RpsServlet extends HttpServlet implements InitializingBean, Disposa
 
         long now = LongTimestamp.now();
 
-        final String min = String.format("<img alt=\"Requests per second %s\" src=\"data:image/png;base64,%s\"/>", dsName.name(), Base64.getEncoder().encodeToString(makeGraph(dsName, now - LongTimestamp.MIN * 10, now, 800, 400)));
-        final String hour = String.format("<img alt=\"Requests per second %s\" src=\"data:image/png;base64,%s\"/>", dsName.name(), Base64.getEncoder().encodeToString(makeGraph(dsName, now - LongTimestamp.HOUR, now, 800, 400)));
-        final String day = String.format("<img alt=\"Requests per second %s\" src=\"data:image/png;base64,%s\"/>", dsName.name(), Base64.getEncoder().encodeToString(makeGraph(dsName, now - LongTimestamp.DAY, now, 800, 400)));
-        final String week = String.format("<img alt=\"Requests per second %s\" src=\"data:image/png;base64,%s\"/>", dsName.name(), Base64.getEncoder().encodeToString(makeGraph(dsName, now - LongTimestamp.WEEK, now, 800, 400)));
+        final String min = String.format("<img alt=\"Requests per second %s\" src=\"data:image/png;base64,%s\"/>", dsName.name(),
+                                         Base64.getEncoder()
+                                               .encodeToString(makeGraph(dsName, now - LongTimestamp.MIN * 10, now, 800, 400)));
+        final String hour = String.format("<img alt=\"Requests per second %s\" src=\"data:image/png;base64,%s\"/>", dsName.name(),
+                                          Base64.getEncoder().encodeToString(makeGraph(dsName, now - LongTimestamp.HOUR, now, 800, 400)));
+        final String day = String.format("<img alt=\"Requests per second %s\" src=\"data:image/png;base64,%s\"/>", dsName.name(),
+                                         Base64.getEncoder().encodeToString(makeGraph(dsName, now - LongTimestamp.DAY, now, 800, 400)));
+        final String week = String.format("<img alt=\"Requests per second %s\" src=\"data:image/png;base64,%s\"/>", dsName.name(),
+                                          Base64.getEncoder().encodeToString(makeGraph(dsName, now - LongTimestamp.WEEK, now, 800, 400)));
 
         final StringBuilder body = new StringBuilder();
         body.append("<html><head><title>" + dsName.name() + "</title></head><body>\n");
 
-        for (DsName n : DsName.values()){
+        for (DsName n : DsName.values()) {
             body.append(String.format("<a href=\"?ds=%s\">%s</a>&nbsp&nbsp", n.name(), n.name()));
         }
 

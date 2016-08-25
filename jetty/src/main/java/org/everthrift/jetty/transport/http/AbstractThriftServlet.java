@@ -77,14 +77,14 @@ public abstract class AbstractThriftServlet extends HttpServlet implements Initi
         super.doOptions(req, response);
     }
 
-    private void out(AsyncContext asyncContext, HttpServletResponse response, byte buf[]) throws IOException{
+    private void out(AsyncContext asyncContext, HttpServletResponse response, byte buf[]) throws IOException {
         out(asyncContext, response, buf, buf.length);
     }
 
-    private void out(AsyncContext asyncContext, HttpServletResponse response, byte buf[], int length) throws IOException{
+    private void out(AsyncContext asyncContext, HttpServletResponse response, byte buf[], int length) throws IOException {
         final ServletOutputStream out = response.getOutputStream();
 
-        out.setWriteListener(new WriteListener(){
+        out.setWriteListener(new WriteListener() {
             @Override
             public void onWritePossible() throws IOException {
                 out.write(buf, 0, length);
@@ -92,8 +92,8 @@ public abstract class AbstractThriftServlet extends HttpServlet implements Initi
             }
 
             @Override
-            public void onError(Throwable t){
-                log.error("Async Error",t);
+            public void onError(Throwable t) {
+                log.error("Async Error", t);
                 asyncContext.complete();
             }
         });
@@ -109,11 +109,12 @@ public abstract class AbstractThriftServlet extends HttpServlet implements Initi
         response.setHeader("Access-Control-Allow-Origin", "*");
         response.setHeader("Access-Control-Allow-Headers", "Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
 
-
         final Map<String, Object> attributes = Maps.newHashMap();
         attributes.put(MessageWrapper.HTTP_REQUEST_PARAMS, Optional.fromNullable(request.getParameterMap()).or(Collections.emptyMap()));
         attributes.put(MessageWrapper.HTTP_COOKIES, Optional.fromNullable(request.getCookies()).or(() -> new Cookie[0]));
-        attributes.put(MessageWrapper.HTTP_HEADERS, Collections.list(request.getHeaderNames()).stream().map( n -> Pair.create(n, request.getHeader(n))).collect(Collectors.toMap(Pair::getFirst, Pair::getSecond)));
+        attributes.put(MessageWrapper.HTTP_HEADERS,
+                       Collections.list(request.getHeaderNames()).stream().map(n -> Pair.create(n, request.getHeader(n)))
+                                  .collect(Collectors.toMap(Pair::getFirst, Pair::getSecond)));
 
         final String xRealIp = request.getHeader(MessageWrapper.HTTP_X_REAL_IP);
         if (xRealIp != null)
@@ -127,7 +128,8 @@ public abstract class AbstractThriftServlet extends HttpServlet implements Initi
         final TMessage tMessage;
         try {
             tMessage = in.readMessageBegin();
-        } catch (TException e2) {
+        }
+        catch (TException e2) {
             response.setStatus(500);
             response.setContentType("text/plain");
             out(asyncContext, response, e2.getMessage().getBytes(StandardCharsets.UTF_8));
@@ -135,7 +137,7 @@ public abstract class AbstractThriftServlet extends HttpServlet implements Initi
         }
 
         try {
-            final TMemoryBuffer mw = tp.process(new ThriftProtocolSupportIF<TMemoryBuffer>(){
+            final TMemoryBuffer mw = tp.process(new ThriftProtocolSupportIF<TMemoryBuffer>() {
 
                 @Override
                 public String getSessionId() {
@@ -159,33 +161,36 @@ public abstract class AbstractThriftServlet extends HttpServlet implements Initi
                     args.read(in);
                     in.readMessageEnd();
 
-                    try{
+                    try {
                         final Method m = tInfo.getArgCls().getMethod("validate");
                         m.invoke(args);
-                    } catch(NoSuchMethodException | IllegalAccessException | IllegalArgumentException e1){
-                    } catch (InvocationTargetException e1) {
+                    }
+                    catch (NoSuchMethodException | IllegalAccessException | IllegalArgumentException e1) {
+                    }
+                    catch (InvocationTargetException e1) {
                         Throwables.propagateIfInstanceOf(e1.getCause(), TException.class);
                         throw Throwables.propagate(e1.getCause());
                     }
 
-                    return (T)args;
+                    return (T) args;
                 }
 
                 @Override
                 public void skip() throws TException {
-                    TProtocolUtil.skip( in, TType.STRUCT );
+                    TProtocolUtil.skip(in, TType.STRUCT);
                     in.readMessageEnd();
                 }
 
-                private TMemoryBuffer result(TApplicationException o){
+                private TMemoryBuffer result(TApplicationException o) {
                     final TMemoryBuffer outT = new TMemoryBuffer(1024);
                     final TProtocol out = getProtocolFactory().getProtocol(outT);
-                    try{
-                        out.writeMessageBegin( new TMessage( tMessage.name, TMessageType.EXCEPTION, tMessage.seqid));
-                        ((TApplicationException)o).write(out);
+                    try {
+                        out.writeMessageBegin(new TMessage(tMessage.name, TMessageType.EXCEPTION, tMessage.seqid));
+                        ((TApplicationException) o).write(out);
                         out.writeMessageEnd();
                         out.getTransport().flush(tMessage.seqid);
-                    }catch (TException e){
+                    }
+                    catch (TException e) {
                         throw new RuntimeException(e);
                     }
                     return outT;
@@ -194,23 +199,24 @@ public abstract class AbstractThriftServlet extends HttpServlet implements Initi
                 @Override
                 public TMemoryBuffer result(final Object o, final ThriftControllerInfo tInfo) {
 
-                    if (o instanceof TApplicationException){
-                        return result((TApplicationException)o);
-                    }else if (o instanceof TProtocolException) {
-                        return result(new TApplicationException(TApplicationException.PROTOCOL_ERROR, ((Exception)o).getMessage()));
-                    }else if (o instanceof Exception && !(o instanceof TException)){
-                        return result(new TApplicationException(TApplicationException.INTERNAL_ERROR, ((Exception)o).getMessage()));
-                    }else{
+                    if (o instanceof TApplicationException) {
+                        return result((TApplicationException) o);
+                    } else if (o instanceof TProtocolException) {
+                        return result(new TApplicationException(TApplicationException.PROTOCOL_ERROR, ((Exception) o).getMessage()));
+                    } else if (o instanceof Exception && !(o instanceof TException)) {
+                        return result(new TApplicationException(TApplicationException.INTERNAL_ERROR, ((Exception) o).getMessage()));
+                    } else {
                         final TBase result = tInfo.makeResult(o);
                         final TMemoryBuffer outT = new TMemoryBuffer(1024);
                         final TProtocol out = getProtocolFactory().getProtocol(outT);
 
-                        try{
-                            out.writeMessageBegin( new TMessage( tMessage.name, TMessageType.REPLY, tMessage.seqid) );
+                        try {
+                            out.writeMessageBegin(new TMessage(tMessage.name, TMessageType.REPLY, tMessage.seqid));
                             result.write(out);
                             out.writeMessageEnd();
                             out.getTransport().flush(tMessage.seqid);
-                        }catch (TException e){
+                        }
+                        catch (TException e) {
                             throw new RuntimeException(e);
                         }
 
@@ -223,7 +229,8 @@ public abstract class AbstractThriftServlet extends HttpServlet implements Initi
                     final TMemoryBuffer tt = result(o, controller.getInfo());
                     try {
                         out(asyncContext, response, tt.getArray(), tt.length());
-                    } catch (IOException e) {
+                    }
+                    catch (IOException e) {
                         log.error("Async Error", e);
                     }
 
@@ -235,7 +242,7 @@ public abstract class AbstractThriftServlet extends HttpServlet implements Initi
                     return true;
                 }
 
-            }, new AbstractThriftClient<Object>(null){
+            }, new AbstractThriftClient<Object>(null) {
 
                 private SessionIF session;
 
@@ -275,14 +282,16 @@ public abstract class AbstractThriftServlet extends HttpServlet implements Initi
                 @Override
                 protected <T> ListenableFuture<T> thriftCall(Object sessionId, int timeout, InvocationInfo tInfo) throws TException {
                     throw new NotImplementedException();
-                }});
+                }
+            });
 
-            if (mw !=null){
+            if (mw != null) {
                 response.setStatus(200);
                 response.setContentType(getContentType());
                 out(asyncContext, response, mw.getArray(), mw.length());
             }
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             response.setStatus(500);
             response.setContentType("text/plain");
             out(asyncContext, response, e.getMessage().getBytes(StandardCharsets.UTF_8));
@@ -293,6 +302,5 @@ public abstract class AbstractThriftServlet extends HttpServlet implements Initi
     public void afterPropertiesSet() throws Exception {
         tp = ThriftProcessor.create(context, registry);
     }
-
 
 }

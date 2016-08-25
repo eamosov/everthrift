@@ -25,9 +25,13 @@ public class CassandraClusterFactoryBean implements FactoryBean<Cluster> {
     private static final Logger log = LoggerFactory.getLogger(CassandraClusterFactoryBean.class);
 
     private String contactPoints = "locahost";
+
     private String localDcName;
+
     private Integer port;
+
     private String login;
+
     private String password;
 
     @Override
@@ -36,7 +40,7 @@ public class CassandraClusterFactoryBean implements FactoryBean<Cluster> {
         Cluster.Builder builder = Cluster.builder();
         Stream.of(contactPoints.split(",")).map(String::trim).forEach(builder::addContactPoint);
 
-        if (port !=null)
+        if (port != null)
             builder.withPort(port);
 
         DCAwareRoundRobinPolicy.Builder policyBuilder = DCAwareRoundRobinPolicy.builder();
@@ -48,19 +52,20 @@ public class CassandraClusterFactoryBean implements FactoryBean<Cluster> {
         builder.withRetryPolicy(new LoggingRetryPolicy(DefaultRetryPolicy.INSTANCE));
         builder.withTimestampGenerator(new ThreadLocalMonotonicTimestampGenerator());
 
-        if (login !=null || password !=null)
+        if (login != null || password != null)
             builder.withCredentials(login, password);
 
-        final Cluster cluster =  builder.build();
+        final Cluster cluster = builder.build();
 
         final QueryLogger queryLogger = QueryLogger.builder().withConstantThreshold(50).withMaxQueryStringLength(-1).build();
         cluster.register(queryLogger);
 
-        cluster.getConfiguration().getCodecRegistry().register(LongTimestampCodec.instance, StringUuidCodec.instance, ByteArrayBlobCodec.instance);
+        cluster.getConfiguration().getCodecRegistry().register(LongTimestampCodec.instance, StringUuidCodec.instance,
+                                                               ByteArrayBlobCodec.instance);
         return cluster;
     }
 
-    public static Session createSession(Cluster cluster, String keyspace){
+    public static Session createSession(Cluster cluster, String keyspace) {
         log.info("Connecting claster to keyspace {}", keyspace);
         return cluster.connect(keyspace);
     }

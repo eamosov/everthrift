@@ -14,7 +14,7 @@ import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.SubscriberExceptionContext;
 import com.google.common.eventbus.SubscriberExceptionHandler;
 
-public class LocalEventBus implements InitializingBean{
+public class LocalEventBus implements InitializingBean {
 
     private static final Logger log = LoggerFactory.getLogger(LocalEventBus.class);
 
@@ -23,54 +23,57 @@ public class LocalEventBus implements InitializingBean{
     private Executor executor;
 
     private EventBus eventBus;
+
     private EventBus asyncEventBus;
 
     @Autowired
     private boolean testMode;
-    
+
     public LocalEventBus() {
 
     }
 
-    public LocalEventBus(Executor executor){
+    public LocalEventBus(Executor executor) {
         this.executor = executor;
         afterPropertiesSet();
     }
 
     @Override
     public void afterPropertiesSet() {
-        eventBus = new EventBus(new SubscriberExceptionHandler(){
+        eventBus = new EventBus(new SubscriberExceptionHandler() {
 
             @Override
             public void handleException(Throwable exception, SubscriberExceptionContext context) {
                 log.error("Exception in eventBus", exception);
-            }});
+            }
+        });
 
-        asyncEventBus = new AsyncEventBus(executor, new SubscriberExceptionHandler(){
+        asyncEventBus = new AsyncEventBus(executor, new SubscriberExceptionHandler() {
 
             @Override
             public void handleException(Throwable exception, SubscriberExceptionContext context) {
                 log.error("Exception in asyncEventBus", exception);
-            }});
+            }
+        });
     }
 
-    public void register(Object object){
+    public void register(Object object) {
         eventBus.register(object);
         asyncEventBus.register(object);
     }
-    
-    public void postEntityEvent(Object event){
+
+    public void postEntityEvent(Object event) {
         if (testMode)
             post(event);
         else
             postAsync(event);
     }
 
-    public void post(Object event){
+    public void post(Object event) {
         eventBus.post(event);
     }
 
-    public void postAsync(Object event){
+    public void postAsync(Object event) {
         asyncEventBus.post(event);
     }
 

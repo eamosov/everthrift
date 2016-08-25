@@ -12,7 +12,6 @@ import org.springframework.orm.hibernate5.LocalSessionFactoryBuilder;
 
 public class LocalSessionFactoryBean extends org.springframework.orm.hibernate5.LocalSessionFactoryBean {
 
-
     private static final Logger LOG = LoggerFactory.getLogger(LocalSessionFactoryBean.class);
 
     private MetaDataProvider metaDataProvider;
@@ -21,7 +20,7 @@ public class LocalSessionFactoryBean extends org.springframework.orm.hibernate5.
     protected SessionFactory buildSessionFactory(LocalSessionFactoryBuilder sfb) {
         sfb.addInputStream(new ByteArrayInputStream(metaDataProvider.toHbmXml().getBytes(StandardCharsets.UTF_8)));
         sfb.setInterceptor(EntityInterceptor.INSTANCE);
-        final SessionFactory ret =  super.buildSessionFactory(sfb);
+        final SessionFactory ret = super.buildSessionFactory(sfb);
         return ret;
     }
 

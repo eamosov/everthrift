@@ -2,7 +2,7 @@ package org.everthrift.appserver.monitoring;
 
 public interface RpsServletIF {
 
-    public static enum DsName{
+    public static enum DsName {
 
         THRIFT_TCP("th_tcp"),
         THRIFT_HTTP("th_http"),
@@ -12,7 +12,7 @@ public interface RpsServletIF {
 
         public final String dsName;
 
-        DsName(String dsName){
+        DsName(String dsName) {
             this.dsName = dsName;
         }
     }

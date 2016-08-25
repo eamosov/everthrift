@@ -16,15 +16,15 @@ public abstract class AbstractThriftClient<S> extends ThriftClient<S> {
     }
 
     @Override
-    public <T> ListenableFuture<T> thriftCall(int timeout, T methodCall, FutureCallback<T> callback) throws TException{
+    public <T> ListenableFuture<T> thriftCall(int timeout, T methodCall, FutureCallback<T> callback) throws TException {
         final ListenableFuture<T> lf = thriftCall(timeout, methodCall);
-        Futures.addCallback(lf,callback);
+        Futures.addCallback(lf, callback);
         return lf;
     }
 
     @SuppressWarnings("rawtypes")
     @Override
-    public <T> ListenableFuture<T> thriftCall(int timeout, T methodCall) throws TException{
+    public <T> ListenableFuture<T> thriftCall(int timeout, T methodCall) throws TException {
         final InvocationInfo info = InvocationInfoThreadHolder.getInvocationInfo();
         if (info == null)
             throw new TTransportException("info is NULL");

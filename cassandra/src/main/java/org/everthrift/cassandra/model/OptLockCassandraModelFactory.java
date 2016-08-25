@@ -21,9 +21,11 @@ import org.everthrift.utils.LongTimestamp;
 
 import net.sf.ehcache.Cache;
 
-public abstract class OptLockCassandraModelFactory<PK extends Serializable,ENTITY extends DaoEntityIF, E extends TException> extends CassandraModelFactory<PK, ENTITY, E> implements OptimisticLockModelFactoryIF<PK, ENTITY, E>{
+public abstract class OptLockCassandraModelFactory<PK extends Serializable, ENTITY extends DaoEntityIF, E extends TException>
+        extends CassandraModelFactory<PK, ENTITY, E> implements OptimisticLockModelFactoryIF<PK, ENTITY, E> {
 
     private String sequenceName;
+
     private SequenceFactory sequenceFactory;
 
     public OptLockCassandraModelFactory(Cache cache, Class<ENTITY> entityClass) {
@@ -35,24 +37,23 @@ public abstract class OptLockCassandraModelFactory<PK extends Serializable,ENTIT
     }
 
     @Override
-    protected void initMapping(){
+    protected void initMapping() {
 
         super.initMapping();
 
-        if (sequenceName == null){
+        if (sequenceName == null) {
             sequenceFactory = null;
-        }else{
+        } else {
             sequenceFactory = new SequenceFactory(mappingManager.getSession(), "sequences", sequenceName);
         }
     }
 
-
-    public final void setPkSequenceName(String sequenceName){
+    public final void setPkSequenceName(String sequenceName) {
         this.sequenceName = sequenceName;
 
-        if (sequenceName == null){
+        if (sequenceName == null) {
             sequenceFactory = null;
-        }else if (mappingManager !=null){
+        } else if (mappingManager != null) {
             sequenceFactory = new SequenceFactory(mappingManager.getSession(), "sequences", sequenceName);
         }
     }
@@ -76,7 +77,8 @@ public abstract class OptLockCassandraModelFactory<PK extends Serializable,ENTIT
     public final OptResult<ENTITY> updateUnchecked(PK id, TFunction<ENTITY, Boolean> mutator, EntityFactory<PK, ENTITY> factory) {
         try {
             return update(id, mutator, factory);
-        } catch (TException e) {
+        }
+        catch (TException e) {
             throw new RuntimeException(e);
         }
     }
@@ -87,7 +89,8 @@ public abstract class OptLockCassandraModelFactory<PK extends Serializable,ENTIT
     }
 
     @Override
-    public final OptResult<ENTITY> update(PK id, TFunction<ENTITY, Boolean> mutator, EntityFactory<PK, ENTITY> factory) throws TException, E {
+    public final OptResult<ENTITY> update(PK id, TFunction<ENTITY, Boolean> mutator,
+                                          EntityFactory<PK, ENTITY> factory) throws TException, E {
 
         if (id == null)
             throw new IllegalArgumentException("id is null");
@@ -104,7 +107,7 @@ public abstract class OptLockCassandraModelFactory<PK extends Serializable,ENTIT
 
                 final ENTITY orig;
 
-                if (e == null){
+                if (e == null) {
                     if (factory == null)
                         throw new EntityNotFoundException(id);
 
@@ -113,10 +116,11 @@ public abstract class OptLockCassandraModelFactory<PK extends Serializable,ENTIT
                     setCreatedAt(e);
 
                     orig = null;
-                }else{
+                } else {
                     try {
                         orig = getCopyConstructor().newInstance(e);
-                    } catch (Exception e1) {
+                    }
+                    catch (Exception e1) {
                         throw new RuntimeException(e1);
                     }
                 }
@@ -125,38 +129,39 @@ public abstract class OptLockCassandraModelFactory<PK extends Serializable,ENTIT
                 if (needUpdate == false)
                     return OptResult.create(OptLockCassandraModelFactory.this, e, orig, false);
 
+                // if (e instanceof UpdatedAtIF)
+                // ((UpdatedAtIF) e).setUpdatedAt(now);
 
-                //		        if (e instanceof UpdatedAtIF)
-                //		        	((UpdatedAtIF) e).setUpdatedAt(now);
-
-                if (orig == null){
+                if (orig == null) {
 
                     final DLock lock = this.assertUnique(null, e);
                     final boolean saved;
-                    try{
+                    try {
                         saved = mapper.save(e, Option.ifNotExist());
-                    }finally{
-                        if (lock !=null)
+                    }
+                    finally {
+                        if (lock != null)
                             lock.unlock();
                     }
 
-                    if (saved){
+                    if (saved) {
                         invalidate(id);
                         return OptResult.create(OptLockCassandraModelFactory.this, e, null, true);
-                    }else{
+                    } else {
                         if (count == 0)
                             invalidate(id);
                         return null;
                     }
-                }else{
-                    try{
+                } else {
+                    try {
 
                         final DLock lock = this.assertUnique(orig, e);
                         final boolean updated;
-                        try{
+                        try {
                             updated = mapper.update(orig, e, Option.onlyIf());
-                        }finally{
-                            if (lock !=null)
+                        }
+                        finally {
+                            if (lock != null)
                                 lock.unlock();
                         }
 
@@ -164,7 +169,8 @@ public abstract class OptLockCassandraModelFactory<PK extends Serializable,ENTIT
                             invalidate(id);
 
                         return OptResult.create(OptLockCassandraModelFactory.this, e, orig, updated);
-                    }catch(VersionException ve){
+                    }
+                    catch (VersionException ve) {
 
                         if (count == 0)
                             invalidate(id);
@@ -174,20 +180,22 @@ public abstract class OptLockCassandraModelFactory<PK extends Serializable,ENTIT
                 }
             });
 
-            if (ret.isUpdated){
+            if (ret.isUpdated) {
                 localEventBus.postEntityEvent(updateEntityEvent(ret.beforeUpdate, ret.afterUpdate));
             }
 
             return ret;
-        } catch (EntityNotFoundException e) {
+        }
+        catch (EntityNotFoundException e) {
             throw createNotFoundException(id);
         }
     }
 
-    private OptResult<ENTITY> _delete(ENTITY e){
+    private OptResult<ENTITY> _delete(ENTITY e) {
         mapper.delete(e);
-        invalidate((PK)e.getPk());
-        final OptResult<ENTITY> r= OptResult.create(this, null, e, true);;
+        invalidate((PK) e.getPk());
+        final OptResult<ENTITY> r = OptResult.create(this, null, e, true);
+        ;
         localEventBus.postEntityEvent(deleteEntityEvent(e));
         return r;
     }
@@ -206,8 +214,8 @@ public abstract class OptLockCassandraModelFactory<PK extends Serializable,ENTIT
     @Override
     public final OptResult<ENTITY> optInsert(ENTITY e) {
 
-        if (e.getPk() == null){
-            if (sequenceFactory !=null)
+        if (e.getPk() == null) {
+            if (sequenceFactory != null)
                 e.setPk(sequenceFactory.nextId());
             else
                 throw new IllegalArgumentException("PK is null:" + e.toString());
@@ -217,14 +225,15 @@ public abstract class OptLockCassandraModelFactory<PK extends Serializable,ENTIT
 
         final DLock lock = this.assertUnique(null, e);
         final boolean saved;
-        try{
+        try {
             saved = mapper.save(e, Option.ifNotExist());
-        }finally{
-            if (lock !=null)
+        }
+        finally {
+            if (lock != null)
                 lock.unlock();
         }
 
-        invalidate((PK)e.getPk());
+        invalidate((PK) e.getPk());
 
         if (saved == false)
             throw new UniqueException(null, true, null);
@@ -242,7 +251,8 @@ public abstract class OptLockCassandraModelFactory<PK extends Serializable,ENTIT
     }
 
     /**
-     * Unsafely assume insert without check for update. Use only with uniq (random) PK
+     * Unsafely assume insert without check for update. Use only with uniq
+     * (random) PK
      * @param e
      * @return
      */

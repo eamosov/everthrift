@@ -9,20 +9,22 @@ public class ThriftProxyFactory {
      * @param cls
      * @return
      */
-    public static <T> T on(Class<T> cls){
+    public static <T> T on(Class<T> cls) {
         return onIfaceAsAsync(cls);
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    public static <T> T onIfaceAsAsync(Class<T> cls){
+    public static <T> T onIfaceAsAsync(Class<T> cls) {
 
-        return (T)Proxy.newProxyInstance(ThriftProxyFactory.class.getClassLoader(), new Class[]{cls}, new ServiceIfaceProxy(cls, new InvocationCallback(){
+        return (T) Proxy.newProxyInstance(ThriftProxyFactory.class.getClassLoader(), new Class[] { cls },
+                                          new ServiceIfaceProxy(cls, new InvocationCallback() {
 
-            @Override
-            public Object call(InvocationInfo ii) throws NullResult {
-                InvocationInfoThreadHolder.invocationInfo.set(ii);
-                throw new NullResult();
-            }}));
+                                              @Override
+                                              public Object call(InvocationInfo ii) throws NullResult {
+                                                  InvocationInfoThreadHolder.invocationInfo.set(ii);
+                                                  throw new NullResult();
+                                              }
+                                          }));
     }
 
 }

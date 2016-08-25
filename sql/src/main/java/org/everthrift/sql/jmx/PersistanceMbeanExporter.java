@@ -46,7 +46,7 @@ public class PersistanceMbeanExporter extends AnnotationMBeanExporter {
     }
 
     private String getBeanName(Object target) {
-        if (beanFactory!=null) {
+        if (beanFactory != null) {
             for (Object o : beanFactory.getBeansOfType(target.getClass()).entrySet()) {
                 Map.Entry entry = (Map.Entry) (o);
                 if (entry.getValue() == target) {

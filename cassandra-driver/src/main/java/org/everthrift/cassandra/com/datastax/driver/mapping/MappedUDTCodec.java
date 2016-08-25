@@ -25,15 +25,20 @@ import com.datastax.driver.core.TypeCodec;
 import com.datastax.driver.core.UserType;
 
 /**
- * Serializes a class annotated with {@code @UDT} to the corresponding CQL user-defined type.
+ * Serializes a class annotated with {@code @UDT} to the corresponding CQL
+ * user-defined type.
  */
 public class MappedUDTCodec<T> extends TypeCodec.AbstractUDTCodec<T> {
     private final UserType cqlUserType;
+
     private final Class<T> udtClass;
+
     private final Map<String, ColumnMapper<T>> columnMappers;
+
     private final CodecRegistry codecRegistry;
 
-    public MappedUDTCodec(UserType cqlUserType, Class<T> udtClass, Class<T> instanceClass, Map<String, ColumnMapper<T>> columnMappers, MappingManager mappingManager) {
+    public MappedUDTCodec(UserType cqlUserType, Class<T> udtClass, Class<T> instanceClass, Map<String, ColumnMapper<T>> columnMappers,
+                          MappingManager mappingManager) {
         super(cqlUserType, udtClass);
         this.cqlUserType = cqlUserType;
         this.udtClass = instanceClass;
@@ -45,14 +50,16 @@ public class MappedUDTCodec<T> extends TypeCodec.AbstractUDTCodec<T> {
     protected T newInstance() {
         try {
             return udtClass.newInstance();
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             throw new IllegalArgumentException("Error creating instance of @UDT-annotated class " + udtClass, e);
         }
     }
 
     @Override
     protected ByteBuffer serializeField(T source, String fieldName, ProtocolVersion protocolVersion) {
-        // The parent class passes lowercase names unquoted, but in our internal map of mappers they are always quoted
+        // The parent class passes lowercase names unquoted, but in our internal
+        // map of mappers they are always quoted
         if (!fieldName.startsWith("\""))
             fieldName = Metadata.quote(fieldName);
 
@@ -92,13 +99,15 @@ public class MappedUDTCodec<T> extends TypeCodec.AbstractUDTCodec<T> {
 
     @Override
     protected String formatField(T source, String fieldName) {
-        // This codec implementation is internal-use only, and its format method is never used
+        // This codec implementation is internal-use only, and its format method
+        // is never used
         throw new UnsupportedOperationException();
     }
 
     @Override
     protected T parseAndSetField(String input, T target, String fieldName) {
-        // This codec implementation is internal-use only, and its parse method is never used
+        // This codec implementation is internal-use only, and its parse method
+        // is never used
         throw new UnsupportedOperationException();
     }
 }

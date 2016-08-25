@@ -75,11 +75,14 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
     private static final Charset UTF_8 = Charset.forName("UTF-8");
 
     public static final String UUID = "UUID";
-    public static final String HTTP_X_REAL_IP="X-Real-IP";
 
-    private class SessionData{
+    public static final String HTTP_X_REAL_IP = "X-Real-IP";
+
+    private class SessionData {
         final WebSocketSession session;
+
         final AsyncRegister async = new AsyncRegister(listeningScheduledExecutorService);
+
         final SettableFuture<Void> closeFuture = SettableFuture.create();
 
         private AtomicReference<SessionIF> userSessionObject = new AtomicReference<SessionIF>();
@@ -104,50 +107,53 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
     private ThriftProcessor tp;
 
     private final SubscribableChannel inWebsocketChannel;
+
     private final TProtocolFactory protocolFactory;
 
     private TTransportFactory transportFactory = new TTransportFactory();
 
     private WebsocketContentType contentType = WebsocketContentType.BINARY;
 
-    public WebsocketThriftHandler(final TProtocolFactory protocolFactory, final SubscribableChannel inWebsocketChannel, final SubscribableChannel outWebsocketChannel){
+    public WebsocketThriftHandler(final TProtocolFactory protocolFactory, final SubscribableChannel inWebsocketChannel,
+                                  final SubscribableChannel outWebsocketChannel) {
         this.protocolFactory = protocolFactory;
         this.inWebsocketChannel = inWebsocketChannel;
 
-        outWebsocketChannel.subscribe(new MessageHandler(){
+        outWebsocketChannel.subscribe(new MessageHandler() {
 
             @SuppressWarnings({ "rawtypes", "unchecked" })
             @Override
             public void handleMessage(Message<?> message) throws MessagingException {
-                handleOut((Message)message);
-            }});
+                handleOut((Message) message);
+            }
+        });
 
-        this.inWebsocketChannel.subscribe(new MessageHandler(){
+        this.inWebsocketChannel.subscribe(new MessageHandler() {
 
             @Override
             public void handleMessage(Message<?> message) throws MessagingException {
-                final MessageWrapper payload = handleIn((Message)message, outWebsocketChannel);
+                final MessageWrapper payload = handleIn((Message) message, outWebsocketChannel);
 
-                if (payload !=null){
-                    final GenericMessage<MessageWrapper> s = new GenericMessage<MessageWrapper>(payload.removeCorrelationHeaders(), message.getHeaders());
+                if (payload != null) {
+                    final GenericMessage<MessageWrapper> s = new GenericMessage<MessageWrapper>(payload.removeCorrelationHeaders(),
+                                                                                                message.getHeaders());
                     outWebsocketChannel.send(s);
                 }
-            }});
+            }
+        });
     }
 
     @Override
     protected void handleBinaryMessage(WebSocketSession session, BinaryMessage message) throws Exception {
 
-        final byte[] payload =  message.getPayload().array();
+        final byte[] payload = message.getPayload().array();
 
         if (log.isTraceEnabled())
             log.trace("handleBinaryMessage: size={}, content={}", payload.length, Arrays.toString(payload));
 
         final TMemoryInputTransport orig = new TMemoryInputTransport(payload);
 
-        try(
-                final TTransport unwrapped = transportFactory.getTransport(orig);
-                ){
+        try (final TTransport unwrapped = transportFactory.getTransport(orig);) {
 
             final TMessage msg = protocolFactory.getProtocol(unwrapped).readMessageBegin();
 
@@ -155,18 +161,24 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
 
             final String sessionId = getSessionId(session);
 
-            final TMemoryInputTransport copy = new TMemoryInputTransport(unwrapped.getBuffer(), 0, unwrapped.getBufferPosition() + unwrapped.getBytesRemainingInBuffer());
+            final TMemoryInputTransport copy = new TMemoryInputTransport(unwrapped.getBuffer(), 0, unwrapped.getBufferPosition()
+                                                                                                   + unwrapped.getBytesRemainingInBuffer());
 
-            if (msg.type == TMessageType.EXCEPTION || msg.type == TMessageType.REPLY){
+            if (msg.type == TMessageType.EXCEPTION || msg.type == TMessageType.REPLY) {
 
                 processThriftReply(session, msg, copy);
-            }else{
+            } else {
 
-                final Message<MessageWrapper> m = MessageBuilder.withPayload(new MessageWrapper(copy).setSessionId(sessionId).setWebsocketContentType(WebsocketContentType.BINARY).setHttpRequestParams((Map)session.getAttributes().get(MessageWrapper.HTTP_REQUEST_PARAMS))).build();
+                final Message<MessageWrapper> m = MessageBuilder.withPayload(new MessageWrapper(copy).setSessionId(sessionId)
+                                                                                                     .setWebsocketContentType(WebsocketContentType.BINARY)
+                                                                                                     .setHttpRequestParams((Map) session.getAttributes()
+                                                                                                                                        .get(MessageWrapper.HTTP_REQUEST_PARAMS)))
+                                                                .build();
 
-                try{
+                try {
                     inWebsocketChannel.send(m);
-                }catch(MessageDeliveryException e){
+                }
+                catch (MessageDeliveryException e) {
                     log.warn("Reject websocket message, sessionId={}", this.getSessionId(session));
                     session.close(CloseStatus.SERVICE_OVERLOAD);
                 }
@@ -181,9 +193,9 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
         if (log.isTraceEnabled())
             log.trace("handleTextMessage: size={}, content={}", message.getPayloadLength(), message.getPayload());
 
-        final byte[] payload =  message.asBytes();
+        final byte[] payload = message.asBytes();
 
-        //Для текстовых сообщение не применяем архивирование
+        // Для текстовых сообщение не применяем архивирование
         final TTransport in = new TMemoryInputTransport(payload);
 
         final TMessage msg = protocolFactory.getProtocol(in).readMessageBegin();
@@ -192,40 +204,47 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
 
         final String sessionId = getSessionId(session);
 
-        final TMemoryInputTransport unwrapped = new TMemoryInputTransport(in.getBuffer(), 0, in.getBufferPosition() + in.getBytesRemainingInBuffer());
+        final TMemoryInputTransport unwrapped = new TMemoryInputTransport(in.getBuffer(), 0,
+                                                                          in.getBufferPosition() + in.getBytesRemainingInBuffer());
 
-        if (msg.type == TMessageType.EXCEPTION || msg.type == TMessageType.REPLY){
+        if (msg.type == TMessageType.EXCEPTION || msg.type == TMessageType.REPLY) {
             processThriftReply(session, msg, unwrapped);
-        }else{
-            final Message<MessageWrapper> m = MessageBuilder.withPayload(new MessageWrapper(unwrapped).setSessionId(sessionId).setWebsocketContentType(WebsocketContentType.TEXT).setHttpRequestParams((Map)session.getAttributes().get(MessageWrapper.HTTP_REQUEST_PARAMS))).build();
+        } else {
+            final Message<MessageWrapper> m = MessageBuilder.withPayload(new MessageWrapper(unwrapped).setSessionId(sessionId)
+                                                                                                      .setWebsocketContentType(WebsocketContentType.TEXT)
+                                                                                                      .setHttpRequestParams((Map) session.getAttributes()
+                                                                                                                                         .get(MessageWrapper.HTTP_REQUEST_PARAMS)))
+                                                            .build();
 
-            try{
+            try {
                 inWebsocketChannel.send(m);
-            }catch(MessageDeliveryException e){
+            }
+            catch (MessageDeliveryException e) {
                 log.warn("Reject websocket message, sessionId={}", this.getSessionId(session));
                 session.close(CloseStatus.SERVICE_OVERLOAD);
             }
         }
     }
 
-    private void processThriftReply(WebSocketSession session, TMessage msg, TTransport in){
+    private void processThriftReply(WebSocketSession session, TMessage msg, TTransport in) {
         log.trace("process thrift reply message: {}", msg);
 
         final String sessionId = getSessionId(session);
         final SessionData sd = sessionRegistry.get(sessionId);
-        if (sd == null){
+        if (sd == null) {
             log.error("No sessionData for session {}", sessionId);
             return;
         }
         final InvocationInfo tf = sd.async.pop(msg.seqid);
-        if (tf == null){
+        if (tf == null) {
             log.warn("No registered thrift callback for msg:{}", msg);
             return;
         }
 
         try {
             tf.setReply(in, protocolFactory);
-        } catch (TException e) {
+        }
+        catch (TException e) {
         }
 
         return;
@@ -240,18 +259,23 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
 
         sessionRegistry.put(sessionId, new SessionData(session));
 
-        final Message<MessageWrapper> m = MessageBuilder.withPayload(new MessageWrapper(null).setAttribute("onOpen", true).setSessionId(sessionId).setHttpRequestParams((Map)session.getAttributes().get(MessageWrapper.HTTP_REQUEST_PARAMS))).build();
+        final Message<MessageWrapper> m = MessageBuilder.withPayload(new MessageWrapper(null).setAttribute("onOpen", true)
+                                                                                             .setSessionId(sessionId)
+                                                                                             .setHttpRequestParams((Map) session.getAttributes()
+                                                                                                                                .get(MessageWrapper.HTTP_REQUEST_PARAMS)))
+                                                        .build();
 
-        try{
+        try {
             inWebsocketChannel.send(m);
-        }catch(MessageDeliveryException e){
+        }
+        catch (MessageDeliveryException e) {
             log.warn("Reject websocket message, sessionId={}", this.getSessionId(session));
             session.close(CloseStatus.SERVICE_OVERLOAD);
         }
     }
 
-    public String getSessionId(WebSocketSession session){
-        return (String)session.getAttributes().get(UUID);
+    public String getSessionId(WebSocketSession session) {
+        return (String) session.getAttributes().get(UUID);
     }
 
     @Override
@@ -262,16 +286,16 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
         log.debug("Close websocket connection: {} {}", sessionId, status.toString());
 
         final SessionData sd = sessionRegistry.remove(sessionId);
-        if (sd!=null){
+        if (sd != null) {
             sd.closeFuture.set(null);
 
-            for (InvocationInfo ii: sd.async.popAll()){
+            for (InvocationInfo ii : sd.async.popAll()) {
                 ii.setException(new TTransportException(TTransportException.END_OF_FILE, "closed"));
             }
         }
     }
 
-    public <T> ListenableFuture<T> thriftCall(String sessionId, int timeout, InvocationInfo tInfo) throws TException{
+    public <T> ListenableFuture<T> thriftCall(String sessionId, int timeout, InvocationInfo tInfo) throws TException {
 
         final SessionData sd = sessionRegistry.get(sessionId);
         if (sd == null)
@@ -283,9 +307,10 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
             log.trace("thriftCall: tInfo={}, seqId={}", tInfo, seqId);
 
         sd.async.put(seqId, tInfo, timeout);
-        try{
+        try {
             write(sd, this.contentType, tInfo.buildCall(seqId, protocolFactory));
-        }catch(TException e){
+        }
+        catch (TException e) {
             sd.async.pop(seqId);
             throw e;
         }
@@ -297,12 +322,12 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
     public ThriftClient getThriftClient(final String sessionId) {
 
         final SessionData sd = sessionRegistry.get(sessionId);
-        if (sd == null){
+        if (sd == null) {
             log.warn("websocket connection {} not found", sessionId);
             return null;
         }
 
-        return new AbstractThriftClient<String>(sessionId){
+        return new AbstractThriftClient<String>(sessionId) {
 
             @Override
             protected <T> ListenableFuture<T> thriftCall(String sessionId, int timeout, InvocationInfo tInfo) throws TException {
@@ -336,7 +361,7 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
 
             @Override
             public String getClientIp() {
-                final String xRealIp =  (String)sd.session.getAttributes().get(HTTP_X_REAL_IP);
+                final String xRealIp = (String) sd.session.getAttributes().get(HTTP_X_REAL_IP);
                 return xRealIp != null ? xRealIp : sd.session.getRemoteAddress().getAddress().getHostAddress();
             }
         };
@@ -344,56 +369,56 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        tp =ThriftProcessor.create(context, rpcWebsocketRegistry);
+        tp = ThriftProcessor.create(context, rpcWebsocketRegistry);
     }
 
-    private MessageWrapper handleIn(Message<MessageWrapper> m, MessageChannel outChannel){
+    private MessageWrapper handleIn(Message<MessageWrapper> m, MessageChannel outChannel) {
 
         final MessageWrapper w = m.getPayload().setMessageHeaders(m.getHeaders()).setOutChannel(outChannel);
 
         final String sessionId = w.getSessionId();
 
-        log.debug("handleIn: {}, adapter={}, processor={}, sessionId={}", new Object[]{m, this, tp, sessionId});
+        log.debug("handleIn: {}, adapter={}, processor={}, sessionId={}", new Object[] { m, this, tp, sessionId });
 
-        if (sessionId == null){
+        if (sessionId == null) {
             log.error("websocket sessionId is null for message: {}", m);
             return null;
         }
 
         final ThriftClient tc = getThriftClient(sessionId);
 
-        if (w.getAttribute("onOpen") !=null){
-            if (tp.processOnOpen(w, tc) == false){
+        if (w.getAttribute("onOpen") != null) {
+            if (tp.processOnOpen(w, tc) == false) {
                 final SessionData sd = sessionRegistry.get(sessionId);
-                if (sd !=null)
+                if (sd != null)
                     try {
                         sd.session.close(CloseStatus.POLICY_VIOLATION);
-                    } catch (IOException e) {
+                    }
+                    catch (IOException e) {
                     }
             }
             return null;
-        }else{
+        } else {
             try {
                 return tp.process(new DefaultTProtocolSupport(w, protocolFactory), tc);
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 log.error("Exception while execution thrift processor:", e);
                 return null;
             }
         }
     }
 
-    private void write(SessionData sd, WebsocketContentType _contentType, TMemoryBuffer payload) throws TTransportException{
-        try{
+    private void write(SessionData sd, WebsocketContentType _contentType, TMemoryBuffer payload) throws TTransportException {
+        try {
             if (_contentType == null)
                 _contentType = this.contentType;
 
-            switch(_contentType){
+            switch (_contentType) {
             case BINARY:
-                if (!transportFactory.getClass().equals(TTransportFactory.class)){
+                if (!transportFactory.getClass().equals(TTransportFactory.class)) {
                     final TMemoryBuffer wrapped = new TMemoryBuffer(payload.length());
-                    try(
-                            final TTransport wrapper =  transportFactory.getTransport(wrapped);
-                            ){
+                    try (final TTransport wrapper = transportFactory.getTransport(wrapped);) {
 
                         wrapper.write(payload.getArray(), 0, payload.length());
                         wrapper.flush();
@@ -401,16 +426,19 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
                     }
                 }
 
-                ((JettyWebSocketSession)sd.session).getNativeSession().getRemote().sendBytesByFuture(payload.getByteBuffer());
+                ((JettyWebSocketSession) sd.session).getNativeSession().getRemote().sendBytesByFuture(payload.getByteBuffer());
                 break;
             case TEXT:
-                ((JettyWebSocketSession)sd.session).getNativeSession().getRemote().sendStringByFuture(new String(payload.getArray(), 0, payload.length(), UTF_8));
+                ((JettyWebSocketSession) sd.session).getNativeSession().getRemote()
+                                                    .sendStringByFuture(new String(payload.getArray(), 0, payload.length(), UTF_8));
                 break;
             }
-        }catch(WebSocketException e){
+        }
+        catch (WebSocketException e) {
             log.debug("WebSocketException", e);
             throw new TTransportException(e);
-        }catch(RuntimeException e){
+        }
+        catch (RuntimeException e) {
             log.error("Unknown exception while send data to websocket: ", e);
             throw e;
         }
@@ -419,24 +447,25 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
 
     private void handleOut(Message<MessageWrapper> m) {
 
-        log.debug("handleOut: {}, adapter={}, processor={}", new Object[]{m, this, tp});
+        log.debug("handleOut: {}, adapter={}, processor={}", new Object[] { m, this, tp });
 
-        final String sessionId = (String)m.getPayload().getSessionId();
+        final String sessionId = (String) m.getPayload().getSessionId();
 
-        if (sessionId == null){
+        if (sessionId == null) {
             log.error("sessionId is NULL, message={}", m);
             return;
         }
 
         final SessionData sd = sessionRegistry.get(sessionId);
-        if (sd == null){
+        if (sd == null) {
             log.debug("websocket connection " + sessionId + " not found");
             return;
         }
 
         try {
-            write(sd, m.getPayload().getWebsocketContentType(), (TMemoryBuffer)m.getPayload().getTTransport());
-        } catch (TTransportException e) {
+            write(sd, m.getPayload().getWebsocketContentType(), (TMemoryBuffer) m.getPayload().getTTransport());
+        }
+        catch (TTransportException e) {
         }
     }
 

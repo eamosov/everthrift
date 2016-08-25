@@ -21,69 +21,74 @@ public class AsyncRegister {
          *
          */
         private static final long serialVersionUID = 5839335947801602957L;
+
         public final T first;
+
         public final V second;
 
-        public static <T,V> Pair<T, V> create(T first, V second){
-            return new Pair<T,V>(first, second);
+        public static <T, V> Pair<T, V> create(T first, V second) {
+            return new Pair<T, V>(first, second);
         }
 
-        public Pair( T first, V second ) {
+        public Pair(T first, V second) {
             this.first = first;
             this.second = second;
         }
 
         @Override
         public int hashCode() {
-            return ( first == null ? 11 : first.hashCode() ) + ( second == null ? 35 : second.hashCode() );
+            return (first == null ? 11 : first.hashCode()) + (second == null ? 35 : second.hashCode());
         }
 
         @Override
-        public boolean equals( Object o ) {
-            if ( o == null ) return false;
-            if ( !(o instanceof Pair ) ) return false;
+        public boolean equals(Object o) {
+            if (o == null)
+                return false;
+            if (!(o instanceof Pair))
+                return false;
 
-            Pair<?,?> p = (Pair<?,?>)o;
+            Pair<?, ?> p = (Pair<?, ?>) o;
 
-            boolean ef = first == null ? p.first == null : first.equals( p.first );
-            boolean es = second == null ? p.second == null : second.equals( p.second );
+            boolean ef = first == null ? p.first == null : first.equals(p.first);
+            boolean es = second == null ? p.second == null : second.equals(p.second);
 
             return ef && es;
         }
 
         @Override
-        public String toString(){
+        public String toString() {
             return "first='" + first.toString() + "', second='" + second.toString() + "'";
         }
     }
 
-
     private final Map<Integer, Pair<InvocationInfo, ListenableScheduledFuture>> callbacks = Maps.newHashMap();
-    private final AtomicInteger seqId  = new AtomicInteger();
+
+    private final AtomicInteger seqId = new AtomicInteger();
+
     private final ListeningScheduledExecutorService scheduller;
 
     public AsyncRegister(ListeningScheduledExecutorService scheduller) {
         this.scheduller = scheduller;
     }
 
-    public synchronized InvocationInfo pop(int seqId){
+    public synchronized InvocationInfo pop(int seqId) {
         final Pair<InvocationInfo, ListenableScheduledFuture> p = callbacks.remove(seqId);
 
-        if (p==null)
+        if (p == null)
             return null;
 
-        if (p.second !=null)
+        if (p.second != null)
             p.second.cancel(false);
 
         return p.first.isDone() ? null : p.first;
     }
 
-    public synchronized List<InvocationInfo> popAll(){
+    public synchronized List<InvocationInfo> popAll() {
         final List<InvocationInfo> ret = Lists.newArrayList();
 
-        for (Pair<InvocationInfo, ListenableScheduledFuture> p: callbacks.values()){
+        for (Pair<InvocationInfo, ListenableScheduledFuture> p : callbacks.values()) {
 
-            if (p.second !=null)
+            if (p.second != null)
                 p.second.cancel(false);
 
             if (!p.first.isDone())
@@ -93,28 +98,29 @@ public class AsyncRegister {
         return ret;
     }
 
-    public synchronized void put(final int seqId, InvocationInfo ii, final long tmMs){
-        callbacks.put(seqId, new Pair<InvocationInfo, ListenableScheduledFuture>(ii, scheduller.schedule(new Runnable(){
+    public synchronized void put(final int seqId, InvocationInfo ii, final long tmMs) {
+        callbacks.put(seqId, new Pair<InvocationInfo, ListenableScheduledFuture>(ii, scheduller.schedule(new Runnable() {
 
             @Override
             public void run() {
 
                 final Pair<InvocationInfo, ListenableScheduledFuture> p;
 
-                synchronized(AsyncRegister.this){
+                synchronized (AsyncRegister.this) {
                     p = callbacks.remove(seqId);
                 }
 
                 p.first.setException(new TTransportException(TTransportException.TIMED_OUT, "TIMED_OUT"));
 
-            }}, tmMs, TimeUnit.MILLISECONDS)));
+            }
+        }, tmMs, TimeUnit.MILLISECONDS)));
     }
 
-    public synchronized void put(int seqId, InvocationInfo ii){
+    public synchronized void put(int seqId, InvocationInfo ii) {
         callbacks.put(seqId, new Pair<InvocationInfo, ListenableScheduledFuture>(ii, null));
     }
 
-    public int nextSeqId(){
+    public int nextSeqId() {
         return seqId.incrementAndGet();
     }
 

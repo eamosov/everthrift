@@ -21,7 +21,7 @@ import org.springframework.context.SmartLifecycle;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
-public class ThriftServer implements SmartLifecycle{
+public class ThriftServer implements SmartLifecycle {
 
     private static final Logger log = LoggerFactory.getLogger(ThriftServer.class);
 
@@ -32,22 +32,25 @@ public class ThriftServer implements SmartLifecycle{
     private String host;
 
     private final RpcSyncTcpRegistry registry;
+
     private final TProtocolFactory protocolFactory;
+
     private final ApplicationContext context;
 
     private TServer server;
+
     private TServerSocket trans;
 
     private Thread thread;
 
-    public ThriftServer(ApplicationContext context, TProtocolFactory protocolFactory, RpcSyncTcpRegistry registry){
+    public ThriftServer(ApplicationContext context, TProtocolFactory protocolFactory, RpcSyncTcpRegistry registry) {
         this.protocolFactory = protocolFactory;
         this.registry = registry;
         this.context = context;
     }
 
     @Override
-    public synchronized void start(){
+    public synchronized void start() {
 
         thread = new Thread(() -> {
             threadRun();
@@ -59,12 +62,13 @@ public class ThriftServer implements SmartLifecycle{
 
     @Override
     public synchronized void stop() {
-        if (thread !=null){
+        if (thread != null) {
             server.stop();
             thread.interrupt();
             try {
                 thread.join();
-            } catch (InterruptedException e) {
+            }
+            catch (InterruptedException e) {
             }
             thread = null;
         }
@@ -76,12 +80,15 @@ public class ThriftServer implements SmartLifecycle{
 
         try {
             trans = new TServerSocket(new InetSocketAddress(host, port));
-        } catch (TTransportException e) {
+        }
+        catch (TTransportException e) {
             throw new RuntimeException(e);
         }
 
         final SynchronousQueue<Runnable> executorQueue = new SynchronousQueue<Runnable>();
-        final ExecutorService es = new ThreadPoolExecutor(5, Integer.MAX_VALUE, 60, TimeUnit.SECONDS, executorQueue, new ThreadFactoryBuilder().setDaemon(false).setPriority(Thread.NORM_PRIORITY).setNameFormat("thrift-%d").build());
+        final ExecutorService es = new ThreadPoolExecutor(5, Integer.MAX_VALUE, 60, TimeUnit.SECONDS, executorQueue,
+                                                          new ThreadFactoryBuilder().setDaemon(false).setPriority(Thread.NORM_PRIORITY)
+                                                                                    .setNameFormat("thrift-%d").build());
 
         final TThreadPoolServer.Args args = new TThreadPoolServer.Args(trans).executorService(es);
         args.transportFactory(new TFramedTransport.Factory());
@@ -92,7 +99,7 @@ public class ThriftServer implements SmartLifecycle{
         server.serve();
     }
 
-    public void setPort(int port){
+    public void setPort(int port) {
         this.port = port;
     }
 
@@ -100,7 +107,7 @@ public class ThriftServer implements SmartLifecycle{
         return port;
     }
 
-    public void setHost(String host){
+    public void setHost(String host) {
         this.host = host;
     }
 
@@ -110,7 +117,7 @@ public class ThriftServer implements SmartLifecycle{
 
     @Override
     public boolean isRunning() {
-        return thread !=null;
+        return thread != null;
     }
 
     @Override

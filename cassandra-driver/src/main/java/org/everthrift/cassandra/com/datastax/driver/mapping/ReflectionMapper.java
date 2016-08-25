@@ -24,14 +24,15 @@ import org.springframework.beans.BeanUtils;
 import com.datastax.driver.core.ConsistencyLevel;
 
 /**
- * An {@link EntityMapper} implementation that use reflection to read and write fields
- * of an entity.
+ * An {@link EntityMapper} implementation that use reflection to read and write
+ * fields of an entity.
  */
 class ReflectionMapper<T> extends EntityMapper<T> {
 
     private static ReflectionFactory factory = new ReflectionFactory();
 
-    private ReflectionMapper(Class<T> entityClass, String keyspace, String table, ConsistencyLevel writeConsistency, ConsistencyLevel readConsistency) {
+    private ReflectionMapper(Class<T> entityClass, String keyspace, String table, ConsistencyLevel writeConsistency,
+                             ConsistencyLevel readConsistency) {
         super(entityClass, keyspace, table, writeConsistency, readConsistency);
     }
 
@@ -43,7 +44,8 @@ class ReflectionMapper<T> extends EntityMapper<T> {
     public T newEntity() {
         try {
             return entityClass.newInstance();
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             throw new RuntimeException("Can't create an instance of " + entityClass.getName());
         }
     }
@@ -51,6 +53,7 @@ class ReflectionMapper<T> extends EntityMapper<T> {
     private static class LiteralMapper<T> extends ColumnMapper<T> {
 
         private final Method readMethod;
+
         private final Method writeMethod;
 
         private LiteralMapper(FieldDescriptor field, PropertyDescriptor pd, AtomicInteger columnCounter) {
@@ -63,9 +66,11 @@ class ReflectionMapper<T> extends EntityMapper<T> {
         public Object getValue(T entity) {
             try {
                 return readMethod.invoke(entity);
-            } catch (IllegalArgumentException e) {
+            }
+            catch (IllegalArgumentException e) {
                 throw new IllegalArgumentException("Could not get field '" + fieldName + "'");
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 throw new IllegalStateException("Unable to access getter for '" + fieldName + "' in " + entity.getClass().getName(), e);
             }
         }
@@ -74,9 +79,11 @@ class ReflectionMapper<T> extends EntityMapper<T> {
         public void setValue(Object entity, Object value) {
             try {
                 writeMethod.invoke(entity, value);
-            } catch (IllegalArgumentException e) {
+            }
+            catch (IllegalArgumentException e) {
                 throw new IllegalArgumentException("Could not set field '" + fieldName + "' to value '" + value + "'");
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 throw new IllegalStateException("Unable to access setter for '" + fieldName + "' in " + entity.getClass().getName(), e);
             }
         }
@@ -85,12 +92,14 @@ class ReflectionMapper<T> extends EntityMapper<T> {
     private static class ReflectionFactory implements Factory {
 
         @Override
-        public <T> EntityMapper<T> create(Class<T> entityClass, String keyspace, String table, ConsistencyLevel writeConsistency, ConsistencyLevel readConsistency) {
+        public <T> EntityMapper<T> create(Class<T> entityClass, String keyspace, String table, ConsistencyLevel writeConsistency,
+                                          ConsistencyLevel readConsistency) {
             return new ReflectionMapper<T>(entityClass, keyspace, table, writeConsistency, readConsistency);
         }
 
         @Override
-        public <T> ColumnMapper<T> createColumnMapper(Class<T> entityClass, FieldDescriptor field, MappingManager mappingManager, AtomicInteger columnCounter) {
+        public <T> ColumnMapper<T> createColumnMapper(Class<T> entityClass, FieldDescriptor field, MappingManager mappingManager,
+                                                      AtomicInteger columnCounter) {
             final String fieldName = field.getFieldName();
             final PropertyDescriptor pd = BeanUtils.getPropertyDescriptor(entityClass, fieldName);
 

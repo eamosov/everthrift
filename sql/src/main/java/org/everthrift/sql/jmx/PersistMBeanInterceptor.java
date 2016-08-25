@@ -14,20 +14,30 @@ import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.springframework.jmx.export.annotation.ManagedResource;
 
-public class PersistMBeanInterceptor implements MethodInterceptor{
+public class PersistMBeanInterceptor implements MethodInterceptor {
 
     private final ApplicationPropertiesModelFactory propertiesModelFactory;
 
     private final Object clazzObj;
+
     private final String persistencaName;
+
     protected static final String GET_METHOD = "get";
+
     protected static final String IS_METHOD = "is";
+
     protected static final String SET_METHOD = "set";
+
     protected static final String TRUE = "true";
+
     protected static final String FALSE = "false";
+
     protected static final String DOUBLE_TYPE = "double";
+
     protected static final String INTEGER_TYPE = "int";
+
     private static final String SET_ATTRIBUTE = "setAttribute";
+
     private static final String SET_ATTRIBUTES = "setAttributes";
 
     public PersistMBeanInterceptor(Object obj, ApplicationPropertiesModelFactory propertiesModelFactory) {
@@ -79,10 +89,13 @@ public class PersistMBeanInterceptor implements MethodInterceptor{
                 Class[] parameterTypes = new Class[] { parameterType };
                 methodCall = clazz.getClass().getMethod(SET_METHOD + convertMethodName(propertyKey), parameterTypes);
                 methodCall.invoke(clazz, invokeParam);
-            } catch (NoSuchMethodException nsme) {
-            } catch (InvocationTargetException ite) {
+            }
+            catch (NoSuchMethodException nsme) {
+            }
+            catch (InvocationTargetException ite) {
                 ite.printStackTrace();
-            } catch (IllegalAccessException iae) {
+            }
+            catch (IllegalAccessException iae) {
                 iae.printStackTrace();
             }
         }
@@ -111,7 +124,7 @@ public class PersistMBeanInterceptor implements MethodInterceptor{
     private Properties loadProperties() {
         Properties returnValue = new Properties();
 
-        for (ApplicationPropertiesModel m : propertiesModelFactory.findByPersistanceName(persistencaName)){
+        for (ApplicationPropertiesModel m : propertiesModelFactory.findByPersistanceName(persistencaName)) {
             returnValue.put(m.getPropertyName(), m.getPropertyValue());
         }
 

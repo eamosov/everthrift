@@ -29,22 +29,24 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
 
-public abstract class AbstractJgroupsThriftClientImpl extends ClusterThriftClientImpl{
+public abstract class AbstractJgroupsThriftClientImpl extends ClusterThriftClientImpl {
 
     protected final Logger log = LoggerFactory.getLogger(this.getClass());
 
     private final TProtocolFactory binaryProtocolFactory = new TBinaryProtocol.Factory();
 
-    public abstract MessageDispatcher  getMessageDispatcher();
+    public abstract MessageDispatcher getMessageDispatcher();
 
     protected SettableFuture<?> viewAccepted = SettableFuture.create();
 
-    public Address getLocalAddress(){
+    public Address getLocalAddress() {
         return getCluster().getAddress();
     }
 
     @SuppressWarnings("rawtypes")
-    private <T> ListenableFuture<Map<Address, Reply<T>>> _thriftCall(Collection<Address> dest, Collection<Address> exclusionList, boolean loopBack, int timeout, ResponseMode responseMode, InvocationInfo tInfo) throws TException{
+    private <T> ListenableFuture<Map<Address, Reply<T>>> _thriftCall(Collection<Address> dest, Collection<Address> exclusionList,
+                                                                     boolean loopBack, int timeout, ResponseMode responseMode,
+                                                                     InvocationInfo tInfo) throws TException {
 
         final Message msg = new Message();
         msg.setObject(new MessageWrapper(tInfo.buildCall(0, binaryProtocolFactory)));
@@ -54,20 +56,21 @@ public abstract class AbstractJgroupsThriftClientImpl extends ClusterThriftClien
 
         final RequestOptions options = new RequestOptions(responseMode, timeout);
 
-        if (exclusionList!=null){
+        if (exclusionList != null) {
             options.setExclusionList(exclusionList.toArray(new Address[exclusionList.size()]));
         }
 
-        if (dest !=null){
+        if (dest != null) {
             options.setAnycasting(true);
         }
 
         final SettableFuture<Map<Address, Reply<T>>> f = SettableFuture.create();
 
-        log.debug("call {}, dest={}, excl={}, loopback={}, timeout={}, respMode={}", tInfo.fullMethodName, dest, exclusionList, loopBack, timeout, responseMode);
+        log.debug("call {}, dest={}, excl={}, loopback={}, timeout={}, respMode={}", tInfo.fullMethodName, dest, exclusionList, loopBack,
+                  timeout, responseMode);
 
         try {
-            getMessageDispatcher().castMessageWithFuture(dest, msg, options, new FutureListener<RspList<MessageWrapper>>(){
+            getMessageDispatcher().castMessageWithFuture(dest, msg, options, new FutureListener<RspList<MessageWrapper>>() {
 
                 @Override
                 public void futureDone(Future<RspList<MessageWrapper>> future) {
@@ -77,7 +80,8 @@ public abstract class AbstractJgroupsThriftClientImpl extends ClusterThriftClien
                     RspList<MessageWrapper> resp;
                     try {
                         resp = future.get();
-                    } catch (InterruptedException | ExecutionException e1) {
+                    }
+                    catch (InterruptedException | ExecutionException e1) {
                         f.setException(e1);
                         return;
                     }
@@ -86,17 +90,20 @@ public abstract class AbstractJgroupsThriftClientImpl extends ClusterThriftClien
 
                     final Map<Address, Reply<T>> ret = new HashMap<Address, Reply<T>>();
 
-                    for (Rsp<MessageWrapper>responce: resp){
-                        if (responce.getValue() !=null){
-                            ret.put(responce.getSender(), new ReplyImpl<T>(() -> (T)tInfo.setReply(responce.getValue().getTTransport(), binaryProtocolFactory)));
-                        }else{
+                    for (Rsp<MessageWrapper> responce : resp) {
+                        if (responce.getValue() != null) {
+                            ret.put(responce.getSender(),
+                                    new ReplyImpl<T>(() -> (T) tInfo.setReply(responce.getValue().getTTransport(), binaryProtocolFactory)));
+                        } else {
                             log.warn("null responce from {}", responce.getSender());
                         }
                     }
 
                     f.set(ret);
-                }});
-        } catch (Exception e) {
+                }
+            });
+        }
+        catch (Exception e) {
             f.setException(e);
         }
 
@@ -104,37 +111,43 @@ public abstract class AbstractJgroupsThriftClientImpl extends ClusterThriftClien
     }
 
     @Override
-    public <T> ListenableFuture<Map<Address, Reply<T>>> call(Collection<Address> dest, Collection<Address> exclusionList, InvocationInfo tInfo, Options ... options) throws TException{
+    public <T> ListenableFuture<Map<Address, Reply<T>>> call(Collection<Address> dest, Collection<Address> exclusionList,
+                                                             InvocationInfo tInfo, Options... options) throws TException {
 
         Assert.notNull(tInfo, "tInfo must not be null");
 
         final SettableFuture<Map<Address, Reply<T>>> ret = SettableFuture.create();
 
-        Futures.addCallback(viewAccepted, new FutureCallback<Object>(){
+        Futures.addCallback(viewAccepted, new FutureCallback<Object>() {
 
             @Override
             public void onSuccess(Object result) {
 
                 try {
-                    Futures.addCallback(_thriftCall(dest, exclusionList, isLoopback(options), getTimeout(options), getResponseMode(options), tInfo), new FutureCallback<Map<Address, Reply<T>>>(){
+                    Futures.addCallback(_thriftCall(dest, exclusionList, isLoopback(options), getTimeout(options), getResponseMode(options),
+                                                    tInfo),
+                                        new FutureCallback<Map<Address, Reply<T>>>() {
 
-                        @Override
-                        public void onSuccess(Map<Address, Reply<T>> result) {
-                            ret.set(result);
-                        }
+                                            @Override
+                                            public void onSuccess(Map<Address, Reply<T>> result) {
+                                                ret.set(result);
+                                            }
 
-                        @Override
-                        public void onFailure(Throwable t) {
-                            ret.setException(t);
-                        }});
-                } catch (TException e) {
+                                            @Override
+                                            public void onFailure(Throwable t) {
+                                                ret.setException(t);
+                                            }
+                                        });
+                }
+                catch (TException e) {
                     ret.setException(e);
                 }
             }
 
             @Override
             public void onFailure(Throwable t) {
-            }});
+            }
+        });
 
         return ret;
     }

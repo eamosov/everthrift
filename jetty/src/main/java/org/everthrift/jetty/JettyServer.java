@@ -75,6 +75,7 @@ public class JettyServer implements SmartLifecycle {
     private final Logger log = LoggerFactory.getLogger(JettyServer.class);
 
     private Server jettyServer;
+
     private XmlWebApplicationContext springWebApplicationContext;
 
     @Value("${jetty.web-context-xml:web-context.xml}")
@@ -95,7 +96,6 @@ public class JettyServer implements SmartLifecycle {
     @PostConstruct
     private void initJetty() {
 
-
         log.info("Starting jetty server on {}:{}", jettyHost, jettyPort);
 
         final int capacity = Integer.parseInt(env.getProperty("jetty.capacity", "6000"));
@@ -110,7 +110,7 @@ public class JettyServer implements SmartLifecycle {
 
         jettyServer = new Server(threadPool);
 
-        final MBeanContainer mbContainer=new MBeanContainer(mbeanServer);
+        final MBeanContainer mbContainer = new MBeanContainer(mbeanServer);
         jettyServer.addEventListener(mbContainer);
         jettyServer.addBean(mbContainer);
 
@@ -147,11 +147,14 @@ public class JettyServer implements SmartLifecycle {
                 final HttpConfiguration https_config = new HttpConfiguration(http_config);
                 https_config.addCustomizer(new SecureRequestCustomizer());
 
-                final ServerConnector https = new ServerConnector(jettyServer, new SslConnectionFactory(contextFactory, HttpVersion.HTTP_1_1.toString()), new HttpConnectionFactory(https_config));
+                final ServerConnector https = new ServerConnector(jettyServer,
+                                                                  new SslConnectionFactory(contextFactory, HttpVersion.HTTP_1_1.toString()),
+                                                                  new HttpConnectionFactory(https_config));
                 https.setHost(jettyHost);
                 https.setPort(Integer.parseInt(jettySslPort));
                 jettyServer.addConnector(https);
-            } catch (NoSuchAlgorithmException | CertificateException | KeyStoreException | IOException e) {
+            }
+            catch (NoSuchAlgorithmException | CertificateException | KeyStoreException | IOException e) {
 
                 throw new RuntimeException(e);
             }
@@ -164,8 +167,8 @@ public class JettyServer implements SmartLifecycle {
         jettyContext.setConfigurationClasses(WebAppContext.getDefaultConfigurationClasses());
         jettyServer.setHandler(jettyContext);
 
-        ((ConfigurableApplicationContext)context).getBeanFactory().registerSingleton("webAppContext", jettyContext);
-        ((ConfigurableApplicationContext)context).getBeanFactory().registerSingleton("servletContext", jettyContext.getServletContext());
+        ((ConfigurableApplicationContext) context).getBeanFactory().registerSingleton("webAppContext", jettyContext);
+        ((ConfigurableApplicationContext) context).getBeanFactory().registerSingleton("servletContext", jettyContext.getServletContext());
 
         if (isJMinixEnabled()) {
             final MiniConsoleServlet jminix = new MiniConsoleServlet();
@@ -188,26 +191,30 @@ public class JettyServer implements SmartLifecycle {
         jettyContext.addServlet(new ServletHolder(dispatcherServlet), "/*");
         springWebApplicationContext.refresh();
 
-        //hack for disable CORS
-        for (AbstractHandlerMapping m: springWebApplicationContext.getBeansOfType(AbstractHandlerMapping.class).values()){
-            m.setCorsProcessor(new CorsProcessor(){
+        // hack for disable CORS
+        for (AbstractHandlerMapping m : springWebApplicationContext.getBeansOfType(AbstractHandlerMapping.class).values()) {
+            m.setCorsProcessor(new CorsProcessor() {
 
                 @Override
-                public boolean processRequest(CorsConfiguration configuration, HttpServletRequest request, HttpServletResponse response) throws IOException {
+                public boolean processRequest(CorsConfiguration configuration, HttpServletRequest request,
+                                              HttpServletResponse response) throws IOException {
                     return true;
-                }});
+                }
+            });
         }
 
     }
 
-    private KeyStore loadJettyKeystore(final String jks, String keystorePassword) throws IOException, NoSuchAlgorithmException, CertificateException, KeyStoreException {
+    private KeyStore loadJettyKeystore(final String jks,
+                                       String keystorePassword) throws IOException, NoSuchAlgorithmException, CertificateException, KeyStoreException {
         final InputStream inputStream = context.getResource(jks).getInputStream();
         final KeyStore keyStore;
 
         try {
             keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
             keyStore.load(inputStream, keystorePassword != null ? keystorePassword.toCharArray() : null);
-        } finally {
+        }
+        finally {
             if (inputStream != null)
                 inputStream.close();
         }
@@ -215,7 +222,7 @@ public class JettyServer implements SmartLifecycle {
         return keyStore;
     }
 
-    private boolean isJMinixEnabled(){
+    private boolean isJMinixEnabled() {
         return !env.getProperty("jminix", "false").equalsIgnoreCase("false");
     }
 
@@ -223,38 +230,41 @@ public class JettyServer implements SmartLifecycle {
     public void start() {
         try {
             jettyServer.start();
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             throw Throwables.propagate(e);
         }
     }
 
     @Override
     public void stop() {
-        if (jettyServer !=null){
+        if (jettyServer != null) {
             try {
                 jettyServer.stop();
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
             }
             jettyServer = null;
         }
 
-        if (springWebApplicationContext !=null){
-            try{
+        if (springWebApplicationContext != null) {
+            try {
                 springWebApplicationContext.close();
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
             }
             springWebApplicationContext = null;
         }
     }
 
     @PreDestroy
-    private void destroy(){
+    private void destroy() {
         stop();
     }
 
     @Override
     public boolean isRunning() {
-        return jettyServer !=null && jettyServer.isRunning();
+        return jettyServer != null && jettyServer.isRunning();
     }
 
     @Override

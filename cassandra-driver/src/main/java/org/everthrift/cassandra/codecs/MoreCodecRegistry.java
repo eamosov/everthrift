@@ -16,20 +16,20 @@ public class MoreCodecRegistry {
         INSTANCE.registerFactory(TEnumCodec.factory);
     }
 
-    private MoreCodecRegistry(){
+    private MoreCodecRegistry() {
 
     }
 
     @SuppressWarnings("rawtypes")
     private final List<TypeCodecFactory> factories = Lists.newArrayList();
 
-    synchronized public <T> void registerFactory(TypeCodecFactory<T> f){
+    synchronized public <T> void registerFactory(TypeCodecFactory<T> f) {
         factories.add(f);
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    synchronized public <T> TypeCodec<T> lookupCodec(DataType cqlType, Class<?> javaType){
-        for (TypeCodecFactory f: factories){
+    synchronized public <T> TypeCodec<T> lookupCodec(DataType cqlType, Class<?> javaType) {
+        for (TypeCodecFactory f : factories) {
             if (f.accepts(cqlType) && f.accepts(javaType))
                 return f.create(cqlType, javaType);
         }

@@ -12,9 +12,10 @@ import com.google.common.collect.Lists;
 public class PrimaryKey {
 
     protected String primaryKeyName;
-    protected List<String> columnNames = Lists.newArrayList();
-    protected short keySequence;
 
+    protected List<String> columnNames = Lists.newArrayList();
+
+    protected short keySequence;
 
     public String getPrimaryKeyName() {
         return primaryKeyName;
@@ -37,12 +38,12 @@ public class PrimaryKey {
         @Override
         public PrimaryKey extractData(ResultSet rs) throws SQLException, DataAccessException {
             PrimaryKey pk = new PrimaryKey();
-            while (rs.next()){
+            while (rs.next()) {
                 pk.setPrimaryKeyName(rs.getString("PK_NAME"));
                 pk.addColumnName(rs.getString("COLUMN_NAME"));
-                //pk.setKeySequence(rs.getShort("KEY_SEQ"));
+                // pk.setKeySequence(rs.getShort("KEY_SEQ"));
             }
-            return pk.getColumnNames().isEmpty()?null:pk;
+            return pk.getColumnNames().isEmpty() ? null : pk;
         }
     }
 }

@@ -39,39 +39,49 @@ public class Statements {
 
     private List<Statement> statements = Lists.newArrayList();
 
-    @SuppressWarnings({ "rawtypes"})
-    private Multimap<CassandraModelFactory, Object> invalidates = Multimaps.newSetMultimap(Maps.newIdentityHashMap(), () -> Sets.newHashSet()) ;
+    @SuppressWarnings({ "rawtypes" })
+    private Multimap<CassandraModelFactory, Object> invalidates = Multimaps.newSetMultimap(Maps.newIdentityHashMap(),
+                                                                                           () -> Sets.newHashSet());
+
     private List<Runnable> callbacks = Lists.newArrayList();
+
     private Session session;
+
     private boolean autoCommit = false;
+
     private boolean isBatch = true;
+
     private BatchStatement.Type batchType = BatchStatement.Type.LOGGED;
-    private long timestamp; //in microseconds
+
+    private long timestamp; // in microseconds
 
     private CassandraFactories cassandraFactories;
 
-    Statements(CassandraFactories cassandraFactories, Session session){
+    Statements(CassandraFactories cassandraFactories, Session session) {
         this.cassandraFactories = cassandraFactories;
         this.session = session;
         this.timestamp = LongTimestamp.nowMicros();
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    public <PK extends Serializable,ENTITY extends DaoEntityIF, E extends TException> CassandraModelFactory<PK, ENTITY, E> of(ENTITY e){
-        return (CassandraModelFactory)cassandraFactories.of(e.getClass());
+    public <PK extends Serializable, ENTITY extends DaoEntityIF, E extends TException> CassandraModelFactory<PK, ENTITY, E> of(ENTITY e) {
+        return (CassandraModelFactory) cassandraFactories.of(e.getClass());
     }
 
-    @SuppressWarnings({ "rawtypes"})
-    private <ENTITY extends DaoEntityIF> void addStatement(final CassandraModelFactory f, final Statement s, ENTITY e){
-        if (s!=null){
+    @SuppressWarnings({ "rawtypes" })
+    private <ENTITY extends DaoEntityIF> void addStatement(final CassandraModelFactory f, final Statement s, ENTITY e) {
+        if (s != null) {
             statements.add(s);
             invalidates.put(f, e.getPk());
         }
     }
 
-    public <PK extends Serializable,ENTITY extends DaoEntityIF & UpdatedAtIF, E extends TException> void update(CassandraModelFactory<PK, ENTITY, E> factory, PK pk, Consumer<Assignments> assignment){
+    public <PK extends Serializable, ENTITY extends DaoEntityIF & UpdatedAtIF, E extends TException> void update(CassandraModelFactory<PK, ENTITY, E> factory,
+                                                                                                                 PK pk,
+                                                                                                                 Consumer<Assignments> assignment) {
 
-        final Statement s = factory.mapper.updateQuery(assignment, ArrayUtils.add(factory.extractCompaundPk(pk), Option.updatedAt(timestamp/1000)));
+        final Statement s = factory.mapper.updateQuery(assignment,
+                                                       ArrayUtils.add(factory.extractCompaundPk(pk), Option.updatedAt(timestamp / 1000)));
 
         statements.add(s);
         invalidates.put(factory, pk);
@@ -79,46 +89,48 @@ public class Statements {
         final ENTITY afterUpdate;
         try {
             afterUpdate = factory.getEntityClass().newInstance();
-        } catch (InstantiationException | IllegalAccessException e) {
+        }
+        catch (InstantiationException | IllegalAccessException e) {
             throw Throwables.propagate(e);
         }
 
         afterUpdate.setPk(pk);
-        afterUpdate.setUpdatedAt(timestamp/1000);
+        afterUpdate.setUpdatedAt(timestamp / 1000);
 
         final ENTITY beforeUpdate;
         try {
             beforeUpdate = factory.getEntityClass().newInstance();
-        } catch (InstantiationException | IllegalAccessException e) {
+        }
+        catch (InstantiationException | IllegalAccessException e) {
             throw Throwables.propagate(e);
         }
 
         beforeUpdate.setPk(pk);
 
-
         final UpdateEntityEvent<PK, ENTITY> event = factory.updateEntityEvent(beforeUpdate, afterUpdate);
 
-        callbacks.add(()->{
+        callbacks.add(() -> {
             factory.localEventBus.postEntityEvent(event);
         });
 
         if (autoCommit)
             commit();
     }
-    
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    public <ENTITY extends DaoEntityIF> ENTITY update(ENTITY e, TFunction<ENTITY, Boolean> mutator, Option... options) throws TException{
-        final CassandraModelFactory factory = of(e);
-        final ENTITY beforeUpdate = (ENTITY)factory.copy(e);
 
-        final UpdateQuery uq = factory.updateQuery(beforeUpdate, e, mutator, (Option[])ArrayUtils.add(options, Option.updatedAt(timestamp/1000)));
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public <ENTITY extends DaoEntityIF> ENTITY update(ENTITY e, TFunction<ENTITY, Boolean> mutator, Option... options) throws TException {
+        final CassandraModelFactory factory = of(e);
+        final ENTITY beforeUpdate = (ENTITY) factory.copy(e);
+
+        final UpdateQuery uq = factory.updateQuery(beforeUpdate, e, mutator,
+                                                   (Option[]) ArrayUtils.add(options, Option.updatedAt(timestamp / 1000)));
         if (uq == null)
             return e;
 
         addStatement(factory, uq.statement, e);
 
-        final UpdateEntityEvent event = factory.updateEntityEvent(beforeUpdate, (ENTITY)factory.copy(e));
-        callbacks.add(()->{
+        final UpdateEntityEvent event = factory.updateEntityEvent(beforeUpdate, (ENTITY) factory.copy(e));
+        callbacks.add(() -> {
             uq.applySpecialValues(e);
             factory.localEventBus.postEntityEvent(event);
         });
@@ -130,15 +142,15 @@ public class Statements {
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    public <ENTITY extends DaoEntityIF> ENTITY save(ENTITY e, Option... options){
+    public <ENTITY extends DaoEntityIF> ENTITY save(ENTITY e, Option... options) {
         final CassandraModelFactory f = of(e);
-        
+
         CreatedAtIF.setCreatedAt(e);
         addStatement(f, f.insertQuery(e, options), e);
 
-        final ENTITY copy = (ENTITY)f.copy(e);
+        final ENTITY copy = (ENTITY) f.copy(e);
         final InsertEntityEvent event = f.insertEntityEvent(copy);
-        callbacks.add(()->{
+        callbacks.add(() -> {
             f.localEventBus.postEntityEvent(event);
         });
 
@@ -149,7 +161,7 @@ public class Statements {
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    public <ENTITY extends DaoEntityIF> ENTITY delete(ENTITY e, Option... options){
+    public <ENTITY extends DaoEntityIF> ENTITY delete(ENTITY e, Option... options) {
         final CassandraModelFactory f = of(e);
 
         final Serializable pk = e.getPk();
@@ -157,7 +169,7 @@ public class Statements {
         invalidates.put(f, pk);
 
         final DeleteEntityEvent event = f.deleteEntityEvent(e);
-        callbacks.add(()->{
+        callbacks.add(() -> {
             f.localEventBus.postEntityEvent(event);
         });
 
@@ -166,16 +178,16 @@ public class Statements {
 
         return e;
     }
-    
-    public ResultSet execute(Statement s){
+
+    public ResultSet execute(Statement s) {
         return session.execute(s);
     }
 
-    public ResultSetFuture executeAsync(Statement s){
+    public ResultSetFuture executeAsync(Statement s) {
         return session.executeAsync(s);
     }
-    
-    public void add(Statement s){
+
+    public void add(Statement s) {
         statements.add(s);
 
         if (autoCommit)
@@ -183,47 +195,49 @@ public class Statements {
     }
 
     @SuppressWarnings({ "rawtypes" })
-    public <ENTITY extends DaoEntityIF> void invalidate(ENTITY e){
+    public <ENTITY extends DaoEntityIF> void invalidate(ENTITY e) {
         invalidate(of(e), e.getPk());
     }
 
     @SuppressWarnings({ "rawtypes" })
-    public void invalidate(CassandraModelFactory f, Object key){
+    public void invalidate(CassandraModelFactory f, Object key) {
         invalidates.put(f, key);
 
         if (autoCommit)
             commit();
     }
 
-    public void add(Runnable successCallback){
-        callbacks.add(() -> {successCallback.run();});
+    public void add(Runnable successCallback) {
+        callbacks.add(() -> {
+            successCallback.run();
+        });
 
         if (autoCommit)
             commit();
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    public ListenableFuture<?> commitAsync(Executor executor){
+    public ListenableFuture<?> commitAsync(Executor executor) {
         final ListenableFuture f;
 
-        if (isBatch() && statements.size()>1){
+        if (isBatch() && statements.size() > 1) {
             final BatchStatement batch = new BatchStatement(batchType);
             batch.setDefaultTimestamp(timestamp);
             statements.forEach(s -> batch.add(s));
             f = executeAsync(batch);
-        }else{
+        } else {
             final List<ResultSetFuture> ff = Lists.newArrayList();
-            for (Statement s: statements){
+            for (Statement s : statements) {
                 ff.add(executeAsync(s));
             }
             f = Futures.successfulAsList(ff);
         }
 
-        Futures.addCallback(f, new FutureCallback<Object>(){
+        Futures.addCallback(f, new FutureCallback<Object>() {
 
             @Override
             public void onSuccess(Object result) {
-                for (Map.Entry<CassandraModelFactory, Object> e: invalidates.entries()){
+                for (Map.Entry<CassandraModelFactory, Object> e : invalidates.entries()) {
                     e.getKey().invalidate(e.getValue());
                 }
 
@@ -233,25 +247,26 @@ public class Statements {
             @Override
             public void onFailure(Throwable t) {
                 t.printStackTrace();
-            }});
+            }
+        });
 
         return f;
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    public void commit(){
+    public void commit() {
 
-        if (isBatch() && statements.size()>1){
+        if (isBatch() && statements.size() > 1) {
             final BatchStatement batch = new BatchStatement(batchType);
             batch.setIdempotent(false);
             batch.setDefaultTimestamp(timestamp);
             statements.forEach(s -> batch.add(s));
             execute(batch);
-        }else{
+        } else {
             statements.forEach(s -> execute(s));
         }
 
-        for (Map.Entry<CassandraModelFactory, Object> e: invalidates.entries()){
+        for (Map.Entry<CassandraModelFactory, Object> e : invalidates.entries()) {
             e.getKey().invalidate(e.getValue());
         }
 
@@ -284,7 +299,7 @@ public class Statements {
         return timestamp;
     }
 
-    public long currentTimeMillis(){
+    public long currentTimeMillis() {
         return timestamp / 1000;
     }
 

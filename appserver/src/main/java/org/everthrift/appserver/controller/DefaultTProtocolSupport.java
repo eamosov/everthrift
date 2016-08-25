@@ -18,14 +18,17 @@ import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.support.GenericMessage;
 
-public class DefaultTProtocolSupport implements ThriftProtocolSupportIF<MessageWrapper>{
+public class DefaultTProtocolSupport implements ThriftProtocolSupportIF<MessageWrapper> {
 
     private final MessageWrapper in;
+
     private final TProtocolFactory protocolFactory;
+
     private final TProtocol inp;
+
     private final TMessage msg;
 
-    public DefaultTProtocolSupport(MessageWrapper in, TProtocolFactory protocolFactory) throws TException{
+    public DefaultTProtocolSupport(MessageWrapper in, TProtocolFactory protocolFactory) throws TException {
         this.in = in;
         this.protocolFactory = protocolFactory;
 
@@ -44,28 +47,29 @@ public class DefaultTProtocolSupport implements ThriftProtocolSupportIF<MessageW
     }
 
     @Override
-    public <T extends TBase> T readArgs(final ThriftControllerInfo tInfo) throws TException{
+    public <T extends TBase> T readArgs(final ThriftControllerInfo tInfo) throws TException {
         final TBase args = tInfo.makeArgument();
         args.read(inp);
         inp.readMessageEnd();
-        return (T)args;
+        return (T) args;
     }
 
     @Override
     public void skip() throws TException {
-        TProtocolUtil.skip( inp, TType.STRUCT );
+        TProtocolUtil.skip(inp, TType.STRUCT);
         inp.readMessageEnd();
     }
 
-    private MessageWrapper result(TApplicationException o){
+    private MessageWrapper result(TApplicationException o) {
         final TMemoryBuffer outT = new TMemoryBuffer(1024);
         final TProtocol out = protocolFactory.getProtocol(outT);
-        try{
-            out.writeMessageBegin( new TMessage( msg.name, TMessageType.EXCEPTION, msg.seqid));
-            ((TApplicationException)o).write(out);
+        try {
+            out.writeMessageBegin(new TMessage(msg.name, TMessageType.EXCEPTION, msg.seqid));
+            ((TApplicationException) o).write(out);
             out.writeMessageEnd();
             out.getTransport().flush(msg.seqid);
-        }catch (TException e){
+        }
+        catch (TException e) {
             throw new RuntimeException(e);
         }
         return new MessageWrapper(outT).copyAttributes(in).removeCorrelationHeaders();
@@ -74,23 +78,24 @@ public class DefaultTProtocolSupport implements ThriftProtocolSupportIF<MessageW
     @Override
     public MessageWrapper result(final Object o, final ThriftControllerInfo tInfo) {
 
-        if (o instanceof TApplicationException){
-            return result((TApplicationException)o);
-        }else if (o instanceof TProtocolException) {
-            return result(new TApplicationException(TApplicationException.PROTOCOL_ERROR, ((Exception)o).getMessage()));
-        }else if (o instanceof Exception && !(o instanceof TException)){
-            return result(new TApplicationException(TApplicationException.INTERNAL_ERROR, ((Exception)o).getMessage()));
-        }else{
+        if (o instanceof TApplicationException) {
+            return result((TApplicationException) o);
+        } else if (o instanceof TProtocolException) {
+            return result(new TApplicationException(TApplicationException.PROTOCOL_ERROR, ((Exception) o).getMessage()));
+        } else if (o instanceof Exception && !(o instanceof TException)) {
+            return result(new TApplicationException(TApplicationException.INTERNAL_ERROR, ((Exception) o).getMessage()));
+        } else {
             final TBase result = tInfo.makeResult(o);
             final TMemoryBuffer outT = new TMemoryBuffer(1024);
             final TProtocol out = protocolFactory.getProtocol(outT);
 
-            try{
-                out.writeMessageBegin( new TMessage( msg.name, TMessageType.REPLY, msg.seqid) );
+            try {
+                out.writeMessageBegin(new TMessage(msg.name, TMessageType.REPLY, msg.seqid));
                 result.write(out);
                 out.writeMessageEnd();
                 out.getTransport().flush(msg.seqid);
-            }catch (TException e){
+            }
+            catch (TException e) {
                 throw new RuntimeException(e);
             }
 
@@ -100,7 +105,6 @@ public class DefaultTProtocolSupport implements ThriftProtocolSupportIF<MessageW
 
     @Override
     public void asyncResult(final Object o, final AbstractThriftController controller) {
-
 
         final MessageWrapper mw = result(o, controller.getInfo());
 

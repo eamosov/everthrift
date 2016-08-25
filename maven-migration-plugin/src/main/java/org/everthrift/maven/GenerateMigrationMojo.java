@@ -21,7 +21,9 @@ import org.apache.maven.plugins.annotations.Parameter;
 public class GenerateMigrationMojo extends AbstractMojo {
 
     private static enum PLACEHOLDERS {
-        PACKAGE("<package>"), VERSION("<version>"), MIGRATION_NAME("<migrationName>");
+        PACKAGE("<package>"),
+        VERSION("<version>"),
+        MIGRATION_NAME("<migrationName>");
 
         private String placeholder;
 
@@ -29,7 +31,6 @@ public class GenerateMigrationMojo extends AbstractMojo {
             this.placeholder = placeholder;
         }
     }
-
 
     @Parameter(defaultValue = "${project.build.sourceDirectory}", required = true)
     private File outputDirectory;
@@ -54,7 +55,8 @@ public class GenerateMigrationMojo extends AbstractMojo {
         getLog().info(String.format("Migration class will be writen to: %s", outputDirectory.toPath().resolve(packageDir)));
         try {
             createMigration();
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             getLog().error("Error while execute Migration:" + e.getMessage());
             new MojoExecutionException("Error while execute Migration: ", e);
         }
@@ -81,7 +83,8 @@ public class GenerateMigrationMojo extends AbstractMojo {
         try {
             fileWriter = new FileWriter(migration);
             fileWriter.write(content);
-        } finally {
+        }
+        finally {
             if (fileWriter != null) {
                 fileWriter.close();
             }

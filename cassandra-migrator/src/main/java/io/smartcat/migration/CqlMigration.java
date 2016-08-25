@@ -13,18 +13,18 @@ import java.util.regex.Pattern;
 import io.smartcat.migration.exceptions.MigrationException;
 
 public class CqlMigration extends Migration {
-    
+
     private static final Pattern filenamePattern = Pattern.compile("^/(.+/)*(.+\\.(.+))$");
 
     final String resourceName;
-    
+
     public CqlMigration(MigrationType type, String resourceName) {
         super(type);
         this.resourceName = resourceName;
     }
-    
+
     @Override
-    public int getVersion(){
+    public int getVersion() {
         return extractVersion(resourceName);
     }
 
@@ -68,12 +68,14 @@ public class CqlMigration extends Migration {
         try {
             input = new BufferedInputStream(input);
             return loadResource(input);
-        } finally {
+        }
+        finally {
             try {
                 if (input != null) {
                     input.close();
                 }
-            } catch (IOException e) {
+            }
+            catch (IOException e) {
                 // Ignore
             }
         }
@@ -86,7 +88,8 @@ public class CqlMigration extends Migration {
         final String source;
         try {
             source = loadResource(resourceName);
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             throw new MigrationException("Could not load resource \"" + resourceName + "\"", e);
         }
 
@@ -124,15 +127,15 @@ public class CqlMigration extends Migration {
     }
 
     @Override
-    public String getDescription() {        
+    public String getDescription() {
         final Matcher m = filenamePattern.matcher(resourceName);
         return "CQL:" + (m.matches() ? m.group(2) : resourceName);
     }
 
     @Override
     public void execute() throws MigrationException {
-        for (String s: loadCQLStatements(resourceName)){
+        for (String s : loadCQLStatements(resourceName)) {
             session.execute(s);
-        }        
+        }
     }
 }

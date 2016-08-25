@@ -1,5 +1,5 @@
 package org.everthrift.thrift;
 
-public interface TBaseHasLazyModel<M extends TBaseLazyModel<?,?>> extends TBaseHasModel<M> {
+public interface TBaseHasLazyModel<M extends TBaseLazyModel<?, ?>> extends TBaseHasModel<M> {
 
 }

@@ -21,15 +21,20 @@ import com.google.common.util.concurrent.AbstractFuture;
 @SuppressWarnings("rawtypes")
 public class InvocationInfo<T> extends AbstractFuture<T> {
     public final String fullMethodName;
+
     public final String serviceName;
+
     public final String methodName;
+
     public final TBase args;
+
     public final Constructor<? extends TBase> resultInit;
+
     public final AsyncMethodCallback asyncMethodCallback;
 
     private int seqId;
 
-    public InvocationInfo(InvocationInfo other){
+    public InvocationInfo(InvocationInfo other) {
         super();
         this.fullMethodName = other.fullMethodName;
         this.serviceName = other.serviceName;
@@ -50,7 +55,8 @@ public class InvocationInfo<T> extends AbstractFuture<T> {
         this.asyncMethodCallback = null;
     }
 
-    public InvocationInfo(String serviceName, String methodName, TBase args, Constructor<? extends TBase> resultInit, AsyncMethodCallback asyncMethodCallback) {
+    public InvocationInfo(String serviceName, String methodName, TBase args, Constructor<? extends TBase> resultInit,
+                          AsyncMethodCallback asyncMethodCallback) {
         super();
         this.fullMethodName = serviceName + ":" + methodName;
         this.serviceName = serviceName;
@@ -60,7 +66,7 @@ public class InvocationInfo<T> extends AbstractFuture<T> {
         this.asyncMethodCallback = asyncMethodCallback;
     }
 
-    public void buildCall(int seqId, TTransport outT, TProtocolFactory protocolFactory){
+    public void buildCall(int seqId, TTransport outT, TProtocolFactory protocolFactory) {
         this.seqId = seqId;
 
         final TProtocol outProtocol = protocolFactory.getProtocol(outT);
@@ -70,7 +76,8 @@ public class InvocationInfo<T> extends AbstractFuture<T> {
             args.write(outProtocol);
             outProtocol.writeMessageEnd();
             outProtocol.getTransport().flush();
-        } catch (TException e) {
+        }
+        catch (TException e) {
             throw new RuntimeException(e);
         }
     }
@@ -85,39 +92,40 @@ public class InvocationInfo<T> extends AbstractFuture<T> {
      *
      * payload.array(), payload.position(), payload.limit() - payload.position()
      */
-    public TMemoryBuffer buildCall(int seqId, TProtocolFactory protocolFactory){
+    public TMemoryBuffer buildCall(int seqId, TProtocolFactory protocolFactory) {
 
         final TMemoryBuffer outT = new TMemoryBuffer(1024);
         buildCall(seqId, outT, protocolFactory);
         return outT;
     }
 
-    public T setReply(byte[] data, TProtocolFactory protocolFactory) throws TException{
+    public T setReply(byte[] data, TProtocolFactory protocolFactory) throws TException {
         return setReply(data, 0, data.length, protocolFactory);
     }
 
-    public T setReply(byte[] data, int offset, int length, TProtocolFactory protocolFactory) throws TException{
+    public T setReply(byte[] data, int offset, int length, TProtocolFactory protocolFactory) throws TException {
         return setReply(new TMemoryInputTransport(data, offset, length), protocolFactory);
     }
 
     @SuppressWarnings("unchecked")
-    public T setReply(TTransport inT, TProtocolFactory protocolFactory) throws TException{
-        try{
-            final T ret = (T)this.parseReply(inT, protocolFactory);
+    public T setReply(TTransport inT, TProtocolFactory protocolFactory) throws TException {
+        try {
+            final T ret = (T) this.parseReply(inT, protocolFactory);
             super.set(ret);
             return ret;
-        }catch(TException e){
+        }
+        catch (TException e) {
             super.setException(e);
             throw e;
         }
     }
 
-    public void setException(TException e){
+    public void setException(TException e) {
         super.setException(e);
     }
 
     @SuppressWarnings("unchecked")
-    private Object parseReply(TTransport inT, TProtocolFactory protocolFactory) throws TException{
+    private Object parseReply(TTransport inT, TProtocolFactory protocolFactory) throws TException {
         final TProtocol inProtocol = protocolFactory.getProtocol(inT);
 
         TMessage msg = inProtocol.readMessageBegin();
@@ -128,28 +136,34 @@ public class InvocationInfo<T> extends AbstractFuture<T> {
             throw x;
         }
 
-        if (msg.type != TMessageType.REPLY){
-            throw new TApplicationException(TApplicationException.INVALID_MESSAGE_TYPE,  this.fullMethodName + " failed: invalid msg type");
+        if (msg.type != TMessageType.REPLY) {
+            throw new TApplicationException(TApplicationException.INVALID_MESSAGE_TYPE, this.fullMethodName + " failed: invalid msg type");
         }
 
         if (msg.seqid != seqId) {
             throw new TApplicationException(TApplicationException.BAD_SEQUENCE_ID, fullMethodName + " failed: out of sequence response");
         }
 
-        if (!msg.name.equals(this.fullMethodName)){
-            throw new TApplicationException(TApplicationException.WRONG_METHOD_NAME, fullMethodName + " failed: invalid method name '" + msg.name + "' in reply. Need '" + this.fullMethodName + "'");
+        if (!msg.name.equals(this.fullMethodName)) {
+            throw new TApplicationException(TApplicationException.WRONG_METHOD_NAME,
+                                            fullMethodName + " failed: invalid method name '" + msg.name + "' in reply. Need '"
+                                                                                     + this.fullMethodName + "'");
         }
 
         final TBase result;
         try {
             result = resultInit.newInstance();
-        } catch (IllegalArgumentException e) {
+        }
+        catch (IllegalArgumentException e) {
             throw new RuntimeException(e);
-        } catch (InstantiationException e) {
+        }
+        catch (InstantiationException e) {
             throw new RuntimeException(e);
-        } catch (IllegalAccessException e) {
+        }
+        catch (IllegalAccessException e) {
             throw new RuntimeException(e);
-        } catch (InvocationTargetException e) {
+        }
+        catch (InvocationTargetException e) {
             throw new RuntimeException(e);
         }
 
@@ -157,31 +171,31 @@ public class InvocationInfo<T> extends AbstractFuture<T> {
         inProtocol.readMessageEnd();
 
         Object o = null;
-        int i=1;
-        do{//Пытаемся найти exception
+        int i = 1;
+        do {// Пытаемся найти exception
             final TFieldIdEnum f = result.fieldForId(i++);
-            if (f==null)
+            if (f == null)
                 break;
 
             o = result.getFieldValue(f);
-            if (o!=null)
+            if (o != null)
                 break;
-        }while(o==null);
+        } while (o == null);
 
-        if (o==null){//Пробуем прочитать success
+        if (o == null) {// Пробуем прочитать success
             final TFieldIdEnum f = result.fieldForId(0);
-            if (f!=null)
+            if (f != null)
                 o = result.getFieldValue(f);
         }
 
-        if (o == null){
+        if (o == null) {
             return null;
         }
 
         if (o instanceof RuntimeException)
-            throw (RuntimeException)o;
+            throw (RuntimeException) o;
         else if (o instanceof TException)
-            throw (TException)o;
+            throw (TException) o;
 
         return o;
     }

@@ -37,9 +37,10 @@ public class HibernateCache implements RegionFactory {
     private SessionFactoryOptions settings;
 
     /**
-     * {@link EhcacheAccessStrategyFactory} for creating various access strategies
+     * {@link EhcacheAccessStrategyFactory} for creating various access
+     * strategies
      */
-    protected final EhcacheAccessStrategyFactory accessStrategyFactory = new NonstopAccessStrategyFactory( new EhcacheAccessStrategyFactoryImpl() );
+    protected final EhcacheAccessStrategyFactory accessStrategyFactory = new NonstopAccessStrategyFactory(new EhcacheAccessStrategyFactoryImpl());
 
     public HibernateCache(Properties prop) {
         super();
@@ -78,28 +79,23 @@ public class HibernateCache implements RegionFactory {
      * {@inheritDoc}
      */
     @Override
-    public EntityRegion buildEntityRegion(String regionName, Properties properties, CacheDataDescription metadata)
-            throws CacheException {
-        return new EhcacheEntityRegion( accessStrategyFactory, getCache( regionName ), settings, metadata, properties );
+    public EntityRegion buildEntityRegion(String regionName, Properties properties, CacheDataDescription metadata) throws CacheException {
+        return new EhcacheEntityRegion(accessStrategyFactory, getCache(regionName), settings, metadata, properties);
     }
 
     @Override
-    public NaturalIdRegion buildNaturalIdRegion(String regionName, Properties properties, CacheDataDescription metadata) throws CacheException {
-        return new EhcacheNaturalIdRegion( accessStrategyFactory, getCache( regionName ), settings, metadata, properties );
+    public NaturalIdRegion buildNaturalIdRegion(String regionName, Properties properties,
+                                                CacheDataDescription metadata) throws CacheException {
+        return new EhcacheNaturalIdRegion(accessStrategyFactory, getCache(regionName), settings, metadata, properties);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public CollectionRegion buildCollectionRegion(String regionName, Properties properties, CacheDataDescription metadata) throws CacheException {
-        return new EhcacheCollectionRegion(
-                accessStrategyFactory,
-                getCache( regionName ),
-                settings,
-                metadata,
-                properties
-                );
+    public CollectionRegion buildCollectionRegion(String regionName, Properties properties,
+                                                  CacheDataDescription metadata) throws CacheException {
+        return new EhcacheCollectionRegion(accessStrategyFactory, getCache(regionName), settings, metadata, properties);
     }
 
     /**
@@ -107,7 +103,7 @@ public class HibernateCache implements RegionFactory {
      */
     @Override
     public QueryResultsRegion buildQueryResultsRegion(String regionName, Properties properties) throws CacheException {
-        return new EhcacheQueryResultsRegion( accessStrategyFactory, getCache( regionName ), properties );
+        return new EhcacheQueryResultsRegion(accessStrategyFactory, getCache(regionName), properties);
     }
 
     /**
@@ -115,7 +111,7 @@ public class HibernateCache implements RegionFactory {
      */
     @Override
     public TimestampsRegion buildTimestampsRegion(String regionName, Properties properties) throws CacheException {
-        return new EhcacheTimestampsRegion( accessStrategyFactory, getCache( regionName ), properties );
+        return new EhcacheTimestampsRegion(accessStrategyFactory, getCache(regionName), properties);
     }
 
     private Ehcache getCache(String name) throws CacheException {
@@ -123,27 +119,29 @@ public class HibernateCache implements RegionFactory {
 
             final CacheManager manager = AppserverApplication.INSTANCE.context.getBean(CacheManager.class);
 
-            Ehcache cache = manager.getEhcache( name );
-            if ( cache == null ) {
-                log.info("unableToFindEhCacheConfiguration: {}", name );
-                manager.addCache( name );
-                cache = manager.getEhcache( name );
-                log.debug( "started EHCache region: {}", name );
+            Ehcache cache = manager.getEhcache(name);
+            if (cache == null) {
+                log.info("unableToFindEhCacheConfiguration: {}", name);
+                manager.addCache(name);
+                cache = manager.getEhcache(name);
+                log.debug("started EHCache region: {}", name);
             }
-            //HibernateUtil.validateEhcache( cache );
+            // HibernateUtil.validateEhcache( cache );
             return cache;
         }
-        catch ( net.sf.ehcache.CacheException e ) {
-            throw new CacheException( e );
+        catch (net.sf.ehcache.CacheException e) {
+            throw new CacheException(e);
         }
 
     }
 
     /**
-     * Default access-type used when the configured using JPA 2.0 config.  JPA 2.0 allows <code>@Cacheable(true)</code> to be attached to an
-     * entity without any access type or usage qualification.
+     * Default access-type used when the configured using JPA 2.0 config. JPA
+     * 2.0 allows <code>@Cacheable(true)</code> to be attached to an entity
+     * without any access type or usage qualification.
      * <p/>
-     * We are conservative here in specifying {@link AccessType#READ_WRITE} so as to follow the mantra of "do no harm".
+     * We are conservative here in specifying {@link AccessType#READ_WRITE} so
+     * as to follow the mantra of "do no harm".
      * <p/>
      * This is a Hibernate 3.5 method.
      */

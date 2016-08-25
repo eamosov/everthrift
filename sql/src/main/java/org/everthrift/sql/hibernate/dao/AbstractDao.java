@@ -22,7 +22,6 @@ import com.google.common.base.Function;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
-
 public interface AbstractDao<K, V extends DaoEntityIF> {
 
     public Class<V> getEntityClass();
@@ -32,7 +31,7 @@ public interface AbstractDao<K, V extends DaoEntityIF> {
     public Collection<V> findByIds(Collection<K> id);
 
     /**
-     *  Если entity не найдено, то метод возвращает null для этого ключа
+     * Если entity не найдено, то метод возвращает null для этого ключа
      * @param id
      * @param keyExtractor
      * @return
@@ -40,7 +39,9 @@ public interface AbstractDao<K, V extends DaoEntityIF> {
     public Map<K, V> findByIdsAsMap(Collection<K> id);
 
     public void persist(V e) throws UniqueException;
+
     public Pair<V, Boolean> saveOrUpdate(V e) throws UniqueException;
+
     public Pair<V, Boolean> save(V e) throws UniqueException;
 
     public void delete(V e);
@@ -55,7 +56,8 @@ public interface AbstractDao<K, V extends DaoEntityIF> {
 
     public List<V> findByCriteria(Criterion criterion, Order order);
 
-    public List<V> findByCriteria(Criterion criterion, Projection proj, LockMode lockMode, List<Order> order, Integer limit, Integer offset);
+    public List<V> findByCriteria(Criterion criterion, Projection proj, LockMode lockMode, List<Order> order, Integer limit,
+                                  Integer offset);
 
     public ListenableFuture<List<V>> findByCriteriaAsync(Criterion criterion, Order order);
 
@@ -66,9 +68,11 @@ public interface AbstractDao<K, V extends DaoEntityIF> {
     public <X> List<X> findBySQLQuery(String query, Map<String, Type> mapping, ResultTransformer resultTransformer, Object... params);
 
     public int executeCustomUpdate(K evictId, String query, Object... params);
+
     public int executeCustomUpdate(K evictId, String query, Function<SQLQuery, Query> bindFunction);
 
     public void setSessionFactory(SessionFactory sessionFactory);
+
     public Session getCurrentSession();
 
     public void setListeningExecutorService(ListeningExecutorService listeningExecutorService);

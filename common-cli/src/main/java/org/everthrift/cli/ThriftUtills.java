@@ -11,8 +11,7 @@ public class ThriftUtills {
 
     public static final String DEFAULT_VERSION = "0.0.1";
 
-    public static TProtocol getProtocol(String host, int port)
-            throws TTransportException {
+    public static TProtocol getProtocol(String host, int port) throws TTransportException {
         TTransport t = new TFramedTransport(new TSocket(host, port));
         t.open();
         TProtocol p = new TBinaryProtocol(t);

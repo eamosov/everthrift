@@ -18,7 +18,7 @@ import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.support.ChannelInterceptor;
 
-public class AsyncTcpThriftAdapter implements InitializingBean, ChannelInterceptor{
+public class AsyncTcpThriftAdapter implements InitializingBean, ChannelInterceptor {
 
     public static Logger log = LoggerFactory.getLogger(AsyncTcpThriftAdapter.class);
 
@@ -35,17 +35,21 @@ public class AsyncTcpThriftAdapter implements InitializingBean, ChannelIntercept
 
     private final TProtocolFactory protocolFactory;
 
-    public AsyncTcpThriftAdapter(TProtocolFactory protocolFactory){
+    public AsyncTcpThriftAdapter(TProtocolFactory protocolFactory) {
         this.protocolFactory = protocolFactory;
     }
 
-    public Object handle(Message m){
+    public Object handle(Message m) {
 
-        log.debug("{}, adapter={}, processor={}", new Object[]{m, this, tp});
+        log.debug("{}, adapter={}, processor={}", new Object[] { m, this, tp });
 
-        try{
-            return tp.process(new DefaultTProtocolSupport(new MessageWrapper(new TMemoryInputTransport((byte[])m.getPayload())).setMessageHeaders(m.getHeaders()).setOutChannel(outChannel), protocolFactory), null);
-        } catch (Exception e) {
+        try {
+            return tp.process(new DefaultTProtocolSupport(new MessageWrapper(new TMemoryInputTransport((byte[]) m.getPayload())).setMessageHeaders(m.getHeaders())
+                                                                                                                                .setOutChannel(outChannel),
+                                                          protocolFactory),
+                              null);
+        }
+        catch (Exception e) {
             log.error("Exception while execution thrift processor:", e);
             return null;
         }
@@ -58,7 +62,8 @@ public class AsyncTcpThriftAdapter implements InitializingBean, ChannelIntercept
 
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
-        return MessageBuilder.withPayload(((TMemoryBuffer)((MessageWrapper)message.getPayload()).getTTransport()).toByteArray()).copyHeaders(message.getHeaders()).build();
+        return MessageBuilder.withPayload(((TMemoryBuffer) ((MessageWrapper) message.getPayload()).getTTransport()).toByteArray())
+                             .copyHeaders(message.getHeaders()).build();
     }
 
     @Override

@@ -4,7 +4,7 @@ public class InvocationInfoThreadHolder {
 
     final static ThreadLocal<InvocationInfo<?>> invocationInfo = new ThreadLocal<InvocationInfo<?>>();
 
-    public static InvocationInfo<?> getInvocationInfo(){
+    public static InvocationInfo<?> getInvocationInfo() {
         return invocationInfo.get();
     }
 

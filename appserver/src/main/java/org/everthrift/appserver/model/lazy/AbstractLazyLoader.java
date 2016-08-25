@@ -4,13 +4,12 @@ import java.util.List;
 
 public abstract class AbstractLazyLoader<K> implements LazyLoader<K> {
 
-
     public AbstractLazyLoader() {
 
     }
 
     @Override
-    public int process(List<K> entities){
+    public int process(List<K> entities) {
         if (entities.isEmpty())
             return 0;
 
@@ -19,11 +18,11 @@ public abstract class AbstractLazyLoader<K> implements LazyLoader<K> {
 
     protected abstract int loadImpl(List<K> entities);
 
-    protected boolean beforeLoad(K key){
+    protected boolean beforeLoad(K key) {
         return true;
     }
 
-    public boolean load(Registry r, K key){
+    public boolean load(Registry r, K key) {
 
         if (!beforeLoad(key))
             return false;

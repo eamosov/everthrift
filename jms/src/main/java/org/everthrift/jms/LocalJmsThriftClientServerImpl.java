@@ -45,12 +45,12 @@ public class LocalJmsThriftClientServerImpl implements JmsThriftClientIF {
     private final TProtocolFactory binary = new TBinaryProtocol.Factory();
 
     private final ExecutorService executor;
-    
+
     private boolean block = false;
 
-    public LocalJmsThriftClientServerImpl(){
+    public LocalJmsThriftClientServerImpl() {
 
-        executor  = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(), new ThreadFactory() {
+        executor = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(), new ThreadFactory() {
 
             private final AtomicInteger threadNumber = new AtomicInteger(1);
 
@@ -69,43 +69,47 @@ public class LocalJmsThriftClientServerImpl implements JmsThriftClientIF {
     @SuppressWarnings("unchecked")
     @Override
     public <T> T onIface(Class<T> cls) {
-        return (T)Proxy.newProxyInstance(LocalJmsThriftClientServerImpl.class.getClassLoader(), new Class[]{cls}, new ServiceIfaceProxy(cls, new InvocationCallback(){
+        return (T) Proxy.newProxyInstance(LocalJmsThriftClientServerImpl.class.getClassLoader(), new Class[] { cls },
+                                          new ServiceIfaceProxy(cls, new InvocationCallback() {
 
-            @SuppressWarnings("rawtypes")
-            @Override
-            public Object call(InvocationInfo ii) throws NullResult, TException {
+                                              @SuppressWarnings("rawtypes")
+                                              @Override
+                                              public Object call(InvocationInfo ii) throws NullResult, TException {
 
-                final TMemoryBuffer in = ii.buildCall(0, binary);
-                final TProtocol inP = binary.getProtocol(in);
-                final TMemoryBuffer out = new TMemoryBuffer(1024);
-                final TProtocol outP = binary.getProtocol(out);
+                                                  final TMemoryBuffer in = ii.buildCall(0, binary);
+                                                  final TProtocol inP = binary.getProtocol(in);
+                                                  final TMemoryBuffer out = new TMemoryBuffer(1024);
+                                                  final TProtocol outP = binary.getProtocol(out);
 
-                final Future f = executor.submit(() -> {
-                    try {
-                        thriftProcessor.process(inP, outP);
-                    } catch (Exception e) {
-                        log.error("Exception", e);
-                    }
-                });
+                                                  final Future f = executor.submit(() -> {
+                                                      try {
+                                                          thriftProcessor.process(inP, outP);
+                                                      }
+                                                      catch (Exception e) {
+                                                          log.error("Exception", e);
+                                                      }
+                                                  });
 
-                if (block)
-                    try {
-                        f.get();
-                    } catch (InterruptedException | ExecutionException e) {
-                        log.error("Exception", e);
-                    }
-                
-                throw new NullResult();
-            }}));
+                                                  if (block)
+                                                      try {
+                                                          f.get();
+                                                      }
+                                                      catch (InterruptedException | ExecutionException e) {
+                                                          log.error("Exception", e);
+                                                      }
+
+                                                  throw new NullResult();
+                                              }
+                                          }));
     }
 
     @PostConstruct
-    private void postConstruct(){
+    private void postConstruct() {
         thriftProcessor = ThriftProcessor.create(applicationContext, rpcJmsRegistry);
     }
 
     @PreDestroy
-    private void onDestroy(){
+    private void onDestroy() {
         executor.shutdown();
     }
 
@@ -116,7 +120,7 @@ public class LocalJmsThriftClientServerImpl implements JmsThriftClientIF {
     public void setThriftProcessor(TProcessor thriftProcessor) {
         this.thriftProcessor = thriftProcessor;
     }
-    
+
     public boolean isBlock() {
         return block;
     }
@@ -124,5 +128,5 @@ public class LocalJmsThriftClientServerImpl implements JmsThriftClientIF {
     public void setBlock(boolean block) {
         this.block = block;
     }
-    
+
 }

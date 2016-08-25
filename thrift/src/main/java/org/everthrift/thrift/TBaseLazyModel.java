@@ -7,20 +7,20 @@ import java.io.ObjectOutput;
 import org.apache.thrift.TBase;
 import org.apache.thrift.TFieldIdEnum;
 
-public interface TBaseLazyModel<T extends TBase<T,F>, F extends TFieldIdEnum> extends TBaseModel<T,F>{
-
+public interface TBaseLazyModel<T extends TBase<T, F>, F extends TFieldIdEnum> extends TBaseModel<T, F> {
 
     byte[] getThriftData();
+
     void setThriftData(byte[] bytes);
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    default <T extends TBaseLazyModel> T asUnpacked(){
+    default <T extends TBaseLazyModel> T asUnpacked() {
 
-        final byte [] bytes = getThriftData();
+        final byte[] bytes = getThriftData();
         if (bytes == null)
-            return (T)this;
+            return (T) this;
 
-        final T other = (T)newInstance();
+        final T other = (T) newInstance();
 
         if (log.isTraceEnabled())
             log.trace("unpack object {} to new object {}", System.identityHashCode(this), System.identityHashCode(other));
@@ -30,16 +30,16 @@ public interface TBaseLazyModel<T extends TBase<T,F>, F extends TFieldIdEnum> ex
     }
 
     @Override
-    default byte[] write(){
-        final byte [] bytes = getThriftData();
-        if (bytes !=null){
+    default byte[] write() {
+        final byte[] bytes = getThriftData();
+        if (bytes != null) {
             return bytes;
-        }else{
+        } else {
             return toByteArray();
         }
     }
 
-    default void read(byte[] in){
+    default void read(byte[] in) {
         clear();
         setThriftData(in);
     }
@@ -66,9 +66,9 @@ public interface TBaseLazyModel<T extends TBase<T,F>, F extends TFieldIdEnum> ex
         setThriftData(_data);
     }
 
-    default void unpack(){
-        final byte [] bytes = getThriftData();
-        if (bytes !=null){
+    default void unpack() {
+        final byte[] bytes = getThriftData();
+        if (bytes != null) {
 
             if (log.isDebugEnabled())
                 log.debug("Unpack object {} of type {}", System.identityHashCode(this), this.getClass().getSimpleName());
@@ -78,8 +78,8 @@ public interface TBaseLazyModel<T extends TBase<T,F>, F extends TFieldIdEnum> ex
         }
     }
 
-    default void pack(){
-        if (this.getThriftData() ==null){
+    default void pack() {
+        if (this.getThriftData() == null) {
 
             if (log.isDebugEnabled())
                 log.debug("Pack object {} of type {}", System.identityHashCode(this), this.getClass().getSimpleName());
@@ -90,7 +90,7 @@ public interface TBaseLazyModel<T extends TBase<T,F>, F extends TFieldIdEnum> ex
         }
     }
 
-    default boolean isPacked(){
+    default boolean isPacked() {
         return getThriftData() != null;
     }
 

@@ -16,34 +16,38 @@ import ch.qos.logback.classic.PatternLayout;
 public class Migrator {
 
     static {
-        PatternLayout.defaultConverterMap.put( "coloron", ColorOnConverter.class.getName() );
-        PatternLayout.defaultConverterMap.put( "coloroff", ColorOffConverter.class.getName() );
+        PatternLayout.defaultConverterMap.put("coloron", ColorOnConverter.class.getName());
+        PatternLayout.defaultConverterMap.put("coloroff", ColorOffConverter.class.getName());
     }
 
     private static AbstractXmlApplicationContext context;
+
     private static ConfigurableEnvironment env;
+
     private static CMigrationProcessor processor;
 
     private static final Logger log = LoggerFactory.getLogger(Migrator.class);
 
     public static void main(String[] args) throws Exception {
-        context = new ClassPathXmlApplicationContext(new String[]{"classpath:cassandra-migration-context.xml"},false);
+        context = new ClassPathXmlApplicationContext(new String[] { "classpath:cassandra-migration-context.xml" }, false);
         context.registerShutdownHook();
         env = context.getEnvironment();
         env.getPropertySources().addFirst(new SimpleCommandLinePropertySource(args));
         final Resource resource = context.getResource("classpath:application.properties");
         try {
             env.getPropertySources().addLast(new ResourcePropertySource(resource));
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             log.error("Error loading resource: " + resource.toString(), e);
         }
 
         context.refresh();
         processor = context.getBean(CMigrationProcessor.class);
 
-        try{
+        try {
             processor.migrate();
-        }finally{
+        }
+        finally {
             context.close();
         }
     }

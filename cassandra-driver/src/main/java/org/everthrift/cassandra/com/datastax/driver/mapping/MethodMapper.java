@@ -40,22 +40,31 @@ import com.google.common.util.concurrent.ListenableFuture;
 class MethodMapper {
 
     public final Method method;
+
     public final String queryString;
+
     public final ParamMapper[] paramMappers;
 
     private final ConsistencyLevel consistency;
+
     private final int fetchSize;
+
     private final boolean tracing;
 
     private Session session;
+
     private PreparedStatement statement;
 
     private boolean returnStatement;
+
     private Mapper<?> returnMapper;
+
     private boolean mapOne;
+
     private boolean async;
 
-    MethodMapper(Method method, String queryString, ParamMapper[] paramMappers, ConsistencyLevel consistency, int fetchSize, boolean enableTracing) {
+    MethodMapper(Method method, String queryString, ParamMapper[] paramMappers, ConsistencyLevel consistency, int fetchSize,
+                 boolean enableTracing) {
         this.method = method;
         this.queryString = queryString;
         this.paramMappers = paramMappers;
@@ -109,15 +118,16 @@ class MethodMapper {
 
         if (method.getParameterTypes().length < names.size())
             throw new IllegalArgumentException(String.format("Not enough arguments for method %s, "
-                    + "found %d but it should be at least the number of unique bind parameter names in the @Query (%d)",
-                    method.getName(), method.getParameterTypes().length, names.size()));
+                                                             + "found %d but it should be at least the number of unique bind parameter names in the @Query (%d)",
+                                                             method.getName(), method.getParameterTypes().length, names.size()));
 
         if (method.getParameterTypes().length > variables.size())
             throw new IllegalArgumentException(String.format("Too many arguments for method %s, "
-                    + "found %d but it should be at most the number of bind parameters in the @Query (%d)",
-                    method.getName(), method.getParameterTypes().length, variables.size()));
+                                                             + "found %d but it should be at most the number of bind parameters in the @Query (%d)",
+                                                             method.getName(), method.getParameterTypes().length, variables.size()));
 
-        // TODO could go further, e.g. check that the types match, inspect @Param annotations to check that all names are bound...
+        // TODO could go further, e.g. check that the types match, inspect
+        // @Param annotations to check that all names are bound...
     }
 
     @SuppressWarnings("rawtypes")
@@ -140,7 +150,8 @@ class MethodMapper {
 
         try {
             this.returnMapper = (Mapper<?>) manager.mapper((Class<?>) type);
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             throw new RuntimeException("Cannot map return to class " + fullReturnType, e);
         }
     }
@@ -169,9 +180,8 @@ class MethodMapper {
             if (returnMapper == null)
                 return future;
 
-            return mapOne
-                    ? Futures.transform(future, returnMapper.mapOneFunctionWithoutAliases)
-                            : Futures.transform(future, returnMapper.mapAllFunctionWithoutAliases);
+            return mapOne ? Futures.transform(future, returnMapper.mapOneFunctionWithoutAliases)
+                          : Futures.transform(future, returnMapper.mapAllFunctionWithoutAliases);
         } else {
             ResultSet rs = session.execute(bs);
             if (returnMapper == null)
@@ -183,10 +193,14 @@ class MethodMapper {
     }
 
     static class ParamMapper {
-        // We'll only set one or the other. If paramName is null, then paramIdx is used.
+        // We'll only set one or the other. If paramName is null, then paramIdx
+        // is used.
         private final String paramName;
+
         private final int paramIdx;
+
         private final TypeToken<Object> paramType;
+
         private final TypeCodec<Object> codec;
 
         @SuppressWarnings("unchecked")
@@ -196,11 +210,11 @@ class MethodMapper {
             this.paramType = (TypeToken<Object>) paramType;
             try {
                 this.codec = (codecClass == null) ? null : (TypeCodec<Object>) codecClass.newInstance();
-            } catch (Exception e) {
-                throw new IllegalArgumentException(String.format(
-                        "Cannot create instance of codec %s for parameter %s",
-                        codecClass, (paramName == null) ? paramIdx : paramName
-                        ), e);
+            }
+            catch (Exception e) {
+                throw new IllegalArgumentException(String.format("Cannot create instance of codec %s for parameter %s", codecClass,
+                                                                 (paramName == null) ? paramIdx : paramName),
+                                                   e);
             }
         }
 

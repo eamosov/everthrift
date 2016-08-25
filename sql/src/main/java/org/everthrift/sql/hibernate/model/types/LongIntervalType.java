@@ -19,7 +19,7 @@ public class LongIntervalType implements UserType {
 
     @Override
     public int[] sqlTypes() {
-        return new int[]{Types.OTHER};
+        return new int[] { Types.OTHER };
     }
 
     @Override
@@ -44,12 +44,14 @@ public class LongIntervalType implements UserType {
     }
 
     @Override
-    public Object nullSafeGet(ResultSet rs, String[] names, SharedSessionContractImplementor session, Object owner) throws HibernateException, SQLException {
+    public Object nullSafeGet(ResultSet rs, String[] names, SharedSessionContractImplementor session,
+                              Object owner) throws HibernateException, SQLException {
         return rs.getLong(names[0]) * 1000;
     }
 
     @Override
-    public void nullSafeSet(PreparedStatement st, Object value, int index, SharedSessionContractImplementor session) throws HibernateException, SQLException {
+    public void nullSafeSet(PreparedStatement st, Object value, int index,
+                            SharedSessionContractImplementor session) throws HibernateException, SQLException {
 
         final PGobject o = new PGobject();
         o.setType("interval");
@@ -69,7 +71,7 @@ public class LongIntervalType implements UserType {
 
     @Override
     public Serializable disassemble(Object value) throws HibernateException {
-        return (Serializable)value;
+        return (Serializable) value;
     }
 
     @Override
@@ -78,7 +80,7 @@ public class LongIntervalType implements UserType {
     }
 
     @Override
-    public Object replace(Object original, Object target, Object owner)throws HibernateException {
+    public Object replace(Object original, Object target, Object owner) throws HibernateException {
         return original;
     }
 

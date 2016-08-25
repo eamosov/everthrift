@@ -19,7 +19,7 @@ public class LongTimestampType implements UserType {
 
     @Override
     public int[] sqlTypes() {
-        return new int[]{Types.TIMESTAMP};
+        return new int[] { Types.TIMESTAMP };
     }
 
     @Override
@@ -44,9 +44,10 @@ public class LongTimestampType implements UserType {
     }
 
     @Override
-    public Object nullSafeGet(ResultSet rs, String[] names, SharedSessionContractImplementor session, Object owner) throws HibernateException, SQLException {
+    public Object nullSafeGet(ResultSet rs, String[] names, SharedSessionContractImplementor session,
+                              Object owner) throws HibernateException, SQLException {
 
-        final java.sql.Timestamp value = (java.sql.Timestamp)rs.getObject(names[0]);
+        final java.sql.Timestamp value = (java.sql.Timestamp) rs.getObject(names[0]);
 
         if (value == null)
             return null;
@@ -55,12 +56,13 @@ public class LongTimestampType implements UserType {
     }
 
     @Override
-    public void nullSafeSet(PreparedStatement st, Object value, int index, SharedSessionContractImplementor session) throws HibernateException, SQLException {
+    public void nullSafeSet(PreparedStatement st, Object value, int index,
+                            SharedSessionContractImplementor session) throws HibernateException, SQLException {
 
         if (value == null)
             st.setNull(index, Types.TIMESTAMP);
         else
-            st.setTimestamp(index, new java.sql.Timestamp(LongTimestamp.toMillis((Long)value)));
+            st.setTimestamp(index, new java.sql.Timestamp(LongTimestamp.toMillis((Long) value)));
     }
 
     @Override
@@ -75,7 +77,7 @@ public class LongTimestampType implements UserType {
 
     @Override
     public Serializable disassemble(Object value) throws HibernateException {
-        return (Serializable)value;
+        return (Serializable) value;
     }
 
     @Override
@@ -84,7 +86,7 @@ public class LongTimestampType implements UserType {
     }
 
     @Override
-    public Object replace(Object original, Object target, Object owner)throws HibernateException {
+    public Object replace(Object original, Object target, Object owner) throws HibernateException {
         return original;
     }
 

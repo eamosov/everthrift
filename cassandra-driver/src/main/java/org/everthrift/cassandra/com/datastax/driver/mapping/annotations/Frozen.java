@@ -23,12 +23,13 @@ import java.lang.annotation.Target;
 import com.datastax.driver.core.DataType;
 
 /**
- * Specifies that the field decorated with this annotation maps to a CQL type that is {@link DataType#isFrozen() frozen},
- * or contains frozen subtypes.
+ * Specifies that the field decorated with this annotation maps to a CQL type
+ * that is {@link DataType#isFrozen() frozen}, or contains frozen subtypes.
  * <p/>
- * This annotation is purely informational at this stage, the validity of the declaration is not checked.
- * But will become useful when a schema generation feature is added to the mapper. Therefore it is a good idea to keep
- * frozen declarations up-to-date.
+ * This annotation is purely informational at this stage, the validity of the
+ * declaration is not checked. But will become useful when a schema generation
+ * feature is added to the mapper. Therefore it is a good idea to keep frozen
+ * declarations up-to-date.
  *
  * @see FrozenKey
  * @see FrozenValue
@@ -37,13 +38,15 @@ import com.datastax.driver.core.DataType;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Frozen {
 
-    // Implementation note: frozen annotations were previously checked at runtime, this code can be found in version 2.1.7
+    // Implementation note: frozen annotations were previously checked at
+    // runtime, this code can be found in version 2.1.7
 
     /**
-     * Contains the full CQL type of the target column. As a convenience, this can be left out when only the top-level
-     * type is frozen.
+     * Contains the full CQL type of the target column. As a convenience, this
+     * can be left out when only the top-level type is frozen.
      * <p/>
      * Examples:
+     * 
      * <pre>
      * // Will map to frozen&lt;user&gt;
      * &#64;Frozen
@@ -53,7 +56,8 @@ public @interface Frozen {
      * private Map&lt;String, Map&lt;String, User&gt;&gt; m;
      * </pre>
      * <p/>
-     * Also consider the {@link FrozenKey @FrozenKey} and {@link FrozenValue @FrozenValue} shortcuts for simple collections.
+     * Also consider the {@link FrozenKey @FrozenKey} and
+     * {@link FrozenValue @FrozenValue} shortcuts for simple collections.
      *
      * @return the full CQL type of the target column.
      */

@@ -27,7 +27,8 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 
 import net.sf.ehcache.Cache;
 
-public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY extends DaoEntityIF, E extends TException> extends AbstractCachedModelFactory<PK, ENTITY> implements RwModelFactoryIF<PK, ENTITY, E> {
+public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY extends DaoEntityIF, E extends TException>
+        extends AbstractCachedModelFactory<PK, ENTITY> implements RwModelFactoryIF<PK, ENTITY, E> {
 
     @Autowired
     protected SessionFactory sessionFactory;
@@ -39,13 +40,14 @@ public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY 
     @Autowired
     protected LocalEventBus localEventBus;
 
-
     private final AbstractDao<PK, ENTITY> dao;
+
     protected final Class<ENTITY> entityClass;
 
     protected abstract E createNotFoundException(PK id);
 
-    protected AbstractPgSqlModelFactory(Cache cache, Class<ENTITY> entityClass, ListeningExecutorService listeningExecutorService, SessionFactory sessionFactory, LocalEventBus localEventBus) {
+    protected AbstractPgSqlModelFactory(Cache cache, Class<ENTITY> entityClass, ListeningExecutorService listeningExecutorService,
+                                        SessionFactory sessionFactory, LocalEventBus localEventBus) {
         super(cache);
 
         this.entityClass = entityClass;
@@ -65,7 +67,7 @@ public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY 
         dao = new AbstractDaoImpl<PK, ENTITY>(this.entityClass);
     }
 
-    private void _afterPropertiesSet(){
+    private void _afterPropertiesSet() {
 
         dao.setSessionFactory(sessionFactory);
         dao.setListeningExecutorService(listeningExecutorService);
@@ -78,29 +80,29 @@ public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY 
         _afterPropertiesSet();
     }
 
-    protected final void _invalidateEhCache(PK id){
+    protected final void _invalidateEhCache(PK id) {
         super.invalidate(id);
     }
 
     @Override
-    public final void invalidate(PK id){
+    public final void invalidate(PK id) {
         _invalidateEhCache(id);
         getDao().evict(id);
     }
 
     @Override
-    public final void invalidateLocal(PK id){
+    public final void invalidateLocal(PK id) {
         super.invalidateLocal(id);
         getDao().evict(id);
     }
 
     @Override
-    protected ENTITY fetchEntityById(PK id){
+    protected ENTITY fetchEntityById(PK id) {
         return dao.findById(id);
     }
 
     @Override
-    protected Map<PK, ENTITY> fetchEntityByIdAsMap(Collection<PK> ids){
+    protected Map<PK, ENTITY> fetchEntityByIdAsMap(Collection<PK> ids) {
 
         if (getCache() == null)
             log.warn("fetch by collection, but cache is null");
@@ -109,10 +111,10 @@ public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY 
     }
 
     @Override
-    public final void deleteEntity(ENTITY e) throws E{
-        final PK pk = (PK)e.getPk();
+    public final void deleteEntity(ENTITY e) throws E {
+        final PK pk = (PK) e.getPk();
         final ENTITY _e = fetchEntityById(pk);
-        if (_e ==null)
+        if (_e == null)
             throw createNotFoundException(pk);
 
         dao.delete(_e);
@@ -121,12 +123,13 @@ public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY 
         localEventBus.postEntityEvent(deleteEntityEvent(_e));
     }
 
-    public final AbstractDao<PK, ENTITY> getDao(){
+    public final AbstractDao<PK, ENTITY> getDao() {
         return dao;
     }
 
-    public final Iterator<PK> getAllIds(String pkName){
-        return ((List)getDao().findByCriteria(Restrictions.and(), Projections.property(pkName), null, Collections.singletonList(Order.asc(pkName)), null, null)).iterator();
+    public final Iterator<PK> getAllIds(String pkName) {
+        return ((List) getDao().findByCriteria(Restrictions.and(), Projections.property(pkName), null,
+                                               Collections.singletonList(Order.asc(pkName)), null, null)).iterator();
     }
 
     @Override

@@ -8,12 +8,12 @@ import org.springframework.context.annotation.Configuration;
 public class LoopbackJms {
 
     @Bean
-    public RpcJmsRegistry RpcJmsRegistry(){
+    public RpcJmsRegistry RpcJmsRegistry() {
         return new RpcJmsRegistry();
     }
 
     @Bean
-    public LocalJmsThriftClientServerImpl localJmsThriftClientServerImpl(@Qualifier("testMode") boolean testMode){
+    public LocalJmsThriftClientServerImpl localJmsThriftClientServerImpl(@Qualifier("testMode") boolean testMode) {
         final LocalJmsThriftClientServerImpl jms = new LocalJmsThriftClientServerImpl();
         if (testMode)
             jms.setBlock(true);

@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Configuration;
 public class CassandraConfig {
 
     @Bean
-    public CassandraFactories cassandraFactories(){
+    public CassandraFactories cassandraFactories() {
         return new CassandraFactories();
     }
 }

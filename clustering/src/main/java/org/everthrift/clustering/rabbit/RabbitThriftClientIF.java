@@ -2,7 +2,7 @@ package org.everthrift.clustering.rabbit;
 
 public interface RabbitThriftClientIF {
 
-    public default <T> T on(Class<T> cls){
+    public default <T> T on(Class<T> cls) {
         return onIface(cls);
     }
 

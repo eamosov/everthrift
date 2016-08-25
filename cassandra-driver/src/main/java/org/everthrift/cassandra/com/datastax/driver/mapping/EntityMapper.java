@@ -42,7 +42,7 @@ public abstract class EntityMapper<T> {
                 return c == ColumnScenario.COMMON;
             }
         },
-        ALL{
+        ALL {
             @Override
             boolean accept(ColumnScenario c) {
                 return true;
@@ -52,21 +52,29 @@ public abstract class EntityMapper<T> {
     }
 
     public final Class<T> entityClass;
+
     private final String keyspace;
+
     private final String table;
 
     protected ConsistencyLevel writeConsistency;
+
     protected ConsistencyLevel readConsistency;
 
     public final List<ColumnMapper<T>> partitionKeys = new ArrayList<ColumnMapper<T>>();
+
     public final List<ColumnMapper<T>> clusteringColumns = new ArrayList<ColumnMapper<T>>();
+
     public final List<ColumnMapper<T>> regularColumns = new ArrayList<ColumnMapper<T>>();
+
     private ColumnMapper<T> versionColumn;
+
     private ColumnMapper<T> updatedAtColumn;
 
     private Map<String, ColumnMapper<T>> allColumns = new HashMap<String, ColumnMapper<T>>();
 
-    protected EntityMapper(Class<T> entityClass, String keyspace, String table, ConsistencyLevel writeConsistency, ConsistencyLevel readConsistency) {
+    protected EntityMapper(Class<T> entityClass, String keyspace, String table, ConsistencyLevel writeConsistency,
+                           ConsistencyLevel readConsistency) {
         this.entityClass = entityClass;
         this.keyspace = keyspace;
         this.table = table;
@@ -86,7 +94,7 @@ public abstract class EntityMapper<T> {
         return partitionKeys.size() + clusteringColumns.size();
     }
 
-    public ColumnMapper<T> getColumnByFieldName(final String fieldName){
+    public ColumnMapper<T> getColumnByFieldName(final String fieldName) {
         return allColumns.get(fieldName);
     }
 
@@ -105,7 +113,7 @@ public abstract class EntityMapper<T> {
         addToAllColumns(rgs);
     }
 
-    private void addToAllColumns(List<ColumnMapper<T>> cs){
+    private void addToAllColumns(List<ColumnMapper<T>> cs) {
         cs.forEach(c -> {
             allColumns.put(c.getFieldName(), c);
         });
@@ -125,49 +133,52 @@ public abstract class EntityMapper<T> {
         return ImmutableSet.copyOf(Collections2.filter(allColumns.values(), c -> (scenario.accept(c.columnScenario))));
     }
 
-    public boolean isVersion(ColumnMapper<?> cm){
-        return versionColumn !=null && cm == versionColumn;
+    public boolean isVersion(ColumnMapper<?> cm) {
+        return versionColumn != null && cm == versionColumn;
     }
 
-    public boolean isUpdatedAt(ColumnMapper<?> cm){
-        return updatedAtColumn !=null && cm == updatedAtColumn;
+    public boolean isUpdatedAt(ColumnMapper<?> cm) {
+        return updatedAtColumn != null && cm == updatedAtColumn;
     }
 
-
-    public ColumnMapper<T> getUpdatedAtColumn(){
+    public ColumnMapper<T> getUpdatedAtColumn() {
         return updatedAtColumn;
     }
 
-    public ColumnMapper<T> getVersionColumn(){
+    public ColumnMapper<T> getVersionColumn() {
         return versionColumn;
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         final StringBuilder sb = new StringBuilder();
         sb.append(String.format("[EntityMapper %s.%s <-> %s]\n", keyspace, table, entityClass.getCanonicalName()));
         sb.append("\twriteConsistency: " + writeConsistency + "\n");
         sb.append("\treadConsistency: " + readConsistency + "\n");
-        if (versionColumn !=null)
+        if (versionColumn != null)
             sb.append("\tversionColumn: " + versionColumn.getColumnName() + "\n");
 
         sb.append("\tcolumns mapping:\n");
 
-        for (int i=0; i< this.primaryKeySize(); i++){
+        for (int i = 0; i < this.primaryKeySize(); i++) {
             ColumnMapper<T> cm = getPrimaryKeyColumn(i);
-            sb.append(String.format("\t\t%s %s <-> %s (%s)\n", cm.columnScenario, cm.getColumnNameUnquoted(), cm.getFieldName(), cm.getJavaType().toString()));
+            sb.append(String.format("\t\t%s %s <-> %s (%s)\n", cm.columnScenario, cm.getColumnNameUnquoted(), cm.getFieldName(),
+                                    cm.getJavaType().toString()));
         }
 
-        for (ColumnMapper<T> cm : regularColumns){
-            sb.append(String.format("\t\t%s %s <-> %s (%s)\n", cm.columnScenario,cm.getColumnNameUnquoted(), cm.getFieldName(), cm.getJavaType().toString()));
+        for (ColumnMapper<T> cm : regularColumns) {
+            sb.append(String.format("\t\t%s %s <-> %s (%s)\n", cm.columnScenario, cm.getColumnNameUnquoted(), cm.getFieldName(),
+                                    cm.getJavaType().toString()));
         }
 
         return sb.toString();
     }
 
     public interface Factory {
-        public <T> EntityMapper<T> create(Class<T> entityClass, String keyspace, String table, ConsistencyLevel writeConsistency, ConsistencyLevel readConsistency);
+        public <T> EntityMapper<T> create(Class<T> entityClass, String keyspace, String table, ConsistencyLevel writeConsistency,
+                                          ConsistencyLevel readConsistency);
 
-        public <T> ColumnMapper<T> createColumnMapper(Class<T> componentClass, FieldDescriptor field, MappingManager mappingManager, AtomicInteger columnCounter);
+        public <T> ColumnMapper<T> createColumnMapper(Class<T> componentClass, FieldDescriptor field, MappingManager mappingManager,
+                                                      AtomicInteger columnCounter);
     }
 }

@@ -23,12 +23,12 @@ import java.lang.annotation.Target;
 import com.datastax.driver.core.Configuration;
 
 /**
- * Query parameters to use in the (generated) implementation of a method of an {@link Accessor}
- * interface.
+ * Query parameters to use in the (generated) implementation of a method of an
+ * {@link Accessor} interface.
  * <p/>
- * All the parameters of this annotation are optional, and when not provided default to whatever
- * default the {@code Cluster} instance used underneath are (those set in
- * {@link Configuration#getQueryOptions}).
+ * All the parameters of this annotation are optional, and when not provided
+ * default to whatever default the {@code Cluster} instance used underneath are
+ * (those set in {@link Configuration#getQueryOptions}).
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)

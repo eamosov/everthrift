@@ -35,21 +35,23 @@ public class ThriftTraversal {
     private static Reference2ObjectMap<Class<? extends TBase>, ThriftTraversal> nodes = new Reference2ObjectOpenHashMap<Class<? extends TBase>, ThriftTraversal>();
 
     private final Class<? extends TBase> cls;
+
     private final Map<TFieldIdEnum, FieldMetaData> fields;
+
     private final Reference2ObjectMap<Class<? extends TBase>, List<TFieldIdEnum>> routing = new Reference2ObjectOpenHashMap<Class<? extends TBase>, List<TFieldIdEnum>>();
 
     private ThriftTraversal(Class<? extends TBase> cls) {
-        this.fields = (Map)FieldMetaData.getStructMetaDataMap(cls);
+        this.fields = (Map) FieldMetaData.getStructMetaDataMap(cls);
         this.cls = cls;
 
         if (fields == null)
             throw new RuntimeException("invalid argument");
     }
 
-    private static  ThriftTraversal getNode(Class<? extends TBase> cls){
-        synchronized(nodes){
+    private static ThriftTraversal getNode(Class<? extends TBase> cls) {
+        synchronized (nodes) {
             ThriftTraversal n = nodes.get(cls);
-            if (n == null){
+            if (n == null) {
                 n = new ThriftTraversal(cls);
                 nodes.put(cls, n);
             }
@@ -57,117 +59,123 @@ public class ThriftTraversal {
         }
     }
 
-    public static <T extends TBase> Set<T> visitChildsOfType(final Object obj, final Class<T> type, final Function<T, Void> visitHandler){
+    public static <T extends TBase> Set<T> visitChildsOfType(final Object obj, final Class<T> type, final Function<T, Void> visitHandler) {
         final Set<T> visited = new ReferenceOpenHashSet<T>();
         visitChildsOfType(visited, obj, type, ThriftUtils.getRootThriftClass(type).first, visitHandler);
         return visited;
     }
 
-    private static <T extends TBase> void visitChildsOfType(Set<T> visited, final Object obj, final Class<T> type, final Class<? extends TBase> thriftBaseType, final Function<T, Void> visitHandler){
+    private static <T extends TBase> void visitChildsOfType(Set<T> visited, final Object obj, final Class<T> type,
+                                                            final Class<? extends TBase> thriftBaseType,
+                                                            final Function<T, Void> visitHandler) {
 
         if (obj == null)
             return;
 
-        if (log.isDebugEnabled()){
-            String id=null;
+        if (log.isDebugEnabled()) {
+            String id = null;
             try {
                 Method m = obj.getClass().getMethod("getId");
                 id = m.invoke(obj).toString();
-            } catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+            }
+            catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException
+                   | InvocationTargetException e) {
                 id = "<unknown>";
             }
-            log.debug("visit: objClass={}, type={},  thriftBaseType={}, id={}", obj==null ? null : obj.getClass().getSimpleName(), type.getSimpleName(), thriftBaseType.getSimpleName(), id);
+            log.debug("visit: objClass={}, type={},  thriftBaseType={}, id={}", obj == null ? null : obj.getClass().getSimpleName(),
+                      type.getSimpleName(), thriftBaseType.getSimpleName(), id);
         }
 
-        if (type.isInstance(obj)){
-            if (visited.add((T)obj)){
-                visitHandler.apply((T)obj);
-            }else{
-                log.debug("allready visited: objClass={}, type={},  thriftBaseType={}",  obj==null ? null : obj.getClass().getSimpleName(), type.getSimpleName(), thriftBaseType.getSimpleName());
+        if (type.isInstance(obj)) {
+            if (visited.add((T) obj)) {
+                visitHandler.apply((T) obj);
+            } else {
+                log.debug("allready visited: objClass={}, type={},  thriftBaseType={}", obj == null ? null : obj.getClass().getSimpleName(),
+                          type.getSimpleName(), thriftBaseType.getSimpleName());
             }
             return;
         }
 
-        if (obj instanceof TBase){
+        if (obj instanceof TBase) {
 
-            final ThriftTraversal node = getNode((Class)ThriftUtils.getRootThriftClass((Class)obj.getClass()).first);
+            final ThriftTraversal node = getNode((Class) ThriftUtils.getRootThriftClass((Class) obj.getClass()).first);
 
             final List<TFieldIdEnum> _l = node.getChildsOfType(thriftBaseType);
 
-            for (int i=0; i< _l.size(); i++){
+            for (int i = 0; i < _l.size(); i++) {
                 final TFieldIdEnum f = _l.get(i);
 
                 if (log.isDebugEnabled())
                     log.debug("visit field {} of class {}", f, obj.getClass());
 
-                visitChildsOfType(visited, ((TBase)obj).getFieldValue(f), type, thriftBaseType, visitHandler);
+                visitChildsOfType(visited, ((TBase) obj).getFieldValue(f), type, thriftBaseType, visitHandler);
             }
 
             return;
 
-        }else if (obj instanceof Collection){
+        } else if (obj instanceof Collection) {
 
-            if (((Collection)obj).isEmpty())
+            if (((Collection) obj).isEmpty())
                 return;
 
-            if (obj instanceof RandomAccess){
-                final List _l = (List)obj;
-                for (int i=0; i<_l.size(); i++)
+            if (obj instanceof RandomAccess) {
+                final List _l = (List) obj;
+                for (int i = 0; i < _l.size(); i++)
                     visitChildsOfType(visited, _l.get(i), type, thriftBaseType, visitHandler);
-            }else{
-                for (Object i: ((Collection)obj))
+            } else {
+                for (Object i : ((Collection) obj))
                     visitChildsOfType(visited, i, type, thriftBaseType, visitHandler);
             }
 
             return;
-        }else if (obj instanceof Map){
-            if (((Map)obj).isEmpty())
+        } else if (obj instanceof Map) {
+            if (((Map) obj).isEmpty())
                 return;
 
-            for (Map.Entry e: ((Map<?,?>)obj).entrySet()){
+            for (Map.Entry e : ((Map<?, ?>) obj).entrySet()) {
                 visitChildsOfType(visited, e.getKey(), type, thriftBaseType, visitHandler);
                 visitChildsOfType(visited, e.getValue(), type, thriftBaseType, visitHandler);
             }
 
             return;
-        }else{
+        } else {
             return;
         }
     }
 
-    private static boolean hasChildsOfType(FieldValueMetaData valueMetaData, Class type){
+    private static boolean hasChildsOfType(FieldValueMetaData valueMetaData, Class type) {
 
-        if (valueMetaData instanceof StructMetaData){
+        if (valueMetaData instanceof StructMetaData) {
 
-            if ( ((StructMetaData)valueMetaData).structClass == type)
+            if (((StructMetaData) valueMetaData).structClass == type)
                 return true;
 
-            final Map<TFieldIdEnum, FieldMetaData> map = (Map)FieldMetaData.getStructMetaDataMap(((StructMetaData)valueMetaData).structClass);
-            for (Entry<TFieldIdEnum, FieldMetaData> e :map.entrySet()){
+            final Map<TFieldIdEnum, FieldMetaData> map = (Map) FieldMetaData.getStructMetaDataMap(((StructMetaData) valueMetaData).structClass);
+            for (Entry<TFieldIdEnum, FieldMetaData> e : map.entrySet()) {
                 if (hasChildsOfType(e.getValue().valueMetaData, type))
                     return true;
             }
 
             return false;
-        }else if (valueMetaData instanceof ListMetaData){
-            return hasChildsOfType(((ListMetaData)valueMetaData).elemMetaData, type);
-        }else if (valueMetaData instanceof SetMetaData){
-            return hasChildsOfType(((SetMetaData)valueMetaData).elemMetaData, type);
-        }else if (valueMetaData instanceof MapMetaData){
-            return hasChildsOfType(((MapMetaData)valueMetaData).valueMetaData, type) || hasChildsOfType(((MapMetaData)valueMetaData).keyMetaData, type);
-        }else{
+        } else if (valueMetaData instanceof ListMetaData) {
+            return hasChildsOfType(((ListMetaData) valueMetaData).elemMetaData, type);
+        } else if (valueMetaData instanceof SetMetaData) {
+            return hasChildsOfType(((SetMetaData) valueMetaData).elemMetaData, type);
+        } else if (valueMetaData instanceof MapMetaData) {
+            return hasChildsOfType(((MapMetaData) valueMetaData).valueMetaData, type)
+                   || hasChildsOfType(((MapMetaData) valueMetaData).keyMetaData, type);
+        } else {
             return false;
         }
     }
 
-    private synchronized List<TFieldIdEnum> getChildsOfType(Class type){
-
+    private synchronized List<TFieldIdEnum> getChildsOfType(Class type) {
 
         List<TFieldIdEnum> childFields = routing.get(type);
-        if (childFields == null){
+        if (childFields == null) {
             childFields = Lists.newArrayList();
-            for (Entry<TFieldIdEnum, FieldMetaData> e: fields.entrySet()){
-                if (hasChildsOfType(e.getValue().valueMetaData, type)){
+            for (Entry<TFieldIdEnum, FieldMetaData> e : fields.entrySet()) {
+                if (hasChildsOfType(e.getValue().valueMetaData, type)) {
                     childFields.add(e.getKey());
                 }
             }

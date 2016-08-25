@@ -25,6 +25,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 abstract class AccessorMapper<T> {
 
     public final Class<T> daoClass;
+
     protected final List<MethodMapper> methods;
 
     protected AccessorMapper(Class<T> daoClass, List<MethodMapper> methods) {
@@ -44,7 +45,8 @@ abstract class AccessorMapper<T> {
             List<PreparedStatement> preparedStatements = Futures.allAsList(statements).get();
             for (int i = 0; i < methods.size(); i++)
                 methods.get(i).prepare(manager, preparedStatements.get(i));
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             throw new RuntimeException("Error preparing queries for accessor " + daoClass.getSimpleName(), e);
         }
     }

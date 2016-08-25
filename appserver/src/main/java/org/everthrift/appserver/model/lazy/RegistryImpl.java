@@ -22,6 +22,7 @@ public class RegistryImpl implements Registry {
 
     private static class UniqKey {
         final Object entity;
+
         final Object eq;
 
         public UniqKey(Object entity, Object eq) {
@@ -60,7 +61,6 @@ public class RegistryImpl implements Registry {
             return true;
         }
 
-
     }
 
     private final Set<UniqKey> uniqSet = new HashSet<UniqKey>();
@@ -68,9 +68,9 @@ public class RegistryImpl implements Registry {
     private Object[] args;
 
     public RegistryImpl() {
-        
+
     }
-    
+
     public RegistryImpl(Object[] args) {
         this.args = args;
     }
@@ -83,42 +83,42 @@ public class RegistryImpl implements Registry {
     @Override
     public synchronized <K> boolean add(LazyLoader<K> l, K e, Object eq) {
 
-        if (uniqSet.add(new UniqKey(e, eq))){
+        if (uniqSet.add(new UniqKey(e, eq))) {
             loadList.put(l, e);
             return true;
-        }else{
+        } else {
             log.debug("skip duplicated: {}", e);
             return false;
         }
     }
 
     @Override
-    public synchronized void clear(){
+    public synchronized void clear() {
         loadList.clear();
     }
 
     @Override
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    public ListenableFuture<Integer> load(){
+    public ListenableFuture<Integer> load() {
 
         int nLoaded = 0;
         final List<ListenableFuture<Integer>> asyncLoaders = Lists.newArrayList();
-        
-        synchronized(this){
+
+        synchronized (this) {
             if (loadList.isEmpty())
                 return Futures.immediateFuture(0);
-            
-            for (Map.Entry<LazyLoader<?>, Collection<Object>> e : loadList.asMap().entrySet()){
-                final List<Object> entities = (List)e.getValue();
-                if (!entities.isEmpty()){
 
-                    if (e.getKey() instanceof AsyncLazyLoader){
-                        asyncLoaders.add(((AsyncLazyLoader)e.getKey()).processAsync(entities));
-                    }else{
-                        nLoaded += ((LazyLoader)e.getKey()).process(entities);
+            for (Map.Entry<LazyLoader<?>, Collection<Object>> e : loadList.asMap().entrySet()) {
+                final List<Object> entities = (List) e.getValue();
+                if (!entities.isEmpty()) {
+
+                    if (e.getKey() instanceof AsyncLazyLoader) {
+                        asyncLoaders.add(((AsyncLazyLoader) e.getKey()).processAsync(entities));
+                    } else {
+                        nLoaded += ((LazyLoader) e.getKey()).process(entities);
                     }
                 }
-            }            
+            }
         }
 
         if (asyncLoaders.isEmpty())
@@ -126,15 +126,16 @@ public class RegistryImpl implements Registry {
 
         final int _nLoaded = nLoaded;
 
-        return Futures.transform(Futures.successfulAsList(asyncLoaders), (List<Integer> s) -> s.stream().mapToInt(i -> i == null ? 0 : i).sum() + _nLoaded);
+        return Futures.transform(Futures.successfulAsList(asyncLoaders),
+                                 (List<Integer> s) -> s.stream().mapToInt(i -> i == null ? 0 : i).sum() + _nLoaded);
     }
 
     @Override
     public Object[] getArgs() {
         return args;
     }
-    
-    public void setArgs(Object[] args){
+
+    public void setArgs(Object[] args) {
         this.args = args;
     }
 }

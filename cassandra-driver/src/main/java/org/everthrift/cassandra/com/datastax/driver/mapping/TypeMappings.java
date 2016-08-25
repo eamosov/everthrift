@@ -27,7 +27,8 @@ import org.everthrift.cassandra.com.datastax.driver.mapping.annotations.UDT;
 import com.google.common.collect.Sets;
 
 /**
- * Utility methods to determine which CQL type we expect for a given Java field type.
+ * Utility methods to determine which CQL type we expect for a given Java field
+ * type.
  */
 class TypeMappings {
 
@@ -52,14 +53,13 @@ class TypeMappings {
     }
 
     /**
-     * Traverses the type of a Java field or parameter to find classes annotated with @UDT.
-     * This will recurse into nested collections, e.g. List<Set<TheMappedUDT>>
+     * Traverses the type of a Java field or parameter to find classes annotated
+     * with @UDT. This will recurse into nested collections, e.g.
+     * List<Set<TheMappedUDT>>
      */
     static Set<Class<?>> findUDTs(Type type) {
         Set<Class<?>> udts = findUDTs(type, null);
-        return (udts == null)
-                ? Collections.<Class<?>>emptySet()
-                        : udts;
+        return (udts == null) ? Collections.<Class<?>> emptySet() : udts;
     }
 
     private static Set<Class<?>> findUDTs(Type type, Set<Class<?>> udts) {

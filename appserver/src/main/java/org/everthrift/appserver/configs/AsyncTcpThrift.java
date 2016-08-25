@@ -12,12 +12,12 @@ import org.springframework.context.annotation.ImportResource;
 public class AsyncTcpThrift {
 
     @Bean
-    public AsyncTcpThriftAdapter asyncTcpThriftAdapter(){
+    public AsyncTcpThriftAdapter asyncTcpThriftAdapter() {
         return new AsyncTcpThriftAdapter(new TBinaryProtocol.Factory());
     }
 
     @Bean
-    public RpcAsyncTcpRegistry rpcAsyncTcpRegistry(){
+    public RpcAsyncTcpRegistry rpcAsyncTcpRegistry() {
         return new RpcAsyncTcpRegistry();
     }
 }

@@ -34,34 +34,34 @@ import io.smartcat.migration.MigrationResources;
 import io.smartcat.migration.MigrationType;
 import io.smartcat.migration.exceptions.MigrationException;
 
-public class CMigrationProcessor implements ApplicationContextAware{
+public class CMigrationProcessor implements ApplicationContextAware {
 
     private static final Logger log = LoggerFactory.getLogger(CMigrationProcessor.class);
 
     private ApplicationContext context;
 
     private Session session;
+
     private String schemaVersionCf = "schema_version";
 
     private String basePackage = "org.everthrift.cas.migration";
 
     private final MigrationResources resources = new MigrationResources();
-    
 
-    public CMigrationProcessor(){
+    public CMigrationProcessor() {
 
     }
 
     private List<Migration> findMigrations(String basePackage) {
 
         log.info("Using basePackage:{}", basePackage);
-        
+
         final List<Migration> migrations = new ArrayList<>();
 
         final ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
         scanner.addIncludeFilter(new AssignableTypeFilter(Migration.class));
 
-        final DefaultListableBeanFactory beanFactory = (DefaultListableBeanFactory)((ConfigurableApplicationContext)context).getBeanFactory();
+        final DefaultListableBeanFactory beanFactory = (DefaultListableBeanFactory) ((ConfigurableApplicationContext) context).getBeanFactory();
 
         for (BeanDefinition b : scanner.findCandidateComponents(basePackage)) {
 
@@ -79,54 +79,55 @@ public class CMigrationProcessor implements ApplicationContextAware{
 
         return migrations;
     }
-    
-    private List<Migration> findCQLMigrations(final String rootResourcePath) throws URISyntaxException, IOException{
+
+    private List<Migration> findCQLMigrations(final String rootResourcePath) throws URISyntaxException, IOException {
         final List<Migration> migrations = new ArrayList<>();
-                        
-        for (String r : ResourceScanner.getInstance().getResources(rootResourcePath, Pattern.compile(".*\\.cql"), CMigrationProcessor.class.getClassLoader())){
+
+        for (String r : ResourceScanner.getInstance().getResources(rootResourcePath, Pattern.compile(".*\\.cql"),
+                                                                   CMigrationProcessor.class.getClassLoader())) {
             migrations.add(new CqlMigration(MigrationType.SCHEMA, r));
         }
-        
+
         return migrations;
     }
-    
-    
-    private void assertUnique(List<Migration> migrations) throws MigrationException{
+
+    private void assertUnique(List<Migration> migrations) throws MigrationException {
         final Set<Migration> set = new HashSet<>();
-        for (Migration m: migrations){
+        for (Migration m : migrations) {
             if (!set.add(m))
                 throw new MigrationException("Migration " + m.toString() + " is not unique");
         }
     }
 
     public void migrate() throws Exception {
-        migrate( m -> true, false);
+        migrate(m -> true, false);
     }
 
     public void migrate(MigrationType type, int version) throws Exception {
-        migrate( m -> (type.equals(m.getType()) && m.getVersion() == version), false);
+        migrate(m -> (type.equals(m.getType()) && m.getVersion() == version), false);
     }
-    
-    public void migrate(Predicate<Migration> filter, boolean force) throws MigrationException{
+
+    public void migrate(Predicate<Migration> filter, boolean force) throws MigrationException {
         Assert.notNull(session);
         Assert.notNull(context);
-        
+
         List<Migration> migrations = new ArrayList<>();
         migrations.addAll(findMigrations(basePackage));
         try {
             migrations.addAll(findCQLMigrations(basePackage.replaceAll("\\.", "/")));
-        } catch (URISyntaxException | IOException e) {
+        }
+        catch (URISyntaxException | IOException e) {
             new MigrationException("Coudn't load CQL migrations", e);
         }
 
         migrations = migrations.stream().filter(filter).collect(Collectors.toList());
         assertUnique(migrations);
-        migrations.sort((o1,o2) -> Ints.compare(o1.getVersion(), o2.getVersion()));
-        
+        migrations.sort((o1, o2) -> Ints.compare(o1.getVersion(), o2.getVersion()));
+
         resources.addMigrations(migrations);
 
         if (MigrationEngine.withSession(session, schemaVersionCf).migrate(resources, force) == false)
-            throw new RuntimeException("Error in cassandra migrations");        
+            throw new RuntimeException("Error in cassandra migrations");
     }
 
     public String getBasePackage() {

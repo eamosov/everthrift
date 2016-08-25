@@ -21,25 +21,27 @@ import org.everthrift.services.thrift.cluster.Node;
 
 public abstract class ClusterThriftClientImpl implements ClusterThriftClientIF {
 
-    public static interface TRunnable<T>{
+    public static interface TRunnable<T> {
         T run() throws TException;
     }
 
-    public static class ReplyImpl<T> implements Reply<T>{
+    public static class ReplyImpl<T> implements Reply<T> {
         private T v;
+
         private TException e;
 
-        public ReplyImpl(TRunnable<T> r){
+        public ReplyImpl(TRunnable<T> r) {
             try {
                 v = r.run();
-            } catch (TException e) {
+            }
+            catch (TException e) {
                 this.e = e;
             }
         }
 
         @Override
         public T get() throws TException {
-            if (e !=null)
+            if (e != null)
                 throw e;
             else
                 return v;
@@ -78,9 +80,9 @@ public abstract class ClusterThriftClientImpl implements ClusterThriftClientIF {
 
         @Override
         public String toString() {
-            if (e!=null)
+            if (e != null)
                 return e.toString();
-            else if (v !=null)
+            else if (v != null)
                 return v.toString();
 
             return "<null>";
@@ -88,41 +90,43 @@ public abstract class ClusterThriftClientImpl implements ClusterThriftClientIF {
 
     }
 
-
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 
     private int defaultTimeout = 1000;
+
     private boolean defaultLoopback = false;
+
     private ResponseMode defaultResponseMode = ResponseMode.GET_ALL;
+
     protected final NodeDb nodeDb = new NodeDb();
 
-    protected int getTimeout(Options []options){
+    protected int getTimeout(Options[] options) {
 
-        if (options !=null){
-            for (Options o: options){
+        if (options != null) {
+            for (Options o : options) {
                 if (o instanceof Timeout)
-                    return ((Timeout)o).timeout;
+                    return ((Timeout) o).timeout;
             }
         }
         return defaultTimeout;
     }
 
-    protected boolean isLoopback(Options []options){
+    protected boolean isLoopback(Options[] options) {
 
-        if (options !=null){
-            for (Options o: options){
+        if (options != null) {
+            for (Options o : options) {
                 if (o instanceof Loopback)
-                    return ((Loopback)o).loopback;
+                    return ((Loopback) o).loopback;
             }
         }
         return defaultLoopback;
     }
 
-    protected ResponseMode getResponseMode(Options []options){
-        if (options !=null){
-            for (Options o: options){
+    protected ResponseMode getResponseMode(Options[] options) {
+        if (options != null) {
+            for (Options o : options) {
                 if (o instanceof Response)
-                    return ((Response)o).responseMode;
+                    return ((Response) o).responseMode;
             }
         }
         return defaultResponseMode;
@@ -160,8 +164,8 @@ public abstract class ClusterThriftClientImpl implements ClusterThriftClientIF {
         nodeDb.retain(getCluster().getView().getMembers());
     }
 
-    private <T> void _callOne(Iterator<Address> it, SettableFuture<T> f, InvocationInfo ii, Options []options){
-        if (!it.hasNext()){
+    private <T> void _callOne(Iterator<Address> it, SettableFuture<T> f, InvocationInfo ii, Options[] options) {
+        if (!it.hasNext()) {
             f.setException(new TApplicationException("all nodes failed"));
             return;
         }
@@ -170,20 +174,21 @@ public abstract class ClusterThriftClientImpl implements ClusterThriftClientIF {
         log.debug("Try call {} on {}", ii.fullMethodName, a);
 
         try {
-            Futures.addCallback(call(Collections.singletonList(a), null, ii, options), new FutureCallback<Map<Address,Reply<T>>>(){
+            Futures.addCallback(call(Collections.singletonList(a), null, ii, options), new FutureCallback<Map<Address, Reply<T>>>() {
 
                 @Override
-                public void onSuccess(Map<Address,Reply<T>> result) {
-                    if (!result.containsKey(a)){
+                public void onSuccess(Map<Address, Reply<T>> result) {
+                    if (!result.containsKey(a)) {
                         log.debug("Failed call {} on {}", ii.fullMethodName, a);
                         nodeDb.failed(a);
                         _callOne(it, f, ii, options);
-                    }else{
+                    } else {
                         log.debug("Success call {} on {}", ii.fullMethodName, a);
                         nodeDb.success(a);
                         try {
                             f.set(result.get(a).get());
-                        } catch (TException e) {
+                        }
+                        catch (TException e) {
                             f.setException(e);
                         }
                     }
@@ -196,7 +201,8 @@ public abstract class ClusterThriftClientImpl implements ClusterThriftClientIF {
                     _callOne(it, f, ii, options);
                 }
             });
-        } catch (TException e) {
+        }
+        catch (TException e) {
             log.debug("Failed call {} on {}", ii.fullMethodName, a);
             nodeDb.failed(a);
             _callOne(it, f, ii, options);
@@ -205,7 +211,7 @@ public abstract class ClusterThriftClientImpl implements ClusterThriftClientIF {
 
     @Override
     @SuppressWarnings("rawtypes")
-    public <T> ListenableFuture<T> callOne(InvocationInfo ii, Options ... options) throws TException{
+    public <T> ListenableFuture<T> callOne(InvocationInfo ii, Options... options) throws TException {
         final SettableFuture<T> f = SettableFuture.create();
         _callOne(nodeDb.getNode(ii.fullMethodName).iterator(), f, ii, options);
         return f;

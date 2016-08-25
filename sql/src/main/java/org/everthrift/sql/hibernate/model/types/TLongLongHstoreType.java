@@ -18,14 +18,14 @@ public class TLongLongHstoreType extends Trove4jHstoreType<TLongLongHashMap> {
 
     @Override
     public Object deepCopy(Object value) throws HibernateException {
-        return value==null ? null:new TLongLongHashMap((TLongLongHashMap)value);
+        return value == null ? null : new TLongLongHashMap((TLongLongHashMap) value);
     }
 
     @Override
     protected TLongLongHashMap transform(Map<String, String> input) {
         final TLongLongHashMap ret = new TLongLongHashMap();
 
-        for (Entry<String, String> e: input.entrySet()){
+        for (Entry<String, String> e : input.entrySet()) {
             ret.put(Long.parseLong(e.getKey()), Long.parseLong(e.getValue()));
         }
 
