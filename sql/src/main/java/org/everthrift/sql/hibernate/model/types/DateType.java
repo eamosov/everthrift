@@ -1,5 +1,10 @@
 package org.everthrift.sql.hibernate.model.types;
 
+import org.hibernate.HibernateException;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.usertype.UserType;
+import org.springframework.beans.BeanUtils;
+
 import java.beans.PropertyDescriptor;
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
@@ -10,11 +15,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.Calendar;
-
-import org.hibernate.HibernateException;
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.usertype.UserType;
-import org.springframework.beans.BeanUtils;
 
 @SuppressWarnings("rawtypes")
 public abstract class DateType implements UserType {
@@ -38,13 +38,13 @@ public abstract class DateType implements UserType {
 
         try {
             copy = returnedClass().getConstructor(returnedClass());
-        }
-        catch (NoSuchMethodException | SecurityException e) {
+        } catch (NoSuchMethodException | SecurityException e) {
             throw new RuntimeException(e);
         }
 
-        if (year == null || month == null || date == null)
+        if (year == null || month == null || date == null) {
             throw new RuntimeException("coudn't found properties year/month/date");
+        }
     }
 
     public static boolean isCompatible(final Class cls) {
@@ -65,32 +65,34 @@ public abstract class DateType implements UserType {
             d.date.getWriteMethod().invoke(o, 0);
 
             return true;
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             return false;
         }
     }
 
     @Override
     public int[] sqlTypes() {
-        return new int[] { Types.DATE };
+        return new int[]{Types.DATE};
     }
 
     @Override
     public boolean equals(Object x, Object y) throws HibernateException {
-        if (x == null && y == null)
+        if (x == null && y == null) {
             return true;
+        }
 
-        if ((x == null && y != null) || (x != null && y == null))
+        if ((x == null && y != null) || (x != null && y == null)) {
             return false;
+        }
 
         return x.equals(y);
     }
 
     @Override
     public int hashCode(Object x) throws HibernateException {
-        if (x == null)
+        if (x == null) {
             return 0;
+        }
 
         return x.hashCode();
     }
@@ -101,14 +103,14 @@ public abstract class DateType implements UserType {
 
         final Date value = rs.getDate(names[0]);
 
-        if (value == null)
+        if (value == null) {
             return null;
+        }
 
         Object ret;
         try {
             ret = returnedClass().newInstance();
-        }
-        catch (InstantiationException | IllegalAccessException e) {
+        } catch (InstantiationException | IllegalAccessException e) {
             throw new SQLException(e);
         }
 
@@ -121,8 +123,7 @@ public abstract class DateType implements UserType {
                                           cld.get(Calendar.MONTH)); /* 0-11 */
             date.getWriteMethod().invoke(ret,
                                          cld.get(Calendar.DATE)); /* 1-31 */
-        }
-        catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+        } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
             throw new HibernateException(e);
         }
 
@@ -143,22 +144,24 @@ public abstract class DateType implements UserType {
         try {
             Number y = (Number) year.getReadMethod().invoke(value);
 
-            if (y != null)
+            if (y != null) {
                 cld.set(Calendar.YEAR, y.intValue());
+            }
 
             final Number m = (Number) month.getReadMethod().invoke(value);
-            if (m != null)
+            if (m != null) {
                 cld.set(Calendar.MONTH, m.intValue());
+            }
 
             final Number d = (Number) date.getReadMethod().invoke(value);
-            if (d != null)
+            if (d != null) {
                 cld.set(Calendar.DATE, d.intValue());
+            }
 
             final Date date = new Date(cld.getTimeInMillis());
             st.setDate(index, date);
 
-        }
-        catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+        } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
             throw new HibernateException(e);
         }
     }
@@ -166,13 +169,13 @@ public abstract class DateType implements UserType {
     @Override
     public Object deepCopy(Object value) throws HibernateException {
 
-        if (value == null)
+        if (value == null) {
             return null;
+        }
 
         try {
             return copy.newInstance(value);
-        }
-        catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+        } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
             throw new HibernateException(e);
         }
     }

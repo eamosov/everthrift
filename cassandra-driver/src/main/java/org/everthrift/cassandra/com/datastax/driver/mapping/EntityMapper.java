@@ -15,7 +15,9 @@
  */
 package org.everthrift.cassandra.com.datastax.driver.mapping;
 
-import static com.datastax.driver.core.querybuilder.QueryBuilder.quote;
+import com.datastax.driver.core.ConsistencyLevel;
+import com.google.common.collect.Collections2;
+import com.google.common.collect.ImmutableSet;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,9 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.datastax.driver.core.ConsistencyLevel;
-import com.google.common.collect.Collections2;
-import com.google.common.collect.ImmutableSet;
+import static com.datastax.driver.core.querybuilder.QueryBuilder.quote;
 
 public abstract class EntityMapper<T> {
 
@@ -48,6 +48,7 @@ public abstract class EntityMapper<T> {
                 return true;
             }
         };
+
         abstract boolean accept(ColumnScenario c);
     }
 
@@ -155,8 +156,9 @@ public abstract class EntityMapper<T> {
         sb.append(String.format("[EntityMapper %s.%s <-> %s]\n", keyspace, table, entityClass.getCanonicalName()));
         sb.append("\twriteConsistency: " + writeConsistency + "\n");
         sb.append("\treadConsistency: " + readConsistency + "\n");
-        if (versionColumn != null)
+        if (versionColumn != null) {
             sb.append("\tversionColumn: " + versionColumn.getColumnName() + "\n");
+        }
 
         sb.append("\tcolumns mapping:\n");
 

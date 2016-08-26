@@ -1,7 +1,5 @@
 package org.everthrift.jms;
 
-import javax.jms.ConnectionFactory;
-
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -9,6 +7,8 @@ import org.springframework.context.annotation.ImportResource;
 import org.springframework.context.annotation.Scope;
 import org.springframework.jms.listener.DefaultMessageListenerContainer;
 import org.springframework.jms.listener.SessionAwareMessageListener;
+
+import javax.jms.ConnectionFactory;
 
 @Configuration
 @ImportResource("classpath:jms-beans.xml")

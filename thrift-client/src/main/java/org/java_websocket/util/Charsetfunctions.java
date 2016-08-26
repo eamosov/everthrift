@@ -1,14 +1,14 @@
 package org.java_websocket.util;
 
+import org.java_websocket.exceptions.InvalidDataException;
+import org.java_websocket.framing.CloseFrame;
+
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
-
-import org.java_websocket.exceptions.InvalidDataException;
-import org.java_websocket.framing.CloseFrame;
 
 public class Charsetfunctions {
 
@@ -20,8 +20,7 @@ public class Charsetfunctions {
     public static byte[] utf8Bytes(String s) {
         try {
             return s.getBytes("UTF8");
-        }
-        catch (UnsupportedEncodingException e) {
+        } catch (UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
     }
@@ -32,8 +31,7 @@ public class Charsetfunctions {
     public static byte[] asciiBytes(String s) {
         try {
             return s.getBytes("ASCII");
-        }
-        catch (UnsupportedEncodingException e) {
+        } catch (UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
     }
@@ -45,8 +43,7 @@ public class Charsetfunctions {
     public static String stringAscii(byte[] bytes, int offset, int length) {
         try {
             return new String(bytes, offset, length, "ASCII");
-        }
-        catch (UnsupportedEncodingException e) {
+        } catch (UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
     }
@@ -75,8 +72,7 @@ public class Charsetfunctions {
             bytes.mark();
             s = decode.decode(bytes).toString();
             bytes.reset();
-        }
-        catch (CharacterCodingException e) {
+        } catch (CharacterCodingException e) {
             throw new InvalidDataException(CloseFrame.NO_UTF8, e);
         }
         return s;

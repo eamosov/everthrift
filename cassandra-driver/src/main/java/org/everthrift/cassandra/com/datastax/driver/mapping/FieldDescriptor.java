@@ -1,10 +1,9 @@
 package org.everthrift.cassandra.com.datastax.driver.mapping;
 
-import org.everthrift.cassandra.com.datastax.driver.mapping.ColumnMapper.Kind;
-import org.everthrift.cassandra.com.datastax.driver.mapping.EntityMapper.ColumnScenario;
-
 import com.datastax.driver.core.TypeCodec;
 import com.google.common.reflect.TypeToken;
+import org.everthrift.cassandra.com.datastax.driver.mapping.ColumnMapper.Kind;
+import org.everthrift.cassandra.com.datastax.driver.mapping.EntityMapper.ColumnScenario;
 
 public class FieldDescriptor {
 

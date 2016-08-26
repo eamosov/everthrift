@@ -1,7 +1,6 @@
 package org.everthrift.cassandra.migrator;
 
-import java.io.IOException;
-
+import ch.qos.logback.classic.PatternLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.support.AbstractXmlApplicationContext;
@@ -11,7 +10,7 @@ import org.springframework.core.env.SimpleCommandLinePropertySource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.ResourcePropertySource;
 
-import ch.qos.logback.classic.PatternLayout;
+import java.io.IOException;
 
 public class Migrator {
 
@@ -29,15 +28,14 @@ public class Migrator {
     private static final Logger log = LoggerFactory.getLogger(Migrator.class);
 
     public static void main(String[] args) throws Exception {
-        context = new ClassPathXmlApplicationContext(new String[] { "classpath:cassandra-migration-context.xml" }, false);
+        context = new ClassPathXmlApplicationContext(new String[]{"classpath:cassandra-migration-context.xml"}, false);
         context.registerShutdownHook();
         env = context.getEnvironment();
         env.getPropertySources().addFirst(new SimpleCommandLinePropertySource(args));
         final Resource resource = context.getResource("classpath:application.properties");
         try {
             env.getPropertySources().addLast(new ResourcePropertySource(resource));
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             log.error("Error loading resource: " + resource.toString(), e);
         }
 
@@ -46,8 +44,7 @@ public class Migrator {
 
         try {
             processor.migrate();
-        }
-        finally {
+        } finally {
             context.close();
         }
     }

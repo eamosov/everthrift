@@ -10,8 +10,9 @@ public class AtomicMonotonicTimestampGenerator extends AbstractMonotonicTimestam
         while (true) {
             long last = lastRef.get();
             long next = computeNext(last);
-            if (lastRef.compareAndSet(last, next))
+            if (lastRef.compareAndSet(last, next)) {
                 return next;
+            }
         }
     }
 }

@@ -27,10 +27,11 @@ abstract class AbstractMonotonicTimestampGenerator implements TimestampGenerator
 
         // System.currentTimeMillis can go backwards on an NTP resync, hence the ">" below
         if (millis >= now) {
-            if (counter == 999)
+            if (counter == 999) {
                 logger.warn("Sub-millisecond counter overflowed, some query timestamps will not be distinct");
-            else
+            } else {
                 counter += 1;
+            }
         } else {
             millis = now;
             counter = 0;

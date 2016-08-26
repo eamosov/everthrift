@@ -1,11 +1,5 @@
 package org.java_websocket.drafts;
 
-import java.nio.ByteBuffer;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-
 import org.java_websocket.WebSocket.Role;
 import org.java_websocket.exceptions.IncompleteHandshakeException;
 import org.java_websocket.exceptions.InvalidDataException;
@@ -26,6 +20,12 @@ import org.java_websocket.handshake.ServerHandshake;
 import org.java_websocket.handshake.ServerHandshakeBuilder;
 import org.java_websocket.util.Charsetfunctions;
 
+import java.nio.ByteBuffer;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+
 /**
  * Base class for everything of a websocket specification which is not common
  * such as the way the handshake is read or frames are transfered.
@@ -33,9 +33,13 @@ import org.java_websocket.util.Charsetfunctions;
 public abstract class Draft {
 
     public enum HandshakeState {
-        /** Handshake matched this Draft successfully */
+        /**
+         * Handshake matched this Draft successfully
+         */
         MATCHED,
-        /** Handshake is does not match this Draft */
+        /**
+         * Handshake is does not match this Draft
+         */
         NOT_MATCHED
     }
 
@@ -88,11 +92,12 @@ public abstract class Draft {
         HandshakeBuilder handshake;
 
         String line = readStringLine(buf);
-        if (line == null)
+        if (line == null) {
             throw new IncompleteHandshakeException(buf.capacity() + 128);
+        }
 
         String[] firstLineTokens = line.split(" ", 3);// eg. HTTP/1.1 101
-                                                      // Switching the Protocols
+        // Switching the Protocols
         if (firstLineTokens.length != 3) {
             throw new InvalidHandshakeException();
         }
@@ -113,13 +118,15 @@ public abstract class Draft {
         line = readStringLine(buf);
         while (line != null && line.length() > 0) {
             String[] pair = line.split(":", 2);
-            if (pair.length != 2)
+            if (pair.length != 2) {
                 throw new InvalidHandshakeException("not an http header");
+            }
             handshake.put(pair[0], pair[1].replaceFirst("^ +", ""));
             line = readStringLine(buf);
         }
-        if (line == null)
+        if (line == null) {
             throw new IncompleteHandshakeException();
+        }
         return handshake;
     }
 
@@ -130,20 +137,20 @@ public abstract class Draft {
 
     protected boolean basicAccept(Handshakedata handshakedata) {
         return handshakedata.getFieldValue("Upgrade").equalsIgnoreCase("websocket")
-               && handshakedata.getFieldValue("Connection").toLowerCase(Locale.ENGLISH).contains("upgrade");
+            && handshakedata.getFieldValue("Connection").toLowerCase(Locale.ENGLISH).contains("upgrade");
     }
 
     public abstract ByteBuffer createBinaryFrame(Framedata framedata); // TODO
-                                                                       // Allow
-                                                                       // to
-                                                                       // send
-                                                                       // data
-                                                                       // on the
-                                                                       // base
-                                                                       // of an
-                                                                       // Iterator
-                                                                       // or
-                                                                       // InputStream
+    // Allow
+    // to
+    // send
+    // data
+    // on the
+    // base
+    // of an
+    // Iterator
+    // or
+    // InputStream
 
     public abstract List<Framedata> createFrames(ByteBuffer binary, boolean mask);
 
@@ -163,10 +170,9 @@ public abstract class Draft {
         FrameBuilder bui = new FramedataImpl1(continuousFrameType);
         try {
             bui.setPayload(buffer);
-        }
-        catch (InvalidDataException e) {
+        } catch (InvalidDataException e) {
             throw new RuntimeException(e); // can only happen when one builds
-                                           // close frames(Opcode.Close)
+            // close frames(Opcode.Close)
         }
         bui.setFin(fin);
         if (fin) {
@@ -210,8 +216,9 @@ public abstract class Draft {
         byte[] content = withcontent ? handshakedata.getContent() : null;
         ByteBuffer bytebuffer = ByteBuffer.allocate((content == null ? 0 : content.length) + httpheader.length);
         bytebuffer.put(httpheader);
-        if (content != null)
+        if (content != null) {
             bytebuffer.put(content);
+        }
         bytebuffer.flip();
         return Collections.singletonList(bytebuffer);
     }
@@ -239,8 +246,9 @@ public abstract class Draft {
     }
 
     public int checkAlloc(int bytecount) throws LimitExedeedException, InvalidDataException {
-        if (bytecount < 0)
+        if (bytecount < 0) {
             throw new InvalidDataException(CloseFrame.PROTOCOL_ERROR, "Negative count");
+        }
         return bytecount;
     }
 

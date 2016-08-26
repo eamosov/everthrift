@@ -1,15 +1,6 @@
 package org.everthrift.sql.hibernate.model;
 
-import java.beans.PropertyDescriptor;
-import java.sql.DatabaseMetaData;
-import java.sql.SQLException;
-import java.sql.Types;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
-
-import javax.sql.DataSource;
-
+import com.google.common.base.CaseFormat;
 import org.hibernate.annotations.OptimisticLocking;
 import org.hibernate.annotations.SQLInsert;
 import org.slf4j.Logger;
@@ -19,7 +10,14 @@ import org.springframework.jdbc.support.DatabaseMetaDataCallback;
 import org.springframework.jdbc.support.JdbcUtils;
 import org.springframework.jdbc.support.MetaDataAccessException;
 
-import com.google.common.base.CaseFormat;
+import javax.sql.DataSource;
+import java.beans.PropertyDescriptor;
+import java.sql.DatabaseMetaData;
+import java.sql.SQLException;
+import java.sql.Types;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
 
 public class MetaDataProvider {
 
@@ -50,8 +48,9 @@ public class MetaDataProvider {
 
     private void readMetaData() {
         for (final String schemaTable : tableNames.stringPropertyNames()) {
-            for (String m : tableNames.getProperty(schemaTable).split(","))
+            for (String m : tableNames.getProperty(schemaTable).split(",")) {
                 addTable(schemaTable, m);
+            }
         }
     }
 
@@ -81,22 +80,21 @@ public class MetaDataProvider {
             table.sqlInsert = (SQLInsert) clazz.getAnnotation(SQLInsert.class);
 
             tableModels.add(table);
-        }
-        catch (MetaDataAccessException e) {
+        } catch (MetaDataAccessException e) {
             LOG.error("Error get model metadata {}", schemaTable, e);
-        }
-        catch (ClassNotFoundException e) {
+        } catch (ClassNotFoundException e) {
             LOG.error("Can't find class {}", modelName, e);
         }
     }
 
-    @SuppressWarnings({ "unchecked" })
+    @SuppressWarnings({"unchecked"})
     private List<Column> readColumns(final Table table, Class clazz) throws MetaDataAccessException {
         List<Column> columns = (List<Column>) JdbcUtils.extractDatabaseMetaData(dataSource, new DatabaseMetaDataCallback() {
             @Override
             public Object processMetaData(DatabaseMetaData dbmd) throws SQLException, MetaDataAccessException {
                 List<Column> columns = new Column.ColumnExtractor(table).extractData(dbmd.getColumns(null, null,
-                                                                                                     table.getTableName().toLowerCase(),
+                                                                                                     table.getTableName()
+                                                                                                          .toLowerCase(),
                                                                                                      null));
                 return columns;
             }
@@ -113,21 +111,23 @@ public class MetaDataProvider {
         String camelCase = CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, lowerCase.toUpperCase());
         String camelCaseTs = null;
         switch (column.getJdbcType()) {
-        case Types.TIMESTAMP:
-        case Types.TIME:
-        case Types.DATE:
-            camelCaseTs = camelCase.concat(TS_POSTFIX);
+            case Types.TIMESTAMP:
+            case Types.TIME:
+            case Types.DATE:
+                camelCaseTs = camelCase.concat(TS_POSTFIX);
         }
 
         final PropertyDescriptor property = (camelCaseTs != null
-                                             && BeanUtils.getPropertyDescriptor(clazz,
-                                                                                camelCaseTs) != null) ? BeanUtils.getPropertyDescriptor(clazz,
-                                                                                                                                        camelCaseTs)
-                                                                                                      : BeanUtils.getPropertyDescriptor(clazz,
-                                                                                                                                        camelCase) != null ? BeanUtils.getPropertyDescriptor(clazz,
-                                                                                                                                                                                             camelCase)
-                                                                                                                                                           : BeanUtils.getPropertyDescriptor(clazz,
-                                                                                                                                                                                             lowerCase);
+            && BeanUtils.getPropertyDescriptor(clazz,
+                                               camelCaseTs) != null) ? BeanUtils.getPropertyDescriptor(clazz,
+                                                                                                       camelCaseTs)
+                                                                     : BeanUtils.getPropertyDescriptor(clazz,
+                                                                                                       camelCase) != null ? BeanUtils
+                                                                           .getPropertyDescriptor(clazz,
+                                                                                                  camelCase)
+                                                                                                                          : BeanUtils
+                                                                           .getPropertyDescriptor(clazz,
+                                                                                                  lowerCase);
 
         if (property != null) {
             column.setJavaClass(property.getPropertyType());
@@ -164,8 +164,9 @@ public class MetaDataProvider {
         sb.append("<hibernate-mapping>\n");
         for (Table t : tableModels) {
 
-            if (!t.isValid())
+            if (!t.isValid()) {
                 throw new RuntimeException("Table " + t.getTableName() + " is invalid");
+            }
 
             sb.append(t.toHbmXml().replaceAll("(?m)^", "\t"));
         }

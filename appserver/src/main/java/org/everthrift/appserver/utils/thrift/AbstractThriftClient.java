@@ -1,13 +1,12 @@
 package org.everthrift.appserver.utils.thrift;
 
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import org.apache.thrift.TException;
 import org.apache.thrift.transport.TTransportException;
 import org.everthrift.clustering.thrift.InvocationInfo;
 import org.everthrift.clustering.thrift.InvocationInfoThreadHolder;
-
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 
 public abstract class AbstractThriftClient<S> extends ThriftClient<S> {
 
@@ -26,8 +25,9 @@ public abstract class AbstractThriftClient<S> extends ThriftClient<S> {
     @Override
     public <T> ListenableFuture<T> thriftCall(int timeout, T methodCall) throws TException {
         final InvocationInfo info = InvocationInfoThreadHolder.getInvocationInfo();
-        if (info == null)
+        if (info == null) {
             throw new TTransportException("info is NULL");
+        }
 
         return thriftCall(sessionId, timeout, info);
     }

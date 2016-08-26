@@ -1,8 +1,8 @@
 package org.everthrift.sql.hibernate.dao;
 
-import java.io.Serializable;
-
 import org.everthrift.appserver.model.DaoEntityIF;
+
+import java.io.Serializable;
 
 public class DummyEntity implements DaoEntityIF {
 

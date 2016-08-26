@@ -1,5 +1,10 @@
 package org.everthrift.sql.hibernate.model.types;
 
+import org.apache.thrift.TEnum;
+import org.hibernate.HibernateException;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.usertype.UserType;
+
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -7,11 +12,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
-
-import org.apache.thrift.TEnum;
-import org.hibernate.HibernateException;
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.usertype.UserType;
 
 public abstract class TEnumType<T extends TEnum> implements UserType {
 
@@ -22,15 +22,14 @@ public abstract class TEnumType<T extends TEnum> implements UserType {
     public TEnumType() {
         try {
             findByValue = getTEnumClass().getMethod("findByValue", Integer.TYPE);
-        }
-        catch (NoSuchMethodException | SecurityException e) {
+        } catch (NoSuchMethodException | SecurityException e) {
             throw new RuntimeException(e);
         }
     }
 
     @Override
     public int[] sqlTypes() {
-        return new int[] { Types.INTEGER };
+        return new int[]{Types.INTEGER};
     }
 
     @Override
@@ -40,19 +39,22 @@ public abstract class TEnumType<T extends TEnum> implements UserType {
 
     @Override
     public boolean equals(Object x, Object y) throws HibernateException {
-        if (x == null && y == null)
+        if (x == null && y == null) {
             return true;
+        }
 
-        if ((x == null && y != null) || (x != null && y == null))
+        if ((x == null && y != null) || (x != null && y == null)) {
             return false;
+        }
 
         return x.equals(y);
     }
 
     @Override
     public int hashCode(Object x) throws HibernateException {
-        if (x == null)
+        if (x == null) {
             return 0;
+        }
 
         return x.hashCode();
     }
@@ -63,13 +65,13 @@ public abstract class TEnumType<T extends TEnum> implements UserType {
 
         final Integer value = (Integer) rs.getObject(names[0]);
 
-        if (value == null)
+        if (value == null) {
             return null;
+        }
 
         try {
             return findByValue.invoke(null, value.intValue());
-        }
-        catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+        } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
             throw new SQLException(e);
         }
     }
@@ -77,10 +79,11 @@ public abstract class TEnumType<T extends TEnum> implements UserType {
     @Override
     public void nullSafeSet(PreparedStatement st, Object value, int index,
                             SharedSessionContractImplementor session) throws HibernateException, SQLException {
-        if (value == null)
+        if (value == null) {
             st.setNull(index, java.sql.Types.INTEGER);
-        else
+        } else {
             st.setInt(index, ((TEnum) value).getValue());
+        }
     }
 
     @Override

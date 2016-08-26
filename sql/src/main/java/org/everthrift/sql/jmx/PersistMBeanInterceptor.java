@@ -1,18 +1,17 @@
 package org.everthrift.sql.jmx;
 
+import org.aopalliance.intercept.MethodInterceptor;
+import org.aopalliance.intercept.MethodInvocation;
+import org.springframework.jmx.export.annotation.ManagedResource;
+
+import javax.management.Attribute;
+import javax.management.AttributeList;
 import java.beans.PropertyEditor;
 import java.beans.PropertyEditorManager;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Enumeration;
 import java.util.Properties;
-
-import javax.management.Attribute;
-import javax.management.AttributeList;
-
-import org.aopalliance.intercept.MethodInterceptor;
-import org.aopalliance.intercept.MethodInvocation;
-import org.springframework.jmx.export.annotation.ManagedResource;
 
 public class PersistMBeanInterceptor implements MethodInterceptor {
 
@@ -81,21 +80,20 @@ public class PersistMBeanInterceptor implements MethodInterceptor {
                 if (propertyValue.startsWith(TRUE) || propertyValue.startsWith(FALSE)) {
                     parameterType = boolean.class;
                     boolean booleanValue = Boolean.parseBoolean(propertyValue);
-                    invokeParam = new Object[] { booleanValue };
+                    invokeParam = new Object[]{booleanValue};
                 } else {
-                    parameterType = clazz.getClass().getMethod(GET_METHOD + convertMethodName(propertyKey), null).getReturnType();
-                    invokeParam = new Object[] { convertValue(parameterType, propertyValue) };
+                    parameterType = clazz.getClass()
+                                         .getMethod(GET_METHOD + convertMethodName(propertyKey), null)
+                                         .getReturnType();
+                    invokeParam = new Object[]{convertValue(parameterType, propertyValue)};
                 }
-                Class[] parameterTypes = new Class[] { parameterType };
+                Class[] parameterTypes = new Class[]{parameterType};
                 methodCall = clazz.getClass().getMethod(SET_METHOD + convertMethodName(propertyKey), parameterTypes);
                 methodCall.invoke(clazz, invokeParam);
-            }
-            catch (NoSuchMethodException nsme) {
-            }
-            catch (InvocationTargetException ite) {
+            } catch (NoSuchMethodException nsme) {
+            } catch (InvocationTargetException ite) {
                 ite.printStackTrace();
-            }
-            catch (IllegalAccessException iae) {
+            } catch (IllegalAccessException iae) {
                 iae.printStackTrace();
             }
         }

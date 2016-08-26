@@ -1,7 +1,7 @@
 package org.everthrift.cassandra.model;
 
-import java.util.Map;
-
+import com.datastax.driver.core.Session;
+import com.google.common.collect.Maps;
 import org.apache.thrift.TException;
 import org.everthrift.appserver.model.DaoEntityIF;
 import org.everthrift.thrift.TFunction;
@@ -10,8 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.SmartLifecycle;
 
-import com.datastax.driver.core.Session;
-import com.google.common.collect.Maps;
+import java.util.Map;
 
 @SuppressWarnings("rawtypes")
 public class CassandraFactories implements SmartLifecycle {
@@ -54,8 +53,9 @@ public class CassandraFactories implements SmartLifecycle {
     public synchronized <ENTITY extends DaoEntityIF> CassandraModelFactory<?, ENTITY, ?> of(Class<ENTITY> cls) {
         final CassandraModelFactory<?, ENTITY, ?> f = factories.get(cls);
 
-        if (f == null)
+        if (f == null) {
             throw new RuntimeException("Cound't find factory for " + cls.getCanonicalName());
+        }
 
         return f;
     }
@@ -102,8 +102,9 @@ public class CassandraFactories implements SmartLifecycle {
 
     @Override
     public void start() {
-        for (CassandraModelFactory f : ctx.getBeansOfType(CassandraModelFactory.class).values())
+        for (CassandraModelFactory f : ctx.getBeansOfType(CassandraModelFactory.class).values()) {
             register(f);
+        }
     }
 
     @Override

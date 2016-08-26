@@ -1,14 +1,5 @@
 package org.java_websocket.drafts;
 
-import java.math.BigInteger;
-import java.nio.ByteBuffer;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Random;
-
 import org.java_websocket.WebSocket.Role;
 import org.java_websocket.exceptions.InvalidDataException;
 import org.java_websocket.exceptions.InvalidFrameException;
@@ -28,6 +19,15 @@ import org.java_websocket.handshake.ServerHandshake;
 import org.java_websocket.handshake.ServerHandshakeBuilder;
 import org.java_websocket.util.Base64;
 import org.java_websocket.util.Charsetfunctions;
+
+import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Random;
 
 public class Draft_10 extends Draft {
 
@@ -56,8 +56,7 @@ public class Draft_10 extends Draft {
             try {
                 v = new Integer(vers.trim());
                 return v;
-            }
-            catch (NumberFormatException e) {
+            } catch (NumberFormatException e) {
                 return -1;
             }
         }
@@ -72,15 +71,17 @@ public class Draft_10 extends Draft {
 
     @Override
     public HandshakeState acceptHandshakeAsClient(ClientHandshake request, ServerHandshake response) throws InvalidHandshakeException {
-        if (!request.hasFieldValue("Sec-WebSocket-Key") || !response.hasFieldValue("Sec-WebSocket-Accept"))
+        if (!request.hasFieldValue("Sec-WebSocket-Key") || !response.hasFieldValue("Sec-WebSocket-Accept")) {
             return HandshakeState.NOT_MATCHED;
+        }
 
         String seckey_answere = response.getFieldValue("Sec-WebSocket-Accept");
         String seckey_challenge = request.getFieldValue("Sec-WebSocket-Key");
         seckey_challenge = generateFinalKey(seckey_challenge);
 
-        if (seckey_challenge.equals(seckey_answere))
+        if (seckey_challenge.equals(seckey_answere)) {
             return HandshakeState.MATCHED;
+        }
         return HandshakeState.NOT_MATCHED;
     }
 
@@ -89,7 +90,9 @@ public class Draft_10 extends Draft {
         // Sec-WebSocket-Origin is only required for browser clients
         int v = readVersion(handshakedata);
         if (v == 7 || v == 8)// g
+        {
             return basicAccept(handshakedata) ? HandshakeState.MATCHED : HandshakeState.NOT_MATCHED;
+        }
         return HandshakeState.NOT_MATCHED;
     }
 
@@ -114,8 +117,9 @@ public class Draft_10 extends Draft {
         } else if (sizebytes == 8) {
             buf.put((byte) ((byte) 127 | (mask ? (byte) -128 : 0)));
             buf.put(payloadlengthbytes);
-        } else
+        } else {
             throw new RuntimeException("Size representation not supported/specified");
+        }
 
         if (mask) {
             ByteBuffer maskkey = ByteBuffer.allocate(4);
@@ -124,8 +128,9 @@ public class Draft_10 extends Draft {
             for (int i = 0; mes.hasRemaining(); i++) {
                 buf.put((byte) (mes.get() ^ maskkey.get(i % 4)));
             }
-        } else
+        } else {
             buf.put(mes);
+        }
         // translateFrame ( buf.array () , buf.array ().length );
         assert (buf.remaining() == 0) : buf.remaining();
         buf.flip();
@@ -138,8 +143,7 @@ public class Draft_10 extends Draft {
         FrameBuilder curframe = new FramedataImpl1();
         try {
             curframe.setPayload(binary);
-        }
-        catch (InvalidDataException e) {
+        } catch (InvalidDataException e) {
             throw new NotSendableException(e);
         }
         curframe.setFin(true);
@@ -153,8 +157,7 @@ public class Draft_10 extends Draft {
         FrameBuilder curframe = new FramedataImpl1();
         try {
             curframe.setPayload(ByteBuffer.wrap(Charsetfunctions.utf8Bytes(text)));
-        }
-        catch (InvalidDataException e) {
+        } catch (InvalidDataException e) {
             throw new NotSendableException(e);
         }
         curframe.setFin(true);
@@ -164,18 +167,19 @@ public class Draft_10 extends Draft {
     }
 
     private byte fromOpcode(Opcode opcode) {
-        if (opcode == Opcode.CONTINUOUS)
+        if (opcode == Opcode.CONTINUOUS) {
             return 0;
-        else if (opcode == Opcode.TEXT)
+        } else if (opcode == Opcode.TEXT) {
             return 1;
-        else if (opcode == Opcode.BINARY)
+        } else if (opcode == Opcode.BINARY) {
             return 2;
-        else if (opcode == Opcode.CLOSING)
+        } else if (opcode == Opcode.CLOSING) {
             return 8;
-        else if (opcode == Opcode.PING)
+        } else if (opcode == Opcode.PING) {
             return 9;
-        else if (opcode == Opcode.PONG)
+        } else if (opcode == Opcode.PONG) {
             return 10;
+        }
         throw new RuntimeException("Don't know how to handle " + opcode.toString());
     }
 
@@ -185,8 +189,7 @@ public class Draft_10 extends Draft {
         MessageDigest sh1;
         try {
             sh1 = MessageDigest.getInstance("SHA1");
-        }
-        catch (NoSuchAlgorithmException e) {
+        } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }
         return Base64.encodeBytes(sh1.digest(acc.getBytes()));
@@ -196,7 +199,7 @@ public class Draft_10 extends Draft {
     public ClientHandshakeBuilder postProcessHandshakeRequestAsClient(ClientHandshakeBuilder request) {
         request.put("Upgrade", "websocket");
         request.put("Connection", "Upgrade"); // to respond to a Connection keep
-                                              // alives
+        // alives
         request.put("Sec-WebSocket-Version", "8");
 
         byte[] random = new byte[16];
@@ -211,15 +214,16 @@ public class Draft_10 extends Draft {
                                                                  ServerHandshakeBuilder response) throws InvalidHandshakeException {
         response.put("Upgrade", "websocket");
         response.put("Connection", request.getFieldValue("Connection")); // to
-                                                                         // respond
-                                                                         // to a
-                                                                         // Connection
-                                                                         // keep
-                                                                         // alives
+        // respond
+        // to a
+        // Connection
+        // keep
+        // alives
         response.setHttpStatusMessage("Switching Protocols");
         String seckey = request.getFieldValue("Sec-WebSocket-Key");
-        if (seckey == null)
+        if (seckey == null) {
             throw new InvalidHandshakeException("missing Sec-WebSocket-Key");
+        }
         response.put("Sec-WebSocket-Accept", generateFinalKey(seckey));
         return response;
     }
@@ -235,22 +239,22 @@ public class Draft_10 extends Draft {
 
     private Opcode toOpcode(byte opcode) throws InvalidFrameException {
         switch (opcode) {
-        case 0:
-            return Opcode.CONTINUOUS;
-        case 1:
-            return Opcode.TEXT;
-        case 2:
-            return Opcode.BINARY;
-        // 3-7 are not yet defined
-        case 8:
-            return Opcode.CLOSING;
-        case 9:
-            return Opcode.PING;
-        case 10:
-            return Opcode.PONG;
-        // 11-15 are not yet defined
-        default:
-            throw new InvalidFrameException("unknow optcode " + (short) opcode);
+            case 0:
+                return Opcode.CONTINUOUS;
+            case 1:
+                return Opcode.TEXT;
+            case 2:
+                return Opcode.BINARY;
+            // 3-7 are not yet defined
+            case 8:
+                return Opcode.CLOSING;
+            case 9:
+                return Opcode.PING;
+            case 10:
+                return Opcode.PONG;
+            // 11-15 are not yet defined
+            default:
+                throw new InvalidFrameException("unknow optcode " + (short) opcode);
         }
     }
 
@@ -265,19 +269,19 @@ public class Draft_10 extends Draft {
                 try {
                     buffer.mark();
                     int available_next_byte_count = buffer.remaining();// The
-                                                                       // number
-                                                                       // of
-                                                                       // bytes
-                                                                       // received
+                    // number
+                    // of
+                    // bytes
+                    // received
                     int expected_next_byte_count = incompleteframe.remaining();// The
-                                                                               // number
-                                                                               // of
-                                                                               // bytes
-                                                                               // to
-                                                                               // complete
-                                                                               // the
-                                                                               // incomplete
-                                                                               // frame
+                    // number
+                    // of
+                    // bytes
+                    // to
+                    // complete
+                    // the
+                    // incomplete
+                    // frame
 
                     if (expected_next_byte_count > available_next_byte_count) {
                         // did not receive enough bytes to complete the frame
@@ -292,8 +296,7 @@ public class Draft_10 extends Draft {
                     frames.add(cur);
                     incompleteframe = null;
                     break; // go on with the normal frame receival
-                }
-                catch (IncompleteException e) {
+                } catch (IncompleteException e) {
                     // extending as much as suggested
                     int oldsize = incompleteframe.limit();
                     ByteBuffer extendedframe = ByteBuffer.allocate(checkAlloc(e.getPreferedSize()));
@@ -312,8 +315,7 @@ public class Draft_10 extends Draft {
             try {
                 cur = translateSingleFrame(buffer);
                 frames.add(cur);
-            }
-            catch (IncompleteException e) {
+            } catch (IncompleteException e) {
                 // remember the incomplete data
                 buffer.reset();
                 int pref = e.getPreferedSize();
@@ -328,13 +330,15 @@ public class Draft_10 extends Draft {
     public Framedata translateSingleFrame(ByteBuffer buffer) throws IncompleteException, InvalidDataException {
         int maxpacketsize = buffer.remaining();
         int realpacketsize = 2;
-        if (maxpacketsize < realpacketsize)
+        if (maxpacketsize < realpacketsize) {
             throw new IncompleteException(realpacketsize);
+        }
         byte b1 = buffer.get( /* 0 */);
         boolean FIN = b1 >> 8 != 0;
         byte rsv = (byte) ((b1 & ~(byte) 128) >> 4);
-        if (rsv != 0)
+        if (rsv != 0) {
             throw new InvalidFrameException("bad rsv " + rsv);
+        }
         byte b2 = buffer.get( /* 1 */);
         boolean MASK = (b2 & -128) != 0;
         int payloadlength = (byte) (b2 & ~(byte) 128);
@@ -353,16 +357,18 @@ public class Draft_10 extends Draft {
             }
             if (payloadlength == 126) {
                 realpacketsize += 2; // additional length bytes
-                if (maxpacketsize < realpacketsize)
+                if (maxpacketsize < realpacketsize) {
                     throw new IncompleteException(realpacketsize);
+                }
                 byte[] sizebytes = new byte[3];
                 sizebytes[1] = buffer.get( /* 1 + 1 */);
                 sizebytes[2] = buffer.get( /* 1 + 2 */);
                 payloadlength = new BigInteger(sizebytes).intValue();
             } else {
                 realpacketsize += 8; // additional length bytes
-                if (maxpacketsize < realpacketsize)
+                if (maxpacketsize < realpacketsize) {
                     throw new IncompleteException(realpacketsize);
+                }
                 byte[] bytes = new byte[8];
                 for (int i = 0; i < 8; i++) {
                     bytes[i] = buffer.get( /* 1 + i */);
@@ -381,8 +387,9 @@ public class Draft_10 extends Draft {
         // int payloadstart = foff + realpacketsize;
         realpacketsize += payloadlength;
 
-        if (maxpacketsize < realpacketsize)
+        if (maxpacketsize < realpacketsize) {
             throw new IncompleteException(realpacketsize);
+        }
 
         ByteBuffer payload = ByteBuffer.allocate(checkAlloc(payloadlength));
         if (MASK) {

@@ -96,7 +96,9 @@ public interface CloseFrame extends Framedata {
      **/
     public static final int TLS_ERROR = 1015;
 
-    /** The connection had never been established */
+    /**
+     * The connection had never been established
+     */
     public static final int NEVER_CONNECTED = -1;
 
     public static final int BUGGYCLOSE = -2;

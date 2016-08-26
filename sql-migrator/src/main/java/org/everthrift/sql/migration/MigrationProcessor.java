@@ -1,16 +1,5 @@
 package org.everthrift.sql.migration;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
 import org.everthrift.sql.migration.utils.ConsoleUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +18,18 @@ import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallbackWithoutResult;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.ClassUtils;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 public class MigrationProcessor {
 
@@ -50,14 +51,12 @@ public class MigrationProcessor {
             long l1, l2 = 0;
             try {
                 l1 = sdf.parse(o1.substring(0, 14)).getTime() / 1000;
-            }
-            catch (ParseException e) {
+            } catch (ParseException e) {
                 l1 = Long.MAX_VALUE;
             }
             try {
                 l2 = sdf.parse(o2.substring(0, 14)).getTime() / 1000;
-            }
-            catch (ParseException e) {
+            } catch (ParseException e) {
                 l1 = Long.MAX_VALUE;
             }
             return Long.compare(l1, l2);
@@ -89,17 +88,20 @@ public class MigrationProcessor {
         scanner.addIncludeFilter(new AnnotationTypeFilter(Migration.class));
         final String root = context.getEnvironment().getProperty("sqlmigrator.root");
 
-        if (root == null)
+        if (root == null) {
             throw new RuntimeException("sqlmigrator.root is NULL");
+        }
 
         for (String s : root.split(",")) {
             ConsoleUtils.printString("Scanning " + s + "\n");
 
             Map<String, AbstractMigration> migrationsByName = scanMigrationClasses(scanner, s);
             if (byName) {
-                for (String name : migrationNames)
-                    if (migrationsByName.containsKey(name))
+                for (String name : migrationNames) {
+                    if (migrationsByName.containsKey(name)) {
                         availableMigrations.put(name, migrationsByName.get(name));
+                    }
+                }
             } else {
                 availableMigrations.putAll(migrationsByName);
             }
@@ -115,12 +117,14 @@ public class MigrationProcessor {
 
             final Class cls = ClassUtils.resolveClassName(b.getBeanClassName(), ClassUtils.getDefaultClassLoader());
 
-            beanFactory.registerBeanDefinition(cls.getSimpleName(), BeanDefinitionBuilder.rootBeanDefinition(cls).getBeanDefinition());
+            beanFactory.registerBeanDefinition(cls.getSimpleName(), BeanDefinitionBuilder.rootBeanDefinition(cls)
+                                                                                         .getBeanDefinition());
 
             final AbstractMigration migration = context.getBean(cls.getSimpleName(), AbstractMigration.class);
 
-            if (migration == null)
+            if (migration == null) {
                 throw new RuntimeException("cound't get bean:" + cls.getSimpleName());
+            }
 
             migration.setJdbcTemplate(jdbcTemplate);
             migrations4Path.put(((Migration) cls.getAnnotation(Migration.class)).version(), migration);
@@ -167,8 +171,7 @@ public class MigrationProcessor {
                     // ConsoleUtils.printString(entry.getKey() + "\t\t" +
                     // executeMigration(entry, down) + " \n");
                     migrationResults.put(entry.getKey(), executeMigration(entry, down));
-                }
-                catch (Exception e) {
+                } catch (Exception e) {
                     // ConsoleUtils.printString(entry.getKey() + "\t\t" +
                     // Result.FAIL.setMessage(e.getMessage()) + " \n");
                     migrationResults.put(entry.getKey(), Result.FAIL.setException(e));
@@ -203,11 +206,11 @@ public class MigrationProcessor {
         NamedParameterJdbcTemplate namedJdbcTemplate = new NamedParameterJdbcTemplate(jdbcTemplate);
         namedJdbcTemplate.query(MigrationProcessor.GET_EXIST_MIGRATIONS_FROM_DB_QUERY,
                                 Collections.singletonMap("versions", migrationVersions), new RowMapper<Object>() {
-                                    @Override
-                                    public Object mapRow(ResultSet rs, int rowNum) throws SQLException {
-                                        return availableMigrations.remove(rs.getString("version"));
-                                    }
-                                });
+                @Override
+                public Object mapRow(ResultSet rs, int rowNum) throws SQLException {
+                    return availableMigrations.remove(rs.getString("version"));
+                }
+            });
     }
 
     private void retainExistedInDb(final List<String> migrationVersions) {
@@ -220,21 +223,22 @@ public class MigrationProcessor {
         final NamedParameterJdbcTemplate namedJdbcTemplate = new NamedParameterJdbcTemplate(jdbcTemplate);
         namedJdbcTemplate.query(MigrationProcessor.GET_EXIST_MIGRATIONS_FROM_DB_QUERY,
                                 Collections.singletonMap("versions", migrationVersions), new RowMapper<Object>() {
-                                    @Override
-                                    public Object mapRow(ResultSet rs, int rowNum) throws SQLException {
-                                        return availableMigrations.put(rs.getString("version"), tmpMigrations.get(rs.getString("version")));
-                                    }
-                                });
+                @Override
+                public Object mapRow(ResultSet rs, int rowNum) throws SQLException {
+                    return availableMigrations.put(rs.getString("version"), tmpMigrations.get(rs.getString("version")));
+                }
+            });
     }
 
     public void migrate() throws Exception {
 
         final Map<String, MigrationProcessor.Result> results = process(true, Collections.EMPTY_LIST, false);
-        for (final Map.Entry<String, MigrationProcessor.Result> entry : results.entrySet())
+        for (final Map.Entry<String, MigrationProcessor.Result> entry : results.entrySet()) {
             if (entry.getValue().equals(MigrationProcessor.Result.FAIL)) {
                 log.error("Filed to execute migration: {} ", entry.getKey());
                 throw entry.getValue().getException();
             }
+        }
 
         return;
     }

@@ -15,16 +15,15 @@
  */
 package org.everthrift.cassandra.com.datastax.driver.mapping;
 
+import com.google.common.collect.Sets;
+import org.everthrift.cassandra.com.datastax.driver.mapping.annotations.UDT;
+
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import org.everthrift.cassandra.com.datastax.driver.mapping.annotations.UDT;
-
-import com.google.common.collect.Sets;
 
 /**
  * Utility methods to determine which CQL type we expect for a given Java field
@@ -59,7 +58,7 @@ class TypeMappings {
      */
     static Set<Class<?>> findUDTs(Type type) {
         Set<Class<?>> udts = findUDTs(type, null);
-        return (udts == null) ? Collections.<Class<?>> emptySet() : udts;
+        return (udts == null) ? Collections.<Class<?>>emptySet() : udts;
     }
 
     private static Set<Class<?>> findUDTs(Type type, Set<Class<?>> udts) {
@@ -72,15 +71,17 @@ class TypeMappings {
                     Type[] childTypes = pt.getActualTypeArguments();
                     udts = findUDTs(childTypes[0], udts);
 
-                    if (mapsToMap(klass))
+                    if (mapsToMap(klass)) {
                         udts = findUDTs(childTypes[1], udts);
+                    }
                 }
             }
         } else if (type instanceof Class) {
             Class<?> klass = (Class<?>) type;
             if (isMappedUDT(klass)) {
-                if (udts == null)
+                if (udts == null) {
                     udts = Sets.newHashSet();
+                }
                 udts.add(klass);
             }
         }

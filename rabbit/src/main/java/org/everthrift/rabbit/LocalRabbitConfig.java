@@ -16,8 +16,9 @@ public class LocalRabbitConfig {
     public LocalRabbitThriftClientServerImpl localRabbitThriftClientServerImpl(@Qualifier("testMode") boolean testMode) {
         final LocalRabbitThriftClientServerImpl impl = new LocalRabbitThriftClientServerImpl();
 
-        if (testMode)
+        if (testMode) {
             impl.setBlock(true);
+        }
 
         return impl;
     }

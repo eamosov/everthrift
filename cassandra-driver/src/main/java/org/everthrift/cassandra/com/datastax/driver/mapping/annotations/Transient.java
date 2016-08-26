@@ -28,7 +28,7 @@ import java.lang.annotation.Target;
  * {@code Transcient} annotation and one of the {@link Column},
  * {@link PartitionKey} or {@link ClusteringColumn} annotation.
  */
-@Target({ ElementType.FIELD, ElementType.METHOD })
+@Target({ElementType.FIELD, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Transient {
 }

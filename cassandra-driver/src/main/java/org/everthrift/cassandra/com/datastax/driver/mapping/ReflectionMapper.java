@@ -15,13 +15,12 @@
  */
 package org.everthrift.cassandra.com.datastax.driver.mapping;
 
+import com.datastax.driver.core.ConsistencyLevel;
+import org.springframework.beans.BeanUtils;
+
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Method;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.springframework.beans.BeanUtils;
-
-import com.datastax.driver.core.ConsistencyLevel;
 
 /**
  * An {@link EntityMapper} implementation that use reflection to read and write
@@ -44,8 +43,7 @@ class ReflectionMapper<T> extends EntityMapper<T> {
     public T newEntity() {
         try {
             return entityClass.newInstance();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw new RuntimeException("Can't create an instance of " + entityClass.getName());
         }
     }
@@ -66,12 +64,11 @@ class ReflectionMapper<T> extends EntityMapper<T> {
         public Object getValue(T entity) {
             try {
                 return readMethod.invoke(entity);
-            }
-            catch (IllegalArgumentException e) {
+            } catch (IllegalArgumentException e) {
                 throw new IllegalArgumentException("Could not get field '" + fieldName + "'");
-            }
-            catch (Exception e) {
-                throw new IllegalStateException("Unable to access getter for '" + fieldName + "' in " + entity.getClass().getName(), e);
+            } catch (Exception e) {
+                throw new IllegalStateException("Unable to access getter for '" + fieldName + "' in " + entity.getClass()
+                                                                                                              .getName(), e);
             }
         }
 
@@ -79,12 +76,11 @@ class ReflectionMapper<T> extends EntityMapper<T> {
         public void setValue(Object entity, Object value) {
             try {
                 writeMethod.invoke(entity, value);
-            }
-            catch (IllegalArgumentException e) {
+            } catch (IllegalArgumentException e) {
                 throw new IllegalArgumentException("Could not set field '" + fieldName + "' to value '" + value + "'");
-            }
-            catch (Exception e) {
-                throw new IllegalStateException("Unable to access setter for '" + fieldName + "' in " + entity.getClass().getName(), e);
+            } catch (Exception e) {
+                throw new IllegalStateException("Unable to access setter for '" + fieldName + "' in " + entity.getClass()
+                                                                                                              .getName(), e);
             }
         }
     }
@@ -103,11 +99,13 @@ class ReflectionMapper<T> extends EntityMapper<T> {
             final String fieldName = field.getFieldName();
             final PropertyDescriptor pd = BeanUtils.getPropertyDescriptor(entityClass, fieldName);
 
-            if (pd == null)
+            if (pd == null) {
                 throw new IllegalArgumentException("Cannot find matching getter and setter for field '" + fieldName + "'");
+            }
 
-            for (Class<?> udt : TypeMappings.findUDTs(field.getFieldType().getType()))
+            for (Class<?> udt : TypeMappings.findUDTs(field.getFieldType().getType())) {
                 mappingManager.getUDTCodec(udt);
+            }
 
             return new LiteralMapper<T>(field, pd, columnCounter);
         }

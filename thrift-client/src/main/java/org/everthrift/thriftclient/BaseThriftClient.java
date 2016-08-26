@@ -1,14 +1,5 @@
 package org.everthrift.thriftclient;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.thrift.TProcessor;
 import org.apache.thrift.TServiceClient;
 import org.apache.thrift.protocol.TBinaryProtocol;
@@ -22,6 +13,15 @@ import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportException;
 import org.apache.thrift.transport.TTransportFactory;
 import org.everthrift.thriftclient.transport.TWsTransport;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class BaseThriftClient implements AutoCloseable {
 
@@ -76,15 +76,15 @@ public class BaseThriftClient implements AutoCloseable {
     private final static ExecutorService executor = new ThreadPoolExecutor(1, Integer.MAX_VALUE, 5L, TimeUnit.SECONDS,
                                                                            new SynchronousQueue<Runnable>(), new ThreadFactory() {
 
-                                                                               @Override
-                                                                               public Thread newThread(Runnable r) {
-                                                                                   final Thread t = new Thread(r);
-                                                                                   t.setName("BaseThriftClientExecutor-"
-                                                                                             + nThread.incrementAndGet());
-                                                                                   t.setDaemon(true);
-                                                                                   return t;
-                                                                               }
-                                                                           });
+        @Override
+        public Thread newThread(Runnable r) {
+            final Thread t = new Thread(r);
+            t.setName("BaseThriftClientExecutor-"
+                          + nThread.incrementAndGet());
+            t.setDaemon(true);
+            return t;
+        }
+    });
 
     public static BaseThriftClient httpClient(String url) throws TTransportException {
         return new BaseThriftClient(url);
@@ -122,8 +122,7 @@ public class BaseThriftClient implements AutoCloseable {
                 transport = new TWsTransport(new URI("ws://" + hostPort.addr + ":" + hostPort.port + "/thrift"), 5000, processor,
                                              new TBinaryProtocol.Factory(), new TTransportFactory(), null, executor);
                 protocol = new TBinaryProtocol(transport);
-            }
-            catch (URISyntaxException e) {
+            } catch (URISyntaxException e) {
                 throw new RuntimeException(e);
             }
         } else if (proto.equals(Transports.WEBSOCKET_ZLIB)) {
@@ -131,8 +130,7 @@ public class BaseThriftClient implements AutoCloseable {
                 transport = new TWsTransport(new URI("ws://" + hostPort.addr + ":" + hostPort.port + "/thrift_zlib"), 5000, processor,
                                              new TBinaryProtocol.Factory(), new TKnockZlibTransport.Factory(), null, executor);
                 protocol = new TBinaryProtocol(new TKnockZlibTransport(transport));
-            }
-            catch (URISyntaxException e) {
+            } catch (URISyntaxException e) {
                 throw new RuntimeException(e);
             }
         } else if (proto.equals(Transports.WEBSOCKET_JS)) {
@@ -140,8 +138,7 @@ public class BaseThriftClient implements AutoCloseable {
                 transport = new TWsTransport(new URI("ws://" + hostPort.addr + ":" + hostPort.port + "/thrift_js"), 5000, processor,
                                              new TJSONProtocol.Factory(), new TTransportFactory(), null, executor);
                 protocol = new TJSONProtocol(transport);
-            }
-            catch (URISyntaxException e) {
+            } catch (URISyntaxException e) {
                 throw new RuntimeException(e);
             }
         } else if (proto.equals(Transports.WEBSOCKET_SSL)) {
@@ -149,12 +146,12 @@ public class BaseThriftClient implements AutoCloseable {
                 transport = new TWsTransport(new URI("wss://" + hostPort.addr + ":" + hostPort.port + "/thrift"), 5000, processor,
                                              new TBinaryProtocol.Factory(), new TTransportFactory(), null, executor);
                 protocol = new TBinaryProtocol(transport);
-            }
-            catch (URISyntaxException e) {
+            } catch (URISyntaxException e) {
                 throw new RuntimeException(e);
             }
-        } else
+        } else {
             throw new TTransportException("unknown proto");
+        }
 
         protocol.getTransport().open();
     }
@@ -167,8 +164,7 @@ public class BaseThriftClient implements AutoCloseable {
         try {
             ClientType client = clientClass.getConstructor(TProtocol.class).newInstance(protocol);
             return client;
-        }
-        catch (Throwable e) {
+        } catch (Throwable e) {
             throw new RuntimeException("Error opening service " + clientClass.getName(), e);
         }
     }

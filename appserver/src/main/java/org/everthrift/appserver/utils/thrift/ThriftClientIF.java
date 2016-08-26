@@ -1,10 +1,9 @@
 package org.everthrift.appserver.utils.thrift;
 
-import org.apache.thrift.TException;
-import org.everthrift.clustering.thrift.InvocationInfo;
-
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.ListenableFuture;
+import org.apache.thrift.TException;
+import org.everthrift.clustering.thrift.InvocationInfo;
 
 public interface ThriftClientIF {
 
@@ -14,7 +13,7 @@ public interface ThriftClientIF {
 
     <T> ListenableFuture<T> thriftCall(int timeout, T methodCall, FutureCallback<T> callback) throws TException;
 
-    @SuppressWarnings({ "rawtypes" })
+    @SuppressWarnings({"rawtypes"})
     <T> ListenableFuture<T> thriftCallByInfo(int timeout, InvocationInfo tInfo) throws TException;
 
     void setSession(SessionIF data);

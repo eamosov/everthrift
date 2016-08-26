@@ -1,18 +1,16 @@
 package org.everthrift.appserver.model;
 
-import java.util.concurrent.Executor;
-
+import com.google.common.eventbus.AsyncEventBus;
+import com.google.common.eventbus.EventBus;
+import com.google.common.eventbus.SubscriberExceptionContext;
+import com.google.common.eventbus.SubscriberExceptionHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 
-import com.google.common.eventbus.AsyncEventBus;
-import com.google.common.eventbus.EventBus;
-import com.google.common.eventbus.SubscriberExceptionContext;
-import com.google.common.eventbus.SubscriberExceptionHandler;
+import java.util.concurrent.Executor;
 
 public class LocalEventBus implements InitializingBean {
 
@@ -63,10 +61,11 @@ public class LocalEventBus implements InitializingBean {
     }
 
     public void postEntityEvent(Object event) {
-        if (testMode)
+        if (testMode) {
             post(event);
-        else
+        } else {
             postAsync(event);
+        }
     }
 
     public void post(Object event) {

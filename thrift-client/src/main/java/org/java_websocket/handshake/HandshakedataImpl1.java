@@ -25,7 +25,7 @@ public class HandshakedataImpl1 implements HandshakeBuilder {
     @Override
     public Iterator<String> iterateHttpFields() {
         return Collections.unmodifiableSet(map.keySet()).iterator();// Safety
-                                                                    // first
+        // first
     }
 
     @Override

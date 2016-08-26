@@ -1,10 +1,10 @@
 package org.java_websocket.framing;
 
-import java.nio.ByteBuffer;
-
 import org.java_websocket.exceptions.InvalidDataException;
 import org.java_websocket.exceptions.InvalidFrameException;
 import org.java_websocket.util.Charsetfunctions;
+
+import java.nio.ByteBuffer;
 
 public class CloseFrameBuilder extends FramedataImpl1 implements CloseFrame {
 
@@ -91,11 +91,9 @@ public class CloseFrameBuilder extends FramedataImpl1 implements CloseFrame {
             try {
                 b.position(b.position() + 2);
                 reason = Charsetfunctions.stringUtf8(b);
-            }
-            catch (IllegalArgumentException e) {
+            } catch (IllegalArgumentException e) {
                 throw new InvalidFrameException(e);
-            }
-            finally {
+            } finally {
                 b.position(mark);
             }
         }
@@ -120,8 +118,9 @@ public class CloseFrameBuilder extends FramedataImpl1 implements CloseFrame {
 
     @Override
     public ByteBuffer getPayloadData() {
-        if (code == NOCODE)
+        if (code == NOCODE) {
             return emptybytebuffer;
+        }
         return super.getPayloadData();
     }
 

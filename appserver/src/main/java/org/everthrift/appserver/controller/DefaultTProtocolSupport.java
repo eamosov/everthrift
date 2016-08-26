@@ -1,7 +1,5 @@
 package org.everthrift.appserver.controller;
 
-import java.util.Map;
-
 import org.apache.thrift.TApplicationException;
 import org.apache.thrift.TBase;
 import org.apache.thrift.TException;
@@ -17,6 +15,8 @@ import org.everthrift.clustering.MessageWrapper;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.support.GenericMessage;
+
+import java.util.Map;
 
 public class DefaultTProtocolSupport implements ThriftProtocolSupportIF<MessageWrapper> {
 
@@ -68,8 +68,7 @@ public class DefaultTProtocolSupport implements ThriftProtocolSupportIF<MessageW
             ((TApplicationException) o).write(out);
             out.writeMessageEnd();
             out.getTransport().flush(msg.seqid);
-        }
-        catch (TException e) {
+        } catch (TException e) {
             throw new RuntimeException(e);
         }
         return new MessageWrapper(outT).copyAttributes(in).removeCorrelationHeaders();
@@ -94,8 +93,7 @@ public class DefaultTProtocolSupport implements ThriftProtocolSupportIF<MessageW
                 result.write(out);
                 out.writeMessageEnd();
                 out.getTransport().flush(msg.seqid);
-            }
-            catch (TException e) {
+            } catch (TException e) {
                 throw new RuntimeException(e);
             }
 

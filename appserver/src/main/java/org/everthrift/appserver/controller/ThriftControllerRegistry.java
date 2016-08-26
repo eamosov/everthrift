@@ -1,16 +1,5 @@
 package org.everthrift.appserver.controller;
 
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Method;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import org.apache.thrift.TBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +10,17 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
 import org.springframework.core.type.filter.AnnotationTypeFilter;
 import org.springframework.util.ClassUtils;
+
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public abstract class ThriftControllerRegistry implements InitializingBean {
 
@@ -52,8 +52,9 @@ public abstract class ThriftControllerRegistry implements InitializingBean {
 
         final List<String> l = applicationContext.getEnvironment().getProperty("thrift.scan", List.class);
 
-        for (String p : l)
+        for (String p : l) {
             scanThriftControllers(scanner, p);
+        }
     }
 
     private void scanThriftControllers(ClassPathScanningCandidateComponentProvider scanner, String basePath) {
@@ -72,8 +73,7 @@ public abstract class ThriftControllerRegistry implements InitializingBean {
                             log.debug("Find ThriftController: {}", i);
                             map.put(i.getName(), i);
                             break;
-                        }
-                        catch (IllegalArgumentException e) {
+                        } catch (IllegalArgumentException e) {
                         }
                     }
                 }
@@ -120,11 +120,9 @@ public abstract class ThriftControllerRegistry implements InitializingBean {
 
                 try {
                     findResultFieldByName = i.getMethod("findByName", String.class);
-                }
-                catch (SecurityException e) {
+                } catch (SecurityException e) {
                     throw new IllegalArgumentException();
-                }
-                catch (NoSuchMethodException e) {
+                } catch (NoSuchMethodException e) {
                     throw new IllegalArgumentException();
                 }
 

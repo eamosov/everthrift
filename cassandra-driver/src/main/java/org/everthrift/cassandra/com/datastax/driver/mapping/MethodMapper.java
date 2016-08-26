@@ -15,11 +15,6 @@
  */
 package org.everthrift.cassandra.com.datastax.driver.mapping;
 
-import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.util.Set;
-
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.ColumnDefinitions;
 import com.datastax.driver.core.ConsistencyLevel;
@@ -34,6 +29,11 @@ import com.google.common.collect.Sets;
 import com.google.common.reflect.TypeToken;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+
+import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.Set;
 
 // TODO: we probably should make that an abstract class and move some bit in a "ReflexionMethodMapper"
 // subclass for consistency with the rest, but we can see to that later
@@ -80,8 +80,9 @@ class MethodMapper {
         validateParameters();
 
         Class<?> returnType = method.getReturnType();
-        if (Void.TYPE.isAssignableFrom(returnType) || ResultSet.class.isAssignableFrom(returnType))
+        if (Void.TYPE.isAssignableFrom(returnType) || ResultSet.class.isAssignableFrom(returnType)) {
             return;
+        }
 
         if (Statement.class.isAssignableFrom(returnType)) {
             returnStatement = true;
@@ -96,8 +97,9 @@ class MethodMapper {
         if (ListenableFuture.class.isAssignableFrom(returnType)) {
             this.async = true;
             Type k = ((ParameterizedType) method.getGenericReturnType()).getActualTypeArguments()[0];
-            if (k instanceof Class && ResultSet.class.isAssignableFrom((Class<?>) k))
+            if (k instanceof Class && ResultSet.class.isAssignableFrom((Class<?>) k)) {
                 return;
+            }
 
             mapType(manager, returnType, k);
         } else {
@@ -107,8 +109,9 @@ class MethodMapper {
 
     // Checks the method parameters against the query's bind variables
     private void validateParameters() {
-        if (method.isVarArgs())
+        if (method.isVarArgs()) {
             throw new IllegalArgumentException(String.format("Invalid varargs method %s in @Accessor interface", method.getName()));
+        }
 
         ColumnDefinitions variables = statement.getVariables();
         Set<String> names = Sets.newHashSet();
@@ -116,15 +119,18 @@ class MethodMapper {
             names.add(variable.getName());
         }
 
-        if (method.getParameterTypes().length < names.size())
+        if (method.getParameterTypes().length < names.size()) {
             throw new IllegalArgumentException(String.format("Not enough arguments for method %s, "
-                                                             + "found %d but it should be at least the number of unique bind parameter names in the @Query (%d)",
+                                                                 + "found %d but it should be at least the number of unique bind parameter names in the @Query (%d)",
                                                              method.getName(), method.getParameterTypes().length, names.size()));
+        }
 
-        if (method.getParameterTypes().length > variables.size())
+        if (method.getParameterTypes().length > variables.size()) {
             throw new IllegalArgumentException(String.format("Too many arguments for method %s, "
-                                                             + "found %d but it should be at most the number of bind parameters in the @Query (%d)",
-                                                             method.getName(), method.getParameterTypes().length, variables.size()));
+                                                                 + "found %d but it should be at most the number of bind parameters in the @Query (%d)",
+                                                             method.getName(), method.getParameterTypes().length, variables
+                                                                 .size()));
+        }
 
         // TODO could go further, e.g. check that the types match, inspect
         // @Param annotations to check that all names are bound...
@@ -145,13 +151,13 @@ class MethodMapper {
             mapOne = true;
         }
 
-        if (!(type instanceof Class))
+        if (!(type instanceof Class)) {
             throw new RuntimeException(String.format("Cannot map return of method %s to unsupported type %s", method, type));
+        }
 
         try {
             this.returnMapper = (Mapper<?>) manager.mapper((Class<?>) type);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw new RuntimeException("Cannot map return to class " + fullReturnType, e);
         }
     }
@@ -160,32 +166,41 @@ class MethodMapper {
 
         BoundStatement bs = statement.bind();
 
-        ProtocolVersion protocolVersion = session.getCluster().getConfiguration().getProtocolOptions().getProtocolVersion();
+        ProtocolVersion protocolVersion = session.getCluster()
+                                                 .getConfiguration()
+                                                 .getProtocolOptions()
+                                                 .getProtocolVersion();
         for (int i = 0; i < args.length; i++) {
             paramMappers[i].setValue(bs, args[i]);
         }
 
-        if (consistency != null)
+        if (consistency != null) {
             bs.setConsistencyLevel(consistency);
-        if (fetchSize > 0)
+        }
+        if (fetchSize > 0) {
             bs.setFetchSize(fetchSize);
-        if (tracing)
+        }
+        if (tracing) {
             bs.enableTracing();
+        }
 
-        if (returnStatement)
+        if (returnStatement) {
             return bs;
+        }
 
         if (async) {
             ListenableFuture<ResultSet> future = session.executeAsync(bs);
-            if (returnMapper == null)
+            if (returnMapper == null) {
                 return future;
+            }
 
             return mapOne ? Futures.transform(future, returnMapper.mapOneFunctionWithoutAliases)
                           : Futures.transform(future, returnMapper.mapAllFunctionWithoutAliases);
         } else {
             ResultSet rs = session.execute(bs);
-            if (returnMapper == null)
+            if (returnMapper == null) {
                 return rs;
+            }
 
             Result<?> result = returnMapper.map(rs);
             return mapOne ? result.one() : result;
@@ -210,8 +225,7 @@ class MethodMapper {
             this.paramType = (TypeToken<Object>) paramType;
             try {
                 this.codec = (codecClass == null) ? null : (TypeCodec<Object>) codecClass.newInstance();
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 throw new IllegalArgumentException(String.format("Cannot create instance of codec %s for parameter %s", codecClass,
                                                                  (paramName == null) ? paramIdx : paramName),
                                                    e);
@@ -220,15 +234,17 @@ class MethodMapper {
 
         void setValue(BoundStatement boundStatement, Object arg) {
             if (paramName == null) {
-                if (codec == null)
+                if (codec == null) {
                     boundStatement.set(paramIdx, arg, paramType);
-                else
+                } else {
                     boundStatement.set(paramIdx, arg, codec);
+                }
             } else {
-                if (codec == null)
+                if (codec == null) {
                     boundStatement.set(paramName, arg, paramType);
-                else
+                } else {
                     boundStatement.set(paramName, arg, codec);
+                }
             }
         }
     }

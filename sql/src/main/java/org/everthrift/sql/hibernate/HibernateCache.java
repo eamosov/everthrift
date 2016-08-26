@@ -1,7 +1,7 @@
 package org.everthrift.sql.hibernate;
 
-import java.util.Properties;
-
+import net.sf.ehcache.CacheManager;
+import net.sf.ehcache.Ehcache;
 import org.everthrift.appserver.AppserverApplication;
 import org.hibernate.boot.spi.SessionFactoryOptions;
 import org.hibernate.cache.CacheException;
@@ -24,8 +24,7 @@ import org.hibernate.cache.spi.access.AccessType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.sf.ehcache.CacheManager;
-import net.sf.ehcache.Ehcache;
+import java.util.Properties;
 
 public class HibernateCache implements RegionFactory {
 
@@ -128,8 +127,7 @@ public class HibernateCache implements RegionFactory {
             }
             // HibernateUtil.validateEhcache( cache );
             return cache;
-        }
-        catch (net.sf.ehcache.CacheException e) {
+        } catch (net.sf.ehcache.CacheException e) {
             throw new CacheException(e);
         }
 

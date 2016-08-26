@@ -1,12 +1,12 @@
 package org.everthrift.cassandra.codecs;
 
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-
 import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.ProtocolVersion;
 import com.datastax.driver.core.TypeCodec;
 import com.datastax.driver.core.utils.Bytes;
+
+import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 public class ByteArrayBlobCodec extends TypeCodec<byte[]> {
     public static final ByteArrayBlobCodec instance = new ByteArrayBlobCodec();
@@ -17,13 +17,15 @@ public class ByteArrayBlobCodec extends TypeCodec<byte[]> {
 
     @Override
     public byte[] parse(String value) {
-        return value == null || value.isEmpty() || value.equalsIgnoreCase("NULL") ? null : Bytes.fromHexString(value).array();
+        return value == null || value.isEmpty() || value.equalsIgnoreCase("NULL") ? null : Bytes.fromHexString(value)
+                                                                                                .array();
     }
 
     @Override
     public String format(byte[] value) {
-        if (value == null)
+        if (value == null) {
             return "NULL";
+        }
         return Bytes.toHexString(value);
     }
 
@@ -34,8 +36,9 @@ public class ByteArrayBlobCodec extends TypeCodec<byte[]> {
 
     @Override
     public byte[] deserialize(ByteBuffer bytes, ProtocolVersion protocolVersion) {
-        if (bytes == null)
+        if (bytes == null) {
             return null;
+        }
 
         final byte[] array = bytes.array();
         final int arrayOffset = bytes.arrayOffset();

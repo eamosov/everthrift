@@ -1,16 +1,5 @@
 package org.everthrift.jetty.monitoring;
 
-import java.awt.Color;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
-import java.util.Date;
-
-import javax.annotation.Resource;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.everthrift.appserver.monitoring.RpsServletIF;
 import org.everthrift.utils.LongTimestamp;
 import org.rrd4j.ConsolFun;
@@ -26,6 +15,16 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.scheduling.TaskScheduler;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.awt.Color;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+import java.util.Date;
 
 public class RpsServlet extends HttpServlet implements InitializingBean, DisposableBean, RpsServletIF {
 
@@ -87,8 +86,7 @@ public class RpsServlet extends HttpServlet implements InitializingBean, Disposa
 
         try {
             sample.update();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             log.error("Exception in sample()", e);
         }
     }
@@ -105,8 +103,7 @@ public class RpsServlet extends HttpServlet implements InitializingBean, Disposa
 
         try {
             rrdDb.close();
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
         }
     }
 
@@ -139,25 +136,34 @@ public class RpsServlet extends HttpServlet implements InitializingBean, Disposa
 
         final String resource = req.getParameter("ds");
         final DsName dsName;
-        if (resource == null)
+        if (resource == null) {
             dsName = DsName.THRIFT_WS;
-        else
+        } else {
             dsName = DsName.valueOf(resource);
+        }
 
-        if (dsName == null)
+        if (dsName == null) {
             throw new RuntimeException("resource " + dsName + " not found");
+        }
 
         long now = LongTimestamp.now();
 
-        final String min = String.format("<img alt=\"Requests per second %s\" src=\"data:image/png;base64,%s\"/>", dsName.name(),
+        final String min = String.format("<img alt=\"Requests per second %s\" src=\"data:image/png;base64,%s\"/>", dsName
+                                             .name(),
                                          Base64.getEncoder()
                                                .encodeToString(makeGraph(dsName, now - LongTimestamp.MIN * 10, now, 800, 400)));
-        final String hour = String.format("<img alt=\"Requests per second %s\" src=\"data:image/png;base64,%s\"/>", dsName.name(),
-                                          Base64.getEncoder().encodeToString(makeGraph(dsName, now - LongTimestamp.HOUR, now, 800, 400)));
-        final String day = String.format("<img alt=\"Requests per second %s\" src=\"data:image/png;base64,%s\"/>", dsName.name(),
-                                         Base64.getEncoder().encodeToString(makeGraph(dsName, now - LongTimestamp.DAY, now, 800, 400)));
-        final String week = String.format("<img alt=\"Requests per second %s\" src=\"data:image/png;base64,%s\"/>", dsName.name(),
-                                          Base64.getEncoder().encodeToString(makeGraph(dsName, now - LongTimestamp.WEEK, now, 800, 400)));
+        final String hour = String.format("<img alt=\"Requests per second %s\" src=\"data:image/png;base64,%s\"/>", dsName
+                                              .name(),
+                                          Base64.getEncoder()
+                                                .encodeToString(makeGraph(dsName, now - LongTimestamp.HOUR, now, 800, 400)));
+        final String day = String.format("<img alt=\"Requests per second %s\" src=\"data:image/png;base64,%s\"/>", dsName
+                                             .name(),
+                                         Base64.getEncoder()
+                                               .encodeToString(makeGraph(dsName, now - LongTimestamp.DAY, now, 800, 400)));
+        final String week = String.format("<img alt=\"Requests per second %s\" src=\"data:image/png;base64,%s\"/>", dsName
+                                              .name(),
+                                          Base64.getEncoder()
+                                                .encodeToString(makeGraph(dsName, now - LongTimestamp.WEEK, now, 800, 400)));
 
         final StringBuilder body = new StringBuilder();
         body.append("<html><head><title>" + dsName.name() + "</title></head><body>\n");

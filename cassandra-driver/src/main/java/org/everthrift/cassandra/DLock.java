@@ -1,17 +1,16 @@
 package org.everthrift.cassandra;
 
-import java.util.Iterator;
-import java.util.List;
-import java.util.Random;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.Statement;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.google.common.collect.Lists;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Iterator;
+import java.util.List;
+import java.util.Random;
 
 public class DLock implements AutoCloseable {
 
@@ -67,7 +66,10 @@ public class DLock implements AutoCloseable {
     }
 
     private boolean tryLock(final String _lockName) {
-        final Statement insert = QueryBuilder.insertInto(TABLE_NAME).value("name", _lockName).value("owner", ownerName).ifNotExists()
+        final Statement insert = QueryBuilder.insertInto(TABLE_NAME)
+                                             .value("name", _lockName)
+                                             .value("owner", ownerName)
+                                             .ifNotExists()
                                              .using(QueryBuilder.ttl(ttl));
         final ResultSet rs = session.execute(insert);
         final boolean wasApplied = rs.wasApplied();
@@ -76,7 +78,9 @@ public class DLock implements AutoCloseable {
     }
 
     private boolean unlock(String _lockName) {
-        final ResultSet rs = session.execute(QueryBuilder.delete().from(TABLE_NAME).where(QueryBuilder.eq("name", _lockName))
+        final ResultSet rs = session.execute(QueryBuilder.delete()
+                                                         .from(TABLE_NAME)
+                                                         .where(QueryBuilder.eq("name", _lockName))
                                                          .onlyIf(QueryBuilder.eq("owner", ownerName)));
         final boolean wasApplied = rs.wasApplied();
         log.debug("unlock '{}' by '{}': {}", _lockName, ownerName, wasApplied);
@@ -99,8 +103,9 @@ public class DLock implements AutoCloseable {
 
     void lock(long timeoutMillis) {
 
-        if (timeoutMillis > ttl * 600)
+        if (timeoutMillis > ttl * 600) {
             throw new IllegalArgumentException("timeoutMillis must be <=" + (ttl * 600));
+        }
 
         final long expiredTs = System.currentTimeMillis() + timeoutMillis;
         final Iterator<String> it = unlocked.iterator();
@@ -108,8 +113,7 @@ public class DLock implements AutoCloseable {
             final String lockName = it.next();
             try {
                 lock(lockName, expiredTs);
-            }
-            catch (LockException e) {
+            } catch (LockException e) {
                 unlock();
                 throw e;
             }
@@ -128,15 +132,15 @@ public class DLock implements AutoCloseable {
                 final long t = minSleep + rnd.nextInt((int) Math.min(maxSleep, expiredTs - now));
                 try {
                     Thread.sleep(t);
-                }
-                catch (InterruptedException e) {
+                } catch (InterruptedException e) {
                     throw new LockException(_lockName, ownerName, e);
                 }
             }
         }
 
-        if (locked == false)
+        if (locked == false) {
             throw new LockException(_lockName, ownerName, null);
+        }
     }
 
     @Override

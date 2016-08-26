@@ -1,5 +1,11 @@
 package org.everthrift.maven;
 
+import org.apache.maven.plugin.AbstractMojo;
+import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -7,12 +13,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
-
-import org.apache.maven.plugin.AbstractMojo;
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.MojoFailureException;
-import org.apache.maven.plugins.annotations.Mojo;
-import org.apache.maven.plugins.annotations.Parameter;
 
 /**
  * Goal to generate Migration source file.
@@ -52,11 +52,11 @@ public class GenerateMigrationMojo extends AbstractMojo {
         getLog().info("Start Migration generation");
         getLog().info(String.format("Migration name: %s", getFullMigrationName()));
         getLog().info(String.format("Migration package: %s", packageName));
-        getLog().info(String.format("Migration class will be writen to: %s", outputDirectory.toPath().resolve(packageDir)));
+        getLog().info(String.format("Migration class will be writen to: %s", outputDirectory.toPath()
+                                                                                            .resolve(packageDir)));
         try {
             createMigration();
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             getLog().error("Error while execute Migration:" + e.getMessage());
             new MojoExecutionException("Error while execute Migration: ", e);
         }
@@ -83,8 +83,7 @@ public class GenerateMigrationMojo extends AbstractMojo {
         try {
             fileWriter = new FileWriter(migration);
             fileWriter.write(content);
-        }
-        finally {
+        } finally {
             if (fileWriter != null) {
                 fileWriter.close();
             }

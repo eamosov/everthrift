@@ -1,12 +1,12 @@
 package org.java_websocket;
 
-import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
-import java.nio.channels.NotYetConnectedException;
-
 import org.java_websocket.drafts.Draft;
 import org.java_websocket.framing.Framedata;
 import org.java_websocket.framing.Framedata.Opcode;
+
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.NotYetConnectedException;
 
 public interface WebSocket {
     public enum Role {
@@ -39,7 +39,9 @@ public interface WebSocket {
 
     public void close(int code);
 
-    /** Convenience function which behaves like close(CloseFrame.NORMAL) */
+    /**
+     * Convenience function which behaves like close(CloseFrame.NORMAL)
+     */
     public void close();
 
     /**
@@ -73,16 +75,16 @@ public interface WebSocket {
      * Allows to send continuous/fragmented frames conveniently. <br>
      * For more into on this frame type see
      * http://tools.ietf.org/html/rfc6455#section-5.4<br>
-     *
+     * <p>
      * If the first frame you send is also the last then it is not a fragmented
      * frame and will received via onMessage instead of onFragmented even though
      * it was send by this method.
      *
-     * @param op This is only important for the first frame in the sequence.
-     * Opcode.TEXT, Opcode.BINARY are allowed.
+     * @param op     This is only important for the first frame in the sequence.
+     *               Opcode.TEXT, Opcode.BINARY are allowed.
      * @param buffer The buffer which contains the payload. It may have no bytes
-     * remaining.
-     * @param fin true means the current frame is the last in the sequence.
+     *               remaining.
+     * @param fin    true means the current frame is the last in the sequence.
      **/
     public abstract void sendFragmentedFrame(Opcode op, ByteBuffer buffer, boolean fin);
 

@@ -1,5 +1,10 @@
 package org.everthrift.sql.hibernate.model.types;
 
+import org.everthrift.utils.UUID;
+import org.hibernate.HibernateException;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.usertype.UserType;
+
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -11,18 +16,13 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.util.Objects;
 
-import org.everthrift.utils.UUID;
-import org.hibernate.HibernateException;
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.usertype.UserType;
-
 public class StringUUIDType implements UserType, Externalizable {
 
     private static final long serialVersionUID = 1L;
 
     @Override
     public int[] sqlTypes() {
-        return new int[] { Types.OTHER };
+        return new int[]{Types.OTHER};
     }
 
     @Override
@@ -46,8 +46,9 @@ public class StringUUIDType implements UserType, Externalizable {
 
         final UUID uuid = UUID.fromJdkUUID((java.util.UUID) rs.getObject(names[0]));
 
-        if (uuid == null)
+        if (uuid == null) {
             return null;
+        }
 
         return uuid.toString();
     }
@@ -56,10 +57,11 @@ public class StringUUIDType implements UserType, Externalizable {
     public void nullSafeSet(PreparedStatement st, Object value, int index,
                             SharedSessionContractImplementor session) throws HibernateException, SQLException {
 
-        if (value == null)
+        if (value == null) {
             st.setObject(index, null);
-        else
+        } else {
             st.setObject(index, java.util.UUID.fromString((String) value));
+        }
     }
 
     @Override

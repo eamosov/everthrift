@@ -1,7 +1,5 @@
 package org.everthrift.thrift;
 
-import java.nio.ByteBuffer;
-
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TField;
 import org.apache.thrift.protocol.TList;
@@ -10,6 +8,8 @@ import org.apache.thrift.protocol.TMessage;
 import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.protocol.TSet;
 import org.apache.thrift.protocol.TStruct;
+
+import java.nio.ByteBuffer;
 
 public class TNullProtocol extends TProtocol {
 

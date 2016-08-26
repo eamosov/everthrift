@@ -1,20 +1,6 @@
 package org.everthrift.jetty;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.CertificateException;
-import java.util.concurrent.ArrayBlockingQueue;
-
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import javax.annotation.Resource;
-import javax.management.MBeanServer;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
+import com.google.common.base.Throwables;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -47,7 +33,19 @@ import org.springframework.web.cors.CorsProcessor;
 import org.springframework.web.servlet.DispatcherServlet;
 import org.springframework.web.servlet.handler.AbstractHandlerMapping;
 
-import com.google.common.base.Throwables;
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import javax.annotation.Resource;
+import javax.management.MBeanServer;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.InputStream;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
+import java.util.concurrent.ArrayBlockingQueue;
 
 public class JettyServer implements SmartLifecycle {
 
@@ -148,13 +146,13 @@ public class JettyServer implements SmartLifecycle {
                 https_config.addCustomizer(new SecureRequestCustomizer());
 
                 final ServerConnector https = new ServerConnector(jettyServer,
-                                                                  new SslConnectionFactory(contextFactory, HttpVersion.HTTP_1_1.toString()),
+                                                                  new SslConnectionFactory(contextFactory, HttpVersion.HTTP_1_1
+                                                                      .toString()),
                                                                   new HttpConnectionFactory(https_config));
                 https.setHost(jettyHost);
                 https.setPort(Integer.parseInt(jettySslPort));
                 jettyServer.addConnector(https);
-            }
-            catch (NoSuchAlgorithmException | CertificateException | KeyStoreException | IOException e) {
+            } catch (NoSuchAlgorithmException | CertificateException | KeyStoreException | IOException e) {
 
                 throw new RuntimeException(e);
             }
@@ -168,7 +166,8 @@ public class JettyServer implements SmartLifecycle {
         jettyServer.setHandler(jettyContext);
 
         ((ConfigurableApplicationContext) context).getBeanFactory().registerSingleton("webAppContext", jettyContext);
-        ((ConfigurableApplicationContext) context).getBeanFactory().registerSingleton("servletContext", jettyContext.getServletContext());
+        ((ConfigurableApplicationContext) context).getBeanFactory()
+                                                  .registerSingleton("servletContext", jettyContext.getServletContext());
 
         if (isJMinixEnabled()) {
             final MiniConsoleServlet jminix = new MiniConsoleServlet();
@@ -192,7 +191,8 @@ public class JettyServer implements SmartLifecycle {
         springWebApplicationContext.refresh();
 
         // hack for disable CORS
-        for (AbstractHandlerMapping m : springWebApplicationContext.getBeansOfType(AbstractHandlerMapping.class).values()) {
+        for (AbstractHandlerMapping m : springWebApplicationContext.getBeansOfType(AbstractHandlerMapping.class)
+                                                                   .values()) {
             m.setCorsProcessor(new CorsProcessor() {
 
                 @Override
@@ -213,10 +213,10 @@ public class JettyServer implements SmartLifecycle {
         try {
             keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
             keyStore.load(inputStream, keystorePassword != null ? keystorePassword.toCharArray() : null);
-        }
-        finally {
-            if (inputStream != null)
+        } finally {
+            if (inputStream != null) {
                 inputStream.close();
+            }
         }
 
         return keyStore;
@@ -230,8 +230,7 @@ public class JettyServer implements SmartLifecycle {
     public void start() {
         try {
             jettyServer.start();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw Throwables.propagate(e);
         }
     }
@@ -241,8 +240,7 @@ public class JettyServer implements SmartLifecycle {
         if (jettyServer != null) {
             try {
                 jettyServer.stop();
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
             }
             jettyServer = null;
         }
@@ -250,8 +248,7 @@ public class JettyServer implements SmartLifecycle {
         if (springWebApplicationContext != null) {
             try {
                 springWebApplicationContext.close();
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
             }
             springWebApplicationContext = null;
         }

@@ -9,6 +9,7 @@ public class MigrationException extends Exception {
 
     /**
      * Create migration exception with provided message.
+     *
      * @param message Message for this exception
      */
     public MigrationException(final String message) {
@@ -17,7 +18,8 @@ public class MigrationException extends Exception {
 
     /**
      * Create migration exception with provided message and original cause.
-     * @param message Message for this exception
+     *
+     * @param message   Message for this exception
      * @param throwable Throwable wrapping original cause.
      */
     public MigrationException(final String message, final Throwable throwable) {

@@ -1,10 +1,10 @@
 package org.everthrift.appserver.transport.asynctcp;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
-
 import org.everthrift.appserver.controller.ThriftControllerRegistry;
 import org.springframework.integration.ip.tcp.connection.AbstractServerConnectionFactory;
+
+import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
 
 public class RpcAsyncTcpRegistry extends ThriftControllerRegistry {
 

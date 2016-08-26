@@ -15,12 +15,12 @@
  */
 package org.everthrift.cassandra.com.datastax.driver.mapping.annotations;
 
+import org.everthrift.cassandra.com.datastax.driver.mapping.Mapper;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-
-import org.everthrift.cassandra.com.datastax.driver.mapping.Mapper;
 
 /**
  * Annotates a "computed" field, which gets filled from a CQL expression in the
@@ -33,7 +33,7 @@ import org.everthrift.cassandra.com.datastax.driver.mapping.Mapper;
  * As opposed to other mapper annotation, this one doesn't handle case
  * sensitivity. If your expression contains case-sensitive names, you'll need to
  * quote them explicitly:
- * 
+ * <p>
  * <pre>
  * {@code @Computed("\"caseSensitiveFunction\"(v)")}
  * </pre>

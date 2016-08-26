@@ -1,91 +1,93 @@
 <project name="thriftimport">
 
-	<target name="check-local-thrift">
+    <target name="check-local-thrift">
 
-		<dirname property="antfile.dir" file="${ant.file.main}"/>
+        <dirname property="antfile.dir" file="${ant.file.main}"/>
 
-		<available property="thrift.binary" value="/usr/local/bin/thrift" file="/usr/local/bin/thrift"/>
-		
-		<condition property="thrift.binary" value="${antfile.dir}/target/thrift/bin/thrift">
-			<not><isset property="thrift.binary"/></not>
-		</condition>
+        <available property="thrift.binary" value="/usr/local/bin/thrift" file="/usr/local/bin/thrift"/>
 
-		<echo level="info">Using thrift binary: ${thrift.binary}</echo>
-	</target>
+        <condition property="thrift.binary" value="${antfile.dir}/target/thrift/bin/thrift">
+            <not>
+                <isset property="thrift.binary"/>
+            </not>
+        </condition>
 
-	<target name="build-one" depends="check-local-thrift">
-		<echo level="info" message="Compiling ${file}"/>
-		<exec executable="${thrift.binary}" dir="src/main" failonerror="true">
-			<arg line="-nowarn --gen java:beans,defoptional,generated_annotations=suppress,use_tdoc -I thrift-includes/META-INF/thrift/ -I thrift" />
-			<arg line="-o ." />
-			<arg line="${file}" />
-		</exec>
-		<exec executable="${thrift.binary}" dir="src/main" failonerror="true">
-			<arg line="--gen php:server -I thrift-includes/META-INF/thrift/ -I thrift" />
-			<arg line="-o ." />
-			<arg line="${file}" />
-		</exec>
-	</target>
-	
-	<target name="build-one-cocoa" depends="check-local-thrift">
-		<echo level="info" message="Compiling ${file}"/>
-		<mkdir dir="src/main/gen-android"/>
-		
-		<exec executable="${thrift.binary}" dir="src/main" failonerror="true">
-			<arg line="-nowarn --gen java:beans,defoptional,generated_annotations=suppress -out gen-android -I thrift-includes/META-INF/thrift/ -I thrift" />
-			<arg line="${file}" />
-		</exec>
-		
-		<exec executable="${thrift.binary}" dir="src/main" failonerror="true">
-			<arg line="-nowarn --gen cocoa:knock_async -I thrift-includes/META-INF/thrift/ -I thrift" />
-			<arg line="-o ." />
-			<arg line="${file}" />
-		</exec>
+        <echo level="info">Using thrift binary: ${thrift.binary}</echo>
+    </target>
 
-		<exec executable="${thrift.binary}" dir="src/main" failonerror="true">
-			<arg line="-nowarn --gen js:ws -I thrift-includes/META-INF/thrift/ -I thrift" />
-			<arg line="-o ." />
-			<arg line="${file}" />
-		</exec>
+    <target name="build-one" depends="check-local-thrift">
+        <echo level="info" message="Compiling ${file}"/>
+        <exec executable="${thrift.binary}" dir="src/main" failonerror="true">
+            <arg line="-nowarn --gen java:beans,defoptional,generated_annotations=suppress,use_tdoc -I thrift-includes/META-INF/thrift/ -I thrift"/>
+            <arg line="-o ."/>
+            <arg line="${file}"/>
+        </exec>
+        <exec executable="${thrift.binary}" dir="src/main" failonerror="true">
+            <arg line="--gen php:server -I thrift-includes/META-INF/thrift/ -I thrift"/>
+            <arg line="-o ."/>
+            <arg line="${file}"/>
+        </exec>
+    </target>
 
-	</target>
-	
+    <target name="build-one-cocoa" depends="check-local-thrift">
+        <echo level="info" message="Compiling ${file}"/>
+        <mkdir dir="src/main/gen-android"/>
 
-	<target name="build-one-yii" depends="check-local-thrift">
-		<echo level="info" message="Compiling ${file}"/>
-		<exec executable="${thrift.binary}" dir="src/main" failonerror="true">
-			<arg line="-nowarn --gen java:beans,defoptional,generated_annotations=suppress,use_tdoc -I thrift-includes/META-INF/thrift/ -I thrift" />
-			<arg line="-o ." />
-			<arg line="${file}" />
-		</exec>
-		<exec executable="${thrift.binary}" dir="src/main" failonerror="true">
-			<arg line="--gen php:yii,server -I thrift-includes/META-INF/thrift/ -I thrift" />
-			<arg line="-o ." />
-			<arg line="${file}" />
-		</exec>
-	</target>
+        <exec executable="${thrift.binary}" dir="src/main" failonerror="true">
+            <arg line="-nowarn --gen java:beans,defoptional,generated_annotations=suppress -out gen-android -I thrift-includes/META-INF/thrift/ -I thrift"/>
+            <arg line="${file}"/>
+        </exec>
 
-	<target name="setloglevel">
-		<echo message="Setting log level: ${loglevel}"/>
-		<groovy>
-			<arg value="${loglevel}"/>
-     switch (args[0]) {
-        case 'error':
-          project.getBuildListeners()[0].setMessageOutputLevel(0)
-          break
-        case 'warn':
-          project.getBuildListeners()[0].setMessageOutputLevel(1)
-          break
-        case 'info':
-          project.getBuildListeners()[0].setMessageOutputLevel(2)
-          break
-        case 'verbose':
-          project.getBuildListeners()[0].setMessageOutputLevel(3)
-          break
-        case 'debug':
-          project.getBuildListeners()[0].setMessageOutputLevel(4)
-          break
-     }
-		</groovy>
-	</target>
+        <exec executable="${thrift.binary}" dir="src/main" failonerror="true">
+            <arg line="-nowarn --gen cocoa:knock_async -I thrift-includes/META-INF/thrift/ -I thrift"/>
+            <arg line="-o ."/>
+            <arg line="${file}"/>
+        </exec>
+
+        <exec executable="${thrift.binary}" dir="src/main" failonerror="true">
+            <arg line="-nowarn --gen js:ws -I thrift-includes/META-INF/thrift/ -I thrift"/>
+            <arg line="-o ."/>
+            <arg line="${file}"/>
+        </exec>
+
+    </target>
+
+
+    <target name="build-one-yii" depends="check-local-thrift">
+        <echo level="info" message="Compiling ${file}"/>
+        <exec executable="${thrift.binary}" dir="src/main" failonerror="true">
+            <arg line="-nowarn --gen java:beans,defoptional,generated_annotations=suppress,use_tdoc -I thrift-includes/META-INF/thrift/ -I thrift"/>
+            <arg line="-o ."/>
+            <arg line="${file}"/>
+        </exec>
+        <exec executable="${thrift.binary}" dir="src/main" failonerror="true">
+            <arg line="--gen php:yii,server -I thrift-includes/META-INF/thrift/ -I thrift"/>
+            <arg line="-o ."/>
+            <arg line="${file}"/>
+        </exec>
+    </target>
+
+    <target name="setloglevel">
+        <echo message="Setting log level: ${loglevel}"/>
+        <groovy>
+            <arg value="${loglevel}"/>
+            switch (args[0]) {
+            case 'error':
+            project.getBuildListeners()[0].setMessageOutputLevel(0)
+            break
+            case 'warn':
+            project.getBuildListeners()[0].setMessageOutputLevel(1)
+            break
+            case 'info':
+            project.getBuildListeners()[0].setMessageOutputLevel(2)
+            break
+            case 'verbose':
+            project.getBuildListeners()[0].setMessageOutputLevel(3)
+            break
+            case 'debug':
+            project.getBuildListeners()[0].setMessageOutputLevel(4)
+            break
+            }
+        </groovy>
+    </target>
 </project>

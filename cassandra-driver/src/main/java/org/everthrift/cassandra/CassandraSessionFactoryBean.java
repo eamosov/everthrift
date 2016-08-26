@@ -1,9 +1,8 @@
 package org.everthrift.cassandra;
 
-import org.springframework.beans.factory.FactoryBean;
-
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
+import org.springframework.beans.factory.FactoryBean;
 
 public class CassandraSessionFactoryBean implements FactoryBean<Session> {
 

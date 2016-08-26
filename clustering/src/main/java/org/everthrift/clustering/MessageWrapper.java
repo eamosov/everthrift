@@ -1,5 +1,12 @@
 package org.everthrift.clustering;
 
+import com.google.common.collect.Maps;
+import org.apache.thrift.transport.TMemoryBuffer;
+import org.apache.thrift.transport.TMemoryInputTransport;
+import org.apache.thrift.transport.TTransport;
+import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.MessageHeaders;
+
 import java.io.IOException;
 import java.io.NotSerializableException;
 import java.io.ObjectInputStream;
@@ -8,14 +15,6 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-
-import org.apache.thrift.transport.TMemoryBuffer;
-import org.apache.thrift.transport.TMemoryInputTransport;
-import org.apache.thrift.transport.TTransport;
-import org.springframework.messaging.MessageChannel;
-import org.springframework.messaging.MessageHeaders;
-
-import com.google.common.collect.Maps;
 
 public class MessageWrapper implements Serializable {
 
@@ -60,8 +59,9 @@ public class MessageWrapper implements Serializable {
 
     public MessageWrapper copySerializeableAttributes(MessageWrapper old) {
         for (Entry<String, Object> e : old.attributes.entrySet()) {
-            if (e.getValue() instanceof Serializable)
+            if (e.getValue() instanceof Serializable) {
                 attributes.put(e.getKey(), e.getValue());
+            }
         }
         return this;
     }
@@ -149,22 +149,25 @@ public class MessageWrapper implements Serializable {
             throw new NotSerializableException(tTransport.getClass().getCanonicalName());
         }
 
-        if (!attributes.isEmpty())
+        if (!attributes.isEmpty()) {
             oos.writeObject(attributes);
-        else
+        } else {
             oos.writeObject(null);
+        }
     }
 
     private void readObject(ObjectInputStream ois) throws ClassNotFoundException, IOException {
         byte[] tt = (byte[]) ois.readObject();
-        if (tt == null)
+        if (tt == null) {
             tTransport = null;
-        else
+        } else {
             tTransport = new TMemoryInputTransport(tt);
+        }
 
         attributes = (Map) ois.readObject();
-        if (attributes == null)
+        if (attributes == null) {
             attributes = Maps.newHashMap();
+        }
     }
 
     public Object getAttribute(String name) {

@@ -1,14 +1,13 @@
 package io.smartcat.migration;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.datastax.driver.core.ConsistencyLevel;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.Statement;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Class responsible for version management.
@@ -33,6 +32,7 @@ public class CassandraVersioner {
 
     /**
      * Create Cassandra versioner for active session.
+     *
      * @param session Active Cassandra session
      */
     public CassandraVersioner(final Session session, final String schemaVersionCf) {
@@ -40,9 +40,9 @@ public class CassandraVersioner {
         this.SCHEMA_VERSION_CF = schemaVersionCf;
 
         CREATE_SCHEMA_VERSION_CQL = String.format("CREATE TABLE IF NOT EXISTS %s (", SCHEMA_VERSION_CF) + String.format("%s text,", TYPE)
-                                    + String.format("%s int,", VERSION) + String.format("%s bigint,", TIMESTAMP)
-                                    + String.format("%s text,", DESCRIPTION) + String.format("PRIMARY KEY (%s, %s)", TYPE, VERSION)
-                                    + String.format(")  WITH CLUSTERING ORDER BY (%s DESC)", VERSION) + " AND COMMENT='Schema version';";
+            + String.format("%s int,", VERSION) + String.format("%s bigint,", TIMESTAMP)
+            + String.format("%s text,", DESCRIPTION) + String.format("PRIMARY KEY (%s, %s)", TYPE, VERSION)
+            + String.format(")  WITH CLUSTERING ORDER BY (%s DESC)", VERSION) + " AND COMMENT='Schema version';";
 
         createSchemaVersion();
     }
@@ -63,7 +63,11 @@ public class CassandraVersioner {
      * @return Database version for given type
      */
     public int getCurrentVersion(final MigrationType type) {
-        final Statement select = QueryBuilder.select().all().from(SCHEMA_VERSION_CF).where(QueryBuilder.eq(TYPE, type.name())).limit(1)
+        final Statement select = QueryBuilder.select()
+                                             .all()
+                                             .from(SCHEMA_VERSION_CF)
+                                             .where(QueryBuilder.eq(TYPE, type.name()))
+                                             .limit(1)
                                              .setConsistencyLevel(ConsistencyLevel.ALL);
         final ResultSet result = session.execute(select);
 
@@ -79,15 +83,17 @@ public class CassandraVersioner {
      * @return Success of version update
      */
     public boolean updateVersion(final Migration migration) {
-        final Statement insert = QueryBuilder.insertInto(SCHEMA_VERSION_CF).value(TYPE, migration.getType().name())
-                                             .value(VERSION, migration.getVersion()).value(TIMESTAMP, System.currentTimeMillis())
-                                             .value(DESCRIPTION, migration.getDescription()).setConsistencyLevel(ConsistencyLevel.ALL);
+        final Statement insert = QueryBuilder.insertInto(SCHEMA_VERSION_CF)
+                                             .value(TYPE, migration.getType().name())
+                                             .value(VERSION, migration.getVersion())
+                                             .value(TIMESTAMP, System.currentTimeMillis())
+                                             .value(DESCRIPTION, migration.getDescription())
+                                             .setConsistencyLevel(ConsistencyLevel.ALL);
 
         try {
             session.execute(insert);
             return true;
-        }
-        catch (final Exception e) {
+        } catch (final Exception e) {
             LOGGER.error("Failed to execute update version statement", e);
             return false;
         }

@@ -7,29 +7,29 @@
 	http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
 	http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task.xsd">
 
-  <task:executor id="wsExecutor" pool-size="10" queue-capacity="200" rejection-policy="ABORT"/>
-	
-  <int:channel id="inWebsocketChannel" >
-  	<int:dispatcher task-executor="wsExecutor"/>
-  </int:channel>
-  
-  <int:channel id="outWebsocketChannel">
-  </int:channel>
-  
-  
-  <int:channel id="inZlibWebsocketChannel" >
-  	<int:dispatcher task-executor="wsExecutor"/>
-  </int:channel>
-  
-  <int:channel id="outZlibWebsocketChannel">
-  </int:channel>
-  
+    <task:executor id="wsExecutor" pool-size="10" queue-capacity="200" rejection-policy="ABORT"/>
 
-  <int:channel id="inJSWebsocketChannel" >
-  	<int:dispatcher task-executor="wsExecutor"/>
-  </int:channel>
-  
-  <int:channel id="outJSWebsocketChannel">
-  </int:channel>    
+    <int:channel id="inWebsocketChannel">
+        <int:dispatcher task-executor="wsExecutor"/>
+    </int:channel>
+
+    <int:channel id="outWebsocketChannel">
+    </int:channel>
+
+
+    <int:channel id="inZlibWebsocketChannel">
+        <int:dispatcher task-executor="wsExecutor"/>
+    </int:channel>
+
+    <int:channel id="outZlibWebsocketChannel">
+    </int:channel>
+
+
+    <int:channel id="inJSWebsocketChannel">
+        <int:dispatcher task-executor="wsExecutor"/>
+    </int:channel>
+
+    <int:channel id="outJSWebsocketChannel">
+    </int:channel>
 
 </beans>

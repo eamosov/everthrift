@@ -1,52 +1,50 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xmlns:context="http://www.springframework.org/schema/context"
-	xmlns:mvc="http://www.springframework.org/schema/mvc"
-	xmlns:websocket="http://www.springframework.org/schema/websocket"
-    xmlns:util="http://www.springframework.org/schema/util"
-    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xmlns:websocket="http://www.springframework.org/schema/websocket"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
 		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.2.xsd
 		http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd
-		http://www.springframework.org/schema/websocket http://www.springframework.org/schema/websocket/spring-websocket.xsd
-		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd"
-	>
+		http://www.springframework.org/schema/websocket http://www.springframework.org/schema/websocket/spring-websocket.xsd"
+>
 
-	<context:property-placeholder />
-	
-	<mvc:annotation-driven />
-	
-	<bean id="thriftHandler" class="org.everthrift.jetty.transport.websocket.ThriftHandler">
-		<property name="handler" ref="websocketThriftHandler"/>
-	</bean>
+    <context:property-placeholder/>
 
-	<bean id="ZlibThriftHandler" class="org.everthrift.jetty.transport.websocket.ThriftHandler">
-		<property name="handler" ref="ZlibWebsocketThriftHandler"/>
-	</bean>		
+    <mvc:annotation-driven/>
 
-	<bean id="jsThriftHandler" class="org.everthrift.jetty.transport.websocket.ThriftHandler">
-		<property name="handler" ref="JSWebsocketThriftHandler"/>
-	</bean>
-	
-	<websocket:handlers allowed-origins="*">
+    <bean id="thriftHandler" class="org.everthrift.jetty.transport.websocket.ThriftHandler">
+        <property name="handler" ref="websocketThriftHandler"/>
+    </bean>
+
+    <bean id="ZlibThriftHandler" class="org.everthrift.jetty.transport.websocket.ThriftHandler">
+        <property name="handler" ref="ZlibWebsocketThriftHandler"/>
+    </bean>
+
+    <bean id="jsThriftHandler" class="org.everthrift.jetty.transport.websocket.ThriftHandler">
+        <property name="handler" ref="JSWebsocketThriftHandler"/>
+    </bean>
+
+    <websocket:handlers allowed-origins="*">
         <websocket:mapping path="/thrift" handler="thriftHandler"/>
         <websocket:mapping path="/thrift_js" handler="jsThriftHandler"/>
         <websocket:mapping path="/thrift_zlib" handler="ZlibThriftHandler"/>
         <websocket:handshake-handler ref="handshakeHandler"/>
         <websocket:handshake-interceptors>
-        	<bean class="org.everthrift.jetty.transport.websocket.WebsocketHandshakeInterceptor" />
-        </websocket:handshake-interceptors>                
-    </websocket:handlers>        
-    
-	<bean id="handshakeHandler" class="org.springframework.web.socket.server.support.DefaultHandshakeHandler">
-		<constructor-arg ref="upgradeStrategy"/>
-	</bean>
+            <bean class="org.everthrift.jetty.transport.websocket.WebsocketHandshakeInterceptor"/>
+        </websocket:handshake-interceptors>
+    </websocket:handlers>
 
-	<bean id="upgradeStrategy" class="org.springframework.web.socket.server.jetty.JettyRequestUpgradeStrategy">
-		<constructor-arg ref="serverFactory"/>
-		<property name="servletContext" ref="servletContext"/>
-	</bean>    
-    
+    <bean id="handshakeHandler" class="org.springframework.web.socket.server.support.DefaultHandshakeHandler">
+        <constructor-arg ref="upgradeStrategy"/>
+    </bean>
+
+    <bean id="upgradeStrategy" class="org.springframework.web.socket.server.jetty.JettyRequestUpgradeStrategy">
+        <constructor-arg ref="serverFactory"/>
+        <property name="servletContext" ref="servletContext"/>
+    </bean>
+
     <bean id="serverFactory" class="org.eclipse.jetty.websocket.server.WebSocketServerFactory">
         <constructor-arg>
             <bean class="org.eclipse.jetty.websocket.api.WebSocketPolicy">
@@ -58,6 +56,6 @@
             </bean>
         </constructor-arg>
     </bean>
-    
-    
+
+
 </beans>

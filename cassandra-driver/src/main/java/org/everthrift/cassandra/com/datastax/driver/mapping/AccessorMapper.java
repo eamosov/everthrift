@@ -15,12 +15,12 @@
  */
 package org.everthrift.cassandra.com.datastax.driver.mapping;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import com.datastax.driver.core.PreparedStatement;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+
+import java.util.ArrayList;
+import java.util.List;
 
 abstract class AccessorMapper<T> {
 
@@ -36,17 +36,19 @@ abstract class AccessorMapper<T> {
     abstract T createProxy();
 
     public void prepare(MappingManager manager) {
-        List<ListenableFuture<PreparedStatement>> statements = new ArrayList<ListenableFuture<PreparedStatement>>(methods.size());
+        List<ListenableFuture<PreparedStatement>> statements = new ArrayList<ListenableFuture<PreparedStatement>>(methods
+                                                                                                                      .size());
 
-        for (MethodMapper method : methods)
+        for (MethodMapper method : methods) {
             statements.add(manager.getSession().prepareAsync(method.queryString));
+        }
 
         try {
             List<PreparedStatement> preparedStatements = Futures.allAsList(statements).get();
-            for (int i = 0; i < methods.size(); i++)
+            for (int i = 0; i < methods.size(); i++) {
                 methods.get(i).prepare(manager, preparedStatements.get(i));
-        }
-        catch (Exception e) {
+            }
+        } catch (Exception e) {
             throw new RuntimeException("Error preparing queries for accessor " + daoClass.getSimpleName(), e);
         }
     }

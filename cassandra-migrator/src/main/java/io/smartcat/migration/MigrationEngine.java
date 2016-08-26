@@ -1,14 +1,12 @@
 package io.smartcat.migration;
 
+import com.datastax.driver.core.Session;
 import io.smartcat.migration.exceptions.MigrationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.datastax.driver.core.Session;
-
 /**
  * Migration engine wraps Migrator and provides DSL like API.
- *
  */
 public class MigrationEngine {
 
@@ -20,6 +18,7 @@ public class MigrationEngine {
     /**
      * Create migrator out of session fully prepared for doing migration of
      * resources.
+     *
      * @param session Datastax driver session object
      * @return migrator instance with versioner and session which can migrate
      * resources
@@ -42,6 +41,7 @@ public class MigrationEngine {
 
         /**
          * Create new Migrator with active Cassandra session.
+         *
          * @param session Active Cassandra session
          */
         Migrator(final Session session, final String schemaVersionCf) {
@@ -85,8 +85,7 @@ public class MigrationEngine {
 
                 try {
                     migration.execute();
-                }
-                catch (final MigrationException e) {
+                } catch (final MigrationException e) {
                     LOGGER.error("Failed to execute migration version {}, exception {}!", migrationVersion, e.getMessage());
                     LOGGER.debug("Exception stack trace: {}", e);
                     return false;

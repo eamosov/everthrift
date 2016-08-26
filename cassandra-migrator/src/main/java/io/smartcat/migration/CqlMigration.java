@@ -1,5 +1,7 @@
 package io.smartcat.migration;
 
+import io.smartcat.migration.exceptions.MigrationException;
+
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -9,8 +11,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import io.smartcat.migration.exceptions.MigrationException;
 
 public class CqlMigration extends Migration {
 
@@ -68,14 +68,12 @@ public class CqlMigration extends Migration {
         try {
             input = new BufferedInputStream(input);
             return loadResource(input);
-        }
-        finally {
+        } finally {
             try {
                 if (input != null) {
                     input.close();
                 }
-            }
-            catch (IOException e) {
+            } catch (IOException e) {
                 // Ignore
             }
         }
@@ -88,8 +86,7 @@ public class CqlMigration extends Migration {
         final String source;
         try {
             source = loadResource(resourceName);
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             throw new MigrationException("Could not load resource \"" + resourceName + "\"", e);
         }
 

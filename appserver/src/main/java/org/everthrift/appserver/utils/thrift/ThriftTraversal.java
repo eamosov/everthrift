@@ -1,14 +1,10 @@
 package org.everthrift.appserver.utils.thrift;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.RandomAccess;
-import java.util.Set;
-
+import com.google.common.base.Function;
+import com.google.common.collect.Lists;
+import it.unimi.dsi.fastutil.objects.Reference2ObjectMap;
+import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
 import org.apache.thrift.TBase;
 import org.apache.thrift.TFieldIdEnum;
 import org.apache.thrift.meta_data.FieldMetaData;
@@ -20,14 +16,16 @@ import org.apache.thrift.meta_data.StructMetaData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Function;
-import com.google.common.collect.Lists;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.RandomAccess;
+import java.util.Set;
 
-import it.unimi.dsi.fastutil.objects.Reference2ObjectMap;
-import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
-
-@SuppressWarnings({ "unchecked", "rawtypes" })
+@SuppressWarnings({"unchecked", "rawtypes"})
 public class ThriftTraversal {
 
     private static final Logger log = LoggerFactory.getLogger(ThriftTraversal.class);
@@ -44,8 +42,9 @@ public class ThriftTraversal {
         this.fields = (Map) FieldMetaData.getStructMetaDataMap(cls);
         this.cls = cls;
 
-        if (fields == null)
+        if (fields == null) {
             throw new RuntimeException("invalid argument");
+        }
     }
 
     private static ThriftTraversal getNode(Class<? extends TBase> cls) {
@@ -69,20 +68,21 @@ public class ThriftTraversal {
                                                             final Class<? extends TBase> thriftBaseType,
                                                             final Function<T, Void> visitHandler) {
 
-        if (obj == null)
+        if (obj == null) {
             return;
+        }
 
         if (log.isDebugEnabled()) {
             String id = null;
             try {
                 Method m = obj.getClass().getMethod("getId");
                 id = m.invoke(obj).toString();
-            }
-            catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException
-                   | InvocationTargetException e) {
+            } catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException
+                | InvocationTargetException e) {
                 id = "<unknown>";
             }
-            log.debug("visit: objClass={}, type={},  thriftBaseType={}, id={}", obj == null ? null : obj.getClass().getSimpleName(),
+            log.debug("visit: objClass={}, type={},  thriftBaseType={}, id={}", obj == null ? null : obj.getClass()
+                                                                                                        .getSimpleName(),
                       type.getSimpleName(), thriftBaseType.getSimpleName(), id);
         }
 
@@ -90,7 +90,8 @@ public class ThriftTraversal {
             if (visited.add((T) obj)) {
                 visitHandler.apply((T) obj);
             } else {
-                log.debug("allready visited: objClass={}, type={},  thriftBaseType={}", obj == null ? null : obj.getClass().getSimpleName(),
+                log.debug("allready visited: objClass={}, type={},  thriftBaseType={}", obj == null ? null : obj.getClass()
+                                                                                                                .getSimpleName(),
                           type.getSimpleName(), thriftBaseType.getSimpleName());
             }
             return;
@@ -105,8 +106,9 @@ public class ThriftTraversal {
             for (int i = 0; i < _l.size(); i++) {
                 final TFieldIdEnum f = _l.get(i);
 
-                if (log.isDebugEnabled())
+                if (log.isDebugEnabled()) {
                     log.debug("visit field {} of class {}", f, obj.getClass());
+                }
 
                 visitChildsOfType(visited, ((TBase) obj).getFieldValue(f), type, thriftBaseType, visitHandler);
             }
@@ -115,22 +117,26 @@ public class ThriftTraversal {
 
         } else if (obj instanceof Collection) {
 
-            if (((Collection) obj).isEmpty())
+            if (((Collection) obj).isEmpty()) {
                 return;
+            }
 
             if (obj instanceof RandomAccess) {
                 final List _l = (List) obj;
-                for (int i = 0; i < _l.size(); i++)
+                for (int i = 0; i < _l.size(); i++) {
                     visitChildsOfType(visited, _l.get(i), type, thriftBaseType, visitHandler);
+                }
             } else {
-                for (Object i : ((Collection) obj))
+                for (Object i : ((Collection) obj)) {
                     visitChildsOfType(visited, i, type, thriftBaseType, visitHandler);
+                }
             }
 
             return;
         } else if (obj instanceof Map) {
-            if (((Map) obj).isEmpty())
+            if (((Map) obj).isEmpty()) {
                 return;
+            }
 
             for (Map.Entry e : ((Map<?, ?>) obj).entrySet()) {
                 visitChildsOfType(visited, e.getKey(), type, thriftBaseType, visitHandler);
@@ -147,13 +153,15 @@ public class ThriftTraversal {
 
         if (valueMetaData instanceof StructMetaData) {
 
-            if (((StructMetaData) valueMetaData).structClass == type)
+            if (((StructMetaData) valueMetaData).structClass == type) {
                 return true;
+            }
 
             final Map<TFieldIdEnum, FieldMetaData> map = (Map) FieldMetaData.getStructMetaDataMap(((StructMetaData) valueMetaData).structClass);
             for (Entry<TFieldIdEnum, FieldMetaData> e : map.entrySet()) {
-                if (hasChildsOfType(e.getValue().valueMetaData, type))
+                if (hasChildsOfType(e.getValue().valueMetaData, type)) {
                     return true;
+                }
             }
 
             return false;
@@ -163,7 +171,7 @@ public class ThriftTraversal {
             return hasChildsOfType(((SetMetaData) valueMetaData).elemMetaData, type);
         } else if (valueMetaData instanceof MapMetaData) {
             return hasChildsOfType(((MapMetaData) valueMetaData).valueMetaData, type)
-                   || hasChildsOfType(((MapMetaData) valueMetaData).keyMetaData, type);
+                || hasChildsOfType(((MapMetaData) valueMetaData).keyMetaData, type);
         } else {
             return false;
         }

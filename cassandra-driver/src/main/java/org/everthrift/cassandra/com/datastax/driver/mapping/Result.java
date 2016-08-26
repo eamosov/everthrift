@@ -15,19 +15,18 @@
  */
 package org.everthrift.cassandra.com.datastax.driver.mapping;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
-import org.everthrift.cassandra.com.datastax.driver.mapping.EntityMapper.Scenario;
-
 import com.datastax.driver.core.ExecutionInfo;
 import com.datastax.driver.core.ProtocolVersion;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.TypeCodec;
+import org.everthrift.cassandra.com.datastax.driver.mapping.EntityMapper.Scenario;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 /**
  * A {@code ResultSet} mapped to an entity class.
@@ -57,15 +56,17 @@ public class Result<T> implements Iterable<T> {
         T entity = mapper.newEntity();
         for (ColumnMapper<T> cm : mapper.allColumns(Scenario.ALL)) {
             String name = cm.getAlias() != null && this.useAlias ? cm.getAlias() : cm.getColumnName();
-            if (!row.getColumnDefinitions().contains(name))
+            if (!row.getColumnDefinitions().contains(name)) {
                 continue;
+            }
 
             Object value;
             TypeCodec<Object> customCodec = cm.getCustomCodec();
-            if (customCodec != null)
+            if (customCodec != null) {
                 value = row.get(name, customCodec);
-            else
+            } else {
                 value = row.get(name, cm.getJavaType());
+            }
 
             if (shouldSetValue(value)) {
                 cm.setValue(entity, value);
@@ -75,12 +76,15 @@ public class Result<T> implements Iterable<T> {
     }
 
     private static boolean shouldSetValue(Object value) {
-        if (value == null)
+        if (value == null) {
             return false;
-        if (value instanceof Collection)
+        }
+        if (value instanceof Collection) {
             return !((Collection) value).isEmpty();
-        if (value instanceof Map)
+        }
+        if (value instanceof Map) {
             return !((Map) value).isEmpty();
+        }
         return true;
     }
 

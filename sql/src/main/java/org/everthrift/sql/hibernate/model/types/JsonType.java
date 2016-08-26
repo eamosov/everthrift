@@ -1,13 +1,8 @@
 package org.everthrift.sql.hibernate.model.types;
 
-import java.io.Serializable;
-import java.lang.reflect.InvocationTargetException;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Types;
-import java.util.Objects;
-
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonSyntaxException;
 import org.apache.thrift.TBase;
 import org.everthrift.appserver.utils.thrift.GsonSerializer.TBaseSerializer;
 import org.hibernate.HibernateException;
@@ -17,20 +12,25 @@ import org.postgresql.util.PGobject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonSyntaxException;
+import java.io.Serializable;
+import java.lang.reflect.InvocationTargetException;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Types;
+import java.util.Objects;
 
-@SuppressWarnings({ "unchecked" })
+@SuppressWarnings({"unchecked"})
 public abstract class JsonType implements UserType {
 
     private static final Logger log = LoggerFactory.getLogger(JsonType.class);
 
-    private final Gson gson = new GsonBuilder().registerTypeHierarchyAdapter(TBase.class, new TBaseSerializer()).create();
+    private final Gson gson = new GsonBuilder().registerTypeHierarchyAdapter(TBase.class, new TBaseSerializer())
+                                               .create();
 
     @Override
     public int[] sqlTypes() {
-        return new int[] { Types.OTHER };
+        return new int[]{Types.OTHER};
     }
 
     @Override
@@ -41,8 +41,9 @@ public abstract class JsonType implements UserType {
     @Override
     public int hashCode(Object x) throws HibernateException {
 
-        if (x == null)
+        if (x == null) {
             return 0;
+        }
 
         return x.hashCode();
     }
@@ -53,13 +54,13 @@ public abstract class JsonType implements UserType {
 
         final PGobject json = (PGobject) rs.getObject(names[0]);
 
-        if (json == null)
+        if (json == null) {
             return null;
+        }
 
         try {
             return gson.fromJson(json.getValue(), returnedClass());
-        }
-        catch (JsonSyntaxException e) {
+        } catch (JsonSyntaxException e) {
             log.error("Coudn't parse '{}' in {}", json.getValue(), this.returnedClass().getSimpleName());
             throw new HibernateException(e);
         }
@@ -79,9 +80,8 @@ public abstract class JsonType implements UserType {
     public Object deepCopy(Object value) throws HibernateException {
         try {
             return value == null ? null : value.getClass().getConstructor(value.getClass()).newInstance(value);
-        }
-        catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
-               | NoSuchMethodException | SecurityException e) {
+        } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
+            | NoSuchMethodException | SecurityException e) {
             throw new HibernateException(e);
         }
     }

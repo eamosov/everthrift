@@ -1,12 +1,5 @@
 package org.everthrift.appserver.jgroups;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import javax.annotation.Resource;
-
 import org.apache.commons.lang.NotImplementedException;
 import org.everthrift.clustering.MessageWrapper;
 import org.everthrift.clustering.jgroups.AbstractJgroupsThriftClientImpl;
@@ -31,8 +24,14 @@ import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.scheduling.annotation.Scheduled;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import javax.annotation.Resource;
+import java.util.ArrayList;
+import java.util.List;
+
 public class JgroupsThriftClientServerImpl extends AbstractJgroupsThriftClientImpl
-        implements AsyncRequestHandler, MembershipListener, ClusterThriftClientIF {
+    implements AsyncRequestHandler, MembershipListener, ClusterThriftClientIF {
 
     private static final Logger log = LoggerFactory.getLogger(JgroupsThriftClientServerImpl.class);
 
@@ -70,10 +69,10 @@ public class JgroupsThriftClientServerImpl extends AbstractJgroupsThriftClientIm
         w.setAttribute(JGroupsThriftAdapter.HEADER_JRESPONSE, response);
         w.setAttribute("src", request.getSrc());
 
-        org.springframework.messaging.Message<MessageWrapper> m = MessageBuilder.<MessageWrapper> withPayload(w)
-                                                                                .setHeader(MessageHeaders.REPLY_CHANNEL,
-                                                                                           "outJGroupsChannel")
-                                                                                .build();
+        org.springframework.messaging.Message<MessageWrapper> m = MessageBuilder.<MessageWrapper>withPayload(w)
+            .setHeader(MessageHeaders.REPLY_CHANNEL,
+                       "outJGroupsChannel")
+            .build();
         inJGroupsChannel.send(m);
     }
 
@@ -113,8 +112,9 @@ public class JgroupsThriftClientServerImpl extends AbstractJgroupsThriftClientIm
     @Override
     public synchronized void viewAccepted(View new_view) {
 
-        if (!this.viewAccepted.isDone())
+        if (!this.viewAccepted.isDone()) {
             this.viewAccepted.set(null);
+        }
 
         nodeDb.retain(new_view.getMembers());
         populateConfiguration();
@@ -168,10 +168,10 @@ public class JgroupsThriftClientServerImpl extends AbstractJgroupsThriftClientIm
 
     public void populateConfiguration() {
         try {
-            ThriftProxyFactory.on(ClusterService.Iface.class).onNodeConfiguration(rpcJGroupsRegistry.getNodeConfiguration());
+            ThriftProxyFactory.on(ClusterService.Iface.class)
+                              .onNodeConfiguration(rpcJGroupsRegistry.getNodeConfiguration());
             call(InvocationInfoThreadHolder.getInvocationInfo(), ClusterThriftClientIF.Options.responseMode(ResponseMode.GET_NONE));
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             log.error("Exception", e);
         }
     }

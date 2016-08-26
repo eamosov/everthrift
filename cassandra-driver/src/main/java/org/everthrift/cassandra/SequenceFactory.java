@@ -1,12 +1,12 @@
 package org.everthrift.cassandra;
 
-import static com.datastax.driver.core.querybuilder.QueryBuilder.eq;
-
 import com.datastax.driver.core.ConsistencyLevel;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
+
+import static com.datastax.driver.core.querybuilder.QueryBuilder.eq;
 
 public class SequenceFactory {
     public static final String NAME_COLUMN = "name";
@@ -42,23 +42,28 @@ public class SequenceFactory {
 
     private Long tryNextId() {
 
-        final ResultSet rs = session.execute(QueryBuilder.select(VALUE_COLUMN).from(tableName).where(eq(NAME_COLUMN, seqName))
+        final ResultSet rs = session.execute(QueryBuilder.select(VALUE_COLUMN)
+                                                         .from(tableName)
+                                                         .where(eq(NAME_COLUMN, seqName))
                                                          .setConsistencyLevel(ConsistencyLevel.QUORUM));
         final Row row = rs.one();
         if (row == null) {
             final ResultSet saveResult = session.execute(QueryBuilder.insertInto(tableName).value(NAME_COLUMN, seqName)
                                                                      .value(VALUE_COLUMN, 1L).ifNotExists()
                                                                      .setSerialConsistencyLevel(ConsistencyLevel.SERIAL));
-            if (saveResult.wasApplied())
+            if (saveResult.wasApplied()) {
                 return 1L;
+            }
         } else {
             long value = row.getLong(0);
             final ResultSet updateResult = session.execute(QueryBuilder.update(tableName)
                                                                        .with(QueryBuilder.set(VALUE_COLUMN, (Long) (value + 1)))
-                                                                       .where(eq(NAME_COLUMN, seqName)).onlyIf(eq(VALUE_COLUMN, value))
+                                                                       .where(eq(NAME_COLUMN, seqName))
+                                                                       .onlyIf(eq(VALUE_COLUMN, value))
                                                                        .setSerialConsistencyLevel(ConsistencyLevel.SERIAL));
-            if (updateResult.wasApplied())
+            if (updateResult.wasApplied()) {
                 return value + 1;
+            }
         }
 
         return null;

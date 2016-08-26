@@ -15,13 +15,12 @@
  */
 package org.everthrift.cassandra.com.datastax.driver.mapping;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.everthrift.cassandra.com.datastax.driver.mapping.EntityMapper.ColumnScenario;
-
 import com.datastax.driver.core.Metadata;
 import com.datastax.driver.core.TypeCodec;
 import com.google.common.reflect.TypeToken;
+import org.everthrift.cassandra.com.datastax.driver.mapping.EntityMapper.ColumnScenario;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class ColumnMapper<T> {
 

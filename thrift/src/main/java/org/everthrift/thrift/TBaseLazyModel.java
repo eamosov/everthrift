@@ -1,11 +1,11 @@
 package org.everthrift.thrift;
 
+import org.apache.thrift.TBase;
+import org.apache.thrift.TFieldIdEnum;
+
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-
-import org.apache.thrift.TBase;
-import org.apache.thrift.TFieldIdEnum;
 
 public interface TBaseLazyModel<T extends TBase<T, F>, F extends TFieldIdEnum> extends TBaseModel<T, F> {
 
@@ -13,17 +13,19 @@ public interface TBaseLazyModel<T extends TBase<T, F>, F extends TFieldIdEnum> e
 
     void setThriftData(byte[] bytes);
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @SuppressWarnings({"rawtypes", "unchecked"})
     default <T extends TBaseLazyModel> T asUnpacked() {
 
         final byte[] bytes = getThriftData();
-        if (bytes == null)
+        if (bytes == null) {
             return (T) this;
+        }
 
         final T other = (T) newInstance();
 
-        if (log.isTraceEnabled())
+        if (log.isTraceEnabled()) {
             log.trace("unpack object {} to new object {}", System.identityHashCode(this), System.identityHashCode(other));
+        }
 
         other.fromByteArray(bytes, 0);
         return other;
@@ -48,8 +50,9 @@ public interface TBaseLazyModel<T extends TBase<T, F>, F extends TFieldIdEnum> e
     default void writeExternal(final ObjectOutput out) throws IOException {
         byte[] _data;
 
-        if ((_data = getThriftData()) == null)
+        if ((_data = getThriftData()) == null) {
             _data = toByteArray();
+        }
 
         out.writeInt(_data.length);
         out.write(_data);
@@ -70,8 +73,10 @@ public interface TBaseLazyModel<T extends TBase<T, F>, F extends TFieldIdEnum> e
         final byte[] bytes = getThriftData();
         if (bytes != null) {
 
-            if (log.isDebugEnabled())
-                log.debug("Unpack object {} of type {}", System.identityHashCode(this), this.getClass().getSimpleName());
+            if (log.isDebugEnabled()) {
+                log.debug("Unpack object {} of type {}", System.identityHashCode(this), this.getClass()
+                                                                                            .getSimpleName());
+            }
 
             setThriftData(null);
             fromByteArray(bytes, 0);
@@ -81,8 +86,9 @@ public interface TBaseLazyModel<T extends TBase<T, F>, F extends TFieldIdEnum> e
     default void pack() {
         if (this.getThriftData() == null) {
 
-            if (log.isDebugEnabled())
+            if (log.isDebugEnabled()) {
                 log.debug("Pack object {} of type {}", System.identityHashCode(this), this.getClass().getSimpleName());
+            }
 
             byte[] _data = toByteArray();
             clear();

@@ -1,22 +1,10 @@
 package org.everthrift.jetty.transport.http;
 
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import javax.servlet.AsyncContext;
-import javax.servlet.ServletException;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.WriteListener;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
+import com.google.common.base.Optional;
+import com.google.common.base.Throwables;
+import com.google.common.collect.Maps;
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.ListenableFuture;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.thrift.TApplicationException;
@@ -46,11 +34,21 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 
-import com.google.common.base.Optional;
-import com.google.common.base.Throwables;
-import com.google.common.collect.Maps;
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.ListenableFuture;
+import javax.servlet.AsyncContext;
+import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.WriteListener;
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public abstract class AbstractThriftServlet extends HttpServlet implements InitializingBean {
 
@@ -110,17 +108,22 @@ public abstract class AbstractThriftServlet extends HttpServlet implements Initi
         response.setHeader("Access-Control-Allow-Headers", "Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
 
         final Map<String, Object> attributes = Maps.newHashMap();
-        attributes.put(MessageWrapper.HTTP_REQUEST_PARAMS, Optional.fromNullable(request.getParameterMap()).or(Collections.emptyMap()));
-        attributes.put(MessageWrapper.HTTP_COOKIES, Optional.fromNullable(request.getCookies()).or(() -> new Cookie[0]));
+        attributes.put(MessageWrapper.HTTP_REQUEST_PARAMS, Optional.fromNullable(request.getParameterMap())
+                                                                   .or(Collections.emptyMap()));
+        attributes.put(MessageWrapper.HTTP_COOKIES, Optional.fromNullable(request.getCookies())
+                                                            .or(() -> new Cookie[0]));
         attributes.put(MessageWrapper.HTTP_HEADERS,
-                       Collections.list(request.getHeaderNames()).stream().map(n -> Pair.create(n, request.getHeader(n)))
+                       Collections.list(request.getHeaderNames())
+                                  .stream()
+                                  .map(n -> Pair.create(n, request.getHeader(n)))
                                   .collect(Collectors.toMap(Pair::getFirst, Pair::getSecond)));
 
         final String xRealIp = request.getHeader(MessageWrapper.HTTP_X_REAL_IP);
-        if (xRealIp != null)
+        if (xRealIp != null) {
             attributes.put(MessageWrapper.HTTP_X_REAL_IP, xRealIp);
-        else
+        } else {
             attributes.put(MessageWrapper.HTTP_X_REAL_IP, request.getRemoteHost() + ":" + request.getRemotePort());
+        }
 
         final TMemoryInputTransport it = new TMemoryInputTransport(IOUtils.toByteArray(request.getInputStream()));
 
@@ -128,8 +131,7 @@ public abstract class AbstractThriftServlet extends HttpServlet implements Initi
         final TMessage tMessage;
         try {
             tMessage = in.readMessageBegin();
-        }
-        catch (TException e2) {
+        } catch (TException e2) {
             response.setStatus(500);
             response.setContentType("text/plain");
             out(asyncContext, response, e2.getMessage().getBytes(StandardCharsets.UTF_8));
@@ -164,10 +166,8 @@ public abstract class AbstractThriftServlet extends HttpServlet implements Initi
                     try {
                         final Method m = tInfo.getArgCls().getMethod("validate");
                         m.invoke(args);
-                    }
-                    catch (NoSuchMethodException | IllegalAccessException | IllegalArgumentException e1) {
-                    }
-                    catch (InvocationTargetException e1) {
+                    } catch (NoSuchMethodException | IllegalAccessException | IllegalArgumentException e1) {
+                    } catch (InvocationTargetException e1) {
                         Throwables.propagateIfInstanceOf(e1.getCause(), TException.class);
                         throw Throwables.propagate(e1.getCause());
                     }
@@ -189,8 +189,7 @@ public abstract class AbstractThriftServlet extends HttpServlet implements Initi
                         ((TApplicationException) o).write(out);
                         out.writeMessageEnd();
                         out.getTransport().flush(tMessage.seqid);
-                    }
-                    catch (TException e) {
+                    } catch (TException e) {
                         throw new RuntimeException(e);
                     }
                     return outT;
@@ -215,8 +214,7 @@ public abstract class AbstractThriftServlet extends HttpServlet implements Initi
                             result.write(out);
                             out.writeMessageEnd();
                             out.getTransport().flush(tMessage.seqid);
-                        }
-                        catch (TException e) {
+                        } catch (TException e) {
                             throw new RuntimeException(e);
                         }
 
@@ -229,8 +227,7 @@ public abstract class AbstractThriftServlet extends HttpServlet implements Initi
                     final TMemoryBuffer tt = result(o, controller.getInfo());
                     try {
                         out(asyncContext, response, tt.getArray(), tt.length());
-                    }
-                    catch (IOException e) {
+                    } catch (IOException e) {
                         log.error("Async Error", e);
                     }
 
@@ -269,10 +266,11 @@ public abstract class AbstractThriftServlet extends HttpServlet implements Initi
                 @Override
                 public String getClientIp() {
                     final String xRealIp = request.getHeader(MessageWrapper.HTTP_X_REAL_IP);
-                    if (xRealIp != null)
+                    if (xRealIp != null) {
                         return xRealIp;
-                    else
+                    } else {
                         return request.getRemoteHost() + ":" + request.getRemotePort();
+                    }
                 }
 
                 @Override
@@ -290,8 +288,7 @@ public abstract class AbstractThriftServlet extends HttpServlet implements Initi
                 response.setContentType(getContentType());
                 out(asyncContext, response, mw.getArray(), mw.length());
             }
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             response.setStatus(500);
             response.setContentType("text/plain");
             out(asyncContext, response, e.getMessage().getBytes(StandardCharsets.UTF_8));

@@ -1,19 +1,18 @@
 package org.everthrift.appserver.model.lazy;
 
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.SettableFuture;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.SettableFuture;
 
 public class LazyLoadManager {
 
@@ -36,10 +35,12 @@ public class LazyLoadManager {
         public Thread newThread(Runnable r) {
             final Thread t = new Thread(r);
             t.setName("LazyLoader-" + threadNumber.getAndIncrement());
-            if (t.isDaemon())
+            if (t.isDaemon()) {
                 t.setDaemon(false);
-            if (t.getPriority() != Thread.NORM_PRIORITY)
+            }
+            if (t.getPriority() != Thread.NORM_PRIORITY) {
                 t.setPriority(Thread.NORM_PRIORITY);
+            }
             return t;
         }
     });
@@ -58,16 +59,18 @@ public class LazyLoadManager {
             public void onSuccess(Integer nLoaded) {
 
                 final long end = System.nanoTime();
-                if (log.isDebugEnabled())
-                    log.debug("Iteration {} finished. {} entities loaded with {} mcs", new Object[] { lap, nLoaded, (end - st) / 1000 });
+                if (log.isDebugEnabled()) {
+                    log.debug("Iteration {} finished. {} entities loaded with {} mcs", new Object[]{lap, nLoaded, (end - st) / 1000});
+                }
 
                 final int _lap = lap.incrementAndGet();
                 final int _nAllLoaded = nAllLoaded.addAndGet(nLoaded);
 
-                if (nLoaded > 0 && _lap < maxIterations)
+                if (nLoaded > 0 && _lap < maxIterations) {
                     nextLap(result, lap, nAllLoaded, maxIterations, o, r, walker);
-                else
+                } else {
                     result.set(_nAllLoaded);
+                }
             }
 
             @Override
@@ -92,13 +95,14 @@ public class LazyLoadManager {
     }
 
     public <T> ListenableFuture<T> load(final String scenario, int maxIterations, final T o) {
-        return load(scenario, maxIterations, o, new Object[] {});
+        return load(scenario, maxIterations, o, new Object[]{});
     }
 
     public <T> ListenableFuture<T> load(final String scenario, int maxIterations, final T o, Object... args) {
 
-        if (o == null || (o instanceof Collection && ((Collection) o).isEmpty()) || (o instanceof Map && ((Map) o).isEmpty()))
+        if (o == null || (o instanceof Collection && ((Collection) o).isEmpty()) || (o instanceof Map && ((Map) o).isEmpty())) {
             return Futures.immediateFuture(o);
+        }
 
         registry.setArgs(args);
         final WalkerIF walker = new RecursiveWalker(registry, scenario);

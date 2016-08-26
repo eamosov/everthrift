@@ -1,12 +1,12 @@
 package org.everthrift.sql.hibernate.model.types;
 
-import java.util.Comparator;
-
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.type.AbstractSingleColumnStandardBasicType;
 import org.hibernate.type.VersionType;
 import org.hibernate.type.descriptor.java.PrimitiveByteArrayTypeDescriptor;
 import org.hibernate.type.descriptor.sql.BinaryTypeDescriptor;
+
+import java.util.Comparator;
 
 /**
  * A type that maps between a {@link java.sql.Types#VARBINARY VARBINARY} and
@@ -30,7 +30,7 @@ public class BinaryType extends AbstractSingleColumnStandardBasicType<byte[]> im
 
     @Override
     public String[] getRegistrationKeys() {
-        return new String[] { getName(), "byte[]", byte[].class.getName() };
+        return new String[]{getName(), "byte[]", byte[].class.getName()};
     }
 
     @Override

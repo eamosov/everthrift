@@ -115,7 +115,7 @@ Here is an example of CacheManager level resource tuning, which will use up to 4
     <managementRESTService enabled="true" securityServiceLocation="http://localhost:9889/tmc/api/assertIdentity"  />
     
      -->
-    
+
     <!--
     DiskStore configuration
     =======================
@@ -342,7 +342,7 @@ Here is an example of CacheManager level resource tuning, which will use up to 4
                         multicastGroupAddress=230.0.0.1,
                         multicastGroupPort=4446, timeToLive=1"
             propertySeparator=","
-            />
+    />
 
 
     <!--
@@ -1073,7 +1073,7 @@ Here is an example of CacheManager level resource tuning, which will use up to 4
            maxEntriesLocalHeap="1000"
            eternal="true"
            memoryStoreEvictionPolicy="FIFO"
-            />
+    />
 
 
     <!--

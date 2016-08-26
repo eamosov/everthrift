@@ -1,24 +1,5 @@
 package org.everthrift.cassandra.model;
 
-import java.io.Serializable;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Executor;
-import java.util.function.Consumer;
-
-import org.apache.commons.lang.ArrayUtils;
-import org.apache.thrift.TException;
-import org.everthrift.appserver.model.CreatedAtIF;
-import org.everthrift.appserver.model.DaoEntityIF;
-import org.everthrift.appserver.model.UpdatedAtIF;
-import org.everthrift.appserver.model.events.DeleteEntityEvent;
-import org.everthrift.appserver.model.events.InsertEntityEvent;
-import org.everthrift.appserver.model.events.UpdateEntityEvent;
-import org.everthrift.cassandra.com.datastax.driver.mapping.Mapper.Option;
-import org.everthrift.cassandra.com.datastax.driver.mapping.Mapper.UpdateQuery;
-import org.everthrift.thrift.TFunction;
-import org.everthrift.utils.LongTimestamp;
-
 import com.datastax.driver.core.BatchStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
@@ -34,12 +15,30 @@ import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import org.apache.commons.lang.ArrayUtils;
+import org.apache.thrift.TException;
+import org.everthrift.appserver.model.CreatedAtIF;
+import org.everthrift.appserver.model.DaoEntityIF;
+import org.everthrift.appserver.model.UpdatedAtIF;
+import org.everthrift.appserver.model.events.DeleteEntityEvent;
+import org.everthrift.appserver.model.events.InsertEntityEvent;
+import org.everthrift.appserver.model.events.UpdateEntityEvent;
+import org.everthrift.cassandra.com.datastax.driver.mapping.Mapper.Option;
+import org.everthrift.cassandra.com.datastax.driver.mapping.Mapper.UpdateQuery;
+import org.everthrift.thrift.TFunction;
+import org.everthrift.utils.LongTimestamp;
+
+import java.io.Serializable;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Executor;
+import java.util.function.Consumer;
 
 public class Statements {
 
     private List<Statement> statements = Lists.newArrayList();
 
-    @SuppressWarnings({ "rawtypes" })
+    @SuppressWarnings({"rawtypes"})
     private Multimap<CassandraModelFactory, Object> invalidates = Multimaps.newSetMultimap(Maps.newIdentityHashMap(),
                                                                                            () -> Sets.newHashSet());
 
@@ -63,12 +62,12 @@ public class Statements {
         this.timestamp = LongTimestamp.nowMicros();
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public <PK extends Serializable, ENTITY extends DaoEntityIF, E extends TException> CassandraModelFactory<PK, ENTITY, E> of(ENTITY e) {
         return (CassandraModelFactory) cassandraFactories.of(e.getClass());
     }
 
-    @SuppressWarnings({ "rawtypes" })
+    @SuppressWarnings({"rawtypes"})
     private <ENTITY extends DaoEntityIF> void addStatement(final CassandraModelFactory f, final Statement s, ENTITY e) {
         if (s != null) {
             statements.add(s);
@@ -89,8 +88,7 @@ public class Statements {
         final ENTITY afterUpdate;
         try {
             afterUpdate = factory.getEntityClass().newInstance();
-        }
-        catch (InstantiationException | IllegalAccessException e) {
+        } catch (InstantiationException | IllegalAccessException e) {
             throw Throwables.propagate(e);
         }
 
@@ -100,8 +98,7 @@ public class Statements {
         final ENTITY beforeUpdate;
         try {
             beforeUpdate = factory.getEntityClass().newInstance();
-        }
-        catch (InstantiationException | IllegalAccessException e) {
+        } catch (InstantiationException | IllegalAccessException e) {
             throw Throwables.propagate(e);
         }
 
@@ -113,19 +110,21 @@ public class Statements {
             factory.localEventBus.postEntityEvent(event);
         });
 
-        if (autoCommit)
+        if (autoCommit) {
             commit();
+        }
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public <ENTITY extends DaoEntityIF> ENTITY update(ENTITY e, TFunction<ENTITY, Boolean> mutator, Option... options) throws TException {
         final CassandraModelFactory factory = of(e);
         final ENTITY beforeUpdate = (ENTITY) factory.copy(e);
 
         final UpdateQuery uq = factory.updateQuery(beforeUpdate, e, mutator,
                                                    (Option[]) ArrayUtils.add(options, Option.updatedAt(timestamp / 1000)));
-        if (uq == null)
+        if (uq == null) {
             return e;
+        }
 
         addStatement(factory, uq.statement, e);
 
@@ -135,13 +134,14 @@ public class Statements {
             factory.localEventBus.postEntityEvent(event);
         });
 
-        if (autoCommit)
+        if (autoCommit) {
             commit();
+        }
 
         return e;
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public <ENTITY extends DaoEntityIF> ENTITY save(ENTITY e, Option... options) {
         final CassandraModelFactory f = of(e);
 
@@ -154,13 +154,14 @@ public class Statements {
             f.localEventBus.postEntityEvent(event);
         });
 
-        if (autoCommit)
+        if (autoCommit) {
             commit();
+        }
 
         return e;
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public <ENTITY extends DaoEntityIF> ENTITY delete(ENTITY e, Option... options) {
         final CassandraModelFactory f = of(e);
 
@@ -173,8 +174,9 @@ public class Statements {
             f.localEventBus.postEntityEvent(event);
         });
 
-        if (autoCommit)
+        if (autoCommit) {
             commit();
+        }
 
         return e;
     }
@@ -190,21 +192,23 @@ public class Statements {
     public void add(Statement s) {
         statements.add(s);
 
-        if (autoCommit)
+        if (autoCommit) {
             commit();
+        }
     }
 
-    @SuppressWarnings({ "rawtypes" })
+    @SuppressWarnings({"rawtypes"})
     public <ENTITY extends DaoEntityIF> void invalidate(ENTITY e) {
         invalidate(of(e), e.getPk());
     }
 
-    @SuppressWarnings({ "rawtypes" })
+    @SuppressWarnings({"rawtypes"})
     public void invalidate(CassandraModelFactory f, Object key) {
         invalidates.put(f, key);
 
-        if (autoCommit)
+        if (autoCommit) {
             commit();
+        }
     }
 
     public void add(Runnable successCallback) {
@@ -212,11 +216,12 @@ public class Statements {
             successCallback.run();
         });
 
-        if (autoCommit)
+        if (autoCommit) {
             commit();
+        }
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public ListenableFuture<?> commitAsync(Executor executor) {
         final ListenableFuture f;
 
@@ -253,7 +258,7 @@ public class Statements {
         return f;
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public void commit() {
 
         if (isBatch() && statements.size() > 1) {

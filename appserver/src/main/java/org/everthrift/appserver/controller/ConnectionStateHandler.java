@@ -1,9 +1,5 @@
 package org.everthrift.appserver.controller;
 
-import java.lang.annotation.Annotation;
-
-import javax.sql.DataSource;
-
 import org.everthrift.appserver.utils.thrift.ThriftClient;
 import org.everthrift.clustering.MessageWrapper;
 import org.slf4j.Logger;
@@ -11,6 +7,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
+
+import javax.sql.DataSource;
+import java.lang.annotation.Annotation;
 
 public abstract class ConnectionStateHandler {
 
@@ -38,8 +37,7 @@ public abstract class ConnectionStateHandler {
 
         try {
             this.ds = context.getBean(DataSource.class);
-        }
-        catch (NoSuchBeanDefinitionException e) {
+        } catch (NoSuchBeanDefinitionException e) {
             this.ds = null;
         }
     }

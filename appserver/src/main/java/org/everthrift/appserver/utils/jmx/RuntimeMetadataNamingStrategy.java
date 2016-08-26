@@ -1,15 +1,15 @@
 package org.everthrift.appserver.utils.jmx;
 
+import org.springframework.jmx.export.naming.MetadataNamingStrategy;
+
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
-
-import org.springframework.jmx.export.naming.MetadataNamingStrategy;
 
 /**
  * Local version of the {@link MetadataNamingStrategy} which uses the
  * {@link RuntimeJmxNames} interface to have the exported object set its own
  * name.
- * 
+ *
  * @author graywatson
  */
 public class RuntimeMetadataNamingStrategy extends MetadataNamingStrategy {

@@ -1,12 +1,11 @@
 package org.everthrift.sql.hibernate.model.types;
 
-import java.util.Map;
-import java.util.Map.Entry;
-
-import org.hibernate.HibernateException;
-
 import gnu.trove.decorator.TLongLongMapDecorator;
 import gnu.trove.map.hash.TLongLongHashMap;
+import org.hibernate.HibernateException;
+
+import java.util.Map;
+import java.util.Map.Entry;
 
 public class TLongLongHstoreType extends Trove4jHstoreType<TLongLongHashMap> {
 

@@ -1,13 +1,12 @@
 package org.everthrift.appserver.model;
 
+import com.google.common.collect.Collections2;
+import com.google.common.collect.Lists;
+import org.springframework.util.CollectionUtils;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-
-import org.springframework.util.CollectionUtils;
-
-import com.google.common.collect.Collections2;
-import com.google.common.collect.Lists;
 
 public class OptResult<ENTITY extends DaoEntityIF> {
 
@@ -20,7 +19,7 @@ public class OptResult<ENTITY extends DaoEntityIF> {
     public final ENTITY beforeUpdate;
 
     public final boolean isUpdated; // true, если произошло изменение объекта в
-                                    // БД
+    // БД
 
     public List<OptResult> inner;
 
@@ -51,27 +50,31 @@ public class OptResult<ENTITY extends DaoEntityIF> {
     }
 
     public <T extends DaoEntityIF> void add(OptResult<T> e) {
-        if (inner == null)
+        if (inner == null) {
             inner = Lists.newArrayList();
+        }
 
         inner.add(e);
     }
 
     public <PK, T extends DaoEntityIF> Collection<OptResult> getInner(OptimisticLockModelFactoryIF<PK, T, ?> factory) {
-        if (CollectionUtils.isEmpty(inner))
+        if (CollectionUtils.isEmpty(inner)) {
             return Collections.emptyList();
+        }
 
         return Collections2.filter(inner, r -> (r.factory == factory));
     }
 
     public <PK, T extends DaoEntityIF> T getInnerUpdated(OptimisticLockModelFactoryIF<PK, T, ?> factory, T defaultValue) {
 
-        if (CollectionUtils.isEmpty(inner))
+        if (CollectionUtils.isEmpty(inner)) {
             return defaultValue;
+        }
 
         for (OptResult r : inner) {
-            if (r.factory == factory && r.afterUpdate != null && r.afterUpdate.getPk().equals(defaultValue.getPk()))
+            if (r.factory == factory && r.afterUpdate != null && r.afterUpdate.getPk().equals(defaultValue.getPk())) {
                 return (T) r.afterUpdate;
+            }
         }
         return defaultValue;
     }
@@ -79,6 +82,6 @@ public class OptResult<ENTITY extends DaoEntityIF> {
     @Override
     public String toString() {
         return "OptResult [factory=" + factory + ", afterUpdate=" + afterUpdate + ", beforeUpdate=" + beforeUpdate + ", isUpdated="
-               + isUpdated + ", inner=" + inner + "]";
+            + isUpdated + ", inner=" + inner + "]";
     }
 }

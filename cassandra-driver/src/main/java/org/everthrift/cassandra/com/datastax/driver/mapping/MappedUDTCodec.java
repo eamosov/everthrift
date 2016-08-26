@@ -15,14 +15,14 @@
  */
 package org.everthrift.cassandra.com.datastax.driver.mapping;
 
-import java.nio.ByteBuffer;
-import java.util.Map;
-
 import com.datastax.driver.core.CodecRegistry;
 import com.datastax.driver.core.Metadata;
 import com.datastax.driver.core.ProtocolVersion;
 import com.datastax.driver.core.TypeCodec;
 import com.datastax.driver.core.UserType;
+
+import java.nio.ByteBuffer;
+import java.util.Map;
 
 /**
  * Serializes a class annotated with {@code @UDT} to the corresponding CQL
@@ -50,8 +50,7 @@ public class MappedUDTCodec<T> extends TypeCodec.AbstractUDTCodec<T> {
     protected T newInstance() {
         try {
             return udtClass.newInstance();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw new IllegalArgumentException("Error creating instance of @UDT-annotated class " + udtClass, e);
         }
     }
@@ -60,33 +59,38 @@ public class MappedUDTCodec<T> extends TypeCodec.AbstractUDTCodec<T> {
     protected ByteBuffer serializeField(T source, String fieldName, ProtocolVersion protocolVersion) {
         // The parent class passes lowercase names unquoted, but in our internal
         // map of mappers they are always quoted
-        if (!fieldName.startsWith("\""))
+        if (!fieldName.startsWith("\"")) {
             fieldName = Metadata.quote(fieldName);
+        }
 
         ColumnMapper<T> columnMapper = columnMappers.get(fieldName);
 
-        if (columnMapper == null)
+        if (columnMapper == null) {
             return null;
+        }
 
         Object value = columnMapper.getValue(source);
 
         TypeCodec<Object> codec = columnMapper.getCustomCodec();
-        if (codec == null)
+        if (codec == null) {
             codec = codecRegistry.codecFor(cqlUserType.getFieldType(columnMapper.getColumnName()), columnMapper.getJavaType());
+        }
 
         return codec.serialize(value, protocolVersion);
     }
 
     @Override
     protected T deserializeAndSetField(ByteBuffer input, T target, String fieldName, ProtocolVersion protocolVersion) {
-        if (!fieldName.startsWith("\""))
+        if (!fieldName.startsWith("\"")) {
             fieldName = Metadata.quote(fieldName);
+        }
 
         ColumnMapper<T> columnMapper = columnMappers.get(fieldName);
         if (columnMapper != null) {
             TypeCodec<Object> codec = columnMapper.getCustomCodec();
-            if (codec == null)
+            if (codec == null) {
                 codec = codecRegistry.codecFor(cqlUserType.getFieldType(columnMapper.getColumnName()), columnMapper.getJavaType());
+            }
             columnMapper.setValue(target, codec.deserialize(input, protocolVersion));
         }
         return target;

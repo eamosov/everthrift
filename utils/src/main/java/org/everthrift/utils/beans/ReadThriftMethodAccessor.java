@@ -1,19 +1,19 @@
 package org.everthrift.utils.beans;
 
+import org.apache.thrift.TBase;
+import sun.reflect.MethodAccessor;
+
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
-import org.apache.thrift.TBase;
+class ReadThriftMethodAccessor extends ThriftMethodAccessor {
 
-import sun.reflect.MethodAccessor;
-
-class ReadThriftMethodAccessor extends ThriftMethodAccessor{
-
-    static void patch(Class entityClass, String propertyName, Method readMethod) throws IllegalAccessException, IllegalArgumentException, InvocationTargetException{
+    static void patch(Class entityClass, String propertyName, Method readMethod) throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
 
         final sun.reflect.MethodAccessor old = (MethodAccessor) getMethodAccessor.invoke(readMethod);
-        if (old !=null && old instanceof ThriftMethodAccessor)
+        if (old != null && old instanceof ThriftMethodAccessor) {
             return;
+        }
 
         try {
             setMethodAccessor.invoke(readMethod, new ReadThriftMethodAccessor(entityClass, propertyName));
@@ -28,11 +28,13 @@ class ReadThriftMethodAccessor extends ThriftMethodAccessor{
     @Override
     public Object invoke(Object arg0, Object[] arg1) throws IllegalArgumentException, InvocationTargetException {
 
-        if (arg1.length !=0)
+        if (arg1.length != 0) {
             throw new IllegalArgumentException();
+        }
 
-        if (((TBase) arg0).isSet(fId))
+        if (((TBase) arg0).isSet(fId)) {
             return ((TBase) arg0).getFieldValue(fId);
+        }
 
         return null;
     }

@@ -26,12 +26,13 @@ public class LogEntry {
 
     @Override
     public String toString() {
-        if (endMcs > 0)
+        if (endMcs > 0) {
             return serviceName + "/" + seqId + "(" + ((runMcs - startMcs) / 1000) + "/" + ((endMcs - runMcs) / 1000) + " ms)";
-        else if (runMcs > 0)
+        } else if (runMcs > 0) {
             return serviceName + "/" + seqId + "(" + ((runMcs - startMcs) / 1000) + "/n ms)";
-        else
+        } else {
             return serviceName + "/" + seqId + "(not finished)";
+        }
     }
 
     static String toString(List<LogEntry> logs) {

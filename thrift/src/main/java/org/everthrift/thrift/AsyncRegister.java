@@ -1,18 +1,17 @@
 package org.everthrift.thrift;
 
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.util.concurrent.ListenableScheduledFuture;
+import com.google.common.util.concurrent.ListeningScheduledExecutorService;
+import org.apache.thrift.transport.TTransportException;
+import org.everthrift.clustering.thrift.InvocationInfo;
+
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.apache.thrift.transport.TTransportException;
-import org.everthrift.clustering.thrift.InvocationInfo;
-
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.util.concurrent.ListenableScheduledFuture;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
 public class AsyncRegister {
 
@@ -42,10 +41,12 @@ public class AsyncRegister {
 
         @Override
         public boolean equals(Object o) {
-            if (o == null)
+            if (o == null) {
                 return false;
-            if (!(o instanceof Pair))
+            }
+            if (!(o instanceof Pair)) {
                 return false;
+            }
 
             Pair<?, ?> p = (Pair<?, ?>) o;
 
@@ -74,11 +75,13 @@ public class AsyncRegister {
     public synchronized InvocationInfo pop(int seqId) {
         final Pair<InvocationInfo, ListenableScheduledFuture> p = callbacks.remove(seqId);
 
-        if (p == null)
+        if (p == null) {
             return null;
+        }
 
-        if (p.second != null)
+        if (p.second != null) {
             p.second.cancel(false);
+        }
 
         return p.first.isDone() ? null : p.first;
     }
@@ -88,11 +91,13 @@ public class AsyncRegister {
 
         for (Pair<InvocationInfo, ListenableScheduledFuture> p : callbacks.values()) {
 
-            if (p.second != null)
+            if (p.second != null) {
                 p.second.cancel(false);
+            }
 
-            if (!p.first.isDone())
+            if (!p.first.isDone()) {
                 ret.add(p.first);
+            }
         }
         callbacks.clear();
         return ret;

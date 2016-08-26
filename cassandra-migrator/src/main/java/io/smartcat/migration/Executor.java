@@ -13,7 +13,7 @@ public class Executor {
     /**
      * Execute all migrations in migration resource collection.
      *
-     * @param session Datastax driver sesison object
+     * @param session   Datastax driver sesison object
      * @param resources Migration resources collection
      * @return Return success
      */

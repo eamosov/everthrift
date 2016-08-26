@@ -1,9 +1,8 @@
 package org.everthrift.sql.hibernate.dao;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-
+import com.google.common.base.Function;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
 import org.everthrift.appserver.model.DaoEntityIF;
 import org.everthrift.appserver.model.UniqueException;
 import org.everthrift.utils.Pair;
@@ -18,9 +17,9 @@ import org.hibernate.criterion.Projection;
 import org.hibernate.transform.ResultTransformer;
 import org.hibernate.type.Type;
 
-import com.google.common.base.Function;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
 public interface AbstractDao<K, V extends DaoEntityIF> {
 
@@ -32,6 +31,7 @@ public interface AbstractDao<K, V extends DaoEntityIF> {
 
     /**
      * Если entity не найдено, то метод возвращает null для этого ключа
+     *
      * @param id
      * @param keyExtractor
      * @return

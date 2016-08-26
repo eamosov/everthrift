@@ -1,22 +1,19 @@
 package org.everthrift.appserver.model;
 
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import net.sf.ehcache.Cache;
+import org.springframework.util.CollectionUtils;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.util.CollectionUtils;
-
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-
-import net.sf.ehcache.Cache;
-
 public abstract class CachedIndexModelFactory<PK, ENTITY> extends AbstractCachedModelFactory<PK, List<ENTITY>>
-        implements RoModelFactoryIF<PK, List<ENTITY>> {
+    implements RoModelFactoryIF<PK, List<ENTITY>> {
 
     /**
-     *
      * @param keys
      * @return Object[] = Object[]{value, key}
      */
@@ -33,12 +30,14 @@ public abstract class CachedIndexModelFactory<PK, ENTITY> extends AbstractCached
     @Override
     public List<ENTITY> fetchEntityById(PK id) {
         final Collection<Object[]> c = loadImpl(Collections.singleton(id));
-        if (CollectionUtils.isEmpty(c))
+        if (CollectionUtils.isEmpty(c)) {
             return Collections.emptyList();
+        }
 
         final List<ENTITY> ret = Lists.newArrayList();
-        for (Object[] o : c)
+        for (Object[] o : c) {
             ret.add((ENTITY) o[0]);
+        }
 
         return ret;
     }
@@ -46,8 +45,9 @@ public abstract class CachedIndexModelFactory<PK, ENTITY> extends AbstractCached
     @Override
     public Map<PK, List<ENTITY>> fetchEntityByIdAsMap(Collection<PK> ids) {
 
-        if (CollectionUtils.isEmpty(ids))
+        if (CollectionUtils.isEmpty(ids)) {
             return Collections.emptyMap();
+        }
 
         final Collection<Object[]> c = loadImpl(ids);
         final Map<PK, List<ENTITY>> ret = Maps.newHashMapWithExpectedSize(ids.size());
@@ -66,8 +66,9 @@ public abstract class CachedIndexModelFactory<PK, ENTITY> extends AbstractCached
         }
 
         for (PK id : ids) {
-            if (!ret.containsKey(id))
+            if (!ret.containsKey(id)) {
                 ret.put(id, Collections.EMPTY_LIST);
+            }
         }
 
         return ret;

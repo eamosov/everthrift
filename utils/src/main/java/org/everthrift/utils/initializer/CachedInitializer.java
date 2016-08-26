@@ -10,7 +10,7 @@ public abstract class CachedInitializer<T> implements Initializer<T>, Serializab
     private transient volatile long t;
     private final long timeoutMillis;
 
-    public CachedInitializer(long timeoutMillis){
+    public CachedInitializer(long timeoutMillis) {
         this.timeoutMillis = timeoutMillis;
     }
 
@@ -21,11 +21,11 @@ public abstract class CachedInitializer<T> implements Initializer<T>, Serializab
         long _t = t;
         final long now = System.currentTimeMillis();
 
-        if (_object == null || (now - _t) > timeoutMillis ) {
-            synchronized(this){
+        if (_object == null || (now - _t) > timeoutMillis) {
+            synchronized (this) {
                 _object = object;
                 _t = t;
-                if (_object == null || (now - _t) > timeoutMillis ) {
+                if (_object == null || (now - _t) > timeoutMillis) {
                     object = _object = initialize();
                     t = _t = now;
                 }

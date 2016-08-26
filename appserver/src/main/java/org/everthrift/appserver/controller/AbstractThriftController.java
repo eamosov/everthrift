@@ -1,17 +1,10 @@
 package org.everthrift.appserver.controller;
 
-import java.lang.annotation.Annotation;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-
-import javax.sql.DataSource;
-
+import com.google.common.base.Function;
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
 import org.apache.thrift.TApplicationException;
 import org.apache.thrift.TBase;
 import org.apache.thrift.TException;
@@ -28,11 +21,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
 
-import com.google.common.base.Function;
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
+import javax.sql.DataSource;
+import java.lang.annotation.Annotation;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 
 public abstract class AbstractThriftController<ArgsType extends TBase, ResultType> {
 
@@ -101,8 +99,7 @@ public abstract class AbstractThriftController<ArgsType extends TBase, ResultTyp
 
         try {
             this.ds = context.getBean(DataSource.class);
-        }
-        catch (NoSuchBeanDefinitionException e) {
+        } catch (NoSuchBeanDefinitionException e) {
             this.ds = null;
         }
 
@@ -112,7 +109,6 @@ public abstract class AbstractThriftController<ArgsType extends TBase, ResultTyp
     protected abstract ResultType handle() throws TException;
 
     /**
-     *
      * @param args
      * @return TApplicationException || TException || ResultType
      */
@@ -128,8 +124,7 @@ public abstract class AbstractThriftController<ArgsType extends TBase, ResultTyp
                 ResultType result;
                 try {
                     result = filterOutput(resultFuture.get());
-                }
-                catch (InterruptedException | ExecutionException e) {
+                } catch (InterruptedException | ExecutionException e) {
                     setResultSentFlag();
                     setEndNanos(System.nanoTime());
                     log.error("Uncought exception", e);
@@ -160,8 +155,7 @@ public abstract class AbstractThriftController<ArgsType extends TBase, ResultTyp
 
                 return waitForAnswer();
             }
-        }
-        catch (TException e) {
+        } catch (TException e) {
             return e;
         }
     }
@@ -177,7 +171,7 @@ public abstract class AbstractThriftController<ArgsType extends TBase, ResultTyp
         }
 
         public static void throwException(Throwable exception) {
-            ExUtil.<RuntimeException> throwException(exception, null);
+            ExUtil.<RuntimeException>throwException(exception, null);
         }
     }
 
@@ -188,8 +182,7 @@ public abstract class AbstractThriftController<ArgsType extends TBase, ResultTyp
             public T apply(F input) {
                 try {
                     return f.apply(input);
-                }
-                catch (TException e) {
+                } catch (TException e) {
                     ExUtil.throwException(e);
                     return null;
                 }
@@ -202,11 +195,9 @@ public abstract class AbstractThriftController<ArgsType extends TBase, ResultTyp
         if (!allowAsyncAnswer) {
             try {
                 return lf.get();
-            }
-            catch (InterruptedException e) {
+            } catch (InterruptedException e) {
                 throw new TApplicationException(TApplicationException.INTERNAL_ERROR, e.getMessage());
-            }
-            catch (ExecutionException e) {
+            } catch (ExecutionException e) {
                 final Throwable t = e.getCause();
 
                 if (t instanceof TException) {
@@ -279,15 +270,17 @@ public abstract class AbstractThriftController<ArgsType extends TBase, ResultTyp
      * запроса
      */
     private synchronized void setResultSentFlag() {
-        if (resultSent)
+        if (resultSent) {
             throw new IllegalStateException(this.getClass().getSimpleName() + ": Result already sent");
+        }
 
         resultSent = true;
 
         if (!noProfile) {
             final ExecutionStats es = rpcControllesStats.get(this.getClass().getSimpleName());
-            if (es != null)
+            if (es != null) {
                 es.update(getExecutionMcs());
+            }
         }
 
     }
@@ -321,7 +314,8 @@ public abstract class AbstractThriftController<ArgsType extends TBase, ResultTyp
     }
 
     public static synchronized String getExecutionLog() {
-        final ArrayList<Pair<String, ExecutionStats>> list = new ArrayList<Pair<String, ExecutionStats>>(rpcControllesStats.size());
+        final ArrayList<Pair<String, ExecutionStats>> list = new ArrayList<Pair<String, ExecutionStats>>(rpcControllesStats
+                                                                                                             .size());
 
         final Iterator<Entry<String, ExecutionStats>> it = rpcControllesStats.entrySet().iterator();
 

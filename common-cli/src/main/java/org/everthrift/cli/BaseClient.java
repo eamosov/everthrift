@@ -1,16 +1,5 @@
 package org.everthrift.cli;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.commons.cli.BasicParser;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
@@ -23,6 +12,17 @@ import org.apache.thrift.TException;
 import org.everthrift.cli.env.ClusterModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class BaseClient {
 
@@ -81,8 +81,9 @@ public class BaseClient {
                     }
                 }
 
-                if (!isReused)
+                if (!isReused) {
                     argumentGroup.addOption(option);
+                }
             }
 
         }
@@ -120,38 +121,36 @@ public class BaseClient {
             CommandLine moduleLine = parser.parse(moduleOptions, args, false);
 
             switch (configGroup.getSelected()) {
-            case "f":
-                if (moduleLine.getOptionValue("file") == null)
-                    throw new IllegalArgumentException("provide config file location");
-                getModule(moduleGroup.getSelected(), moduleLine.getOptionValue("file")).runModule(pw, argumentGroup.getSelected(),
-                                                                                                  moduleLine);
-                break;
-            case "i":
-                String[] conf_args = moduleLine.getOptionValues("infonode");
-                if (conf_args.length != 2)
-                    throw new ParseException("invalid parameters for infonode connection");
-                getModule(moduleGroup.getSelected(), conf_args[0], Integer.parseInt(conf_args[1])).runModule(pw,
-                                                                                                             argumentGroup.getSelected(),
-                                                                                                             moduleLine);
-                break;
-            default:
-                throw new ParseException("Set infonode host:port or cluster configuration in json");
+                case "f":
+                    if (moduleLine.getOptionValue("file") == null) {
+                        throw new IllegalArgumentException("provide config file location");
+                    }
+                    getModule(moduleGroup.getSelected(), moduleLine.getOptionValue("file")).runModule(pw, argumentGroup.getSelected(),
+                                                                                                      moduleLine);
+                    break;
+                case "i":
+                    String[] conf_args = moduleLine.getOptionValues("infonode");
+                    if (conf_args.length != 2) {
+                        throw new ParseException("invalid parameters for infonode connection");
+                    }
+                    getModule(moduleGroup.getSelected(), conf_args[0], Integer.parseInt(conf_args[1])).runModule(pw,
+                                                                                                                 argumentGroup
+                                                                                                                     .getSelected(),
+                                                                                                                 moduleLine);
+                    break;
+                default:
+                    throw new ParseException("Set infonode host:port or cluster configuration in json");
             }
-        }
-        catch (ParseException e) {
+        } catch (ParseException e) {
             LOG.error("Argument Error: {}", e);
             printHelp();
-        }
-        catch (NumberFormatException nfe) {
+        } catch (NumberFormatException nfe) {
             LOG.error("Argument Format Error: {}", nfe);
-        }
-        catch (TException te) {
+        } catch (TException te) {
             LOG.error("Thrift Error: {}", te);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             LOG.error(" Error: {}", e);
-        }
-        finally {
+        } finally {
             pw.close();
         }
     }
@@ -165,8 +164,9 @@ public class BaseClient {
     private BaseModule getModule(String key, String configLocation) throws IOException {
         BaseModule module = availableModules.get(key);
         StringBuilder config = new StringBuilder();
-        for (String line : Files.readAllLines(Paths.get(configLocation), Charset.defaultCharset()))
+        for (String line : Files.readAllLines(Paths.get(configLocation), Charset.defaultCharset())) {
             config.append(line);
+        }
         module.init(config.toString());
         return module;
     }

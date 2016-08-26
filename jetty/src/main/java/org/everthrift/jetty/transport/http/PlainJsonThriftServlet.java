@@ -1,24 +1,15 @@
 package org.everthrift.jetty.transport.http;
 
-import java.beans.PropertyDescriptor;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import javax.annotation.PostConstruct;
-import javax.servlet.AsyncContext;
-import javax.servlet.ServletException;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.WriteListener;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
+import com.google.common.base.Optional;
+import com.google.common.base.Throwables;
+import com.google.common.collect.Maps;
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.thrift.TApplicationException;
@@ -45,16 +36,23 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 
-import com.google.common.base.Optional;
-import com.google.common.base.Throwables;
-import com.google.common.collect.Maps;
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import javax.annotation.PostConstruct;
+import javax.servlet.AsyncContext;
+import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.WriteListener;
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.beans.PropertyDescriptor;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class PlainJsonThriftServlet extends HttpServlet {
 
@@ -70,8 +68,10 @@ public class PlainJsonThriftServlet extends HttpServlet {
     @Autowired
     private RpcHttpRegistry registry;
 
-    private static final Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping()
-                                                      .registerTypeHierarchyAdapter(TBase.class, new TBaseSerializer()).create();
+    private static final Gson gson = new GsonBuilder().setPrettyPrinting()
+                                                      .disableHtmlEscaping()
+                                                      .registerTypeHierarchyAdapter(TBase.class, new TBaseSerializer())
+                                                      .create();
 
     @PostConstruct
     public void afterPropertiesSet() throws Exception {
@@ -126,10 +126,14 @@ public class PlainJsonThriftServlet extends HttpServlet {
         final String msgName = request.getPathInfo().substring(1);
 
         final Map<String, Object> attributes = Maps.newHashMap();
-        attributes.put(MessageWrapper.HTTP_REQUEST_PARAMS, Optional.fromNullable(request.getParameterMap()).or(Collections.emptyMap()));
-        attributes.put(MessageWrapper.HTTP_COOKIES, Optional.fromNullable(request.getCookies()).or(() -> new Cookie[0]));
+        attributes.put(MessageWrapper.HTTP_REQUEST_PARAMS, Optional.fromNullable(request.getParameterMap())
+                                                                   .or(Collections.emptyMap()));
+        attributes.put(MessageWrapper.HTTP_COOKIES, Optional.fromNullable(request.getCookies())
+                                                            .or(() -> new Cookie[0]));
         attributes.put(MessageWrapper.HTTP_HEADERS,
-                       Collections.list(request.getHeaderNames()).stream().map(n -> Pair.create(n, request.getHeader(n)))
+                       Collections.list(request.getHeaderNames())
+                                  .stream()
+                                  .map(n -> Pair.create(n, request.getHeader(n)))
                                   .collect(Collectors.toMap(Pair::getFirst, Pair::getSecond)));
 
         try {
@@ -158,8 +162,7 @@ public class PlainJsonThriftServlet extends HttpServlet {
                     final byte[] packet;
                     try {
                         packet = IOUtils.toByteArray(request.getInputStream());
-                    }
-                    catch (IOException e1) {
+                    } catch (IOException e1) {
                         throw new TException(e1);
                     }
 
@@ -183,10 +186,8 @@ public class PlainJsonThriftServlet extends HttpServlet {
                     try {
                         final Method m = tInfo.getArgCls().getMethod("validate");
                         m.invoke(ret);
-                    }
-                    catch (NoSuchMethodException | IllegalAccessException | IllegalArgumentException e1) {
-                    }
-                    catch (InvocationTargetException e1) {
+                    } catch (NoSuchMethodException | IllegalAccessException | IllegalArgumentException e1) {
+                    } catch (InvocationTargetException e1) {
                         Throwables.propagateIfInstanceOf(e1.getCause(), TException.class);
                         throw Throwables.propagate(e1.getCause());
                     }
@@ -206,8 +207,7 @@ public class PlainJsonThriftServlet extends HttpServlet {
                     ex.addProperty("message", message);
                     try {
                         outT.write(ex.toString().getBytes(StandardCharsets.UTF_8));
-                    }
-                    catch (TTransportException e) {
+                    } catch (TTransportException e) {
                         throw new RuntimeException(e);
                     }
                     return Pair.create(outT, httpStatusCode);
@@ -231,31 +231,31 @@ public class PlainJsonThriftServlet extends HttpServlet {
                         httpCode = 400;
 
                         final PropertyDescriptor httpCodeDescr = props.get("httpCode");
-                        if (httpCodeDescr != null)
+                        if (httpCodeDescr != null) {
                             try {
                                 httpCode = ((Number) httpCodeDescr.getReadMethod().invoke(o)).intValue();
+                            } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
                             }
-                            catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-                            }
+                        }
 
                         int code = -1;
                         final PropertyDescriptor codeDescr = props.get("code");
-                        if (codeDescr != null)
+                        if (codeDescr != null) {
                             try {
                                 code = ((Number) codeDescr.getReadMethod().invoke(o)).intValue();
+                            } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
                             }
-                            catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-                            }
+                        }
 
-                        if (!(o instanceof TException))
+                        if (!(o instanceof TException)) {
                             return result(code, ((Exception) o).getMessage(), httpCode);
+                        }
                     }
 
                     final TMemoryBuffer outT = new TMemoryBuffer(1024);
                     try {
                         outT.write(gson.toJson(o).getBytes(StandardCharsets.UTF_8));
-                    }
-                    catch (TTransportException e) {
+                    } catch (TTransportException e) {
                         throw new RuntimeException(e);
                     }
                     return Pair.create(outT, httpCode);
@@ -266,8 +266,7 @@ public class PlainJsonThriftServlet extends HttpServlet {
                     final Pair<TMemoryBuffer, Integer> tt = result(o, controller.getInfo());
                     try {
                         out(asyncContext, tt.second, "application/json; charset=utf-8", tt.first.getArray(), tt.first.length());
-                    }
-                    catch (IOException e) {
+                    } catch (IOException e) {
                         log.error("Async Error", e);
                     }
 
@@ -306,10 +305,11 @@ public class PlainJsonThriftServlet extends HttpServlet {
                 @Override
                 public String getClientIp() {
                     final String xRealIp = request.getHeader(MessageWrapper.HTTP_X_REAL_IP);
-                    if (xRealIp != null)
+                    if (xRealIp != null) {
                         return xRealIp;
-                    else
+                    } else {
                         return request.getRemoteHost() + ":" + request.getRemotePort();
+                    }
                 }
 
                 @Override
@@ -325,8 +325,7 @@ public class PlainJsonThriftServlet extends HttpServlet {
             if (mw != null) {
                 out(asyncContext, mw.second, "application/json; charset=utf-8", mw.first.getArray(), mw.first.length());
             }
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             out(asyncContext, 500, "text/plain", e.getMessage().getBytes(StandardCharsets.UTF_8));
         }
     }

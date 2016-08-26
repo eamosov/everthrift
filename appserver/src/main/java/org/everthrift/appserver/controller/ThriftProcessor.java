@@ -1,10 +1,7 @@
 package org.everthrift.appserver.controller;
 
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
-import java.util.Collections;
-import java.util.Map;
-
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.ListenableFuture;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.thrift.TApplicationException;
 import org.apache.thrift.TBase;
@@ -39,15 +36,17 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.task.AsyncTaskExecutor;
 
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.ListenableFuture;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
+import java.util.Collections;
+import java.util.Map;
 
 /**
  * На каждый registry по экземпляру ThriftProcessor
- * @author fluder
  *
+ * @author fluder
  */
-@SuppressWarnings({ "rawtypes", "unchecked" })
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class ThriftProcessor implements TProcessor {
 
     final public static Logger log = LoggerFactory.getLogger(ThriftProcessor.class);
@@ -80,8 +79,9 @@ public class ThriftProcessor implements TProcessor {
         for (Class<ConnectionStateHandler> cls : registry.getStateHandlers()) {
             final ConnectionStateHandler h = applicationContext.getBean(cls);
             h.setup(in, thriftClient, registry.getType());
-            if (!h.onOpen())
+            if (!h.onOpen()) {
                 return false;
+            }
         }
         return true;
     }
@@ -91,16 +91,17 @@ public class ThriftProcessor implements TProcessor {
         final Class<? extends Annotation> type = registry.getType();
 
         if (rpsServlet != null) {
-            if (type == RpcSyncTcp.class || type == RpcAsyncTcp.class)
+            if (type == RpcSyncTcp.class || type == RpcAsyncTcp.class) {
                 rpsServlet.incThrift(DsName.THRIFT_TCP);
-            else if (type == RpcHttp.class)
+            } else if (type == RpcHttp.class) {
                 rpsServlet.incThrift(DsName.THRIFT_HTTP);
-            else if (type == RpcJGroups.class)
+            } else if (type == RpcJGroups.class) {
                 rpsServlet.incThrift(DsName.THRIFT_JGROUPS);
-            else if (type == RpcJms.class)
+            } else if (type == RpcJms.class) {
                 rpsServlet.incThrift(DsName.THRIFT_JMS);
-            else if (type == RpcWebsocket.class)
+            } else if (type == RpcWebsocket.class) {
                 rpsServlet.incThrift(DsName.THRIFT_WS);
+            }
         }
     }
 
@@ -128,8 +129,7 @@ public class ThriftProcessor implements TProcessor {
             final TBase args;
             try {
                 args = tps.readArgs(controllerInfo);
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 return tps.result(e, controllerInfo);
             }
 
@@ -142,25 +142,20 @@ public class ThriftProcessor implements TProcessor {
                 final Object ret = controller.handle(args);
                 try {
                     return tps.result(ret, controllerInfo);
-                }
-                finally {
+                } finally {
                     logEnd(log, controller, msg.name, tps.getSessionId(), ret);
                 }
-            }
-            catch (AsyncAnswer e) {
+            } catch (AsyncAnswer e) {
                 return null;
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 log.error("Exception while handle thrift request", e);
                 try {
                     return tps.result(e, controllerInfo);
-                }
-                finally {
+                } finally {
                     logEnd(log, controller, msg.name, tps.getSessionId(), null);
                 }
             }
-        }
-        catch (RuntimeException e) {
+        } catch (RuntimeException e) {
             log.error("Exception while serving thrift request", e);
             throw e;
         }
@@ -170,15 +165,13 @@ public class ThriftProcessor implements TProcessor {
     public boolean process(TProtocol inp, TProtocol out) throws TException {
         try {
             process(inp, out, Collections.emptyMap());
-        }
-        catch (RuntimeException e) {
+        } catch (RuntimeException e) {
         }
 
         return true;
     }
 
     /**
-     *
      * @param inp
      * @param out
      * @param attributes
@@ -211,8 +204,9 @@ public class ThriftProcessor implements TProcessor {
             @Override
             public String getClientIp() {
 
-                if (attributes != null && attributes.containsKey(MessageWrapper.HTTP_X_REAL_IP))
+                if (attributes != null && attributes.containsKey(MessageWrapper.HTTP_X_REAL_IP)) {
                     return (String) attributes.get(MessageWrapper.HTTP_X_REAL_IP);
+                }
 
                 TTransport inT = inp.getTransport();
                 if (inT instanceof TFramedTransport) {
@@ -223,8 +217,7 @@ public class ThriftProcessor implements TProcessor {
                         if (inT instanceof TSocket) {
                             return ((TSocket) inT).getSocket().getRemoteSocketAddress().toString();
                         }
-                    }
-                    catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
+                    } catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
                         log.warn("cound't get remote address for transport of type {}", inT.getClass().getSimpleName());
                     }
                 }
@@ -283,8 +276,7 @@ public class ThriftProcessor implements TProcessor {
                     ((TApplicationException) o).write(out);
                     out.writeMessageEnd();
                     out.getTransport().flush(msg.seqid);
-                }
-                catch (TException e) {
+                } catch (TException e) {
                     throw new RuntimeException(e);
                 }
 
@@ -308,8 +300,7 @@ public class ThriftProcessor implements TProcessor {
                         result.write(out);
                         out.writeMessageEnd();
                         out.getTransport().flush(msg.seqid);
-                    }
-                    catch (TException e) {
+                    } catch (TException e) {
                         throw new RuntimeException(e);
                     }
 
@@ -339,12 +330,12 @@ public class ThriftProcessor implements TProcessor {
             _l.debug("user:{} ip:{} START method:{} args:{} correlationId:{}", session != null ? session.getCredentials() : null,
                      thriftClient != null ? thriftClient.getClientIp() : null,
                      method, data != null
-                                          ? ((data.length() > 200 && !(l.isTraceEnabled() || logControllerEnd.isTraceEnabled()))
-                                                                                                                                 ? data.substring(0,
-                                                                                                                                                  199)
-                                                                                                                                   + "..."
-                                                                                                                                 : data)
-                                          : null,
+                             ? ((data.length() > 200 && !(l.isTraceEnabled() || logControllerEnd.isTraceEnabled()))
+                                ? data.substring(0,
+                                                 199)
+                                    + "..."
+                                : data)
+                             : null,
                      correlationId);
         }
     }
@@ -369,9 +360,9 @@ public class ThriftProcessor implements TProcessor {
                                             : (tracing ? ret.toString() : (ret instanceof Exception ? ret.toString() : "<suppressed>"));
             final SessionIF session = c.thriftClient != null ? c.thriftClient.getSession() : null;
             final String format = "user:{} ip:{} END method:{} ctrl:{} delay:{} mcs correlationId: {} return: {}";
-            final Object args[] = new Object[] { session != null ? session.getCredentials() : null,
-                                                 c.thriftClient != null ? c.thriftClient.getClientIp() : null, method, c.ctrlLog(),
-                                                 c.getExecutionMcs(), correlationId, data };
+            final Object args[] = new Object[]{session != null ? session.getCredentials() : null,
+                c.thriftClient != null ? c.thriftClient.getClientIp() : null, method, c.ctrlLog(),
+                c.getExecutionMcs(), correlationId, data};
 
             final Logger _l;
             if (c.getExecutionMcs() > c.getWarnExecutionMcsLimit()) {

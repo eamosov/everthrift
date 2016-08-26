@@ -1,8 +1,6 @@
 package org.everthrift.sql.hibernate.dao;
 
-import java.io.Serializable;
-import java.util.Set;
-
+import com.google.common.collect.Sets;
 import org.apache.commons.lang.ArrayUtils;
 import org.everthrift.appserver.model.DaoEntityIF;
 import org.everthrift.appserver.model.UpdatedAtIF;
@@ -14,7 +12,8 @@ import org.hibernate.type.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.Sets;
+import java.io.Serializable;
+import java.util.Set;
 
 public class EntityInterceptor extends EmptyInterceptor {
 
@@ -55,8 +54,10 @@ public class EntityInterceptor extends EmptyInterceptor {
     public boolean onFlushDirty(Object entity, Serializable id, Object[] currentState, Object[] previousState, String[] propertyNames,
                                 Type[] types) {
 
-        if (log.isDebugEnabled())
-            log.debug("onFlushDirty, class={}, object={}, id={}", entity.getClass().getSimpleName(), System.identityHashCode(entity), id);
+        if (log.isDebugEnabled()) {
+            log.debug("onFlushDirty, class={}, object={}, id={}", entity.getClass()
+                                                                        .getSimpleName(), System.identityHashCode(entity), id);
+        }
 
         dirty.get().add(Pair.create(entity.getClass().getName(), ((DaoEntityIF) entity).getPk()));
 

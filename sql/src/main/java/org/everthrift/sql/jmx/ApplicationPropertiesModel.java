@@ -1,8 +1,8 @@
 package org.everthrift.sql.jmx;
 
-import java.io.Serializable;
-
 import org.everthrift.appserver.model.DaoEntityIF;
+
+import java.io.Serializable;
 
 public class ApplicationPropertiesModel implements DaoEntityIF {
 

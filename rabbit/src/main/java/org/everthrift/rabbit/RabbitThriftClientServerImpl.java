@@ -1,11 +1,10 @@
 package org.everthrift.rabbit;
 
-import java.util.List;
-import java.util.Set;
-
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-
+import com.google.common.base.Throwables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+import com.rabbitmq.client.AMQP.Exchange.DeclareOk;
+import com.rabbitmq.client.Channel;
 import org.apache.thrift.TApplicationException;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
@@ -31,11 +30,10 @@ import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 
-import com.google.common.base.Throwables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-import com.rabbitmq.client.AMQP.Exchange.DeclareOk;
-import com.rabbitmq.client.Channel;
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import java.util.List;
+import java.util.Set;
 
 public class RabbitThriftClientServerImpl implements RabbitThriftClientIF {
 
@@ -100,10 +98,10 @@ public class RabbitThriftClientServerImpl implements RabbitThriftClientIF {
                     throw new RuntimeException((TApplicationException) ret);
                 } else if (ret instanceof TException) {
                     return;
-                } else if (ret instanceof Exception)
+                } else if (ret instanceof Exception) {
                     throw Throwables.propagate((Exception) ret);
-            }
-            catch (TException e) {
+                }
+            } catch (TException e) {
                 throw new RuntimeException((TException) e);
             }
         }
@@ -123,11 +121,13 @@ public class RabbitThriftClientServerImpl implements RabbitThriftClientIF {
         thriftProcessor = ThriftProcessor.create(context, rpcRabbitRegistry);
 
         final Set<String> services = Sets.newHashSet();
-        for (ThriftControllerInfo i : rpcRabbitRegistry.getControllers().values())
+        for (ThriftControllerInfo i : rpcRabbitRegistry.getControllers().values()) {
             services.add(i.getServiceName());
+        }
 
-        for (String s : services)
+        for (String s : services) {
             addListener(s);
+        }
     }
 
     @PreDestroy
@@ -175,8 +175,7 @@ public class RabbitThriftClientServerImpl implements RabbitThriftClientIF {
             public DeclareOk doInRabbit(Channel channel) throws Exception {
                 try {
                     return channel.exchangeDeclarePassive(exchange);
-                }
-                catch (Exception e) {
+                } catch (Exception e) {
                     return null;
                 }
             }

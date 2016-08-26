@@ -1,5 +1,11 @@
 package org.everthrift.sql.hibernate.model.types;
 
+import gnu.trove.impl.hash.THash;
+import org.everthrift.utils.SqlUtils;
+import org.hibernate.HibernateException;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.usertype.UserType;
+
 import java.io.Serializable;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -7,29 +13,24 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.util.Map;
 
-import org.everthrift.utils.SqlUtils;
-import org.hibernate.HibernateException;
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.usertype.UserType;
-
-import gnu.trove.impl.hash.THash;
-
-@SuppressWarnings({ "rawtypes", "unchecked" })
+@SuppressWarnings({"rawtypes", "unchecked"})
 public abstract class Trove4jHstoreType<T extends THash> implements UserType {
 
     @Override
     public int[] sqlTypes() {
-        return new int[] { Types.OTHER };
+        return new int[]{Types.OTHER};
     }
 
     @Override
     public boolean equals(Object x, Object y) throws HibernateException {
 
-        if (x == null && y == null)
+        if (x == null && y == null) {
             return true;
+        }
 
-        if ((x == null && y != null) || (x != null && y == null))
+        if ((x == null && y != null) || (x != null && y == null)) {
             return false;
+        }
 
         return x.equals(y);
     }
@@ -37,8 +38,9 @@ public abstract class Trove4jHstoreType<T extends THash> implements UserType {
     @Override
     public int hashCode(Object x) throws HibernateException {
 
-        if (x == null || ((T) x).size() == 0)
+        if (x == null || ((T) x).size() == 0) {
             return 0;
+        }
 
         return x.hashCode();
     }
@@ -53,8 +55,9 @@ public abstract class Trove4jHstoreType<T extends THash> implements UserType {
 
         final Map<String, String> hstore = (Map<String, String>) rs.getObject(names[0]);
 
-        if (hstore == null)
+        if (hstore == null) {
             return null;
+        }
 
         return transform(hstore);
     }

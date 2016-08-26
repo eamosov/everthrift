@@ -1,15 +1,5 @@
 package org.everthrift.cli.gson;
 
-import java.lang.reflect.Type;
-import java.util.Collection;
-import java.util.Map;
-
-import org.apache.thrift.TBase;
-import org.apache.thrift.TFieldIdEnum;
-import org.apache.thrift.meta_data.FieldMetaData;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
@@ -17,11 +7,20 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import com.google.gson.reflect.TypeToken;
+import org.apache.thrift.TBase;
+import org.apache.thrift.TFieldIdEnum;
+import org.apache.thrift.meta_data.FieldMetaData;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.lang.reflect.Type;
+import java.util.Collection;
+import java.util.Map;
 
 /**
  * @author efreet (Amosov Evgeniy)
  */
-@SuppressWarnings({ "rawtypes", "unchecked" })
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class GsonSerializer {
 
     public static class TBaseSerializer<T extends TBase> implements JsonSerializer<T> {
@@ -46,8 +45,7 @@ public class GsonSerializer {
             while (map == null && thriftClass != null) {
                 try {
                     map = FieldMetaData.getStructMetaDataMap(thriftClass);
-                }
-                catch (Exception e) {
+                } catch (Exception e) {
                     map = null;
                 }
                 thriftClass = thriftClass.getSuperclass();
@@ -67,7 +65,7 @@ public class GsonSerializer {
                     if (v instanceof TBase) {
                         jo.add(f.getFieldName(), context.serialize(v, TBase.class));
                     } else if (v instanceof Collection && !((Collection) v).isEmpty()
-                               && ((Collection) v).iterator().next() instanceof TBase) {
+                        && ((Collection) v).iterator().next() instanceof TBase) {
                         jo.add(f.getFieldName(), context.serialize(v, tBaseCollection));
                     } else if (v instanceof String) {
                         jo.add(f.getFieldName(), context.serialize(((String) v).replace("%", "%25")));
@@ -83,7 +81,8 @@ public class GsonSerializer {
 
     }
 
-    private static Gson gson = new GsonBuilder().setPrettyPrinting().registerTypeHierarchyAdapter(TBase.class, new TBaseSerializer())
+    private static Gson gson = new GsonBuilder().setPrettyPrinting()
+                                                .registerTypeHierarchyAdapter(TBase.class, new TBaseSerializer())
                                                 .create();
 
     public static Gson get() {

@@ -1,12 +1,5 @@
 package org.everthrift.thriftclient.transport;
 
-import java.net.URI;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-
 import org.apache.thrift.TProcessor;
 import org.apache.thrift.protocol.TProtocolFactory;
 import org.apache.thrift.transport.TTransport;
@@ -15,6 +8,13 @@ import org.apache.thrift.transport.TTransportFactory;
 import org.everthrift.thrift.AsyncRegister;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.net.URI;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class TPersistWsTransport extends TTransport {
 
@@ -105,8 +105,9 @@ public class TPersistWsTransport extends TTransport {
 
     @Override
     public synchronized void open() throws TTransportException {
-        if (opened)
+        if (opened) {
             return;
+        }
 
         opened = true;
 
@@ -125,10 +126,11 @@ public class TPersistWsTransport extends TTransport {
             }
         };
 
-        if (reconnectTimeoutMs == 0)
+        if (reconnectTimeoutMs == 0) {
             return executor.submit(run);
-        else
+        } else {
             return scheduller.schedule(run, reconnectTimeoutMs, TimeUnit.MILLISECONDS);
+        }
 
     }
 
@@ -138,8 +140,9 @@ public class TPersistWsTransport extends TTransport {
     private void fireOnClose() {
 
         final TransportEventsIF h = eventsHandler.get();
-        if (h != null)
+        if (h != null) {
             h.onClose();
+        }
     }
 
     /**
@@ -148,8 +151,9 @@ public class TPersistWsTransport extends TTransport {
     private void fireOnConnect() {
 
         final TransportEventsIF h = eventsHandler.get();
-        if (h != null)
+        if (h != null) {
             h.onConnect();
+        }
     }
 
     private void _onConnectError() {
@@ -157,8 +161,9 @@ public class TPersistWsTransport extends TTransport {
         synchronized (this) {
             setWs(null);
 
-            if (future == null || future.isDone())
+            if (future == null || future.isDone()) {
                 future = scheduleConnect(reconnectTimeoutMs);
+            }
         }
 
     }
@@ -177,8 +182,9 @@ public class TPersistWsTransport extends TTransport {
         synchronized (this) {
             setWs(null);
 
-            if (future == null || future.isDone())
+            if (future == null || future.isDone()) {
                 future = scheduleConnect(reconnectTimeoutMs);
+            }
 
             log.info("onClose");
         }
@@ -192,8 +198,7 @@ public class TPersistWsTransport extends TTransport {
 
         try {
             ws.openAsync();
-        }
-        catch (TTransportException e) {
+        } catch (TTransportException e) {
             _onConnectError();
         }
         return true;
@@ -205,8 +210,9 @@ public class TPersistWsTransport extends TTransport {
         final boolean connected;
 
         synchronized (this) {
-            if (!opened)
+            if (!opened) {
                 return;
+            }
 
             connected = isConnected();
 
@@ -220,23 +226,26 @@ public class TPersistWsTransport extends TTransport {
             future = null;
         }
 
-        if (connected)
+        if (connected) {
             fireOnClose();
+        }
     }
 
     @Override
     public synchronized int read(byte[] buf, int off, int len) throws TTransportException {
 
-        if (!isConnected())
+        if (!isConnected()) {
             throw new TTransportException(TTransportException.NOT_OPEN, "not connected");
+        }
 
         return ws.read(buf, off, len);
     }
 
     @Override
     public synchronized void write(byte[] buf, int off, int len) throws TTransportException {
-        if (!isConnected())
+        if (!isConnected()) {
             throw new TTransportException(TTransportException.NOT_OPEN, "not connected");
+        }
 
         ws.write(buf, off, len);
     }
@@ -244,8 +253,9 @@ public class TPersistWsTransport extends TTransport {
     @Override
     public synchronized void flush() throws TTransportException {
 
-        if (!isConnected())
+        if (!isConnected()) {
             throw new TTransportException(TTransportException.NOT_OPEN, "not connected");
+        }
 
         ws.flush();
     }
@@ -253,8 +263,9 @@ public class TPersistWsTransport extends TTransport {
     @Override
     public synchronized void flush(int seqId) throws TTransportException {
 
-        if (!isConnected())
+        if (!isConnected()) {
             throw new TTransportException(TTransportException.NOT_OPEN, "not connected");
+        }
 
         ws.flush(seqId);
     }

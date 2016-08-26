@@ -1,20 +1,11 @@
 package org.everthrift.thriftclient;
 
-import java.io.Closeable;
-import java.lang.reflect.Proxy;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.SettableFuture;
 import org.apache.http.client.HttpClient;
 import org.apache.thrift.TException;
 import org.apache.thrift.TProcessor;
@@ -38,12 +29,20 @@ import org.everthrift.thriftclient.transport.TransportEventsIF;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
-import com.google.common.util.concurrent.SettableFuture;
+import java.io.Closeable;
+import java.lang.reflect.Proxy;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ThriftContext implements Closeable {
 
@@ -141,23 +140,25 @@ public class ThriftContext implements Closeable {
         executor = MoreExecutors.listeningDecorator(new ThreadPoolExecutor(1, Integer.MAX_VALUE, 5L, TimeUnit.SECONDS,
                                                                            new SynchronousQueue<Runnable>(), new ThreadFactory() {
 
-                                                                               @Override
-                                                                               public Thread newThread(Runnable r) {
-                                                                                   final Thread t = new Thread(r);
-                                                                                   t.setName("ThriftClientExecutor-"
-                                                                                             + nThread.incrementAndGet());
-                                                                                   t.setDaemon(true);
-                                                                                   return t;
-                                                                               }
-                                                                           }));
+            @Override
+            public Thread newThread(Runnable r) {
+                final Thread t = new Thread(r);
+                t.setName("ThriftClientExecutor-"
+                              + nThread.incrementAndGet());
+                t.setDaemon(true);
+                return t;
+            }
+        }));
 
         async = new AsyncRegister(MoreExecutors.listeningDecorator(scheduller));
 
-        if (wsUri != null)
+        if (wsUri != null) {
             createWebSocket();
+        }
 
-        if (httpUri != null)
+        if (httpUri != null) {
             openTHttpClient();
+        }
 
         opened = true;
 
@@ -185,26 +186,26 @@ public class ThriftContext implements Closeable {
 
                     wsIsConnected = true;
 
-                    if (onWsConnect != null)
+                    if (onWsConnect != null) {
                         try {
                             onWsConnect.call(ThriftContext.this);
-                        }
-                        catch (TException e) {
+                        } catch (TException e) {
                             onWsConnect.error(e);
                         }
+                    }
 
-                    for (final ThriftContextCallback c : onConnectList)
+                    for (final ThriftContextCallback c : onConnectList) {
                         executor.submit(new Runnable() {
                             @Override
                             public void run() {
                                 try {
                                     c.call(ThriftContext.this);
-                                }
-                                catch (TException e) {
+                                } catch (TException e) {
                                     c.error(e);
                                 }
                             }
                         });
+                    }
 
                     sf.addAll(onConnectFutures);
                     onConnectFutures.clear();
@@ -220,13 +221,13 @@ public class ThriftContext implements Closeable {
                 synchronized (wsIsConnectedLock) {
                     wsIsConnected = false;
 
-                    if (onWsDisconnect != null)
+                    if (onWsDisconnect != null) {
                         try {
                             onWsDisconnect.call(ThriftContext.this);
-                        }
-                        catch (TException e) {
+                        } catch (TException e) {
                             onWsDisconnect.error(e);
                         }
+                    }
                 }
             }
 
@@ -276,8 +277,7 @@ public class ThriftContext implements Closeable {
             while ((read = tHttpTransport.read(tmpBuf, 0, tmpBuf.length)) > 0) {
                 t.write(tmpBuf, 0, read);
             }
-        }
-        catch (TTransportException e) {
+        } catch (TTransportException e) {
         }
 
         t.close();
@@ -305,21 +305,23 @@ public class ThriftContext implements Closeable {
 
     /**
      * Подучение ссылку на сервис для синхронного вызова
+     *
      * @param cls интерфейс сервиса XXXX.Iface
      * @param use каким транспортом можно пользоваться
      * @return сервис
      */
     @SuppressWarnings("unchecked")
     public <T> T onIface(Class<T> cls, final Transport use) {
-        return (T) Proxy.newProxyInstance(ThriftContext.class.getClassLoader(), new Class[] { cls },
+        return (T) Proxy.newProxyInstance(ThriftContext.class.getClassLoader(), new Class[]{cls},
                                           new ServiceIfaceProxy(cls, new InvocationCallback() {
 
                                               @Override
                                               @SuppressWarnings("rawtypes")
                                               public Object call(InvocationInfo ii) throws NullResult, TException {
 
-                                                  if (!opened)
+                                                  if (!opened) {
                                                       throw new TTransportException(TTransportException.NOT_OPEN);
+                                                  }
 
                                                   final int seqId = async.nextSeqId();
 
@@ -327,11 +329,9 @@ public class ThriftContext implements Closeable {
                                                       && tPersistWsTransport.isConnected()) {
                                                       try {
                                                           return websocketCall(ii, seqId, asyncCallTimeout).get();
-                                                      }
-                                                      catch (InterruptedException e) {
+                                                      } catch (InterruptedException e) {
                                                           throw new TTransportException(e);
-                                                      }
-                                                      catch (ExecutionException e) {
+                                                      } catch (ExecutionException e) {
                                                           throw new TTransportException(e);
                                                       }
                                                   } else if ((use == Transport.HTTP || use == Transport.ANY) && tHttpTransport != null) {
@@ -345,22 +345,24 @@ public class ThriftContext implements Closeable {
 
     /**
      * Подучение ссылку на сервис для aсинхронного вызова
-     * @param cls интерфейс сервиса XXXX.AsyncIface
+     *
+     * @param cls  интерфейс сервиса XXXX.AsyncIface
      * @param tmMs таймаут
-     * @param use каким транспортом можно пользоваться
+     * @param use  каким транспортом можно пользоваться
      * @return сервис
      */
     @SuppressWarnings("unchecked")
     public <T> T onAsyncIface(Class<T> cls, final long tmMs, final Transport use) {
-        return (T) Proxy.newProxyInstance(ThriftContext.class.getClassLoader(), new Class[] { cls },
+        return (T) Proxy.newProxyInstance(ThriftContext.class.getClassLoader(), new Class[]{cls},
                                           new ServiceAsyncIfaceProxy(cls, new InvocationCallback() {
 
                                               @Override
                                               @SuppressWarnings("rawtypes")
                                               public Object call(final InvocationInfo ii) throws NullResult, TException {
 
-                                                  if (!opened)
+                                                  if (!opened) {
                                                       throw new TTransportException(TTransportException.NOT_OPEN);
+                                                  }
 
                                                   final int seqId = async.nextSeqId();
 
@@ -383,7 +385,7 @@ public class ThriftContext implements Closeable {
                                                       throw new TTransportException(TTransportException.NOT_OPEN);
                                                   }
 
-                                                  if (ii.asyncMethodCallback != null)
+                                                  if (ii.asyncMethodCallback != null) {
                                                       Futures.addCallback(future, new FutureCallback<T>() {
 
                                                           @Override
@@ -397,6 +399,7 @@ public class ThriftContext implements Closeable {
                                                                                                                     : new Exception(t));
                                                           }
                                                       }, executor);
+                                                  }
 
                                                   throw new NullResult();
 
@@ -410,7 +413,7 @@ public class ThriftContext implements Closeable {
      * такого сервиса регистрирует вызов и аргументы. Непосредственно для
      * асинхронной отправки данных и получение ответа нужно вызвать метод result
      * Удобно комбинировать два этих метода в одной строке, н-р:
-     *
+     * <p>
      * tc.result(rc.asyncService(AccountService.IFace.class).getMe(), 1000,
      * Transport.ANY);
      *
@@ -420,7 +423,7 @@ public class ThriftContext implements Closeable {
     @SuppressWarnings("unchecked")
     public <T> T onIfaceAsAsync(Class<T> cls) {
 
-        return (T) Proxy.newProxyInstance(ThriftContext.class.getClassLoader(), new Class[] { cls },
+        return (T) Proxy.newProxyInstance(ThriftContext.class.getClassLoader(), new Class[]{cls},
                                           new ServiceIfaceProxy(cls, new InvocationCallback() {
 
                                               @Override
@@ -442,17 +445,18 @@ public class ThriftContext implements Closeable {
      * cls).
      *
      * @param unused не используется, служет для удобной записи в одну строчку
-     * result(asyncService(..), ...)
+     *               result(asyncService(..), ...)
      * @param tmMs
      * @param use
      * @return
      * @throws TTransportException
      */
-    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public <R> ListenableFuture<R> result(R unused, long tmMs, Transport use) throws TTransportException {
 
-        if (!opened)
+        if (!opened) {
             throw new TTransportException(TTransportException.NOT_OPEN);
+        }
 
         final InvocationInfo<R> ii = (InvocationInfo) invocationInfo.get();
         final int seqId = async.nextSeqId();
@@ -496,8 +500,9 @@ public class ThriftContext implements Closeable {
     }
 
     public synchronized void closeWebSocket() {
-        if (tPersistWsTransport != null)
+        if (tPersistWsTransport != null) {
             tPersistWsTransport.close();
+        }
     }
 
     public URI getHttpUri() {
@@ -508,8 +513,9 @@ public class ThriftContext implements Closeable {
         destroyTHttp();
         this.httpUri = httpUri;
         this.httpClient = client;
-        if (opened && httpUri != null)
+        if (opened && httpUri != null) {
             openTHttpClient();
+        }
     }
 
     public URI getWsUri() {
@@ -519,6 +525,7 @@ public class ThriftContext implements Closeable {
     /**
      * Метод устанавливает новый URI и закрывает текущее websocket соединение
      * Новое соединение открывается автоматически
+     *
      * @param wsUri
      * @throws TTransportException
      */
@@ -528,8 +535,9 @@ public class ThriftContext implements Closeable {
             if (!Objects.equals(this.wsUri, wsUri)) {
                 destroyWebsocket();
                 this.wsUri = wsUri;
-                if (opened && wsUri != null)
+                if (opened && wsUri != null) {
                     createWebSocket();
+                }
             }
         }
 
@@ -572,23 +580,24 @@ public class ThriftContext implements Closeable {
      * Вызвать callback сразу после открытия websocket или немедленно, если
      * webcoket уже открыт callback всегда вызывается асинхронно вызвавшему
      * потоку
+     *
      * @param callback
      */
     public void onWsConnect(final ThriftContextCallback callback) {
 
         synchronized (wsIsConnectedLock) {
-            if (wsIsConnected)
+            if (wsIsConnected) {
                 executor.submit(new Runnable() {
                     @Override
                     public void run() {
                         try {
                             callback.call(ThriftContext.this);
-                        }
-                        catch (TException e) {
+                        } catch (TException e) {
                             callback.error(e);
                         }
                     }
                 });
+            }
 
             onConnectList.add(callback);
         }

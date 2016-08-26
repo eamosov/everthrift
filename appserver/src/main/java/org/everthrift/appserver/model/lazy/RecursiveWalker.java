@@ -1,9 +1,5 @@
 package org.everthrift.appserver.model.lazy;
 
-import java.util.List;
-import java.util.Map;
-import java.util.RandomAccess;
-
 import org.apache.thrift.TBase;
 import org.everthrift.appserver.utils.thrift.scanner.TBaseScanHandler;
 import org.everthrift.appserver.utils.thrift.scanner.TBaseScanner;
@@ -11,6 +7,10 @@ import org.everthrift.appserver.utils.thrift.scanner.TBaseScannerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.ClassUtils;
+
+import java.util.List;
+import java.util.Map;
+import java.util.RandomAccess;
 
 public class RecursiveWalker implements WalkerIF {
 
@@ -20,7 +20,7 @@ public class RecursiveWalker implements WalkerIF {
 
     private final static TBaseScannerFactory scannerFactory = new TBaseScannerFactory();
 
-    private static final String defaultFields[] = new String[] { "*" };
+    private static final String defaultFields[] = new String[]{"*"};
 
     private final Registry registry;
 
@@ -31,17 +31,20 @@ public class RecursiveWalker implements WalkerIF {
         @Override
         public void apply(Object parent, Object o) {
 
-            if (o == null)
+            if (o == null) {
                 return;
+            }
 
             final Class cls = o.getClass();
-            if (ClassUtils.isPrimitiveOrWrapper(cls) || cls.getCanonicalName().startsWith("java.lang."))
+            if (ClassUtils.isPrimitiveOrWrapper(cls) || cls.getCanonicalName().startsWith("java.lang.")) {
                 return;
+            }
 
             final TBaseScanner s = scannerFactory.create(cls, scenario);
 
             if (s == null) {
-                log.error("Coudn't get TBaseScanner for class={} and scenario={}", o.getClass().getSimpleName(), scenario);
+                log.error("Coudn't get TBaseScanner for class={} and scenario={}", o.getClass()
+                                                                                    .getSimpleName(), scenario);
                 return;
             }
 
@@ -62,25 +65,30 @@ public class RecursiveWalker implements WalkerIF {
 
     private void recursive(final Object o) {
 
-        if (o == null)
+        if (o == null) {
             return;
+        }
 
         if (o instanceof RandomAccess) {
             final List _l = (List) o;
             for (int i = 0; i < _l.size(); i++) {
                 final Object j = _l.get(i);
-                if (j != null)
+                if (j != null) {
                     recursive(j);
+                }
             }
 
         } else if (o instanceof Iterable) {
-            for (Object i : ((Iterable) o))
-                if (i != null)
+            for (Object i : ((Iterable) o)) {
+                if (i != null) {
                     recursive(i);
+                }
+            }
         } else if (o instanceof Map) {
             for (Object i : ((Map) o).values()) {
-                if (i != null)
+                if (i != null) {
                     recursive(i);
+                }
             }
         } else {
 

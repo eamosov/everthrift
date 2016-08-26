@@ -1,47 +1,5 @@
 package org.everthrift.cassandra.model;
 
-import java.io.Serializable;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
-
-import javax.annotation.PostConstruct;
-
-import org.apache.commons.lang.ArrayUtils;
-import org.apache.thrift.TException;
-import org.everthrift.appserver.model.AbstractCachedModelFactory;
-import org.everthrift.appserver.model.AsyncRoModelFactoryIF;
-import org.everthrift.appserver.model.DaoEntityIF;
-import org.everthrift.appserver.model.LocalEventBus;
-import org.everthrift.appserver.model.RwModelFactoryIF;
-import org.everthrift.appserver.model.Unique;
-import org.everthrift.appserver.model.UniqueException;
-import org.everthrift.appserver.model.XAwareIF;
-import org.everthrift.appserver.model.events.InsertEntityEvent;
-import org.everthrift.appserver.model.lazy.AsyncLazyLoader;
-import org.everthrift.appserver.model.lazy.Registry;
-import org.everthrift.cassandra.DLock;
-import org.everthrift.cassandra.DLockFactory;
-import org.everthrift.cassandra.com.datastax.driver.mapping.ColumnMapper;
-import org.everthrift.cassandra.com.datastax.driver.mapping.EntityMapper.Scenario;
-import org.everthrift.cassandra.com.datastax.driver.mapping.Mapper;
-import org.everthrift.cassandra.com.datastax.driver.mapping.Mapper.Option;
-import org.everthrift.cassandra.com.datastax.driver.mapping.Mapper.UpdateQuery;
-import org.everthrift.cassandra.com.datastax.driver.mapping.MappingManager;
-import org.everthrift.cassandra.com.datastax.driver.mapping.NotModifiedException;
-import org.everthrift.thrift.TFunction;
-import org.everthrift.utils.Pair;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.util.CollectionUtils;
-
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.ConsistencyLevel;
 import com.datastax.driver.core.PreparedStatement;
@@ -61,12 +19,49 @@ import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-
 import net.sf.ehcache.Cache;
 import net.sf.ehcache.Element;
+import org.apache.commons.lang.ArrayUtils;
+import org.apache.thrift.TException;
+import org.everthrift.appserver.model.AbstractCachedModelFactory;
+import org.everthrift.appserver.model.AsyncRoModelFactoryIF;
+import org.everthrift.appserver.model.DaoEntityIF;
+import org.everthrift.appserver.model.LocalEventBus;
+import org.everthrift.appserver.model.RwModelFactoryIF;
+import org.everthrift.appserver.model.Unique;
+import org.everthrift.appserver.model.UniqueException;
+import org.everthrift.appserver.model.XAwareIF;
+import org.everthrift.appserver.model.lazy.AsyncLazyLoader;
+import org.everthrift.appserver.model.lazy.Registry;
+import org.everthrift.cassandra.DLock;
+import org.everthrift.cassandra.DLockFactory;
+import org.everthrift.cassandra.com.datastax.driver.mapping.ColumnMapper;
+import org.everthrift.cassandra.com.datastax.driver.mapping.EntityMapper.Scenario;
+import org.everthrift.cassandra.com.datastax.driver.mapping.Mapper;
+import org.everthrift.cassandra.com.datastax.driver.mapping.Mapper.Option;
+import org.everthrift.cassandra.com.datastax.driver.mapping.Mapper.UpdateQuery;
+import org.everthrift.cassandra.com.datastax.driver.mapping.MappingManager;
+import org.everthrift.cassandra.com.datastax.driver.mapping.NotModifiedException;
+import org.everthrift.thrift.TFunction;
+import org.everthrift.utils.Pair;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.CollectionUtils;
+
+import javax.annotation.PostConstruct;
+import java.io.Serializable;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 public abstract class CassandraModelFactory<PK extends Serializable, ENTITY extends DaoEntityIF, E extends TException>
-        extends AbstractCachedModelFactory<PK, ENTITY> implements RwModelFactoryIF<PK, ENTITY, E>, AsyncRoModelFactoryIF<PK, ENTITY> {
+    extends AbstractCachedModelFactory<PK, ENTITY> implements RwModelFactoryIF<PK, ENTITY, E>, AsyncRoModelFactoryIF<PK, ENTITY> {
 
     private final Class<ENTITY> entityClass;
 
@@ -93,7 +88,8 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
         @Override
         public ListenableFuture<Integer> processAsync(List<XAwareIF<PK, ENTITY>> entities) {
 
-            final ListenableFuture<Map<PK, ENTITY>> f = findEntityByIdAsMapAsync(entities.stream().filter(XAwareIF<PK, ENTITY>::isSetId)
+            final ListenableFuture<Map<PK, ENTITY>> f = findEntityByIdAsMapAsync(entities.stream()
+                                                                                         .filter(XAwareIF<PK, ENTITY>::isSetId)
                                                                                          .map(XAwareIF<PK, ENTITY>::getId)
                                                                                          .collect(Collectors.toSet()));
 
@@ -125,8 +121,7 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
         this.entityClass = entityClass;
         try {
             copyConstructor = getEntityClass().getConstructor(getEntityClass());
-        }
-        catch (NoSuchMethodException | SecurityException e) {
+        } catch (NoSuchMethodException | SecurityException e) {
             throw new RuntimeException(e);
         }
     }
@@ -136,8 +131,7 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
         this.entityClass = entityClass;
         try {
             copyConstructor = getEntityClass().getConstructor(getEntityClass());
-        }
-        catch (NoSuchMethodException | SecurityException e) {
+        } catch (NoSuchMethodException | SecurityException e) {
             throw new RuntimeException(e);
         }
     }
@@ -159,12 +153,15 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
 
         for (Unique u : entityClass.getAnnotationsByType(Unique.class)) {
             final ColumnMapper<ENTITY> cm = mapper.getColumnByFieldName(u.value());
-            if (cm == null)
-                throw new RuntimeException(String.format("coundn't find ColumnMapper for unique filed %s in class %s", u.value(),
+            if (cm == null) {
+                throw new RuntimeException(String.format("coundn't find ColumnMapper for unique filed %s in class %s", u
+                                                             .value(),
                                                          entityClass.getSimpleName()));
+            }
 
             final StringBuilder query = new StringBuilder();
-            query.append(String.format("SELECT %s FROM %s WHERE %s=?", mapper.getPrimaryKeyColumn(0).getColumnName(), mapper.getTableName(),
+            query.append(String.format("SELECT %s FROM %s WHERE %s=?", mapper.getPrimaryKeyColumn(0)
+                                                                             .getColumnName(), mapper.getTableName(),
                                        cm.getColumnName()));
             if (!u.clause().isEmpty()) {
                 query.append(" AND ");
@@ -182,7 +179,7 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
     }
 
     protected Object[] extractCompaundPk(PK id) {
-        return new Object[] { id };
+        return new Object[]{id};
     }
 
     @Override
@@ -190,8 +187,7 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
 
         try {
             return fetchEntityByIdAsMapAsync(_ids).get();
-        }
-        catch (InterruptedException | ExecutionException e) {
+        } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException(e);
         }
     }
@@ -216,11 +212,14 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
     @Override
     final public ListenableFuture<List<ENTITY>> findEntityByIdsInOrderAsync(final Collection<PK> ids) {
 
-        if (CollectionUtils.isEmpty(ids))
+        if (CollectionUtils.isEmpty(ids)) {
             return Futures.immediateFuture(Collections.emptyList());
+        }
 
         return Futures.transform(findEntityByIdAsMapAsync(ids),
-                                 (Map<PK, ENTITY> loaded) -> (ids.stream().map(id -> loaded.get(id)).filter(o -> o != null)
+                                 (Map<PK, ENTITY> loaded) -> (ids.stream()
+                                                                 .map(id -> loaded.get(id))
+                                                                 .filter(o -> o != null)
                                                                  .collect(Collectors.toList())));
     }
 
@@ -234,19 +233,22 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
         final Select.Selection select = QueryBuilder.select();
 
         final ColumnMapper<ENTITY> cm = mapper.getColumnByFieldName(fieldName);
-        if (cm == null)
+        if (cm == null) {
             throw new RuntimeException("coundn't find mapper for property: " + fieldName);
+        }
 
         final ResultSet rs = mappingManager.getSession().execute(select.column(cm.getColumnNameUnquoted())
-                                                                       .from(mapper.getTableMetadata().getName()).setFetchSize(1000));
+                                                                       .from(mapper.getTableMetadata().getName())
+                                                                       .setFetchSize(1000));
 
         return Iterators.transform(rs.iterator(), row -> {
             final T value;
             final TypeCodec<Object> customCodec = cm.getCustomCodec();
-            if (customCodec != null)
+            if (customCodec != null) {
                 value = (T) row.get(0, customCodec);
-            else
+            } else {
                 value = (T) row.get(0, cm.getJavaType());
+            }
 
             return value;
         });
@@ -269,8 +271,9 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
 
     protected DLock assertUnique(ENTITY from, ENTITY to) {
 
-        if (uniqueColumns.isEmpty())
+        if (uniqueColumns.isEmpty()) {
             return null;
+        }
 
         final List<UniqueField<ENTITY>> uf = Lists.newArrayList();
 
@@ -281,8 +284,9 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
             }
         }
 
-        if (uf.isEmpty())
+        if (uf.isEmpty()) {
             return null;
+        }
 
         final String lockNames[] = new String[uf.size()];
         for (int i = 0; i < uf.size(); i++) {
@@ -297,20 +301,22 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
                 final BoundStatement bs = _u.ps.bind();
 
                 final TypeCodec<Object> customCodec = _u.cm.getCustomCodec();
-                if (customCodec != null)
+                if (customCodec != null) {
                     bs.set(0, _u.value, customCodec);
-                else
+                } else {
                     bs.set(0, _u.value, _u.cm.getJavaType());
+                }
 
                 bs.setConsistencyLevel(ConsistencyLevel.SERIAL);
                 final Row r = mappingManager.getSession().execute(bs).one();
-                if (r != null)
-                    throw new UniqueException(String.format("Violate uniqe constraint for field %s, value:%s, pk:%s", _u.cm.getFieldName(),
+                if (r != null) {
+                    throw new UniqueException(String.format("Violate uniqe constraint for field %s, value:%s, pk:%s", _u.cm
+                                                                .getFieldName(),
                                                             _u.value, r.getObject(0)),
                                               _u.cm.getFieldName());
+                }
             }
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             lock.unlock();
             throw Throwables.propagate(e);
         }
@@ -329,7 +335,10 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
     }
 
     public final Select select() {
-        return (Select) QueryBuilder.select().all().from(mapper.getTableName()).setConsistencyLevel(mapper.getReadConsistency());
+        return (Select) QueryBuilder.select()
+                                    .all()
+                                    .from(mapper.getTableName())
+                                    .setConsistencyLevel(mapper.getReadConsistency());
     }
 
     public final List<ENTITY> findByClause(Statement select) {
@@ -340,8 +349,9 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
     public final ENTITY findOneByClause(Statement select) {
         final ResultSet rs = mappingManager.getSession().execute(select);
         final List<ENTITY> ret = mapper.map(rs).all();
-        if (ret.size() > 1)
+        if (ret.size() > 1) {
             throw new RuntimeException("multiple results");
+        }
         return ret.isEmpty() ? null : ret.get(0);
     }
 
@@ -352,11 +362,9 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
     public void putEntity(ENTITY entity, boolean _noSaveNulls) {
         try {
             putEntityAsync(entity, _noSaveNulls).get();
-        }
-        catch (ExecutionException e) {
+        } catch (ExecutionException e) {
             throw Throwables.propagate(e.getCause());
-        }
-        catch (InterruptedException e) {
+        } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
     }
@@ -365,14 +373,16 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
      * save all not null fields without read Method not generates any events
      */
     public ListenableFuture<Boolean> putEntityAsync(ENTITY entity, boolean _noSaveNulls) {
-        if (entity.getPk() == null)
+        if (entity.getPk() == null) {
             throw new IllegalArgumentException("pk is null");
+        }
 
         final ListenableFuture<Boolean> f;
-        if (_noSaveNulls)
+        if (_noSaveNulls) {
             f = mapper.saveAsync(entity, noSaveNulls);
-        else
+        } else {
             f = mapper.saveAsync(entity);
+        }
 
         Futures.addCallback(f, new FutureCallback<Boolean>() {
 
@@ -438,8 +448,7 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
     public ENTITY copy(ENTITY e) {
         try {
             return copyConstructor.newInstance(e);
-        }
-        catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e1) {
+        } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e1) {
             throw new RuntimeException(e1);
         }
     }
@@ -455,12 +464,12 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
     public UpdateQuery updateQuery(final ENTITY beforeUpdate, final ENTITY afterUpdate, TFunction<ENTITY, Boolean> mutator,
                                    Option... options) throws TException {
 
-        if (!(mutator.apply(afterUpdate)))
+        if (!(mutator.apply(afterUpdate))) {
             return null;
+        }
         try {
             return mapper.updateQuery(beforeUpdate, afterUpdate, options);
-        }
-        catch (NotModifiedException e1) {
+        } catch (NotModifiedException e1) {
             return null;
         }
     }
@@ -475,8 +484,9 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
 
     @Override
     final public ListenableFuture<Map<PK, ENTITY>> findEntityByIdAsMapAsync(Collection<PK> ids) {
-        if (CollectionUtils.isEmpty(ids))
+        if (CollectionUtils.isEmpty(ids)) {
             return Futures.immediateFuture(Collections.emptyMap());
+        }
 
         if (getCache() == null) {
             return fetchEntityByIdAsMapAsync(ids);
@@ -494,7 +504,8 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
             }
         }
 
-        final List<ListenableFuture<ENTITY>> ff = keysToLoad.parallelStream().map(pk -> (mapper.getAsync(extractCompaundPk(pk))))
+        final List<ListenableFuture<ENTITY>> ff = keysToLoad.parallelStream()
+                                                            .map(pk -> (mapper.getAsync(extractCompaundPk(pk))))
                                                             .collect(Collectors.toList());
 
         return Futures.transform(Futures.allAsList(ff), (List<ENTITY> ee) -> {
@@ -528,8 +539,9 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
 
         final Element cached = getCache().get(id);
 
-        if (cached != null)
+        if (cached != null) {
             return Futures.immediateFuture((ENTITY) cached.getObjectValue());
+        }
 
         return Futures.transform(mapper.getAsync(extractCompaundPk(id)), (ENTITY value) -> {
             final Element toPut = new Element(id, value);
@@ -538,7 +550,9 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
             if (getCache().getCacheConfiguration().isCopyOnWrite()) {
                 return value;
             } else if (getCache().getCacheConfiguration().isCopyOnRead()) {
-                final Element copy = getCache().getCacheConfiguration().getCopyStrategy().copyForRead(toPut, getClass().getClassLoader());
+                final Element copy = getCache().getCacheConfiguration()
+                                               .getCopyStrategy()
+                                               .copyForRead(toPut, getClass().getClassLoader());
                 return (ENTITY) copy.getObjectValue();
             } else {
                 return value;

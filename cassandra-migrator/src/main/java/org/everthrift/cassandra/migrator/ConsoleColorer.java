@@ -1,9 +1,7 @@
 package org.everthrift.cassandra.migrator;
 
 /**
- *
  * @author efreet (Amosov Evgeniy)
- *
  */
 public class ConsoleColorer {
 

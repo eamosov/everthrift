@@ -1,81 +1,81 @@
 package org.everthrift.utils;
 
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Map.Entry;
-
 import org.apache.thrift.TBase;
 import org.apache.thrift.protocol.TJSONProtocol;
 import org.apache.thrift.transport.TMemoryBuffer;
 
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Map.Entry;
+
 /**
- *
  * @author efreet (Amosov Evgeniy)
- *
  */
 public class SqlUtils {
 
     @SuppressWarnings("unchecked")
-    public static Object toSqlParam( Object param ) {
-        if ( param == null )
+    public static Object toSqlParam(Object param) {
+        if (param == null) {
             return null;
+        }
 
-        if ( param.getClass().isArray() ) {
+        if (param.getClass().isArray()) {
 
-            if ( param instanceof int[] ) {
-                return toSqlParam( (int[]) param );
-            } else if ( param instanceof long[] ) {
-                return toSqlParam( (long[]) param );
-            } else if ( param instanceof short[] ) {
-                return toSqlParam( (short[]) param );
-            } else if ( param instanceof byte[] ) {
-                return toSqlParam( param );
-            } else if ( param instanceof Object[] ) {
-                return toSqlParam( (Object[]) param );
+            if (param instanceof int[]) {
+                return toSqlParam((int[]) param);
+            } else if (param instanceof long[]) {
+                return toSqlParam((long[]) param);
+            } else if (param instanceof short[]) {
+                return toSqlParam((short[]) param);
+            } else if (param instanceof byte[]) {
+                return toSqlParam(param);
+            } else if (param instanceof Object[]) {
+                return toSqlParam((Object[]) param);
             } else {
-                throw new RuntimeException( "Unsupported array type" );
+                throw new RuntimeException("Unsupported array type");
             }
 
-        }else if ( param instanceof Map){
-            return toSqlParam( (Map<?,?>) param );
-        }else if ( param instanceof TBase ){
+        } else if (param instanceof Map) {
+            return toSqlParam((Map<?, ?>) param);
+        } else if (param instanceof TBase) {
             final TMemoryBuffer tr = new TMemoryBuffer(1024);
             final TJSONProtocol pr = new TJSONProtocol(tr);
 
             try {
-                ((TBase)param).write(pr);
+                ((TBase) param).write(pr);
                 return tr.toString("UTF-8");
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
 
-        }else if ( param instanceof Iterable ) {
-            return toSqlParam( (Iterable<?>) param );
+        } else if (param instanceof Iterable) {
+            return toSqlParam((Iterable<?>) param);
         }
 
         return param;
     }
 
 
-    public static Object toSqlParam( Map<?,?> hstore ) {
+    public static Object toSqlParam(Map<?, ?> hstore) {
 
         final StringBuilder b = new StringBuilder();
         boolean needComa = false;
 
-        for (Entry<?,?> e: hstore.entrySet()){
-            if (needComa)
+        for (Entry<?, ?> e : hstore.entrySet()) {
+            if (needComa) {
                 b.append(",");
+            }
 
             b.append("\"");
             b.append(toSqlParam(e.getKey()).toString().replaceAll("\"", "\\\\\""));
             b.append("\"");
             b.append("=>");
 
-            if (e.getValue() !=null){
+            if (e.getValue() != null) {
                 b.append("\"");
                 b.append(toSqlParam(e.getValue()).toString().replaceAll("\"", "\\\\\""));
                 b.append("\"");
-            }else{
+            } else {
                 b.append("NULL");
             }
             needComa = true;
@@ -83,121 +83,126 @@ public class SqlUtils {
         return b.toString();
     }
 
-    public static Object toSqlParam( int[] arr ) {
-        if ( arr == null )
+    public static Object toSqlParam(int[] arr) {
+        if (arr == null) {
             return null;
+        }
 
         int l = arr.length;
 
         StringBuilder b = new StringBuilder();
-        b.append( '{' );
-        b.ensureCapacity( l * 2 + 2 );
+        b.append('{');
+        b.ensureCapacity(l * 2 + 2);
 
-        if ( l > 0 ) {
-            b.append( arr[0] );
-            for ( int i = 1; i < l; ++i ) {
-                b.append( ',' );
-                b.append( arr[i] );
+        if (l > 0) {
+            b.append(arr[0]);
+            for (int i = 1; i < l; ++i) {
+                b.append(',');
+                b.append(arr[i]);
             }
 
         }
 
-        b.append( '}' );
+        b.append('}');
 
         return b.toString();
     }
 
-    public static Object toSqlParam( long[] arr ) {
-        if ( arr == null )
+    public static Object toSqlParam(long[] arr) {
+        if (arr == null) {
             return null;
+        }
 
         int l = arr.length;
 
         StringBuilder b = new StringBuilder();
-        b.append( '{' );
-        b.ensureCapacity( l * 2 + 2 );
+        b.append('{');
+        b.ensureCapacity(l * 2 + 2);
 
-        if ( l > 0 ) {
-            b.append( arr[0] );
-            for ( int i = 1; i < l; ++i ) {
-                b.append( ',' );
-                b.append( arr[i] );
+        if (l > 0) {
+            b.append(arr[0]);
+            for (int i = 1; i < l; ++i) {
+                b.append(',');
+                b.append(arr[i]);
             }
 
         }
 
-        b.append( '}' );
+        b.append('}');
 
         return b.toString();
     }
 
-    public static Object toSqlParam( short[] arr ) {
-        if ( arr == null )
+    public static Object toSqlParam(short[] arr) {
+        if (arr == null) {
             return null;
+        }
 
         int l = arr.length;
 
         StringBuilder b = new StringBuilder();
-        b.append( '{' );
-        b.ensureCapacity( l * 2 + 2 );
+        b.append('{');
+        b.ensureCapacity(l * 2 + 2);
 
-        if ( l > 0 ) {
-            b.append( arr[0] );
-            for ( int i = 1; i < l; ++i ) {
-                b.append( ',' );
-                b.append( arr[i] );
+        if (l > 0) {
+            b.append(arr[0]);
+            for (int i = 1; i < l; ++i) {
+                b.append(',');
+                b.append(arr[i]);
             }
 
         }
 
-        b.append( '}' );
+        b.append('}');
 
         return b.toString();
     }
 
-    public static Object toSqlParam( Object[] arr ) {
-        if ( arr == null )
+    public static Object toSqlParam(Object[] arr) {
+        if (arr == null) {
             return null;
+        }
 
         int l = arr.length;
 
         StringBuilder b = new StringBuilder();
-        b.append( '{' );
-        b.ensureCapacity( l * 2 + 2 );
+        b.append('{');
+        b.ensureCapacity(l * 2 + 2);
 
-        if ( l > 0 ) {
-            b.append( arr[0] );
-            for ( int i = 1; i < l; ++i ) {
-                b.append( ',' );
-                b.append( arr[i] );
+        if (l > 0) {
+            b.append(arr[0]);
+            for (int i = 1; i < l; ++i) {
+                b.append(',');
+                b.append(arr[i]);
             }
 
         }
 
-        b.append( '}' );
+        b.append('}');
 
         return b.toString();
     }
 
-    public static Object toSqlParam( Iterable<?> coll ) {
-        if ( coll == null )
+    public static Object toSqlParam(Iterable<?> coll) {
+        if (coll == null) {
             return null;
+        }
 
         StringBuilder b = new StringBuilder();
-        b.append( '{' );
+        b.append('{');
 
         Iterator<?> it = coll.iterator();
 
-        if ( it.hasNext() ) {
-            b.append( it.next() );
-            while ( it.hasNext() ) {
-                b.append( ',' );
-                b.append( it.next() );
+        if (it.hasNext()) {
+            b.append(it.next());
+            while (it.hasNext()) {
+                b.append(',');
+                b.append(it.next());
             }
 
         }
 
-        b.append( '}' );
+        b.append('}');
 
         return b.toString();
     }

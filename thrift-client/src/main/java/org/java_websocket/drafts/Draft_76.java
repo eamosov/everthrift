@@ -1,14 +1,5 @@
 package org.java_websocket.drafts;
 
-import java.nio.BufferUnderflowException;
-import java.nio.ByteBuffer;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Random;
-
 import org.java_websocket.WebSocket.Role;
 import org.java_websocket.exceptions.IncompleteHandshakeException;
 import org.java_websocket.exceptions.InvalidDataException;
@@ -25,10 +16,19 @@ import org.java_websocket.handshake.Handshakedata;
 import org.java_websocket.handshake.ServerHandshake;
 import org.java_websocket.handshake.ServerHandshakeBuilder;
 
+import java.nio.BufferUnderflowException;
+import java.nio.ByteBuffer;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Random;
+
 public class Draft_76 extends Draft_75 {
     private boolean failed = false;
 
-    private static final byte[] closehandshake = { -1, 0 };
+    private static final byte[] closehandshake = {-1, 0};
 
     private final Random reuseableRandom = new Random();
 
@@ -55,8 +55,7 @@ public class Draft_76 extends Draft_75 {
         MessageDigest md5;
         try {
             md5 = MessageDigest.getInstance("MD5");
-        }
-        catch (NoSuchAlgorithmException e) {
+        } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }
         return md5.digest(challenge);
@@ -99,9 +98,8 @@ public class Draft_76 extends Draft_75 {
                 throw new InvalidHandshakeException("invalid Sec-WebSocket-Key (/key2/)");
             }
             long part = new Long(keyNumber / keySpace);
-            return new byte[] { (byte) (part >> 24), (byte) ((part << 8) >> 24), (byte) ((part << 16) >> 24), (byte) ((part << 24) >> 24) };
-        }
-        catch (NumberFormatException e) {
+            return new byte[]{(byte) (part >> 24), (byte) ((part << 8) >> 24), (byte) ((part << 16) >> 24), (byte) ((part << 24) >> 24)};
+        } catch (NumberFormatException e) {
             throw new InvalidHandshakeException("invalid Sec-WebSocket-Key (/key1/ or /key2/)");
         }
     }
@@ -113,7 +111,8 @@ public class Draft_76 extends Draft_75 {
         }
 
         try {
-            if (!response.getFieldValue("Sec-WebSocket-Origin").equals(request.getFieldValue("Origin")) || !basicAccept(response)) {
+            if (!response.getFieldValue("Sec-WebSocket-Origin")
+                         .equals(request.getFieldValue("Origin")) || !basicAccept(response)) {
                 return HandshakeState.NOT_MATCHED;
             }
             byte[] content = response.getContent();
@@ -126,18 +125,19 @@ public class Draft_76 extends Draft_75 {
             } else {
                 return HandshakeState.NOT_MATCHED;
             }
-        }
-        catch (InvalidHandshakeException e) {
+        } catch (InvalidHandshakeException e) {
             throw new RuntimeException("bad handshakerequest", e);
         }
     }
 
     @Override
     public HandshakeState acceptHandshakeAsServer(ClientHandshake handshakedata) {
-        if (handshakedata.getFieldValue("Upgrade").equals("WebSocket") && handshakedata.getFieldValue("Connection").contains("Upgrade")
+        if (handshakedata.getFieldValue("Upgrade").equals("WebSocket") && handshakedata.getFieldValue("Connection")
+                                                                                       .contains("Upgrade")
             && handshakedata.getFieldValue("Sec-WebSocket-Key1").length() > 0
-            && !handshakedata.getFieldValue("Sec-WebSocket-Key2").isEmpty() && handshakedata.hasFieldValue("Origin"))
+            && !handshakedata.getFieldValue("Sec-WebSocket-Key2").isEmpty() && handshakedata.hasFieldValue("Origin")) {
             return HandshakeState.MATCHED;
+        }
         return HandshakeState.NOT_MATCHED;
     }
 
@@ -165,11 +165,11 @@ public class Draft_76 extends Draft_75 {
         response.setHttpStatusMessage("WebSocket Protocol Handshake");
         response.put("Upgrade", "WebSocket");
         response.put("Connection", request.getFieldValue("Connection")); // to
-                                                                         // respond
-                                                                         // to a
-                                                                         // Connection
-                                                                         // keep
-                                                                         // alive
+        // respond
+        // to a
+        // Connection
+        // keep
+        // alive
         response.put("Sec-WebSocket-Origin", request.getFieldValue("Origin"));
         String location = "ws://" + request.getFieldValue("Host") + request.getResourceDescriptor();
         response.put("Sec-WebSocket-Location", location);
@@ -193,8 +193,7 @@ public class Draft_76 extends Draft_75 {
             byte[] key3 = new byte[role == Role.SERVER ? 8 : 16];
             try {
                 buf.get(key3);
-            }
-            catch (BufferUnderflowException e) {
+            } catch (BufferUnderflowException e) {
                 throw new IncompleteHandshakeException(buf.capacity() + 16);
             }
             bui.setContent(key3);
@@ -211,9 +210,9 @@ public class Draft_76 extends Draft_75 {
             buffer.reset();
             frames = readyframes;
             readingState = true;
-            if (currentFrame == null)
+            if (currentFrame == null) {
                 currentFrame = ByteBuffer.allocate(2);
-            else {
+            } else {
                 throw new InvalidFrameException();
             }
             if (buffer.remaining() > currentFrame.remaining()) {
@@ -239,8 +238,9 @@ public class Draft_76 extends Draft_75 {
 
     @Override
     public ByteBuffer createBinaryFrame(Framedata framedata) {
-        if (framedata.getOpcode() == Opcode.CLOSING)
+        if (framedata.getOpcode() == Opcode.CLOSING) {
             return ByteBuffer.wrap(closehandshake);
+        }
         return super.createBinaryFrame(framedata);
     }
 

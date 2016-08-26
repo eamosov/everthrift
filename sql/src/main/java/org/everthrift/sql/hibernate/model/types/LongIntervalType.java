@@ -1,15 +1,15 @@
 package org.everthrift.sql.hibernate.model.types;
 
+import org.hibernate.HibernateException;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.usertype.UserType;
+import org.postgresql.util.PGobject;
+
 import java.io.Serializable;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
-
-import org.hibernate.HibernateException;
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.usertype.UserType;
-import org.postgresql.util.PGobject;
 
 public class LongIntervalType implements UserType {
 
@@ -19,7 +19,7 @@ public class LongIntervalType implements UserType {
 
     @Override
     public int[] sqlTypes() {
-        return new int[] { Types.OTHER };
+        return new int[]{Types.OTHER};
     }
 
     @Override
@@ -29,11 +29,13 @@ public class LongIntervalType implements UserType {
 
     @Override
     public boolean equals(Object x, Object y) throws HibernateException {
-        if (x == null && y == null)
+        if (x == null && y == null) {
             return true;
+        }
 
-        if ((x == null && y != null) || (x != null && y == null))
+        if ((x == null && y != null) || (x != null && y == null)) {
             return false;
+        }
 
         return x.equals(y);
     }

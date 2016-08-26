@@ -15,17 +15,16 @@
  */
 package org.everthrift.cassandra.com.datastax.driver.mapping;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-
+import com.datastax.driver.core.ProtocolVersion;
+import com.datastax.driver.core.Session;
+import com.datastax.driver.core.TypeCodec;
 import org.everthrift.cassandra.com.datastax.driver.mapping.annotations.Accessor;
 import org.everthrift.cassandra.com.datastax.driver.mapping.annotations.Table;
 import org.everthrift.cassandra.com.datastax.driver.mapping.annotations.UDT;
 
-import com.datastax.driver.core.ProtocolVersion;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.TypeCodec;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Mapping manager from which to obtain entity mappers.
@@ -83,9 +82,9 @@ public class MappingManager {
      * needed. If you rely on the session not being initialized, use this
      * constructor and provide the version manually.
      *
-     * @param session the {@code Session} to use.
+     * @param session         the {@code Session} to use.
      * @param protocolVersion the protocol version that will be used with this
-     * session.
+     *                        session.
      * @since 2.1.7
      */
     public MappingManager(Session session, ProtocolVersion protocolVersion, EntityMapper.Factory factory, EntityParser entityParser) {
@@ -129,7 +128,7 @@ public class MappingManager {
      * registered with the underlying {@code Cluster}. This works recursively
      * with UDTs nested in other UDTs or in collections.
      *
-     * @param <T> the type of the class to map.
+     * @param <T>   the type of the class to map.
      * @param klass the (annotated) class for which to return the mapper.
      * @return the {@code Mapper} object for class {@code klass}.
      */
@@ -139,6 +138,7 @@ public class MappingManager {
 
     /**
      * Always creates new mapper
+     *
      * @param klass
      * @return
      */
@@ -158,7 +158,7 @@ public class MappingManager {
      * {@link #mapper(Class)} for a class that references this UDT class
      * (creating a mapper will automatically process all UDTs that it uses).
      *
-     * @param <T> the type of the class to map.
+     * @param <T>   the type of the class to map.
      * @param klass the (annotated) class for which to return the codec.
      * @return the codec that maps the provided class to the corresponding
      * user-defined type.
@@ -175,9 +175,9 @@ public class MappingManager {
      * and so calling this method multiple time on the same class will always
      * return the same object.
      *
-     * @param <T> the type of the accessor class.
+     * @param <T>   the type of the accessor class.
      * @param klass the (annotated) class for which to create an accessor
-     * object.
+     *              object.
      * @return the accessor object for class {@code klass}.
      */
     public <T> T createAccessor(Class<T> klass) {

@@ -15,11 +15,11 @@
  */
 package org.everthrift.cassandra.com.datastax.driver.mapping;
 
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
-
 import org.everthrift.cassandra.com.datastax.driver.mapping.annotations.Computed;
 import org.everthrift.cassandra.com.datastax.driver.mapping.annotations.Table;
+
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
 
 /**
  * Various checks on mapping annotations.
@@ -36,9 +36,10 @@ public class AnnotationChecks {
      */
     public static <T extends Annotation> T getTypeAnnotation(Class<T> annotation, Class<?> annotatedClass) {
         T instance = annotatedClass.getAnnotation(annotation);
-        if (instance == null)
+        if (instance == null) {
             throw new IllegalArgumentException(String.format("@%s annotation was not found on type %s", annotation.getSimpleName(),
                                                              annotatedClass.getName()));
+        }
 
         // Check that no other mapping annotations are present
         validateAnnotations(annotatedClass, annotation);
@@ -49,9 +50,10 @@ public class AnnotationChecks {
     private static void validateAnnotations(Class<?> clazz, Class<? extends Annotation> allowed) {
         @SuppressWarnings("unchecked")
         Class<? extends Annotation> invalid = validateAnnotations(clazz.getAnnotations(), allowed);
-        if (invalid != null)
+        if (invalid != null) {
             throw new IllegalArgumentException(String.format("Cannot have both @%s and @%s on type %s", allowed.getSimpleName(),
                                                              invalid.getSimpleName(), clazz.getName()));
+        }
     }
 
     /**
@@ -60,9 +62,12 @@ public class AnnotationChecks {
      */
     public static void validateAnnotations(Field field, String classDescription, Class<? extends Annotation>... allowed) {
         Class<? extends Annotation> invalid = validateAnnotations(field.getAnnotations(), allowed);
-        if (invalid != null)
-            throw new IllegalArgumentException(String.format("Annotation @%s is not allowed on field %s of %s %s", invalid.getSimpleName(),
-                                                             field.getName(), classDescription, field.getDeclaringClass().getName()));
+        if (invalid != null) {
+            throw new IllegalArgumentException(String.format("Annotation @%s is not allowed on field %s of %s %s", invalid
+                                                                 .getSimpleName(),
+                                                             field.getName(), classDescription, field.getDeclaringClass()
+                                                                                                     .getName()));
+        }
 
         checkValidComputed(field);
     }
@@ -71,16 +76,19 @@ public class AnnotationChecks {
     private static Class<? extends Annotation> validateAnnotations(Annotation[] annotations, Class<? extends Annotation>... allowed) {
         for (Annotation annotation : annotations) {
             Class<? extends Annotation> actual = annotation.annotationType();
-            if (actual.getPackage().equals(MAPPING_PACKAGE) && !contains(allowed, actual))
+            if (actual.getPackage().equals(MAPPING_PACKAGE) && !contains(allowed, actual)) {
                 return actual;
+            }
         }
         return null;
     }
 
     private static boolean contains(Object[] array, Object target) {
-        for (Object element : array)
-            if (element.equals(target))
+        for (Object element : array) {
+            if (element.equals(target)) {
                 return true;
+            }
+        }
         return false;
     }
 

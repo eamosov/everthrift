@@ -1,63 +1,61 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xmlns:int="http://www.springframework.org/schema/integration"
-	xmlns:int-ip="http://www.springframework.org/schema/integration/ip"
-	xmlns:context="http://www.springframework.org/schema/context"
-	xmlns:cache="http://www.springframework.org/schema/cache" 
-	xmlns:task="http://www.springframework.org/schema/task"
-	xmlns:jgroups="http://www.springframework.org/schema/integration/jgroups"
-	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:int="http://www.springframework.org/schema/integration"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:task="http://www.springframework.org/schema/task"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
 		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.2.xsd
 		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
-		http://www.springframework.org/schema/integration/ip http://www.springframework.org/schema/integration/ip/spring-integration-ip.xsd
-		http://www.springframework.org/schema/integration/jgroups http://www.springframework.org/schema/integration/jgroups/spring-intergration-jgroups.xsd
-		http://www.springframework.org/schema/cache http://www.springframework.org/schema/cache/spring-cache.xsd
+
+
+
 		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task.xsd">
 
-  <context:property-placeholder />
+    <context:property-placeholder/>
 
-  <task:executor id="callerRunsBoundQueueExecutor" pool-size="5-20" keep-alive="5" queue-capacity="200" rejection-policy="CALLER_RUNS"/>
-  <task:executor id="unboundQueueExecutor" pool-size="10" />
-    
-  <task:scheduler id="myScheduler" pool-size="10"/>
-  <task:annotation-driven executor="callerRunsBoundQueueExecutor" scheduler="myScheduler"/>
+    <task:executor id="callerRunsBoundQueueExecutor" pool-size="5-20" keep-alive="5" queue-capacity="200"
+                   rejection-policy="CALLER_RUNS"/>
+    <task:executor id="unboundQueueExecutor" pool-size="10"/>
 
-  <int:poller id="defaultPoller" default="true" receive-timeout="5000" fixed-rate="1"/>
+    <task:scheduler id="myScheduler" pool-size="10"/>
+    <task:annotation-driven executor="callerRunsBoundQueueExecutor" scheduler="myScheduler"/>
 
-  <bean id="mbeanServer" class="org.springframework.jmx.support.MBeanServerFactoryBean">
-  	<property name="locateExistingServerIfPossible" value="true"/>
-  </bean>
-  
-  <bean id="jmxAttributeSource" class="org.springframework.jmx.export.annotation.AnnotationJmxAttributeSource" />
+    <int:poller id="defaultPoller" default="true" receive-timeout="5000" fixed-rate="1"/>
 
-  <bean id="jmxAssembler" class="org.springframework.jmx.export.assembler.MetadataMBeanInfoAssembler">
-    <property name="attributeSource" ref="jmxAttributeSource" />
-  </bean>
+    <bean id="mbeanServer" class="org.springframework.jmx.support.MBeanServerFactoryBean">
+        <property name="locateExistingServerIfPossible" value="true"/>
+    </bean>
 
-  <bean id="jmxNamingStrategy" class="org.everthrift.appserver.utils.jmx.RuntimeMetadataNamingStrategy">
-    <property name="attributeSource" ref="jmxAttributeSource" />
-  </bean>
-  
-  <bean id="exporter" class="org.springframework.jmx.export.annotation.AnnotationMBeanExporter">
-    <property name="server" ref="mbeanServer"/>
-    <property name="registrationPolicy" value="IGNORE_EXISTING"/>
-    
-    <property name="autodetect" value="true" />
-    <property name="assembler" ref="jmxAssembler" />
-    <property name="namingStrategy" ref="jmxNamingStrategy" />
-    <property name="ensureUniqueRuntimeObjectNames" value="false" />   
-  </bean>
+    <bean id="jmxAttributeSource" class="org.springframework.jmx.export.annotation.AnnotationJmxAttributeSource"/>
 
-  <bean id="jmxServerConnector" class="org.springframework.jmx.support.ConnectorServerFactoryBean">
-   	<property name="threaded" value="true"/>
-   	<property name="daemon" value="true"/>
-   	<property name="server" ref="mbeanServer"/>
-   	<property name="serviceUrl" value="${jmx.serviceUrl}"/>
-  </bean>	
+    <bean id="jmxAssembler" class="org.springframework.jmx.export.assembler.MetadataMBeanInfoAssembler">
+        <property name="attributeSource" ref="jmxAttributeSource"/>
+    </bean>
 
-  <bean class="org.springframework.jmx.support.MBeanServerFactoryBean">
-       <property name="locateExistingServerIfPossible" value="true" />
-  </bean>
-  				    	
+    <bean id="jmxNamingStrategy" class="org.everthrift.appserver.utils.jmx.RuntimeMetadataNamingStrategy">
+        <property name="attributeSource" ref="jmxAttributeSource"/>
+    </bean>
+
+    <bean id="exporter" class="org.springframework.jmx.export.annotation.AnnotationMBeanExporter">
+        <property name="server" ref="mbeanServer"/>
+        <property name="registrationPolicy" value="IGNORE_EXISTING"/>
+
+        <property name="autodetect" value="true"/>
+        <property name="assembler" ref="jmxAssembler"/>
+        <property name="namingStrategy" ref="jmxNamingStrategy"/>
+        <property name="ensureUniqueRuntimeObjectNames" value="false"/>
+    </bean>
+
+    <bean id="jmxServerConnector" class="org.springframework.jmx.support.ConnectorServerFactoryBean">
+        <property name="threaded" value="true"/>
+        <property name="daemon" value="true"/>
+        <property name="server" ref="mbeanServer"/>
+        <property name="serviceUrl" value="${jmx.serviceUrl}"/>
+    </bean>
+
+    <bean class="org.springframework.jmx.support.MBeanServerFactoryBean">
+        <property name="locateExistingServerIfPossible" value="true"/>
+    </bean>
+
 </beans>

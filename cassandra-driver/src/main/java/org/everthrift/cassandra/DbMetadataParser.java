@@ -1,24 +1,24 @@
 package org.everthrift.cassandra;
 
-import java.beans.PropertyDescriptor;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
-
+import com.datastax.driver.core.ColumnMetadata;
+import com.datastax.driver.core.ConsistencyLevel;
+import com.datastax.driver.core.Metadata;
+import com.datastax.driver.core.TableMetadata;
+import com.datastax.driver.core.TypeCodec;
+import com.datastax.driver.core.UserType;
+import com.google.common.base.CaseFormat;
+import com.google.common.base.Strings;
+import com.google.common.collect.Maps;
+import com.google.common.reflect.TypeToken;
 import org.everthrift.cassandra.com.datastax.driver.mapping.AnnotationChecks;
 import org.everthrift.cassandra.com.datastax.driver.mapping.ColumnMapper;
 import org.everthrift.cassandra.com.datastax.driver.mapping.EntityMapper;
+import org.everthrift.cassandra.com.datastax.driver.mapping.EntityMapper.ColumnScenario;
+import org.everthrift.cassandra.com.datastax.driver.mapping.EntityMapper.Factory;
 import org.everthrift.cassandra.com.datastax.driver.mapping.EntityParser;
 import org.everthrift.cassandra.com.datastax.driver.mapping.FieldDescriptor;
 import org.everthrift.cassandra.com.datastax.driver.mapping.MappedUDTCodec;
 import org.everthrift.cassandra.com.datastax.driver.mapping.MappingManager;
-import org.everthrift.cassandra.com.datastax.driver.mapping.EntityMapper.ColumnScenario;
-import org.everthrift.cassandra.com.datastax.driver.mapping.EntityMapper.Factory;
 import org.everthrift.cassandra.com.datastax.driver.mapping.annotations.Column;
 import org.everthrift.cassandra.com.datastax.driver.mapping.annotations.Computed;
 import org.everthrift.cassandra.com.datastax.driver.mapping.annotations.Defaults;
@@ -32,16 +32,15 @@ import org.everthrift.utils.ClassUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.datastax.driver.core.ColumnMetadata;
-import com.datastax.driver.core.ConsistencyLevel;
-import com.datastax.driver.core.Metadata;
-import com.datastax.driver.core.TableMetadata;
-import com.datastax.driver.core.TypeCodec;
-import com.datastax.driver.core.UserType;
-import com.google.common.base.CaseFormat;
-import com.google.common.base.Strings;
-import com.google.common.collect.Maps;
-import com.google.common.reflect.TypeToken;
+import java.beans.PropertyDescriptor;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class DbMetadataParser implements EntityParser {
 
@@ -52,19 +51,19 @@ public class DbMetadataParser implements EntityParser {
     private static <T extends Annotation> T getAnnotation(Class entityClass, PropertyDescriptor pd, Class<T> annotationClass) {
         T a = pd.getReadMethod().getAnnotation(annotationClass);
 
-        if (a == null)
+        if (a == null) {
             a = pd.getWriteMethod().getAnnotation(annotationClass);
+        }
 
         if (a == null) {
             try {
                 final Field f = entityClass.getDeclaredField(pd.getName());
-                if (f != null)
+                if (f != null) {
                     a = f.getAnnotation(annotationClass);
+                }
 
-            }
-            catch (NoSuchFieldException e) {
-            }
-            catch (SecurityException e) {
+            } catch (NoSuchFieldException e) {
+            } catch (SecurityException e) {
             }
         }
 
@@ -74,15 +73,15 @@ public class DbMetadataParser implements EntityParser {
     private static TypeCodec<Object> customCodec(Class entityClass, PropertyDescriptor pd) {
         Class<? extends TypeCodec<?>> codecClass = getCodecClass(entityClass, pd);
 
-        if (codecClass.equals(Defaults.NoCodec.class))
+        if (codecClass.equals(Defaults.NoCodec.class)) {
             return null;
+        }
 
         try {
             @SuppressWarnings("unchecked")
             TypeCodec<Object> instance = (TypeCodec<Object>) codecClass.newInstance();
             return instance;
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw new IllegalArgumentException(String.format("Cannot create an instance of custom codec %s for field %s", codecClass,
                                                              pd.getName()),
                                                e);
@@ -91,13 +90,15 @@ public class DbMetadataParser implements EntityParser {
 
     private static Class<? extends TypeCodec<?>> getCodecClass(Class entityClass, PropertyDescriptor pd) {
         Column column = getAnnotation(entityClass, pd, Column.class);
-        if (column != null)
+        if (column != null) {
             return column.codec();
+        }
 
         org.everthrift.cassandra.com.datastax.driver.mapping.annotations.Field udtField = getAnnotation(entityClass, pd,
                                                                                                         org.everthrift.cassandra.com.datastax.driver.mapping.annotations.Field.class);
-        if (udtField != null)
+        if (udtField != null) {
             return udtField.codec();
+        }
 
         return Defaults.NoCodec.class;
     }
@@ -111,26 +112,34 @@ public class DbMetadataParser implements EntityParser {
         final String tableName = table.caseSensitiveTable() ? table.name() : table.name().toLowerCase();
 
         final ConsistencyLevel writeConsistency = table.writeConsistency()
-                                                       .isEmpty() ? null : ConsistencyLevel.valueOf(table.writeConsistency().toUpperCase());
+                                                       .isEmpty() ? null : ConsistencyLevel.valueOf(table.writeConsistency()
+                                                                                                         .toUpperCase());
         final ConsistencyLevel readConsistency = table.readConsistency()
-                                                      .isEmpty() ? null : ConsistencyLevel.valueOf(table.readConsistency().toUpperCase());
+                                                      .isEmpty() ? null : ConsistencyLevel.valueOf(table.readConsistency()
+                                                                                                        .toUpperCase());
 
         if (Strings.isNullOrEmpty(table.keyspace())) {
             ksName = mappingManager.getSession().getLoggedKeyspace();
-            if (Strings.isNullOrEmpty(ksName))
+            if (Strings.isNullOrEmpty(ksName)) {
                 throw new IllegalArgumentException(String.format("Error creating mapper for class %s, the @%s annotation declares no default keyspace, and the session is not currently logged to any keyspace",
                                                                  entityClass.getSimpleName(), Table.class.getSimpleName()));
+            }
         }
 
         final EntityMapper<T> mapper = factory.create(entityClass, ksName, tableName, writeConsistency, readConsistency);
 
         final Map<String, PropertyDescriptor> entityProps = ClassUtils.getPropertyDescriptors(entityClass);
 
-        final TableMetadata tableMetadata = mappingManager.getSession().getCluster().getMetadata().getKeyspace(ksName).getTable(tableName);
+        final TableMetadata tableMetadata = mappingManager.getSession()
+                                                          .getCluster()
+                                                          .getMetadata()
+                                                          .getKeyspace(ksName)
+                                                          .getTable(tableName);
 
-        if (tableMetadata == null)
+        if (tableMetadata == null) {
             throw new RuntimeException(String.format("Table %s not found in keyspace %s. Coudn't map %s.", tableName, ksName,
                                                      entityClass.getCanonicalName()));
+        }
 
         final List<ColumnMapper<T>> pks = new ArrayList<ColumnMapper<T>>();
         final List<ColumnMapper<T>> ccs = new ArrayList<ColumnMapper<T>>();
@@ -144,16 +153,19 @@ public class DbMetadataParser implements EntityParser {
         for (ColumnMetadata cm : tableMetadata.getPartitionKey()) {
 
             PropertyDescriptor javaProp = entityProps.get(cm.getName());
-            if (javaProp == null)
+            if (javaProp == null) {
                 javaProp = entityProps.get(CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, cm.getName()));
+            }
 
-            if (javaProp == null)
+            if (javaProp == null) {
                 throw new IllegalArgumentException("Coudn't find partition key '" + cm.getName() + "' in java class "
-                                                   + entityClass.getCanonicalName());
+                                                       + entityClass.getCanonicalName());
+            }
 
             final FieldDescriptor fd = new FieldDescriptor(cm.getName(), javaProp.getName(), ColumnMapper.Kind.PARTITION_KEY,
                                                            ColumnScenario.COMMON,
-                                                           (TypeToken) TypeToken.of(javaProp.getReadMethod().getGenericReturnType()),
+                                                           (TypeToken) TypeToken.of(javaProp.getReadMethod()
+                                                                                            .getGenericReturnType()),
                                                            customCodec(entityClass, javaProp));
             pks.add(factory.createColumnMapper(entityClass, fd, mappingManager, columnCounter));
             keys.add(javaProp.getName());
@@ -162,16 +174,19 @@ public class DbMetadataParser implements EntityParser {
         for (ColumnMetadata cm : tableMetadata.getClusteringColumns()) {
 
             PropertyDescriptor javaProp = entityProps.get(cm.getName());
-            if (javaProp == null)
+            if (javaProp == null) {
                 javaProp = entityProps.get(CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, cm.getName()));
+            }
 
-            if (javaProp == null)
+            if (javaProp == null) {
                 throw new IllegalArgumentException("Coudn't find partition key '" + cm.getName() + "' in java class "
-                                                   + entityClass.getCanonicalName());
+                                                       + entityClass.getCanonicalName());
+            }
 
             final FieldDescriptor fd = new FieldDescriptor(cm.getName(), javaProp.getName(), ColumnMapper.Kind.CLUSTERING_COLUMN,
                                                            ColumnScenario.COMMON,
-                                                           (TypeToken) TypeToken.of(javaProp.getReadMethod().getGenericReturnType()),
+                                                           (TypeToken) TypeToken.of(javaProp.getReadMethod()
+                                                                                            .getGenericReturnType()),
                                                            customCodec(entityClass, javaProp));
             ccs.add(factory.createColumnMapper(entityClass, fd, mappingManager, columnCounter));
             keys.add(javaProp.getName());
@@ -181,41 +196,49 @@ public class DbMetadataParser implements EntityParser {
 
         for (PropertyDescriptor javaProp : entityProps.values()) {
 
-            if (keys.contains(javaProp.getName()) || javaProp.getReadMethod() == null || javaProp.getWriteMethod() == null)
+            if (keys.contains(javaProp.getName()) || javaProp.getReadMethod() == null || javaProp.getWriteMethod() == null) {
                 continue;
+            }
 
-            if (getAnnotation(entityClass, javaProp, Transient.class) != null)
+            if (getAnnotation(entityClass, javaProp, Transient.class) != null) {
                 continue;
+            }
 
             final Column aColumn = getAnnotation(entityClass, javaProp, Column.class);
             ColumnMetadata columnMetadata;
             if (aColumn != null && !aColumn.name().isEmpty()) {
                 columnMetadata = columnsByName.get(aColumn.name());
-                if (columnMetadata == null)
+                if (columnMetadata == null) {
                     throw new IllegalArgumentException("Coudn't find column '" + aColumn.name() + "' for map "
-                                                       + entityClass.getCanonicalName() + "." + javaProp.getName());
+                                                           + entityClass.getCanonicalName() + "." + javaProp.getName());
+                }
             } else {
                 columnMetadata = columnsByName.get(javaProp.getName());
 
-                if (columnMetadata == null)
+                if (columnMetadata == null) {
                     columnMetadata = columnsByName.get(CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, javaProp.getName()));
+                }
             }
 
-            if (columnMetadata == null)
+            if (columnMetadata == null) {
                 continue;
+            }
 
             final boolean isComputed = getAnnotation(entityClass, javaProp, Computed.class) != null;
-            if (mappingManager.isCassandraV1 && isComputed)
+            if (mappingManager.isCassandraV1 && isComputed) {
                 throw new UnsupportedOperationException("Computed fields are not supported with native protocol v1");
+            }
 
-            final TypeToken<Object> fieldType = (TypeToken) TypeToken.of(javaProp.getReadMethod().getGenericReturnType());
+            final TypeToken<Object> fieldType = (TypeToken) TypeToken.of(javaProp.getReadMethod()
+                                                                                 .getGenericReturnType());
             final TypeCodec<Object> customCodec = customCodec(entityClass, javaProp);
 
             Scenario scenario = getAnnotation(entityClass, javaProp, Scenario.class);
 
             final FieldDescriptor fd = new FieldDescriptor(columnMetadata.getName(), javaProp.getName(),
                                                            isComputed ? ColumnMapper.Kind.COMPUTED : ColumnMapper.Kind.REGULAR,
-                                                           scenario == null ? EntityMapper.ColumnScenario.COMMON : scenario.value(),
+                                                           scenario == null ? EntityMapper.ColumnScenario.COMMON : scenario
+                                                               .value(),
                                                            fieldType, customCodec);
 
             final ColumnMapper<T> columnMapper = factory.createColumnMapper(entityClass, fd, mappingManager, columnCounter);
@@ -223,12 +246,15 @@ public class DbMetadataParser implements EntityParser {
 
             if (getAnnotation(entityClass, javaProp, Version.class) != null) {
 
-                if (versionField != null)
-                    throw new IllegalArgumentException(String.format("Confliction in version fields: %s, %s", versionField.getColumnName(),
+                if (versionField != null) {
+                    throw new IllegalArgumentException(String.format("Confliction in version fields: %s, %s", versionField
+                                                                         .getColumnName(),
                                                                      columnMapper.getColumnName()));
+                }
 
-                if (!table.version().isEmpty())
+                if (!table.version().isEmpty()) {
                     throw new IllegalArgumentException(String.format("@Version annotation not allowed while @Table has parameter 'version'"));
+                }
 
                 versionField = columnMapper;
             } else if (table.version().equalsIgnoreCase(javaProp.getName())) {
@@ -256,12 +282,17 @@ public class DbMetadataParser implements EntityParser {
 
         if (Strings.isNullOrEmpty(udt.keyspace())) {
             ksName = mappingManager.getSession().getLoggedKeyspace();
-            if (Strings.isNullOrEmpty(ksName))
+            if (Strings.isNullOrEmpty(ksName)) {
                 throw new IllegalArgumentException(String.format("Error creating UDT codec for class %s, the @%s annotation declares no default keyspace, and the session is not currently logged to any keyspace",
                                                                  udtClass.getSimpleName(), UDT.class.getSimpleName()));
+            }
         }
 
-        final UserType userType = mappingManager.getSession().getCluster().getMetadata().getKeyspace(ksName).getUserType(udtName);
+        final UserType userType = mappingManager.getSession()
+                                                .getCluster()
+                                                .getMetadata()
+                                                .getKeyspace(ksName)
+                                                .getUserType(udtName);
 
         final Map<String, PropertyDescriptor> entityProps = ClassUtils.getPropertyDescriptors(udtClass);
         final Map<String, ColumnMapper<T>> columnMappers = Maps.newHashMap();
@@ -269,18 +300,21 @@ public class DbMetadataParser implements EntityParser {
         for (String udtFieldName : userType.getFieldNames()) {
 
             PropertyDescriptor javaProp = entityProps.get(udtFieldName);
-            if (javaProp == null)
+            if (javaProp == null) {
                 javaProp = entityProps.get(CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, udtFieldName));
+            }
 
             if (javaProp == null) {
                 log.warn("Coudn't find eny fields to map {}.{}", udtName, udtFieldName);
                 continue;
             }
 
-            if (getAnnotation(udtClass, javaProp, Transient.class) != null)
+            if (getAnnotation(udtClass, javaProp, Transient.class) != null) {
                 continue;
+            }
 
-            final TypeToken<Object> fieldType = (TypeToken) TypeToken.of(javaProp.getReadMethod().getGenericReturnType());
+            final TypeToken<Object> fieldType = (TypeToken) TypeToken.of(javaProp.getReadMethod()
+                                                                                 .getGenericReturnType());
             final TypeCodec<Object> customCodec = customCodec(udtClass, javaProp);
 
             final FieldDescriptor fd = new FieldDescriptor(udtFieldName, javaProp.getName(), ColumnMapper.Kind.REGULAR,

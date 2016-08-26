@@ -1,5 +1,10 @@
 package org.everthrift.cli;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.Option;
+import org.apache.thrift.TServiceClient;
+import org.apache.thrift.transport.TTransportException;
+
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -7,11 +12,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
-
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.Option;
-import org.apache.thrift.TServiceClient;
-import org.apache.thrift.transport.TTransportException;
 
 public abstract class BaseModule<T extends TServiceClient> {
 
@@ -33,7 +33,7 @@ public abstract class BaseModule<T extends TServiceClient> {
     }
 
     private String lastVersion(Collection<String> versions) {
-        return Collections.<String> max(versions, VERSION_COMPARATOR);
+        return Collections.<String>max(versions, VERSION_COMPARATOR);
     }
 
     public T getClient(String host, int port) throws TTransportException {
@@ -58,12 +58,13 @@ public abstract class BaseModule<T extends TServiceClient> {
             while ((o1iter.hasNext() && o2iter.hasNext()) && result != 0) {
                 result = Integer.compare(o1iter.next(), o2iter.next());
             }
-            if (result != 0)
+            if (result != 0) {
                 return result;
-            else if (o1iter.hasNext())
+            } else if (o1iter.hasNext()) {
                 return 1;
-            else if (o2iter.hasNext())
+            } else if (o2iter.hasNext()) {
                 return -1;
+            }
             return result;
         }
 

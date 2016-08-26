@@ -26,10 +26,10 @@ class AccessorReflectionMapper<T> extends AccessorMapper<T> {
 
     private final AccessorInvocationHandler<T> handler;
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private AccessorReflectionMapper(Class<T> daoClass, List<MethodMapper> methods) {
         super(daoClass, methods);
-        this.proxyClasses = (Class<T>[]) new Class[] { daoClass };
+        this.proxyClasses = (Class<T>[]) new Class[]{daoClass};
         this.handler = new AccessorInvocationHandler<T>(this);
     }
 
@@ -42,8 +42,7 @@ class AccessorReflectionMapper<T> extends AccessorMapper<T> {
     public T createProxy() {
         try {
             return (T) Proxy.newProxyInstance(daoClass.getClassLoader(), proxyClasses, handler);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw new RuntimeException("Cannot create instance for Accessor interface " + daoClass.getName());
         }
     }

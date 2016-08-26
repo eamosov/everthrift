@@ -1,10 +1,10 @@
 package org.everthrift.appserver.controller;
 
-import java.util.Map;
-
 import org.apache.thrift.TBase;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TMessage;
+
+import java.util.Map;
 
 public interface ThriftProtocolSupportIF<T> {
     String getSessionId(); // Transport level sessionId

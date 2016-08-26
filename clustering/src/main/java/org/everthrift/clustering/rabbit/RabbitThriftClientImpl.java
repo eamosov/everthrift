@@ -1,7 +1,5 @@
 package org.everthrift.clustering.rabbit;
 
-import java.lang.reflect.Proxy;
-
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocolFactory;
 import org.apache.thrift.transport.TMemoryBuffer;
@@ -16,6 +14,8 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.support.converter.MessageConverter;
+
+import java.lang.reflect.Proxy;
 
 public class RabbitThriftClientImpl implements RabbitThriftClientIF {
 
@@ -32,8 +32,9 @@ public class RabbitThriftClientImpl implements RabbitThriftClientIF {
             @Override
             public Message toMessage(Object object, MessageProperties messageProperties) throws MessageConversionException {
 
-                if (!(object instanceof InvocationInfo))
+                if (!(object instanceof InvocationInfo)) {
                     throw new MessageConversionException("coudn't convert class: " + object.getClass().getSimpleName());
+                }
 
                 final InvocationInfo ii = (InvocationInfo) object;
 
@@ -57,7 +58,7 @@ public class RabbitThriftClientImpl implements RabbitThriftClientIF {
     @SuppressWarnings("unchecked")
     public <T> T onIface(Class<T> cls) {
 
-        return (T) Proxy.newProxyInstance(ThriftProxyFactory.class.getClassLoader(), new Class[] { cls },
+        return (T) Proxy.newProxyInstance(ThriftProxyFactory.class.getClassLoader(), new Class[]{cls},
                                           new ServiceIfaceProxy(cls, new InvocationCallback() {
 
                                               @SuppressWarnings("rawtypes")

@@ -1,14 +1,5 @@
 package org.everthrift.utils;
 
-import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.stream.Collectors;
-
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
@@ -18,51 +9,66 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.stream.Collectors;
+
 public class CollectionUtils {
 
-    private static final int[] EMPTY_ARRAY= new int[0];
-    private static final Integer[] EMPTY_INTEGR_ARRAY= new Integer[0];
+    private static final int[] EMPTY_ARRAY = new int[0];
+    private static final Integer[] EMPTY_INTEGR_ARRAY = new Integer[0];
 
-    public static int[] toIntArray(List<? extends Number> list){
-        if (list == null)
+    public static int[] toIntArray(List<? extends Number> list) {
+        if (list == null) {
             return EMPTY_ARRAY;
+        }
 
         int ret[] = new int[list.size()];
-        int i=0;
-        for (Number s: list)
+        int i = 0;
+        for (Number s : list) {
             ret[i++] = s.intValue();
+        }
 
         return ret;
     }
 
-    public static Integer[] toIntegerArray(List<? extends Number> list){
-        if (list == null)
+    public static Integer[] toIntegerArray(List<? extends Number> list) {
+        if (list == null) {
             return EMPTY_INTEGR_ARRAY;
+        }
 
         Integer ret[] = new Integer[list.size()];
-        int i=0;
-        for (Number s: list)
+        int i = 0;
+        for (Number s : list) {
             ret[i++] = new Integer(s.intValue());
+        }
 
         return ret;
     }
 
-    public static List<Long> parseLongArray(String input){
-        return 	Lists.newArrayList(Iterables.transform(Splitter.on(CharMatcher.anyOf(", ")).split(input), new Function<String, Long>(){
+    public static List<Long> parseLongArray(String input) {
+        return Lists.newArrayList(Iterables.transform(Splitter.on(CharMatcher.anyOf(", "))
+                                                              .split(input), new Function<String, Long>() {
 
             @Override
             public Long apply(String input) {
                 return Long.parseLong(input);
-            }}));
+            }
+        }));
 
     }
 
-    public static <T> List<T> getInterseption(List<T> arr1, List<T> arr2){
-        final List<T> list=new ArrayList<T>();
+    public static <T> List<T> getInterseption(List<T> arr1, List<T> arr2) {
+        final List<T> list = new ArrayList<T>();
 
-        for (T i: arr1){
-            for (T j: arr2){
-                if(i.equals(j)){
+        for (T i : arr1) {
+            for (T j : arr2) {
+                if (i.equals(j)) {
                     list.add(i);
                 }
             }
@@ -72,41 +78,45 @@ public class CollectionUtils {
 
     /**
      * Returns a range of a list based on traditional offset/limit criteria.
-     *
+     * <p>
      * <p>Example:<pre>
      *   ListUtil.subList(Arrays.asList(1, 2, 3, 4, 5), 3, 5) => [4,5]
      * </pre></p>
-     *
+     * <p>
      * <p>In case the offset is higher than the list length the returned
      * sublist is empty (no exception).
      * In case the list has fewer items than limit (with optional offset applied)
      * then the remaining items
      * are returned (if any).</p>
-     *
+     * <p>
      * <p>Impl notes: returns a {@link List#subList} in all cases to have
      * a consistent return value.</p>
      *
-     * @param list The input list.
+     * @param list   The input list.
      * @param offset 0 for now offset, >=1 for an offset.
-     * @param limit -1 for no limit, >=0 for how many items to return at most,
-     *              0 is allowed.
+     * @param limit  -1 for no limit, >=0 for how many items to return at most,
+     *               0 is allowed.
      */
     public static <T> List<T> subList(List<T> list, int offset, int limit) {
-        if (offset<0) throw new IllegalArgumentException("Offset must be >=0 but was "+offset+"!");
-        if (limit<-1) throw new IllegalArgumentException("Limit must be >=-1 but was "+limit+"!");
+        if (offset < 0) {
+            throw new IllegalArgumentException("Offset must be >=0 but was " + offset + "!");
+        }
+        if (limit < -1) {
+            throw new IllegalArgumentException("Limit must be >=-1 but was " + limit + "!");
+        }
 
-        if (offset>0) {
+        if (offset > 0) {
             if (offset >= list.size()) {
                 return list.subList(0, 0); //return empty.
             }
-            if (limit >-1) {
+            if (limit > -1) {
                 //apply offset and limit
-                return list.subList(offset, Math.min(offset+limit, list.size()));
+                return list.subList(offset, Math.min(offset + limit, list.size()));
             } else {
                 //apply just offset
                 return list.subList(offset, list.size());
             }
-        } else if (limit >-1) {
+        } else if (limit > -1) {
             //apply just limit
             return list.subList(0, Math.min(limit, list.size()));
         } else {
@@ -121,31 +131,32 @@ public class CollectionUtils {
      * @param b
      * @return
      */
-    public static int interseptionSize(List<? extends Comparable> a, List<? extends Comparable> b){
+    public static int interseptionSize(List<? extends Comparable> a, List<? extends Comparable> b) {
 
-        int i=0;
-        int j=0;
+        int i = 0;
+        int j = 0;
 
-        Comparable last=null;
-        int c=0;
+        Comparable last = null;
+        int c = 0;
 
-        while((i<=a.size()-1) || (j<=b.size()-1)){
+        while ((i <= a.size() - 1) || (j <= b.size() - 1)) {
 
             Comparable cur;
 
-            if (!(i<=a.size()-1)){
+            if (!(i <= a.size() - 1)) {
                 cur = b.get(j++);
                 //result.add(b.get(j++));
-            }else if (!(j<=b.size()-1)){
+            } else if (!(j <= b.size() - 1)) {
                 cur = a.get(i++);
-            }else if (a.get(i).compareTo(b.get(j)) <= 0){
+            } else if (a.get(i).compareTo(b.get(j)) <= 0) {
                 cur = a.get(i++);
-            }else{
+            } else {
                 cur = b.get(j++);
             }
 
-            if (last !=null && last.equals(cur))
+            if (last != null && last.equals(cur)) {
                 c++;
+            }
 
             last = cur;
         }
@@ -153,32 +164,35 @@ public class CollectionUtils {
         return c;
     }
 
-    public static List<String> lowerCase(List<String> input){
+    public static List<String> lowerCase(List<String> input) {
         return input.stream().map(String::toLowerCase).collect(Collectors.toList());
     }
 
     public static boolean contains(Collection<?> collection, Object element) {
-        if (collection == null || collection.isEmpty())
+        if (collection == null || collection.isEmpty()) {
             return false;
-        else
+        } else {
             return collection.contains(element);
+        }
     }
 
-    public static <T> boolean isEmpty(Collection<T> c){
-        return c==null || c.isEmpty();
+    public static <T> boolean isEmpty(Collection<T> c) {
+        return c == null || c.isEmpty();
     }
 
-    public static <T> void optimisticFilter(List<T> input, Predicate<? super T> p){
+    public static <T> void optimisticFilter(List<T> input, Predicate<? super T> p) {
 
-        if (input == null || input.isEmpty())
+        if (input == null || input.isEmpty()) {
             return;
+        }
 
-        for (int i=0; i< input.size(); i++){
-            if (p.apply(input.get(i)) == false){
+        for (int i = 0; i < input.size(); i++) {
+            if (p.apply(input.get(i)) == false) {
                 final ListIterator<T> it = input.listIterator(i);
-                while(it.hasNext()){
-                    if (!p.apply(it.next()))
+                while (it.hasNext()) {
+                    if (!p.apply(it.next())) {
                         it.remove();
+                    }
                 }
                 return;
             }
@@ -208,17 +222,19 @@ public class CollectionUtils {
         @Override
         public boolean contains(final Object o) {
             for (final Collection<? extends E> coll : items) {
-                if (coll.contains(o))
+                if (coll.contains(o)) {
                     return true;
+                }
             }
             return false;
         }
 
         @Override
         public boolean containsAll(final Collection<?> c) {
-            for (Object o:c){
-                if (!contains(o))
+            for (Object o : c) {
+                if (!contains(o)) {
                     return false;
+                }
             }
 
             return true;
@@ -227,8 +243,9 @@ public class CollectionUtils {
         @Override
         public boolean isEmpty() {
             for (final Collection<? extends E> coll : items) {
-                if (!coll.isEmpty())
+                if (!coll.isEmpty()) {
                     return false;
+                }
             }
             return true;
         }
@@ -265,9 +282,9 @@ public class CollectionUtils {
         @Override
         public Object[] toArray() {
             Object arr[] = new Object[size()];
-            int i=0;
+            int i = 0;
             Iterator<E> it = this.iterator();
-            while(it.hasNext()){
+            while (it.hasNext()) {
                 arr[i++] = it.next();
             }
             return arr;
@@ -277,18 +294,18 @@ public class CollectionUtils {
         public <T> T[] toArray(T[] a) {
             final int _size = size();
             final Object arr[];
-            if (a.length < _size){
-                arr = (Object[])Array.newInstance(a.getClass().getComponentType(), size());
-            }else{
+            if (a.length < _size) {
+                arr = (Object[]) Array.newInstance(a.getClass().getComponentType(), size());
+            } else {
                 arr = a;
             }
 
-            int i=0;
+            int i = 0;
             Iterator<E> it = this.iterator();
-            while(it.hasNext()){
+            while (it.hasNext()) {
                 arr[i++] = it.next();
             }
-            return (T[])arr;
+            return (T[]) arr;
         }
 
         @Override
@@ -312,37 +329,43 @@ public class CollectionUtils {
         return new JoinedCollectionView<T>(items);
     }
 
-    public static <T> HashSet<T> newHashSet(final Collection<? extends T> ...collections){
+    public static <T> HashSet<T> newHashSet(final Collection<? extends T>... collections) {
         final HashSet<T> ret = Sets.newHashSet();
 
-        if (collections !=null){
-            for (Collection<? extends T> c: collections){
-                if (c!=null)
+        if (collections != null) {
+            for (Collection<? extends T> c : collections) {
+                if (c != null) {
                     ret.addAll(c);
+                }
             }
         }
 
         return ret;
     }
 
-    public static int cardinality(boolean ...values){
-        int c=0;
-        for (int j=0; j<values.length; j++)
-            c += values[j] ? 1: 0;
+    public static int cardinality(boolean... values) {
+        int c = 0;
+        for (int j = 0; j < values.length; j++) {
+            c += values[j] ? 1 : 0;
+        }
         return c;
     }
 
     public static <T> void aggregate(Iterator<T> it, int size, VoidFunction<List<T>> f) {
-        Iterators.partition(it, size).forEachRemaining(a -> {f.apply(a);});
+        Iterators.partition(it, size).forEachRemaining(a -> {
+            f.apply(a);
+        });
     }
 
-    public static boolean equalsIgnoreCase(Collection<String> where, String what){
-        if (where == null || where.isEmpty())
+    public static boolean equalsIgnoreCase(Collection<String> where, String what) {
+        if (where == null || where.isEmpty()) {
             return false;
+        }
 
-        for (String w: where){
-            if (w.equalsIgnoreCase(what))
+        for (String w : where) {
+            if (w.equalsIgnoreCase(what)) {
                 return true;
+            }
         }
 
         return false;

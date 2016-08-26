@@ -1,15 +1,13 @@
 package org.everthrift.cassandra.migrator;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.function.Predicate;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
+import com.datastax.driver.core.Session;
+import com.google.common.primitives.Ints;
+import io.smartcat.migration.CqlMigration;
+import io.smartcat.migration.Migration;
+import io.smartcat.migration.MigrationEngine;
+import io.smartcat.migration.MigrationResources;
+import io.smartcat.migration.MigrationType;
+import io.smartcat.migration.exceptions.MigrationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
@@ -24,15 +22,15 @@ import org.springframework.core.type.filter.AssignableTypeFilter;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 
-import com.datastax.driver.core.Session;
-import com.google.common.primitives.Ints;
-
-import io.smartcat.migration.CqlMigration;
-import io.smartcat.migration.Migration;
-import io.smartcat.migration.MigrationEngine;
-import io.smartcat.migration.MigrationResources;
-import io.smartcat.migration.MigrationType;
-import io.smartcat.migration.exceptions.MigrationException;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.function.Predicate;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class CMigrationProcessor implements ApplicationContextAware {
 
@@ -61,18 +59,21 @@ public class CMigrationProcessor implements ApplicationContextAware {
         final ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
         scanner.addIncludeFilter(new AssignableTypeFilter(Migration.class));
 
-        final DefaultListableBeanFactory beanFactory = (DefaultListableBeanFactory) ((ConfigurableApplicationContext) context).getBeanFactory();
+        final DefaultListableBeanFactory beanFactory = (DefaultListableBeanFactory) ((ConfigurableApplicationContext) context)
+            .getBeanFactory();
 
         for (BeanDefinition b : scanner.findCandidateComponents(basePackage)) {
 
             final Class cls = ClassUtils.resolveClassName(b.getBeanClassName(), ClassUtils.getDefaultClassLoader());
 
-            beanFactory.registerBeanDefinition(cls.getSimpleName(), BeanDefinitionBuilder.rootBeanDefinition(cls).getBeanDefinition());
+            beanFactory.registerBeanDefinition(cls.getSimpleName(), BeanDefinitionBuilder.rootBeanDefinition(cls)
+                                                                                         .getBeanDefinition());
 
             final Migration migration = context.getBean(cls.getSimpleName(), Migration.class);
 
-            if (migration == null)
+            if (migration == null) {
                 throw new RuntimeException("cound't get bean:" + cls.getSimpleName());
+            }
 
             migrations.add(migration);
         }
@@ -94,8 +95,9 @@ public class CMigrationProcessor implements ApplicationContextAware {
     private void assertUnique(List<Migration> migrations) throws MigrationException {
         final Set<Migration> set = new HashSet<>();
         for (Migration m : migrations) {
-            if (!set.add(m))
+            if (!set.add(m)) {
                 throw new MigrationException("Migration " + m.toString() + " is not unique");
+            }
         }
     }
 
@@ -115,8 +117,7 @@ public class CMigrationProcessor implements ApplicationContextAware {
         migrations.addAll(findMigrations(basePackage));
         try {
             migrations.addAll(findCQLMigrations(basePackage.replaceAll("\\.", "/")));
-        }
-        catch (URISyntaxException | IOException e) {
+        } catch (URISyntaxException | IOException e) {
             new MigrationException("Coudn't load CQL migrations", e);
         }
 
@@ -126,8 +127,9 @@ public class CMigrationProcessor implements ApplicationContextAware {
 
         resources.addMigrations(migrations);
 
-        if (MigrationEngine.withSession(session, schemaVersionCf).migrate(resources, force) == false)
+        if (MigrationEngine.withSession(session, schemaVersionCf).migrate(resources, force) == false) {
             throw new RuntimeException("Error in cassandra migrations");
+        }
     }
 
     public String getBasePackage() {

@@ -1,11 +1,5 @@
 package org.java_websocket.drafts;
 
-import java.nio.ByteBuffer;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Random;
-
 import org.java_websocket.exceptions.InvalidDataException;
 import org.java_websocket.exceptions.InvalidFrameException;
 import org.java_websocket.exceptions.InvalidHandshakeException;
@@ -22,6 +16,12 @@ import org.java_websocket.handshake.HandshakeBuilder;
 import org.java_websocket.handshake.ServerHandshake;
 import org.java_websocket.handshake.ServerHandshakeBuilder;
 import org.java_websocket.util.Charsetfunctions;
+
+import java.nio.ByteBuffer;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Random;
 
 public class Draft_75 extends Draft {
 
@@ -45,7 +45,9 @@ public class Draft_75 extends Draft {
      */
     public static final byte END_OF_FRAME = (byte) 0xFF;
 
-    /** Is only used to detect protocol violations */
+    /**
+     * Is only used to detect protocol violations
+     */
     protected boolean readingState = false;
 
     protected List<Framedata> readyframes = new LinkedList<Framedata>();
@@ -57,7 +59,7 @@ public class Draft_75 extends Draft {
     @Override
     public HandshakeState acceptHandshakeAsClient(ClientHandshake request, ServerHandshake response) {
         return request.getFieldValue("WebSocket-Origin").equals(response.getFieldValue("Origin"))
-               && basicAccept(response) ? HandshakeState.MATCHED : HandshakeState.NOT_MATCHED;
+                   && basicAccept(response) ? HandshakeState.MATCHED : HandshakeState.NOT_MATCHED;
     }
 
     @Override
@@ -95,8 +97,7 @@ public class Draft_75 extends Draft {
         FrameBuilder frame = new FramedataImpl1();
         try {
             frame.setPayload(ByteBuffer.wrap(Charsetfunctions.utf8Bytes(text)));
-        }
-        catch (InvalidDataException e) {
+        } catch (InvalidDataException e) {
             throw new NotSendableException(e);
         }
         frame.setFin(true);
@@ -122,11 +123,11 @@ public class Draft_75 extends Draft {
         response.setHttpStatusMessage("Web Socket Protocol Handshake");
         response.put("Upgrade", "WebSocket");
         response.put("Connection", request.getFieldValue("Connection")); // to
-                                                                         // respond
-                                                                         // to a
-                                                                         // Connection
-                                                                         // keep
-                                                                         // alive
+        // respond
+        // to a
+        // Connection
+        // keep
+        // alive
         response.put("WebSocket-Origin", request.getFieldValue("Origin"));
         String location = "ws://" + request.getFieldValue("Host") + request.getResourceDescriptor();
         response.put("WebSocket-Location", location);
@@ -139,12 +140,14 @@ public class Draft_75 extends Draft {
         while (buffer.hasRemaining()) {
             byte newestByte = buffer.get();
             if (newestByte == START_OF_FRAME) { // Beginning of Frame
-                if (readingState)
+                if (readingState) {
                     throw new InvalidFrameException("unexpected START_OF_FRAME");
+                }
                 readingState = true;
             } else if (newestByte == END_OF_FRAME) { // End of Frame
-                if (!readingState)
+                if (!readingState) {
                     throw new InvalidFrameException("unexpected END_OF_FRAME");
+                }
                 // currentFrame will be null if END_OF_FRAME was send directly
                 // after
                 // START_OF_FRAME, thus we will send 'null' as the sent message.
@@ -160,9 +163,9 @@ public class Draft_75 extends Draft {
                 }
                 readingState = false;
             } else if (readingState) { // Regular frame data, add to current
-                                       // frame
-                                       // buffer //TODO This code is very
-                                       // expensive and slow
+                // frame
+                // buffer //TODO This code is very
+                // expensive and slow
                 if (currentFrame == null) {
                     currentFrame = createBuffer();
                 } else if (!currentFrame.hasRemaining()) {

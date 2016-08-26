@@ -1,16 +1,7 @@
 package org.everthrift.appserver.jgroups;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
-
-import javax.annotation.PostConstruct;
-
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.thrift.TException;
 import org.apache.thrift.TProcessor;
@@ -28,8 +19,15 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
+import javax.annotation.PostConstruct;
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
 
 public class LoopbackThriftClientServerImpl extends ClusterThriftClientImpl {
 
@@ -53,8 +51,9 @@ public class LoopbackThriftClientServerImpl extends ClusterThriftClientImpl {
     public <T> ListenableFuture<Map<Address, Reply<T>>> call(Collection<Address> dest, Collection<Address> exclusionList,
                                                              InvocationInfo tInfo, Options... options) throws TException {
 
-        if (isLoopback(options) == false)
+        if (isLoopback(options) == false) {
             return Futures.immediateFuture(Collections.emptyMap());
+        }
 
         final TMemoryBuffer in = tInfo.buildCall(0, binary);
         final TProtocol inP = binary.getProtocol(in);

@@ -1,39 +1,39 @@
 <project name="main" default="build-all">
 
-	<import file="src/main/resources/thrift.xml"/>
+    <import file="src/main/resources/thrift.xml"/>
 
-	<taskdef resource="net/sf/antcontrib/antcontrib.properties" classpath="${maven.compile.classpath}" />
-	<taskdef name="groovy" classname="org.codehaus.groovy.ant.Groovy" classpath="${maven.plugin.classpath}"/>
-	
-	<property environment="env" />
-	
-	<target name="clean">
-		
-		<echo message="Cleaning previous generated files..."/>
-		<delete includeemptydirs="true" failonerror="false">
-			<fileset dir="src/main/gen-java" includes="**/*" erroronmissingdir="false" />
-			<fileset dir="src/main/gen-javabean" includes="**/*" erroronmissingdir="false" />
-			<fileset dir="src/main/gen-php" includes="**/*" erroronmissingdir="false" />
-		</delete>
-		<delete file="cache.properties" />		
-	</target>
-	
-	<target name="build-all">
-		
-		<antcall target="setloglevel">
-			<param name="loglevel" value="${loglevel}"/>
-		</antcall>
-		
-		<echo message="Compiling thrift files..."/>
-		<foreach target="build-one" param="file" >
-			<path>
-				<fileset dir="src/main">
-					<include name="thrift/*.thrift"/>
-					<modified />
-				</fileset>
-			</path>
-		</foreach>				
+    <taskdef resource="net/sf/antcontrib/antcontrib.properties" classpath="${maven.compile.classpath}"/>
+    <taskdef name="groovy" classname="org.codehaus.groovy.ant.Groovy" classpath="${maven.plugin.classpath}"/>
 
-	</target>
+    <property environment="env"/>
+
+    <target name="clean">
+
+        <echo message="Cleaning previous generated files..."/>
+        <delete includeemptydirs="true" failonerror="false">
+            <fileset dir="src/main/gen-java" includes="**/*" erroronmissingdir="false"/>
+            <fileset dir="src/main/gen-javabean" includes="**/*" erroronmissingdir="false"/>
+            <fileset dir="src/main/gen-php" includes="**/*" erroronmissingdir="false"/>
+        </delete>
+        <delete file="cache.properties"/>
+    </target>
+
+    <target name="build-all">
+
+        <antcall target="setloglevel">
+            <param name="loglevel" value="${loglevel}"/>
+        </antcall>
+
+        <echo message="Compiling thrift files..."/>
+        <foreach target="build-one" param="file">
+            <path>
+                <fileset dir="src/main">
+                    <include name="thrift/*.thrift"/>
+                    <modified/>
+                </fileset>
+            </path>
+        </foreach>
+
+    </target>
 
 </project>

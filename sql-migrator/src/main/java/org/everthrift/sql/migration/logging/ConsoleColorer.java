@@ -1,9 +1,7 @@
 package org.everthrift.sql.migration.logging;
 
 /**
- *
  * @author efreet (Amosov Evgeniy)
- *
  */
 public class ConsoleColorer {
 

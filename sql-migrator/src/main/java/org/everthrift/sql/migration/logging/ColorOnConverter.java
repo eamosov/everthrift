@@ -5,9 +5,7 @@ import ch.qos.logback.classic.pattern.ClassicConverter;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 
 /**
- *
  * @author efreet (Amosov Evgeniy)
- *
  */
 public class ColorOnConverter extends ClassicConverter {
 
@@ -22,16 +20,16 @@ public class ColorOnConverter extends ClassicConverter {
     @Override
     public String convert(ILoggingEvent e) {
         switch (e.getLevel().levelInt) {
-        case Level.DEBUG_INT:
-            return COLOR_DEBUG;
-        case Level.INFO_INT:
-            return COLOR_INFO;
-        case Level.WARN_INT:
-            return COLOR_WARN;
-        case Level.ERROR_INT:
-            return COLOR_ERROR;
-        default:
-            return "";
+            case Level.DEBUG_INT:
+                return COLOR_DEBUG;
+            case Level.INFO_INT:
+                return COLOR_INFO;
+            case Level.WARN_INT:
+                return COLOR_WARN;
+            case Level.ERROR_INT:
+                return COLOR_ERROR;
+            default:
+                return "";
         }
     }
 }

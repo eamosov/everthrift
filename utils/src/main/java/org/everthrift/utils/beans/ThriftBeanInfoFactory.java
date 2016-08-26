@@ -1,26 +1,26 @@
 package org.everthrift.utils.beans;
 
-import java.beans.BeanInfo;
-import java.beans.IntrospectionException;
-import java.beans.Introspector;
-
 import org.apache.thrift.TBase;
 import org.springframework.beans.BeanInfoFactory;
 import org.springframework.beans.CachedIntrospectionResults;
 import org.springframework.core.Ordered;
 
+import java.beans.BeanInfo;
+import java.beans.IntrospectionException;
+import java.beans.Introspector;
+
 /**
  * {@link BeanInfoFactory} implementation that evaluates whether bean classes have
  * "non-standard" JavaBeans setter methods and are thus candidates for introspection
  * by Spring's (package-visible) {@code ExtendedBeanInfo} implementation.
- *
+ * <p>
  * <p>Ordered at {@link Ordered#LOWEST_PRECEDENCE} to allow other user-defined
  * {@link BeanInfoFactory} types to take precedence.
  *
  * @author Chris Beams
- * @since 3.2
  * @see BeanInfoFactory
  * @see CachedIntrospectionResults
+ * @since 3.2
  */
 public class ThriftBeanInfoFactory implements BeanInfoFactory, Ordered {
 

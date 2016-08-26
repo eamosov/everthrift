@@ -15,14 +15,13 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 /**
- *
  * @author Todd Fast
  */
 public class ResourceScanner {
 
     /**
-     * 
-     * 
+     *
+     *
      */
     private ResourceScanner() {
         super();
@@ -52,8 +51,7 @@ public class ResourceScanner {
             URI uri;
             try {
                 uri = en.nextElement().toURI();
-            }
-            catch (URISyntaxException e) {
+            } catch (URISyntaxException e) {
                 throw new IOException("Exception converting resource URL " + "to URI (this shouldn't happen)", e);
             }
 
@@ -133,14 +131,12 @@ public class ResourceScanner {
                 }
             }
 
-        }
-        finally {
+        } finally {
             try {
                 if (zipfile != null) {
                     zipfile.close();
                 }
-            }
-            catch (IOException e) {
+            } catch (IOException e) {
                 // Ignore
             }
         }

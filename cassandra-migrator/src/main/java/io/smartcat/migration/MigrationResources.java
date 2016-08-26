@@ -13,6 +13,7 @@ public class MigrationResources {
 
     /**
      * Add Migration object to migration collection.
+     *
      * @param migration Migration object
      */
     public void addMigration(final Migration migration) {
@@ -24,6 +25,7 @@ public class MigrationResources {
      * internal collection so no duplicates will be added and order will be
      * preserved meaning that if migration was in collection on position it will
      * stay on that position).
+     *
      * @param migrations Migration object list
      */
     public void addMigrations(final Collection<Migration> migrations) {
@@ -32,6 +34,7 @@ public class MigrationResources {
 
     /**
      * Get all Migration objects sorted by order of insert.
+     *
      * @return Sorted list of Migration objects
      */
     public List<Migration> getMigrations() {

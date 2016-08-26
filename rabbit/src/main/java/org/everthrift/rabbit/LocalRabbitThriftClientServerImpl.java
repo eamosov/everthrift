@@ -1,18 +1,5 @@
 package org.everthrift.rabbit;
 
-import java.lang.reflect.Proxy;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-
 import org.apache.thrift.TException;
 import org.apache.thrift.TProcessor;
 import org.apache.thrift.protocol.TBinaryProtocol;
@@ -29,6 +16,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
+
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import java.lang.reflect.Proxy;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class LocalRabbitThriftClientServerImpl implements RabbitThriftClientIF {
 
@@ -57,10 +56,12 @@ public class LocalRabbitThriftClientServerImpl implements RabbitThriftClientIF {
             @Override
             public Thread newThread(Runnable r) {
                 Thread t = new Thread(r, "LocalRabbitThriftTransport-" + threadNumber.getAndIncrement());
-                if (t.isDaemon())
+                if (t.isDaemon()) {
                     t.setDaemon(false);
-                if (t.getPriority() != Thread.NORM_PRIORITY)
+                }
+                if (t.getPriority() != Thread.NORM_PRIORITY) {
                     t.setPriority(Thread.NORM_PRIORITY);
+                }
                 return t;
             }
         });
@@ -69,7 +70,7 @@ public class LocalRabbitThriftClientServerImpl implements RabbitThriftClientIF {
     @SuppressWarnings("unchecked")
     @Override
     public <T> T onIface(Class<T> cls) {
-        return (T) Proxy.newProxyInstance(LocalRabbitThriftClientServerImpl.class.getClassLoader(), new Class[] { cls },
+        return (T) Proxy.newProxyInstance(LocalRabbitThriftClientServerImpl.class.getClassLoader(), new Class[]{cls},
                                           new ServiceIfaceProxy(cls, new InvocationCallback() {
 
                                               @SuppressWarnings("rawtypes")
@@ -84,19 +85,18 @@ public class LocalRabbitThriftClientServerImpl implements RabbitThriftClientIF {
                                                   final Future f = executor.submit(() -> {
                                                       try {
                                                           thriftProcessor.process(inP, outP);
-                                                      }
-                                                      catch (Exception e) {
+                                                      } catch (Exception e) {
                                                           log.error("Exception", e);
                                                       }
                                                   });
 
-                                                  if (block)
+                                                  if (block) {
                                                       try {
                                                           f.get();
-                                                      }
-                                                      catch (InterruptedException | ExecutionException e) {
+                                                      } catch (InterruptedException | ExecutionException e) {
                                                           log.error("Exception", e);
                                                       }
+                                                  }
 
                                                   throw new NullResult();
                                               }

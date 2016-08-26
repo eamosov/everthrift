@@ -1,10 +1,10 @@
 package org.everthrift.cassandra.codecs;
 
-import java.util.List;
-
 import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.TypeCodec;
 import com.google.common.collect.Lists;
+
+import java.util.List;
 
 public class MoreCodecRegistry {
 
@@ -27,11 +27,12 @@ public class MoreCodecRegistry {
         factories.add(f);
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @SuppressWarnings({"rawtypes", "unchecked"})
     synchronized public <T> TypeCodec<T> lookupCodec(DataType cqlType, Class<?> javaType) {
         for (TypeCodecFactory f : factories) {
-            if (f.accepts(cqlType) && f.accepts(javaType))
+            if (f.accepts(cqlType) && f.accepts(javaType)) {
                 return f.create(cqlType, javaType);
+            }
         }
         return null;
     }

@@ -1,19 +1,18 @@
 package org.everthrift.clustering.jgroups;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
-
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.SettableFuture;
 import org.apache.thrift.TException;
 import org.everthrift.clustering.thrift.InvocationInfo;
 import org.everthrift.clustering.thrift.InvocationInfoThreadHolder;
 import org.jgroups.Address;
 import org.jgroups.blocks.ResponseMode;
 
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.SettableFuture;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
 
 public interface ClusterThriftClientIF {
 
@@ -23,8 +22,7 @@ public interface ClusterThriftClientIF {
         default T getUnchecked() {
             try {
                 return get();
-            }
-            catch (TException e) {
+            } catch (TException e) {
                 throw new RuntimeException(e);
             }
         }
@@ -96,8 +94,7 @@ public interface ClusterThriftClientIF {
             public void onSuccess(Map<Address, Reply<T>> m) {
                 try {
                     s.set(m.get(destination).get());
-                }
-                catch (TException e) {
+                } catch (TException e) {
                     s.setException(e);
                 }
             }

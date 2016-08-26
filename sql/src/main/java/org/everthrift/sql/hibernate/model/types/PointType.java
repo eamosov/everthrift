@@ -1,5 +1,10 @@
 package org.everthrift.sql.hibernate.model.types;
 
+import org.hibernate.HibernateException;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.usertype.UserType;
+import org.springframework.beans.BeanUtils;
+
 import java.beans.PropertyDescriptor;
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
@@ -11,11 +16,6 @@ import java.sql.Types;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import org.hibernate.HibernateException;
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.usertype.UserType;
-import org.springframework.beans.BeanUtils;
 
 @SuppressWarnings("rawtypes")
 public abstract class PointType implements UserType {
@@ -32,7 +32,7 @@ public abstract class PointType implements UserType {
 
     @Override
     public int[] sqlTypes() {
-        return new int[] { Types.OTHER };
+        return new int[]{Types.OTHER};
     }
 
     @SuppressWarnings("unchecked")
@@ -60,27 +60,29 @@ public abstract class PointType implements UserType {
             d.x.getWriteMethod().invoke(o, 0.0);
             d.y.getWriteMethod().invoke(o, 0.0);
             return true;
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             return false;
         }
     }
 
     @Override
     public boolean equals(Object x, Object y) throws HibernateException {
-        if (x == null && y == null)
+        if (x == null && y == null) {
             return true;
+        }
 
-        if ((x == null && y != null) || (x != null && y == null))
+        if ((x == null && y != null) || (x != null && y == null)) {
             return false;
+        }
 
         return x.equals(y);
     }
 
     @Override
     public int hashCode(Object x) throws HibernateException {
-        if (x == null)
+        if (x == null) {
             return 0;
+        }
 
         return x.hashCode();
     }
@@ -91,20 +93,21 @@ public abstract class PointType implements UserType {
 
         final Object value = rs.getObject(names[0]);
 
-        if (value == null)
+        if (value == null) {
             return null;
+        }
 
         final Matcher m = pointPattern.matcher(value.toString());
-        if (!m.matches())
+        if (!m.matches()) {
             throw new HibernateException("invalid POINT presentation:" + value.toString());
+        }
 
         Object ret;
         try {
             ret = create.newInstance();
             x.getWriteMethod().invoke(ret, Double.parseDouble(m.group(1)));
             y.getWriteMethod().invoke(ret, Double.parseDouble(m.group(2)));
-        }
-        catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+        } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
             throw new SQLException(e);
         }
 
@@ -125,8 +128,7 @@ public abstract class PointType implements UserType {
             final Double _y = (Double) y.getReadMethod().invoke(value);
 
             st.setString(index, String.format(Locale.ENGLISH, "SRID=4326;POINT(%f %f)", _x, _y));
-        }
-        catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+        } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
             throw new HibernateException(e);
         }
     }
@@ -134,13 +136,13 @@ public abstract class PointType implements UserType {
     @Override
     public Object deepCopy(Object value) throws HibernateException {
 
-        if (value == null)
+        if (value == null) {
             return null;
+        }
 
         try {
             return copy.newInstance(value);
-        }
-        catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+        } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
             return new HibernateException(e);
         }
     }

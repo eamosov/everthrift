@@ -1,11 +1,11 @@
 package org.everthrift.cassandra;
 
+import com.datastax.driver.core.Session;
+import com.google.common.collect.Lists;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-
-import com.datastax.driver.core.Session;
-import com.google.common.collect.Lists;
 
 public class DLockFactory {
 

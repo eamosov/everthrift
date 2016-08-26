@@ -10,6 +10,7 @@ public class SchemaAgreementException extends MigrationException {
 
     /**
      * Create schema agreement exception with provided message.
+     *
      * @param message Message for this exception
      */
     public SchemaAgreementException(final String message) {
@@ -19,7 +20,8 @@ public class SchemaAgreementException extends MigrationException {
     /**
      * Create schema agreement exception with provided message and original
      * cause.
-     * @param message Message for this exception
+     *
+     * @param message   Message for this exception
      * @param throwable Throwable wrapping original cause
      */
     public SchemaAgreementException(final String message, final Throwable throwable) {

@@ -1,8 +1,6 @@
 package org.everthrift.clustering.thrift;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-
+import com.google.common.util.concurrent.AbstractFuture;
 import org.apache.thrift.TApplicationException;
 import org.apache.thrift.TBase;
 import org.apache.thrift.TException;
@@ -16,7 +14,8 @@ import org.apache.thrift.transport.TMemoryBuffer;
 import org.apache.thrift.transport.TMemoryInputTransport;
 import org.apache.thrift.transport.TTransport;
 
-import com.google.common.util.concurrent.AbstractFuture;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 
 @SuppressWarnings("rawtypes")
 public class InvocationInfo<T> extends AbstractFuture<T> {
@@ -76,20 +75,16 @@ public class InvocationInfo<T> extends AbstractFuture<T> {
             args.write(outProtocol);
             outProtocol.writeMessageEnd();
             outProtocol.getTransport().flush();
-        }
-        catch (TException e) {
+        } catch (TException e) {
             throw new RuntimeException(e);
         }
     }
 
     /**
-     *
      * @param seqId
      * @param protocolFactory
-     * @return
-     *
-     * Transform to array:
-     *
+     * @return Transform to array:
+     * <p>
      * payload.array(), payload.position(), payload.limit() - payload.position()
      */
     public TMemoryBuffer buildCall(int seqId, TProtocolFactory protocolFactory) {
@@ -113,8 +108,7 @@ public class InvocationInfo<T> extends AbstractFuture<T> {
             final T ret = (T) this.parseReply(inT, protocolFactory);
             super.set(ret);
             return ret;
-        }
-        catch (TException e) {
+        } catch (TException e) {
             super.setException(e);
             throw e;
         }
@@ -147,23 +141,19 @@ public class InvocationInfo<T> extends AbstractFuture<T> {
         if (!msg.name.equals(this.fullMethodName)) {
             throw new TApplicationException(TApplicationException.WRONG_METHOD_NAME,
                                             fullMethodName + " failed: invalid method name '" + msg.name + "' in reply. Need '"
-                                                                                     + this.fullMethodName + "'");
+                                                + this.fullMethodName + "'");
         }
 
         final TBase result;
         try {
             result = resultInit.newInstance();
-        }
-        catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             throw new RuntimeException(e);
-        }
-        catch (InstantiationException e) {
+        } catch (InstantiationException e) {
             throw new RuntimeException(e);
-        }
-        catch (IllegalAccessException e) {
+        } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
-        }
-        catch (InvocationTargetException e) {
+        } catch (InvocationTargetException e) {
             throw new RuntimeException(e);
         }
 
@@ -174,28 +164,32 @@ public class InvocationInfo<T> extends AbstractFuture<T> {
         int i = 1;
         do {// Пытаемся найти exception
             final TFieldIdEnum f = result.fieldForId(i++);
-            if (f == null)
+            if (f == null) {
                 break;
+            }
 
             o = result.getFieldValue(f);
-            if (o != null)
+            if (o != null) {
                 break;
+            }
         } while (o == null);
 
         if (o == null) {// Пробуем прочитать success
             final TFieldIdEnum f = result.fieldForId(0);
-            if (f != null)
+            if (f != null) {
                 o = result.getFieldValue(f);
+            }
         }
 
         if (o == null) {
             return null;
         }
 
-        if (o instanceof RuntimeException)
+        if (o instanceof RuntimeException) {
             throw (RuntimeException) o;
-        else if (o instanceof TException)
+        } else if (o instanceof TException) {
             throw (TException) o;
+        }
 
         return o;
     }

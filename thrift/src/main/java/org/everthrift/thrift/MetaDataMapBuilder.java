@@ -30,8 +30,7 @@ public class MetaDataMapBuilder {
                 final Class cls = ClassUtils.resolveClassName(b.getBeanClassName(), ClassUtils.getDefaultClassLoader());
                 cls.newInstance();
                 i++;
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 log.error("Exception", e);
             }
         }

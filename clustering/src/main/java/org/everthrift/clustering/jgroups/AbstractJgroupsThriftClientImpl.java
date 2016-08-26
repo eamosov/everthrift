@@ -1,11 +1,9 @@
 package org.everthrift.clustering.jgroups;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.SettableFuture;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocolFactory;
@@ -24,10 +22,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.SettableFuture;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 public abstract class AbstractJgroupsThriftClientImpl extends ClusterThriftClientImpl {
 
@@ -51,8 +50,9 @@ public abstract class AbstractJgroupsThriftClientImpl extends ClusterThriftClien
         final Message msg = new Message();
         msg.setObject(new MessageWrapper(tInfo.buildCall(0, binaryProtocolFactory)));
 
-        if (loopBack == false)
+        if (loopBack == false) {
             msg.setTransientFlag(TransientFlag.DONT_LOOPBACK);
+        }
 
         final RequestOptions options = new RequestOptions(responseMode, timeout);
 
@@ -80,8 +80,7 @@ public abstract class AbstractJgroupsThriftClientImpl extends ClusterThriftClien
                     RspList<MessageWrapper> resp;
                     try {
                         resp = future.get();
-                    }
-                    catch (InterruptedException | ExecutionException e1) {
+                    } catch (InterruptedException | ExecutionException e1) {
                         f.setException(e1);
                         return;
                     }
@@ -93,7 +92,8 @@ public abstract class AbstractJgroupsThriftClientImpl extends ClusterThriftClien
                     for (Rsp<MessageWrapper> responce : resp) {
                         if (responce.getValue() != null) {
                             ret.put(responce.getSender(),
-                                    new ReplyImpl<T>(() -> (T) tInfo.setReply(responce.getValue().getTTransport(), binaryProtocolFactory)));
+                                    new ReplyImpl<T>(() -> (T) tInfo.setReply(responce.getValue()
+                                                                                      .getTTransport(), binaryProtocolFactory)));
                         } else {
                             log.warn("null responce from {}", responce.getSender());
                         }
@@ -102,8 +102,7 @@ public abstract class AbstractJgroupsThriftClientImpl extends ClusterThriftClien
                     f.set(ret);
                 }
             });
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             f.setException(e);
         }
 
@@ -138,8 +137,7 @@ public abstract class AbstractJgroupsThriftClientImpl extends ClusterThriftClien
                                                 ret.setException(t);
                                             }
                                         });
-                }
-                catch (TException e) {
+                } catch (TException e) {
                     ret.setException(e);
                 }
             }

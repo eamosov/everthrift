@@ -1,15 +1,14 @@
 package org.everthrift.appserver.utils.thrift;
 
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
-
+import it.unimi.dsi.fastutil.objects.Reference2ObjectMap;
+import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
 import org.apache.thrift.TBase;
 import org.apache.thrift.TFieldIdEnum;
 import org.apache.thrift.meta_data.FieldMetaData;
 import org.everthrift.utils.Pair;
 
-import it.unimi.dsi.fastutil.objects.Reference2ObjectMap;
-import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class ThriftUtils {
 
@@ -17,7 +16,7 @@ public class ThriftUtils {
 
     private static final AtomicReference<Reference2ObjectMap<Class, Object>> classes = new AtomicReference<Reference2ObjectMap<Class, Object>>(new Reference2ObjectOpenHashMap<Class, Object>());
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public static Pair<Class<? extends TBase>, Map<? extends TFieldIdEnum, FieldMetaData>> getRootThriftClass(Class<? extends TBase> cls) {
 
         Reference2ObjectMap<Class, Object> _classes = classes.get();
@@ -25,21 +24,23 @@ public class ThriftUtils {
 
         if (p == null) {
             p = _getRootThriftClass(cls);
-            if (p == null)
+            if (p == null) {
                 p = NULL_RESULT;
+            }
 
             _classes = new Reference2ObjectOpenHashMap<Class, Object>(_classes);
             _classes.put(cls, p);
             classes.set(_classes);
         }
 
-        if (p == NULL_RESULT)
+        if (p == NULL_RESULT) {
             return null;
+        }
 
         return (Pair<Class<? extends TBase>, Map<? extends TFieldIdEnum, FieldMetaData>>) p;
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @SuppressWarnings({"rawtypes", "unchecked"})
     private static Pair<Class<? extends TBase>, Map<? extends TFieldIdEnum, FieldMetaData>> _getRootThriftClass(Class<? extends TBase> cls) {
         Map<? extends TFieldIdEnum, FieldMetaData> map = null;
         Class<? extends TBase> nextThriftClass = cls;
@@ -48,16 +49,16 @@ public class ThriftUtils {
             thriftClass = nextThriftClass;
             try {
                 map = FieldMetaData.getStructMetaDataMap(thriftClass);
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 map = null;
             }
             nextThriftClass = (Class<? extends TBase>) thriftClass.getSuperclass();
         } while (map == null && nextThriftClass != null);
 
-        if (map == null)
+        if (map == null) {
             return null;
+        }
 
-        return Pair.<Class<? extends TBase>, Map<? extends TFieldIdEnum, FieldMetaData>> create(thriftClass, map);
+        return Pair.<Class<? extends TBase>, Map<? extends TFieldIdEnum, FieldMetaData>>create(thriftClass, map);
     }
 }

@@ -1,5 +1,10 @@
 package org.everthrift.sql.hibernate.model.types;
 
+import org.everthrift.utils.SqlUtils;
+import org.hibernate.HibernateException;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.usertype.UserType;
+
 import java.io.Serializable;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -8,17 +13,12 @@ import java.sql.Types;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.everthrift.utils.SqlUtils;
-import org.hibernate.HibernateException;
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.usertype.UserType;
-
-@SuppressWarnings({ "rawtypes", "unchecked" })
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class HstoreType implements UserType {
 
     @Override
     public int[] sqlTypes() {
-        return new int[] { Types.OTHER };
+        return new int[]{Types.OTHER};
     }
 
     @Override
@@ -29,11 +29,13 @@ public class HstoreType implements UserType {
     @Override
     public boolean equals(Object x, Object y) throws HibernateException {
 
-        if (x == null && y == null)
+        if (x == null && y == null) {
             return true;
+        }
 
-        if ((x == null && y != null) || (x != null && y == null))
+        if ((x == null && y != null) || (x != null && y == null)) {
             return false;
+        }
 
         return ((Map) x).equals(y);
     }
@@ -41,8 +43,9 @@ public class HstoreType implements UserType {
     @Override
     public int hashCode(Object x) throws HibernateException {
 
-        if (x == null || ((Map) x).size() == 0)
+        if (x == null || ((Map) x).size() == 0) {
             return 0;
+        }
 
         return ((Map) x).hashCode();
     }
@@ -53,11 +56,13 @@ public class HstoreType implements UserType {
 
         final Map<String, String> hstore = (Map<String, String>) rs.getObject(names[0]);
 
-        if (hstore == null)
+        if (hstore == null) {
             return null;
+        }
 
-        if (hstore.isEmpty())
+        if (hstore.isEmpty()) {
             return new HashMap();
+        }
 
         return new HashMap(hstore);
     }

@@ -1,16 +1,14 @@
 package org.everthrift.sql.hibernate.model.types;
 
-import java.util.Map;
-
-import org.hibernate.usertype.UserType;
-
 import com.google.common.collect.Maps;
-
 import javassist.CannotCompileException;
 import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.CtMethod;
 import javassist.NotFoundException;
+import org.hibernate.usertype.UserType;
+
+import java.util.Map;
 
 @SuppressWarnings("rawtypes")
 public class CustomTypeFactory {
@@ -20,8 +18,9 @@ public class CustomTypeFactory {
     public static synchronized Class<? extends UserType> create(Class javaType, Class<? extends UserType> prototype) {
 
         Class<? extends UserType> cls = map.get(javaType);
-        if (cls != null)
+        if (cls != null) {
             return cls;
+        }
 
         cls = compile(javaType, prototype);
         map.put(javaType, cls);
@@ -35,11 +34,10 @@ public class CustomTypeFactory {
         try {
             cc.setSuperclass(pool.get(prototype.getName()));
             cc.addMethod(CtMethod.make("public Class returnedClass() { try { return (Class)(Thread.currentThread().getContextClassLoader().loadClass(\""
-                                       + javaType.getName() + "\")); } catch (ClassNotFoundException e) {throw new RuntimeException(e);}}",
+                                           + javaType.getName() + "\")); } catch (ClassNotFoundException e) {throw new RuntimeException(e);}}",
                                        cc));
             return cc.toClass();
-        }
-        catch (CannotCompileException | NotFoundException e) {
+        } catch (CannotCompileException | NotFoundException e) {
             throw new RuntimeException(e);
         }
     }

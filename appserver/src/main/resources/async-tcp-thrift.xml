@@ -1,52 +1,50 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xmlns:int="http://www.springframework.org/schema/integration"
-	xmlns:int-ip="http://www.springframework.org/schema/integration/ip"
-	xmlns:context="http://www.springframework.org/schema/context"
-	xmlns:cache="http://www.springframework.org/schema/cache" 
-	xmlns:task="http://www.springframework.org/schema/task"
-	xmlns:jgroups="http://www.springframework.org/schema/integration/jgroups"
-	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
-		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:int="http://www.springframework.org/schema/integration"
+       xmlns:int-ip="http://www.springframework.org/schema/integration/ip"
+       xmlns:task="http://www.springframework.org/schema/task"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+
 		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
 		http://www.springframework.org/schema/integration/ip http://www.springframework.org/schema/integration/ip/spring-integration-ip.xsd
-		http://www.springframework.org/schema/integration/jgroups http://www.springframework.org/schema/integration/jgroups/spring-intergration-jgroups.xsd
-		http://www.springframework.org/schema/cache http://www.springframework.org/schema/cache/spring-cache.xsd
+
+
 		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task.xsd">
 
 
-  <bean id="tcpSerializer" class="org.springframework.integration.ip.tcp.serializer.ByteArrayLengthHeaderSerializer" />
-  
-  <task:executor id="tcp-executor" queue-capacity="0"/>
-    
-  <int-ip:tcp-connection-factory id="server"
-  	task-executor="tcp-executor"
-    type="server"
-    local-address="${thrift.async.host}"
-    port="${thrift.async.port}"
-    using-nio="false"
-    apply-sequence="true"
-    single-use="false"
-    deserializer="tcpSerializer"
-    serializer="tcpSerializer"
-    lookup-host="false"
-    so-tcp-no-delay="true"
-  />
-          
-  <int:channel id="inChannel" >
-  </int:channel>
-  
-  <int:channel id="outChannel">
-  	<int:interceptors>
-        <ref bean="asyncTcpThriftAdapter" />
-    </int:interceptors>
-  </int:channel>
-  
-  <int-ip:tcp-inbound-channel-adapter id="inAdapter" channel="inChannel" connection-factory="server" />
-          
-  <int:service-activator input-channel="inChannel" output-channel="outChannel" ref="asyncTcpThriftAdapter" method="handle"/>  	
-	
-  <int-ip:tcp-outbound-channel-adapter id="outAdapter" channel="outChannel" connection-factory="server"/>
+    <bean id="tcpSerializer" class="org.springframework.integration.ip.tcp.serializer.ByteArrayLengthHeaderSerializer"/>
+
+    <task:executor id="tcp-executor" queue-capacity="0"/>
+
+    <int-ip:tcp-connection-factory id="server"
+                                   task-executor="tcp-executor"
+                                   type="server"
+                                   local-address="${thrift.async.host}"
+                                   port="${thrift.async.port}"
+                                   using-nio="false"
+                                   apply-sequence="true"
+                                   single-use="false"
+                                   deserializer="tcpSerializer"
+                                   serializer="tcpSerializer"
+                                   lookup-host="false"
+                                   so-tcp-no-delay="true"
+    />
+
+    <int:channel id="inChannel">
+    </int:channel>
+
+    <int:channel id="outChannel">
+        <int:interceptors>
+            <ref bean="asyncTcpThriftAdapter"/>
+        </int:interceptors>
+    </int:channel>
+
+    <int-ip:tcp-inbound-channel-adapter id="inAdapter" channel="inChannel" connection-factory="server"/>
+
+    <int:service-activator input-channel="inChannel" output-channel="outChannel" ref="asyncTcpThriftAdapter"
+                           method="handle"/>
+
+    <int-ip:tcp-outbound-channel-adapter id="outAdapter" channel="outChannel" connection-factory="server"/>
 
 </beans>

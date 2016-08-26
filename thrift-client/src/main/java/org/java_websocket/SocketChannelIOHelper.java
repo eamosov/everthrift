@@ -1,10 +1,10 @@
 package org.java_websocket;
 
+import org.java_websocket.WebSocket.Role;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
-
-import org.java_websocket.WebSocket.Role;
 
 public class SocketChannelIOHelper {
 
@@ -21,9 +21,9 @@ public class SocketChannelIOHelper {
     }
 
     /**
-     * @see WrappedByteChannel#readMore(ByteBuffer)
      * @return returns whether there is more data left which can be obtained via
      * {@link #readMore(ByteBuffer, WebSocketImpl, WrappedByteChannel)}
+     * @see WrappedByteChannel#readMore(ByteBuffer)
      **/
     public static boolean readMore(final ByteBuffer buf, WebSocketImpl ws, WrappedByteChannel channel) throws IOException {
         buf.clear();
@@ -37,7 +37,9 @@ public class SocketChannelIOHelper {
         return channel.isNeedRead();
     }
 
-    /** Returns whether the whole outQueue has been flushed */
+    /**
+     * Returns whether the whole outQueue has been flushed
+     */
     public static boolean batch(WebSocketImpl ws, ByteChannel sockchannel) throws IOException {
         ByteBuffer buffer = ws.outQueue.peek();
         WrappedByteChannel c = null;
@@ -52,7 +54,8 @@ public class SocketChannelIOHelper {
         } else {
             do {
                 // FIXME writing as much as possible is unfair!!
-                /* int written = */sockchannel.write(buffer);
+                /* int written = */
+                sockchannel.write(buffer);
                 if (buffer.remaining() > 0) {
                     return false;
                 } else {

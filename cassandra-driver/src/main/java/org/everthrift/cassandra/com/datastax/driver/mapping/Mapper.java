@@ -15,28 +15,6 @@
  */
 package org.everthrift.cassandra.com.datastax.driver.mapping;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static org.everthrift.cassandra.com.datastax.driver.mapping.Mapper.Option.Type.SAVE_NULL_FIELDS;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.EnumMap;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.function.Consumer;
-
-import org.everthrift.cassandra.com.datastax.driver.mapping.EntityMapper.Scenario;
-import org.everthrift.cassandra.com.datastax.driver.mapping.Mapper.Option.SaveNullFields;
-import org.everthrift.cassandra.com.datastax.driver.mapping.annotations.Accessor;
-import org.everthrift.cassandra.com.datastax.driver.mapping.annotations.Computed;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.ConsistencyLevel;
 import com.datastax.driver.core.KeyspaceMetadata;
@@ -60,6 +38,27 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import org.everthrift.cassandra.com.datastax.driver.mapping.EntityMapper.Scenario;
+import org.everthrift.cassandra.com.datastax.driver.mapping.Mapper.Option.SaveNullFields;
+import org.everthrift.cassandra.com.datastax.driver.mapping.annotations.Accessor;
+import org.everthrift.cassandra.com.datastax.driver.mapping.annotations.Computed;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.EnumMap;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.function.Consumer;
+
+import static com.google.common.base.Preconditions.checkArgument;
+import static org.everthrift.cassandra.com.datastax.driver.mapping.Mapper.Option.Type.SAVE_NULL_FIELDS;
 
 /**
  * An object handling the mapping of a particular class.
@@ -116,7 +115,11 @@ public class Mapper<T> {
         KeyspaceMetadata keyspace = session().getCluster().getMetadata().getKeyspace(mapper.getKeyspace());
         this.tableMetadata = keyspace == null ? null : keyspace.getTable(mapper.getTable());
 
-        this.protocolVersion = manager.getSession().getCluster().getConfiguration().getProtocolOptions().getProtocolVersion();
+        this.protocolVersion = manager.getSession()
+                                      .getCluster()
+                                      .getConfiguration()
+                                      .getProtocolOptions()
+                                      .getProtocolVersion();
         this.mapOneFunction = new Function<ResultSet, T>() {
             @Override
             public T apply(ResultSet rs) {
@@ -276,8 +279,9 @@ public class Mapper<T> {
             setObject(bs, i++, value, mapper);
         }
 
-        if (mapper.writeConsistency != null)
+        if (mapper.writeConsistency != null) {
             bs.setConsistencyLevel(mapper.writeConsistency);
+        }
 
         for (Option opt : options.values()) {
             opt.checkValidFor(QueryType.SAVE, manager);
@@ -311,7 +315,7 @@ public class Mapper<T> {
         public final Statement statement;
 
         public final Map<ColumnMapper, Object> specialValues; // version and
-                                                              // updatedAt
+        // updatedAt
 
         UpdateQuery(Statement statement, Map<ColumnMapper, Object> specialValues) {
             super();
@@ -328,15 +332,17 @@ public class Mapper<T> {
 
     private UpdateQuery updateQuery(T beforeUpdate, T afterUpdate, EnumMap<Option.Type, Option> options) throws NotModifiedException {
 
-        if (afterUpdate == beforeUpdate)
+        if (afterUpdate == beforeUpdate) {
             throw new IllegalArgumentException();
+        }
 
         boolean saveNullFields = shouldSaveNullFields(options);
 
         boolean isOptimisticUpdate = options.containsKey(Option.Type.ONLY_IF);
 
-        if (isOptimisticUpdate && mapper.getVersionColumn() == null)
+        if (isOptimisticUpdate && mapper.getVersionColumn() == null) {
             throw new RuntimeException("ONLY_IF may be used only with versioned entities");
+        }
 
         final Map<ColumnMapper<T>, Object> values = new HashMap<ColumnMapper<T>, Object>();
         final Map<ColumnMapper<T>, Object> specialValues = new HashMap<ColumnMapper<T>, Object>();
@@ -345,8 +351,9 @@ public class Mapper<T> {
 
         final Option.UpdatedAt updatedAtOption = (Option.UpdatedAt) options.get(Option.Type.UPDATED_AT);
 
-        if (updatedAtOption != null && mapper.getUpdatedAtColumn() == null)
+        if (updatedAtOption != null && mapper.getUpdatedAtColumn() == null) {
             throw new RuntimeException("Option.UpdatedAt needs updatedAtColumn");
+        }
 
         Object versionBefore = null;
 
@@ -363,16 +370,18 @@ public class Mapper<T> {
 
                 if (mapper.isVersion(cm) && isOptimisticUpdate) {
 
-                    if (!Objects.equal(value, origValue))
+                    if (!Objects.equal(value, origValue)) {
                         throw new IllegalArgumentException("entity and original must have the same version");
+                    }
 
                     versionBefore = origValue;
 
                     final Object _value;
-                    if (mapper.isUpdatedAt(cm))
+                    if (mapper.isUpdatedAt(cm)) {
                         _value = updatedAtOption != null ? updatedAtOption.getValue() : System.currentTimeMillis();
-                    else
+                    } else {
                         _value = inc(value);
+                    }
 
                     values.put(cm, _value);
                     specialValues.put(cm, _value);
@@ -391,8 +400,9 @@ public class Mapper<T> {
             }
         }
 
-        if (nUpdatedFields == 0)
+        if (nUpdatedFields == 0) {
             throw new NotModifiedException();
+        }
 
         final BoundStatement bs = getPreparedQuery(QueryType.UPDATE, (Set) values.keySet(), options).bind();
         int i = 0;
@@ -410,8 +420,9 @@ public class Mapper<T> {
             setObject(bs, i++, versionBefore, mapper.getVersionColumn());
         }
 
-        if (mapper.writeConsistency != null)
+        if (mapper.writeConsistency != null) {
             bs.setConsistencyLevel(mapper.writeConsistency);
+        }
 
         for (Option opt : options.values()) {
             opt.checkValidFor(QueryType.UPDATE, manager);
@@ -440,8 +451,9 @@ public class Mapper<T> {
 
         final Option.UpdatedAt updatedAtOption = (Option.UpdatedAt) options.get(Option.Type.UPDATED_AT);
 
-        if (updatedAtOption != null && mapper.getUpdatedAtColumn() == null)
+        if (updatedAtOption != null && mapper.getUpdatedAtColumn() == null) {
             throw new RuntimeException("Option.UpdatedAt needs updatedAtColumn");
+        }
 
         final Update update = QueryBuilder.update(mapper.getTable());
         final Assignments assignments = update.with();
@@ -471,12 +483,12 @@ public class Mapper<T> {
     private void setObject(BoundStatement bs, int i, Object value, ColumnMapper<?> mapper) {
         try {
             TypeCodec<Object> customCodec = mapper.getCustomCodec();
-            if (customCodec != null)
+            if (customCodec != null) {
                 bs.set(i, value, customCodec);
-            else
+            } else {
                 bs.set(i, value, mapper.getJavaType());
-        }
-        catch (Exception e) {
+            }
+        } catch (Exception e) {
             logger.error(String.format("Error setting %s.%s, query='%s', i=%d, value=%s", getTableName(), mapper.getColumnNameUnquoted(),
                                        bs.preparedStatement().getQueryString(), i, value),
                          e);
@@ -512,9 +524,9 @@ public class Mapper<T> {
      * <li>Tracing</li>
      * </ul>
      *
-     * @param entity the entity to save.
+     * @param entity  the entity to save.
      * @param options the options object specified defining special options when
-     * saving.
+     *                saving.
      */
     public boolean save(T entity, Option... options) {
         return isApplied(session().execute(saveQuery(entity, options)));
@@ -546,9 +558,9 @@ public class Mapper<T> {
      * This method is basically equivalent to:
      * {@code getManager().getSession().executeAsync(saveQuery(entity, options))}.
      *
-     * @param entity the entity to save.
+     * @param entity  the entity to save.
      * @param options the options object specified defining special options when
-     * saving.
+     *                saving.
      * @return a future on the completion of the save operation.
      */
     public ListenableFuture<Boolean> saveAsync(T entity, Option... options) {
@@ -570,8 +582,7 @@ public class Mapper<T> {
         final UpdateQuery uq;
         try {
             uq = updateQuery(beforeUpdate, afterUpdate, options);
-        }
-        catch (NotModifiedException e) {
+        } catch (NotModifiedException e) {
             logger.debug("NotModifiedException");
             return false;
         }
@@ -587,7 +598,8 @@ public class Mapper<T> {
         final boolean applied = all.get(0).getBool(0);
         if (applied) {
             uq.applySpecialValues(afterUpdate);
-        } else if (mapper.getVersionColumn() != null && rs.getColumnDefinitions().contains(mapper.getVersionColumn().getColumnName())) {
+        } else if (mapper.getVersionColumn() != null && rs.getColumnDefinitions().contains(mapper.getVersionColumn()
+                                                                                                 .getColumnName())) {
             throw new VersionException(all.get(0).getObject(mapper.getVersionColumn().getColumnName()));
         }
 
@@ -613,13 +625,13 @@ public class Mapper<T> {
      * </ul>
      *
      * @param objects the primary key of the entity to fetch, or more precisely
-     * the values for the columns of said primary key in the order of the
-     * primary key. Can be followed by {@link Option} to include in the DELETE
-     * query.
+     *                the values for the columns of said primary key in the order of the
+     *                primary key. Can be followed by {@link Option} to include in the DELETE
+     *                query.
      * @return a query that fetch the entity of PRIMARY KEY {@code objects}.
      * @throws IllegalArgumentException if the number of value provided differ
-     * from the number of columns composing the PRIMARY KEY of the mapped class,
-     * or if at least one of those values is {@code null}.
+     *                                  from the number of columns composing the PRIMARY KEY of the mapped class,
+     *                                  or if at least one of those values is {@code null}.
      */
     public Statement getQuery(Object... objects) {
         // Order and duplicates matter for primary keys
@@ -639,12 +651,14 @@ public class Mapper<T> {
 
     private Statement getQuery(List<Object> primaryKeys, EnumMap<Option.Type, Option> options) {
 
-        if (primaryKeys.size() != mapper.primaryKeySize())
+        if (primaryKeys.size() != mapper.primaryKeySize()) {
             throw new IllegalArgumentException(String.format("Invalid number of PRIMARY KEY columns provided, %d expected but got %d",
                                                              mapper.primaryKeySize(), primaryKeys.size()));
+        }
 
         BoundStatement bs = getPreparedQuery(QueryType.GET,
-                                             (Set) mapper.allColumns(((Option.Scenario) options.get(Option.Type.SCENARIO)).getScenario()),
+                                             (Set) mapper.allColumns(((Option.Scenario) options.get(Option.Type.SCENARIO))
+                                                                         .getScenario()),
                                              options).bind();
         int i = 0;
         for (Object value : primaryKeys) {
@@ -656,14 +670,16 @@ public class Mapper<T> {
             setObject(bs, i++, value, column);
         }
 
-        if (mapper.readConsistency != null)
+        if (mapper.readConsistency != null) {
             bs.setConsistencyLevel(mapper.readConsistency);
+        }
 
         for (Option opt : options.values()) {
             opt.checkValidFor(QueryType.GET, manager);
             opt.addToPreparedStatement(bs, i);
-            if (opt.isIncludedInQuery())
+            if (opt.isIncludedInQuery()) {
                 i++;
+            }
         }
 
         return bs;
@@ -672,18 +688,21 @@ public class Mapper<T> {
     private Statement getAllQuery(EnumMap<Option.Type, Option> options) {
 
         BoundStatement bs = getPreparedQuery(QueryType.GET_ALL,
-                                             (Set) mapper.allColumns(((Option.Scenario) options.get(Option.Type.SCENARIO)).getScenario()),
+                                             (Set) mapper.allColumns(((Option.Scenario) options.get(Option.Type.SCENARIO))
+                                                                         .getScenario()),
                                              options).bind();
         int i = 0;
 
-        if (mapper.readConsistency != null)
+        if (mapper.readConsistency != null) {
             bs.setConsistencyLevel(mapper.readConsistency);
+        }
 
         for (Option opt : options.values()) {
             opt.checkValidFor(QueryType.GET_ALL, manager);
             opt.addToPreparedStatement(bs, i);
-            if (opt.isIncludedInQuery())
+            if (opt.isIncludedInQuery()) {
                 i++;
+            }
         }
         return bs;
     }
@@ -704,13 +723,13 @@ public class Mapper<T> {
      * {@code map(getManager().getSession().execute(getQuery(objects))).one()}.
      *
      * @param objects the primary key of the entity to fetch, or more precisely
-     * the values for the columns of said primary key in the order of the
-     * primary key. Can be followed by {@link Option} to include in the DELETE
-     * query.
+     *                the values for the columns of said primary key in the order of the
+     *                primary key. Can be followed by {@link Option} to include in the DELETE
+     *                query.
      * @return the entity fetched or {@code null} if it doesn't exist.
      * @throws IllegalArgumentException if the number of value provided differ
-     * from the number of columns composing the PRIMARY KEY of the mapped class,
-     * or if at least one of those values is {@code null}.
+     *                                  from the number of columns composing the PRIMARY KEY of the mapped class,
+     *                                  or if at least one of those values is {@code null}.
      */
     public T get(Object... objects) {
         return mapAliased(session().execute(getQuery(objects))).one();
@@ -723,14 +742,14 @@ public class Mapper<T> {
      * {@code getManager().getSession().executeAsync(getQuery(objects))}.
      *
      * @param objects the primary key of the entity to fetch, or more precisely
-     * the values for the columns of said primary key in the order of the
-     * primary key. Can be followed by {@link Option} to include in the DELETE
-     * query.
+     *                the values for the columns of said primary key in the order of the
+     *                primary key. Can be followed by {@link Option} to include in the DELETE
+     *                query.
      * @return a future on the fetched entity. The return future will yield
      * {@code null} if said entity doesn't exist.
      * @throws IllegalArgumentException if the number of value provided differ
-     * from the number of columns composing the PRIMARY KEY of the mapped class,
-     * or if at least one of those values is {@code null}.
+     *                                  from the number of columns composing the PRIMARY KEY of the mapped class,
+     *                                  or if at least one of those values is {@code null}.
      */
     public ListenableFuture<T> getAsync(Object... objects) {
         return Futures.transform(session().executeAsync(getQuery(objects)), mapOneFunction);
@@ -764,7 +783,7 @@ public class Mapper<T> {
      * <li>Tracing</li>
      * </ul>
      *
-     * @param entity the entity to delete.
+     * @param entity  the entity to delete.
      * @param options the options to add to the DELETE query.
      * @return a query that delete {@code entity} (based on it's defined
      * mapping) with provided USING options.
@@ -828,13 +847,13 @@ public class Mapper<T> {
      * </ul>
      *
      * @param objects the primary key of the entity to delete, or more precisely
-     * the values for the columns of said primary key in the order of the
-     * primary key. Can be followed by {@link Option} to include in the DELETE
-     * query.
+     *                the values for the columns of said primary key in the order of the
+     *                primary key. Can be followed by {@link Option} to include in the DELETE
+     *                query.
      * @return a query that delete the entity of PRIMARY KEY {@code primaryKey}.
      * @throws IllegalArgumentException if the number of value provided differ
-     * from the number of columns composing the PRIMARY KEY of the mapped class,
-     * or if at least one of those values is {@code null}.
+     *                                  from the number of columns composing the PRIMARY KEY of the mapped class,
+     *                                  or if at least one of those values is {@code null}.
      */
     public Statement deleteQuery(Object... objects) {
         // Order and duplicates matter for primary keys
@@ -853,21 +872,24 @@ public class Mapper<T> {
     }
 
     private Statement deleteQuery(List<Object> primaryKey, EnumMap<Option.Type, Option> options) {
-        if (primaryKey.size() != mapper.primaryKeySize())
+        if (primaryKey.size() != mapper.primaryKeySize()) {
             throw new IllegalArgumentException(String.format("Invalid number of PRIMARY KEY columns provided, %d expected but got %d",
                                                              mapper.primaryKeySize(), primaryKey.size()));
+        }
 
         BoundStatement bs = getPreparedQuery(QueryType.DEL, Collections.emptySet(), options).bind();
 
-        if (mapper.writeConsistency != null)
+        if (mapper.writeConsistency != null) {
             bs.setConsistencyLevel(mapper.writeConsistency);
+        }
 
         int i = 0;
         for (Option opt : options.values()) {
             opt.checkValidFor(QueryType.DEL, manager);
             opt.addToPreparedStatement(bs, i);
-            if (opt.isIncludedInQuery())
+            if (opt.isIncludedInQuery()) {
                 i++;
+            }
         }
 
         int columnNumber = 0;
@@ -901,7 +923,7 @@ public class Mapper<T> {
      * This method is basically equivalent to:
      * {@code getManager().getSession().execute(deleteQuery(entity, options))}.
      *
-     * @param entity the entity to delete.
+     * @param entity  the entity to delete.
      * @param options the options to add to the DELETE query.
      */
     public void delete(T entity, Option... options) {
@@ -928,7 +950,7 @@ public class Mapper<T> {
      * This method is basically equivalent to:
      * {@code getManager().getSession().executeAsync(deleteQuery(entity, options))}.
      *
-     * @param entity the entity to delete.
+     * @param entity  the entity to delete.
      * @param options the options to add to the DELETE query.
      * @return a future on the completion of the deletion.
      */
@@ -943,12 +965,12 @@ public class Mapper<T> {
      * {@code getManager().getSession().execute(deleteQuery(objects))}.
      *
      * @param objects the primary key of the entity to delete, or more precisely
-     * the values for the columns of said primary key in the order of the
-     * primary key.Can be followed by {@link Option} to include in the DELETE
-     * query.
+     *                the values for the columns of said primary key in the order of the
+     *                primary key.Can be followed by {@link Option} to include in the DELETE
+     *                query.
      * @throws IllegalArgumentException if the number of value provided differ
-     * from the number of columns composing the PRIMARY KEY of the mapped class,
-     * or if at least one of those values is {@code null}.
+     *                                  from the number of columns composing the PRIMARY KEY of the mapped class,
+     *                                  or if at least one of those values is {@code null}.
      */
     public void delete(Object... objects) {
         session().execute(deleteQuery(objects));
@@ -961,12 +983,12 @@ public class Mapper<T> {
      * {@code getManager().getSession().executeAsync(deleteQuery(objects))}.
      *
      * @param objects the primary key of the entity to delete, or more precisely
-     * the values for the columns of said primary key in the order of the
-     * primary key. Can be followed by {@link Option} to include in the DELETE
-     * query.
+     *                the values for the columns of said primary key in the order of the
+     *                primary key. Can be followed by {@link Option} to include in the DELETE
+     *                query.
      * @throws IllegalArgumentException if the number of value provided differ
-     * from the number of columns composing the PRIMARY KEY of the mapped class,
-     * or if at least one of those values is {@code null}.
+     *                                  from the number of columns composing the PRIMARY KEY of the mapped class,
+     *                                  or if at least one of those values is {@code null}.
      */
     public ListenableFuture<Void> deleteAsync(Object... objects) {
         return Futures.transform(session().executeAsync(deleteQuery(objects)), NOOP);
@@ -1019,7 +1041,7 @@ public class Mapper<T> {
      * {@link Mapper#save(Object, Option...)})} to check available save options.
      *
      * @param options the options to set. To reset, use
-     * {@link Mapper#resetDefaultSaveOptions}.
+     *                {@link Mapper#resetDefaultSaveOptions}.
      */
     public void setDefaultSaveOptions(Option... options) {
         this.defaultSaveOptions = toMap(options);
@@ -1046,7 +1068,7 @@ public class Mapper<T> {
      * {@link Mapper#get(Object...)} )} to check available get options.
      *
      * @param options the options to set. To reset, use
-     * {@link Mapper#resetDefaultGetOptions}.
+     *                {@link Mapper#resetDefaultGetOptions}.
      */
     public void setDefaultGetOptions(Option... options) {
         this.defaultGetOptions = toMap(options);
@@ -1075,7 +1097,7 @@ public class Mapper<T> {
      * {@link Mapper#delete(Object...)} )} to check available delete options.
      *
      * @param options the options to set. To reset, use
-     * {@link Mapper#resetDefaultDeleteOptions}.
+     *                {@link Mapper#resetDefaultDeleteOptions}.
      */
     public void setDefaultDeleteOptions(Option... options) {
         this.defaultDeleteOptions = toMap(options);
@@ -1124,14 +1146,14 @@ public class Mapper<T> {
      * An option for a mapper operation.
      * <p/>
      * Options can be passed to individual operations:
-     * 
+     * <p>
      * <pre>
      * mapper.save(myObject, Option.ttl(3600));
      * </pre>
      * <p/>
      * The mapper can also have defaults, that will apply to all operations that
      * do not override these particular option:
-     * 
+     * <p>
      * <pre>
      * mapper.setDefaultSaveOptions(Option.ttl(3600));
      * mapper.save(myObject);
@@ -1202,7 +1224,7 @@ public class Mapper<T> {
          * always take precedence over the annotation.
          *
          * @param cl the {@link com.datastax.driver.core.ConsistencyLevel} to
-         * use for the operation.
+         *           use for the operation.
          * @return the option.
          */
         public static Option consistencyLevel(ConsistencyLevel cl) {
@@ -1425,8 +1447,9 @@ public class Mapper<T> {
 
             @Override
             void addToPreparedStatement(BoundStatement bs, int i) {
-                if (this.tracing)
+                if (this.tracing) {
                     bs.enableTracing();
+                }
             }
 
             @Override
@@ -1745,19 +1768,21 @@ public class Mapper<T> {
             this.columns = columnMappers;
             this.optionTypes = EnumSet.noneOf(Option.Type.class);
             for (Option opt : options.values()) {
-                if (opt.isIncludedInQuery())
+                if (opt.isIncludedInQuery()) {
                     this.optionTypes.add(opt.type);
+                }
             }
         }
 
         @Override
         public boolean equals(Object other) {
-            if (this == other)
+            if (this == other) {
                 return true;
+            }
             if (other instanceof MapperQueryKey) {
                 MapperQueryKey that = (MapperQueryKey) other;
                 return this.queryType.equals(that.queryType) && this.optionTypes.equals(that.optionTypes)
-                       && this.columns.equals(that.columns);
+                    && this.columns.equals(that.columns);
             }
             return false;
         }

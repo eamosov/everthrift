@@ -1,18 +1,17 @@
 package org.everthrift.appserver.model.lazy;
 
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Lists;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 
 public class RegistryImpl implements Registry {
 
@@ -42,22 +41,28 @@ public class RegistryImpl implements Registry {
 
         @Override
         public boolean equals(Object obj) {
-            if (this == obj)
+            if (this == obj) {
                 return true;
-            if (obj == null)
+            }
+            if (obj == null) {
                 return false;
-            if (getClass() != obj.getClass())
+            }
+            if (getClass() != obj.getClass()) {
                 return false;
+            }
 
             UniqKey other = (UniqKey) obj;
-            if (entity != other.entity)
+            if (entity != other.entity) {
                 return false;
+            }
 
             if (eq == null) {
-                if (other.eq != null)
+                if (other.eq != null) {
                     return false;
-            } else if (!eq.equals(other.eq))
+                }
+            } else if (!eq.equals(other.eq)) {
                 return false;
+            }
             return true;
         }
 
@@ -98,15 +103,16 @@ public class RegistryImpl implements Registry {
     }
 
     @Override
-    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public ListenableFuture<Integer> load() {
 
         int nLoaded = 0;
         final List<ListenableFuture<Integer>> asyncLoaders = Lists.newArrayList();
 
         synchronized (this) {
-            if (loadList.isEmpty())
+            if (loadList.isEmpty()) {
                 return Futures.immediateFuture(0);
+            }
 
             for (Map.Entry<LazyLoader<?>, Collection<Object>> e : loadList.asMap().entrySet()) {
                 final List<Object> entities = (List) e.getValue();
@@ -121,8 +127,9 @@ public class RegistryImpl implements Registry {
             }
         }
 
-        if (asyncLoaders.isEmpty())
+        if (asyncLoaders.isEmpty()) {
             return Futures.immediateFuture(nLoaded);
+        }
 
         final int _nLoaded = nLoaded;
 

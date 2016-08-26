@@ -31,8 +31,7 @@ public class ConsoleUtils {
                     return b.toString().trim();
                 } else if (c == '\r') {
                 }
-            }
-            catch (IOException e) {
+            } catch (IOException e) {
             }
         }
     }

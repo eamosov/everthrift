@@ -1,5 +1,8 @@
 package org.everthrift.appserver.configs;
 
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.ListeningScheduledExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 import org.everthrift.appserver.cluster.controllers.GetNodeConfigurationController;
 import org.everthrift.appserver.cluster.controllers.OnNodeConfigurationController;
 import org.everthrift.appserver.controller.ThriftControllerJmx;
@@ -15,10 +18,6 @@ import org.springframework.context.annotation.ImportResource;
 import org.springframework.context.annotation.Scope;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
-
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
 
 @Configuration
 @ImportResource("classpath:app-context.xml")

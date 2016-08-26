@@ -1,11 +1,6 @@
 package org.everthrift.appserver.transport.tcp;
 
-import java.net.InetSocketAddress;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.thrift.protocol.TProtocolFactory;
 import org.apache.thrift.server.TServer;
 import org.apache.thrift.server.TThreadPoolServer;
@@ -19,7 +14,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.SmartLifecycle;
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import java.net.InetSocketAddress;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 public class ThriftServer implements SmartLifecycle {
 
@@ -67,8 +66,7 @@ public class ThriftServer implements SmartLifecycle {
             thread.interrupt();
             try {
                 thread.join();
-            }
-            catch (InterruptedException e) {
+            } catch (InterruptedException e) {
             }
             thread = null;
         }
@@ -80,15 +78,16 @@ public class ThriftServer implements SmartLifecycle {
 
         try {
             trans = new TServerSocket(new InetSocketAddress(host, port));
-        }
-        catch (TTransportException e) {
+        } catch (TTransportException e) {
             throw new RuntimeException(e);
         }
 
         final SynchronousQueue<Runnable> executorQueue = new SynchronousQueue<Runnable>();
         final ExecutorService es = new ThreadPoolExecutor(5, Integer.MAX_VALUE, 60, TimeUnit.SECONDS, executorQueue,
-                                                          new ThreadFactoryBuilder().setDaemon(false).setPriority(Thread.NORM_PRIORITY)
-                                                                                    .setNameFormat("thrift-%d").build());
+                                                          new ThreadFactoryBuilder().setDaemon(false)
+                                                                                    .setPriority(Thread.NORM_PRIORITY)
+                                                                                    .setNameFormat("thrift-%d")
+                                                                                    .build());
 
         final TThreadPoolServer.Args args = new TThreadPoolServer.Args(trans).executorService(es);
         args.transportFactory(new TFramedTransport.Factory());

@@ -1,11 +1,13 @@
 package org.everthrift.appserver.utils.thrift.scanner;
 
-import java.io.IOException;
-import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Map.Entry;
-
+import com.google.common.collect.Maps;
+import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
+import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
+import javassist.CannotCompileException;
+import javassist.ClassPool;
+import javassist.CtClass;
+import javassist.CtMethod;
+import javassist.NotFoundException;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.WordUtils;
 import org.apache.thrift.TBase;
@@ -23,15 +25,11 @@ import org.everthrift.appserver.utils.thrift.ThriftUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.Maps;
-
-import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
-import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
-import javassist.CannotCompileException;
-import javassist.ClassPool;
-import javassist.CtClass;
-import javassist.CtMethod;
-import javassist.NotFoundException;
+import java.io.IOException;
+import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.Map.Entry;
 
 public class TBaseScannerFactory {
 
@@ -65,22 +63,23 @@ public class TBaseScannerFactory {
 
         String javaType(ReturnType rt) {
             switch (rt) {
-            case OBJECT:
-            case RUNTIME:
-                return "Object";
-            case LIST:
-                return "java.util.List";
-            case MAP:
-                return "java.util.Map";
-            default:
-                throw new RuntimeException("invalid type:" + getterType);
+                case OBJECT:
+                case RUNTIME:
+                    return "Object";
+                case LIST:
+                    return "java.util.List";
+                case MAP:
+                    return "java.util.Map";
+                default:
+                    throw new RuntimeException("invalid type:" + getterType);
             }
         }
 
         private String indent(int c, String input) {
             StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < c; i++)
+            for (int i = 0; i < c; i++) {
                 sb.append("\t");
+            }
 
             return input.replaceAll("(?m)^", sb.toString());
         }
@@ -211,8 +210,9 @@ public class TBaseScannerFactory {
         key = 31 * key + System.identityHashCode(tModel);
 
         TBaseScanner s = scanners.get(key);
-        if (s != null)
+        if (s != null) {
             return s;
+        }
 
         return _create(key, tModel, scenario);
     }
@@ -220,21 +220,23 @@ public class TBaseScannerFactory {
     private synchronized TBaseScanner _create(final int key, Class tModel, String scenario) {
 
         TBaseScanner s = scanners.get(key);
-        if (s != null)
+        if (s != null) {
             return s;
+        }
 
         final ClassPool pool = ClassPool.getDefault();
-        final String scannerClassName = tModel.getPackage().getName() + "." + tModel.getSimpleName() + "Scanner_" + scenario;
+        final String scannerClassName = tModel.getPackage()
+                                              .getName() + "." + tModel.getSimpleName() + "Scanner_" + scenario;
         final CtClass cc = pool.makeClass(scannerClassName);
 
         try {
             cc.setSuperclass(pool.get(AbstractTBaseScanner.class.getName()));
-            cc.setInterfaces(new CtClass[] { pool.get(TBaseScanner.class.getName()) });
+            cc.setInterfaces(new CtClass[]{pool.get(TBaseScanner.class.getName())});
             final String code = buildScannerCode("scan", tModel, scenario);
             log.debug("build scan code for {}: {}", tModel.getSimpleName(), code);
             cc.addMethod(CtMethod.make(code, cc));
             cc.addMethod(CtMethod.make("public String getGeneratedCode(){return \""
-                                       + code.replaceAll("\"", "\\\\\"").replaceAll("\n", "\\\\n") + "\";}", cc));
+                                           + code.replaceAll("\"", "\\\\\"").replaceAll("\n", "\\\\n") + "\";}", cc));
 
             s = (TBaseScanner) cc.toClass(tModel.getClassLoader(), null).newInstance();
 
@@ -242,28 +244,30 @@ public class TBaseScannerFactory {
             _scanners.put(key, s);
             scanners = _scanners;
             return s;
-        }
-        catch (CannotCompileException | NotFoundException | InstantiationException | IllegalAccessException | IOException e) {
+        } catch (CannotCompileException | NotFoundException | InstantiationException | IllegalAccessException | IOException e) {
             throw new RuntimeException(e);
         }
     }
 
     private String indent(int c, String input) {
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < c; i++)
+        for (int i = 0; i < c; i++) {
             sb.append("\t");
+        }
 
         return input.replaceAll("(?m)^", sb.toString());
     }
 
     private boolean hasScenario(String[] value, String scenario) {
 
-        if (Arrays.equals(value, new String[] { "" }))
+        if (Arrays.equals(value, new String[]{""})) {
             return true;
+        }
 
         for (String s : value) {
-            if (s.equals(scenario))
+            if (s.equals(scenario)) {
                 return true;
+            }
         }
         return false;
     }
@@ -271,8 +275,7 @@ public class TBaseScannerFactory {
     private Method getMethod(Class cls, String name, Class... parameterTypes) {
         try {
             return cls.getMethod(name, parameterTypes);
-        }
-        catch (NoSuchMethodException | SecurityException e) {
+        } catch (NoSuchMethodException | SecurityException e) {
             return null;
         }
     }
@@ -296,7 +299,7 @@ public class TBaseScannerFactory {
                     || (v instanceof ListMetaData && ((ListMetaData) v).elemMetaData instanceof StructMetaData)
                     || (v instanceof SetMetaData && ((SetMetaData) v).elemMetaData instanceof StructMetaData)
                     || ((v instanceof MapMetaData) && (((MapMetaData) v).keyMetaData instanceof StructMetaData
-                                                       || ((MapMetaData) v).valueMetaData instanceof StructMetaData))) {
+                    || ((MapMetaData) v).valueMetaData instanceof StructMetaData))) {
 
                     final PropertyInfo pi = new PropertyInfo();
                     pi.name = e.getKey().getFieldName();
@@ -318,8 +321,9 @@ public class TBaseScannerFactory {
                         pi.getterType = ReturnType.MAP;
                     }
 
-                    if (pi.getterType != null)
+                    if (pi.getterType != null) {
                         props.put(pi.name, pi);
+                    }
                 }
             }
         }
@@ -328,9 +332,10 @@ public class TBaseScannerFactory {
             final LazyAccessor _a = m.getAnnotation(LazyAccessor.class);
             if (_a != null) {
 
-                if (m.getParameterTypes().length != 0 || !m.getName().startsWith("get"))
+                if (m.getParameterTypes().length != 0 || !m.getName().startsWith("get")) {
                     throw new RuntimeException(String.format("Incompartible method: cls=%s, method=%s, method annotation=%s",
                                                              cls.getSimpleName(), m.getName(), _a.toString()));
+                }
 
                 final String fieldName = m.getName().substring(3, 4).toLowerCase() + m.getName().substring(4);
 
@@ -355,9 +360,10 @@ public class TBaseScannerFactory {
             final LazyMethod _a = m.getAnnotation(LazyMethod.class);
             if (_a != null) {
 
-                if (!m.getName().startsWith("load"))
+                if (!m.getName().startsWith("load")) {
                     throw new RuntimeException(String.format("Incompartible method: cls=%s, method=%s, method annotation=%s",
                                                              cls.getSimpleName(), m.getName(), _a.toString()));
+                }
 
                 final String fieldName = m.getName().substring(4, 5).toLowerCase() + m.getName().substring(5);
 
@@ -373,28 +379,30 @@ public class TBaseScannerFactory {
                     try {
                         final String isSetName = "isSet" + StringUtils.capitalize(fieldName);
                         final Method isSetMethod = cls.getMethod(isSetName);
-                        if (isSetMethod.getReturnType() == Boolean.TYPE)
+                        if (isSetMethod.getReturnType() == Boolean.TYPE) {
                             pi.isSetName = isSetMethod.getName();
-                    }
-                    catch (NoSuchMethodException | SecurityException e) {
+                        }
+                    } catch (NoSuchMethodException | SecurityException e) {
                     }
 
                     pi.loaderName = m.getName();
 
-                    if (m.getReturnType().equals(Void.class) || m.getReturnType().equals(Void.TYPE))
+                    if (m.getReturnType().equals(Void.class) || m.getReturnType().equals(Void.TYPE)) {
                         pi.loaderType = ReturnType.VOID;
-                    else if (pi.getterType != null)
+                    } else if (pi.getterType != null) {
                         pi.loaderType = pi.getterType;
-                    else
+                    } else {
                         pi.loaderType = ReturnType.RUNTIME;
+                    }
 
-                    if (Arrays.equals(m.getParameterTypes(), new Class[] { Registry.class }))
+                    if (Arrays.equals(m.getParameterTypes(), new Class[]{Registry.class})) {
                         pi.needPassThis = false;
-                    else if (Arrays.equals(m.getParameterTypes(), new Class[] { Registry.class, Object.class }))
+                    } else if (Arrays.equals(m.getParameterTypes(), new Class[]{Registry.class, Object.class})) {
                         pi.needPassThis = true;
-                    else
+                    } else {
                         throw new RuntimeException(String.format("Incompartible method: cls=%s, method=%s, method annotation=%s",
                                                                  cls.getSimpleName(), m.getName(), _a.toString()));
+                    }
 
                 }
             }

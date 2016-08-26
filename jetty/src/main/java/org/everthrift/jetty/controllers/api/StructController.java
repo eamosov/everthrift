@@ -1,11 +1,5 @@
 package org.everthrift.jetty.controllers.api;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.everthrift.appserver.utils.thrift.ThriftFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
@@ -13,6 +7,11 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 @Controller
 public class StructController {
@@ -28,7 +27,8 @@ public class StructController {
 
         if (structClassName == null || !structClassName.startsWith(tbaseRoot)) {
             response.setStatus(403);
-            response.getOutputStream().write(("Class '" + structClassName + "' not allowed").getBytes(StandardCharsets.UTF_8));
+            response.getOutputStream()
+                    .write(("Class '" + structClassName + "' not allowed").getBytes(StandardCharsets.UTF_8));
             response.flushBuffer();
             return;
         }
@@ -43,10 +43,10 @@ public class StructController {
             response.getOutputStream().write(services);
             response.flushBuffer();
 
-        }
-        catch (ClassNotFoundException e) {
+        } catch (ClassNotFoundException e) {
             response.setStatus(404);
-            response.getOutputStream().write(("Class '" + structClassName + "' not found").getBytes(StandardCharsets.UTF_8));
+            response.getOutputStream()
+                    .write(("Class '" + structClassName + "' not found").getBytes(StandardCharsets.UTF_8));
             response.flushBuffer();
             return;
         }

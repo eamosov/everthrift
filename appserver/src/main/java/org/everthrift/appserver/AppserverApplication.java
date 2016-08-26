@@ -16,23 +16,8 @@
 
 package org.everthrift.appserver;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.CertificateException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
-
+import com.google.common.base.Throwables;
+import com.google.common.collect.Lists;
 import org.everthrift.appserver.configs.AppserverConfig;
 import org.everthrift.appserver.configs.AsyncTcpThrift;
 import org.everthrift.appserver.configs.JGroups;
@@ -52,8 +37,17 @@ import org.springframework.core.env.SimpleCommandLinePropertySource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.ResourcePropertySource;
 
-import com.google.common.base.Throwables;
-import com.google.common.collect.Lists;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 public class AppserverApplication {
 
@@ -129,8 +123,7 @@ public class AppserverApplication {
         try {
             final ResourcePropertySource ps = new ResourcePropertySource(resource);
             env.getPropertySources().addFirst(ps);
-        }
-        catch (IOException e1) {
+        } catch (IOException e1) {
             log.error("Coudn't load application.properties", e1);
         }
 
@@ -138,7 +131,8 @@ public class AppserverApplication {
         env.getPropertySources().addFirst(sclps);
         env.getPropertySources()
            .addLast(new MapPropertySource("thriftScanPathList", Collections.singletonMap("thrift.scan", (Object) thriftScanPathList)));
-        env.getPropertySources().addLast(new MapPropertySource("version", Collections.singletonMap("version", (Object) version)));
+        env.getPropertySources()
+           .addLast(new MapPropertySource("version", Collections.singletonMap("version", (Object) version)));
 
         PropertySource lastAdded = null;
         final Pattern resourcePattern = Pattern.compile("(.+)\\.properties");
@@ -159,8 +153,7 @@ public class AppserverApplication {
                         env.getPropertySources().addBefore(lastAdded.getName(),
                                                            (lastAdded = new ResourcePropertySource(profileResourceName)));
                         log.info("Added property source: {}", profileResourceName);
-                    }
-                    catch (IOException e) {
+                    } catch (IOException e) {
                     }
                 }
             }
@@ -169,8 +162,7 @@ public class AppserverApplication {
         if (Boolean.parseBoolean(env.getProperty("sqlmigrator.run", "false"))) {
             try {
                 runSqlMigrator();
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 throw Throwables.propagate(e);
             }
         }
@@ -178,8 +170,7 @@ public class AppserverApplication {
         if (Boolean.parseBoolean(env.getProperty("cassandra.migrator.run", "false"))) {
             try {
                 runCMigrationProcessor();
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 throw Throwables.propagate(e);
             }
         }
@@ -187,19 +178,21 @@ public class AppserverApplication {
         final boolean nothrift = !env.getProperty("nothrift", "false").equalsIgnoreCase("false");
 
         try {
-            if (env.getProperty("thrift.async.port").equals("0"))
+            if (env.getProperty("thrift.async.port").equals("0")) {
                 addProperty("thrift.async.port", SocketUtils.findAvailableServerSocket());
+            }
 
-            if (!nothrift && env.getProperty("thrift.port").equals("0"))
+            if (!nothrift && env.getProperty("thrift.port").equals("0")) {
                 addProperties("thrift.port", SocketUtils.findAvailableServerSocket());
+            }
 
-        }
-        catch (IOException e1) {
+        } catch (IOException e1) {
             throw new RuntimeException(e1);
         }
 
-        if (env.getProperty("jgroups.multicast.bind_addr") != null)
+        if (env.getProperty("jgroups.multicast.bind_addr") != null) {
             System.setProperty("jgroups.multicast.bind_addr", env.getProperty("jgroups.multicast.bind_addr"));
+        }
 
         if (env.getProperty("tbase.root") != null) {
             final MetaDataMapBuilder mdb = new MetaDataMapBuilder();
@@ -211,29 +204,30 @@ public class AppserverApplication {
 
         context.register(annotatedClasses.toArray(new Class[annotatedClasses.size()]));
 
-        if (isAsyncThriftEnabled())
+        if (isAsyncThriftEnabled()) {
             context.register(AsyncTcpThrift.class);
+        }
 
-        if (isThriftEnabled())
+        if (isThriftEnabled()) {
             context.register(TcpThrift.class);
+        }
 
-        if (isJGroupsEnabled())
+        if (isJGroupsEnabled()) {
             context.register(JGroups.class);
-        else
+        } else {
             context.register(LoopbackJGroups.class);
+        }
 
         if (isJmsEnabled()) {
             try {
                 context.register(Class.forName("org.everthrift.jms.Jms"));
-            }
-            catch (ClassNotFoundException e) {
+            } catch (ClassNotFoundException e) {
                 throw Throwables.propagate(e);
             }
         } else {
             try {
                 context.register(Class.forName("org.everthrift.jms.LoopbackJms"));
-            }
-            catch (ClassNotFoundException e) {
+            } catch (ClassNotFoundException e) {
                 log.warn("Cound't find LoopbackJms. @RpcJms Service will be disabled.");
             }
         }
@@ -241,15 +235,13 @@ public class AppserverApplication {
         if (isRabbitEnabled()) {
             try {
                 context.register(Class.forName("org.everthrift.rabbit.RabbitConfig"));
-            }
-            catch (ClassNotFoundException e) {
+            } catch (ClassNotFoundException e) {
                 throw Throwables.propagate(e);
             }
         } else {
             try {
                 context.register(Class.forName("org.everthrift.rabbit.LocalRabbitConfig"));
-            }
-            catch (ClassNotFoundException e) {
+            } catch (ClassNotFoundException e) {
                 log.warn("Cound't find LoopbackJms. @RpcJms Service will be disabled.");
             }
         }
@@ -257,48 +249,50 @@ public class AppserverApplication {
         if (isJettyEnabled()) {
             try {
                 context.register(Class.forName("org.everthrift.jetty.configs.Http"));
-            }
-            catch (ClassNotFoundException e) {
+            } catch (ClassNotFoundException e) {
                 throw Throwables.propagate(e);
             }
         }
 
         try {
             context.register(Class.forName("org.everthrift.cassandra.model.CassandraConfig"));
-        }
-        catch (ClassNotFoundException e) {
+        } catch (ClassNotFoundException e) {
         }
 
         context.refresh();
 
-        final List<String> propertySources = StreamSupport.stream(context.getEnvironment().getPropertySources().spliterator(), false)
+        final List<String> propertySources = StreamSupport.stream(context.getEnvironment()
+                                                                         .getPropertySources()
+                                                                         .spliterator(), false)
                                                           .map(PropertySource::getName).collect(Collectors.toList());
         log.info("Used property sources:{}", propertySources);
 
         initialized = true;
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @SuppressWarnings({"rawtypes", "unchecked"})
     private void runInContext(String xmlConfig, String className, String method) throws Exception {
 
         final Class<Callable> proc = (Class) Class.forName(className);
 
-        final ClassPathXmlApplicationContext xmlContext = new ClassPathXmlApplicationContext(new String[] { xmlConfig }, false);
+        final ClassPathXmlApplicationContext xmlContext = new ClassPathXmlApplicationContext(new String[]{xmlConfig}, false);
         try {
-            for (final PropertySource p : env.getPropertySources())
+            for (final PropertySource p : env.getPropertySources()) {
                 xmlContext.getEnvironment().getPropertySources().addLast(p);
+            }
 
             xmlContext.refresh();
 
             final Object processor = xmlContext.getBean(proc);
-            if (processor == null)
+            if (processor == null) {
                 throw new RuntimeException("Can't find Migration processor bean");
+            }
 
             processor.getClass().getMethod(method).invoke(processor);
-        }
-        finally {
-            if (xmlContext != null && xmlContext.isActive())
+        } finally {
+            if (xmlContext != null && xmlContext.isActive()) {
                 xmlContext.close();
+            }
         }
     }
 
@@ -325,6 +319,7 @@ public class AppserverApplication {
 
     /**
      * Add path to thrift controllers scan path
+     *
      * @param p
      */
     public synchronized void addThriftScanPath(String p) {
@@ -336,9 +331,9 @@ public class AppserverApplication {
     }
 
     private synchronized void addPropertySource(PropertySource<?> ps) {
-        if (!initialized)
+        if (!initialized) {
             propertySourceList.add(ps);
-        else {
+        } else {
             env.getPropertySources().addFirst(ps);
         }
     }
@@ -348,8 +343,7 @@ public class AppserverApplication {
             addPropertySource(new AppResourcePropertySource(resourceName));
             log.info("Added property source: {}", resourceName);
             return true;
-        }
-        catch (IOException e1) {
+        } catch (IOException e1) {
             if (ignoreNotExisting) {
                 log.warn("Property source {} not found", resourceName);
                 return false;
@@ -360,11 +354,12 @@ public class AppserverApplication {
     }
 
     public void registerAnnotatedClasses(Class<?>... annotatedClasses) {
-        for (Class cls : annotatedClasses)
+        for (Class cls : annotatedClasses) {
             this.annotatedClasses.add(cls);
+        }
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public synchronized void addProperties(String name, Object... key_value) throws IOException {
 
         if (key_value.length % 2 != 0) {
@@ -375,8 +370,10 @@ public class AppserverApplication {
 
         for (int i = 0; i <= key_value.length - 2; i = i + 2) {
 
-            if (!(key_value[i] instanceof String))
-                throw new IllegalArgumentException(String.format("i=%d, type=%s", i, key_value[i].getClass().toString()));
+            if (!(key_value[i] instanceof String)) {
+                throw new IllegalArgumentException(String.format("i=%d, type=%s", i, key_value[i].getClass()
+                                                                                                 .toString()));
+            }
 
             props2.put(key_value[i], key_value[i + 1]);
         }
@@ -384,7 +381,7 @@ public class AppserverApplication {
         addPropertySource(new MapPropertySource(name, props2));
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public synchronized void addProperty(String name, Object value) throws IOException {
         final Map props2 = new HashMap();
         props2.put(name, value);
@@ -396,8 +393,7 @@ public class AppserverApplication {
 
             try {
                 Thread.sleep(5000);
-            }
-            catch (InterruptedException e) {
+            } catch (InterruptedException e) {
                 break;
             }
         }

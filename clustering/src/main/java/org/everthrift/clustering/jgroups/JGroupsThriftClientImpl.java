@@ -1,8 +1,6 @@
 package org.everthrift.clustering.jgroups;
 
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
-
+import com.google.common.collect.Maps;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TMessage;
 import org.apache.thrift.protocol.TProtocol;
@@ -21,7 +19,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 
-import com.google.common.collect.Maps;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class JGroupsThriftClientImpl extends AbstractJgroupsThriftClientImpl implements MembershipListener, ClusterThriftClientIF {
 
@@ -91,8 +90,9 @@ public class JGroupsThriftClientImpl extends AbstractJgroupsThriftClientImpl imp
     @Override
     public synchronized void viewAccepted(View new_view) {
 
-        if (!this.viewAccepted.isDone())
+        if (!this.viewAccepted.isDone()) {
             this.viewAccepted.set(null);
+        }
 
         nodeDb.retain(new_view.getMembers());
     }

@@ -15,19 +15,13 @@
  */
 package org.everthrift.cassandra.com.datastax.driver.mapping;
 
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
-
+import com.datastax.driver.core.ConsistencyLevel;
+import com.datastax.driver.core.Metadata;
+import com.datastax.driver.core.TypeCodec;
+import com.datastax.driver.core.UserType;
+import com.google.common.base.Strings;
+import com.google.common.collect.Maps;
+import com.google.common.reflect.TypeToken;
 import org.everthrift.cassandra.com.datastax.driver.mapping.EntityMapper.ColumnScenario;
 import org.everthrift.cassandra.com.datastax.driver.mapping.MethodMapper.ParamMapper;
 import org.everthrift.cassandra.com.datastax.driver.mapping.annotations.Accessor;
@@ -47,13 +41,18 @@ import org.everthrift.cassandra.com.datastax.driver.mapping.annotations.Transien
 import org.everthrift.cassandra.com.datastax.driver.mapping.annotations.UDT;
 import org.everthrift.cassandra.com.datastax.driver.mapping.annotations.Version;
 
-import com.datastax.driver.core.ConsistencyLevel;
-import com.datastax.driver.core.Metadata;
-import com.datastax.driver.core.TypeCodec;
-import com.datastax.driver.core.UserType;
-import com.google.common.base.Strings;
-import com.google.common.collect.Maps;
-import com.google.common.reflect.TypeToken;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Static metods that facilitates parsing class annotations into the
@@ -81,15 +80,18 @@ public class AnnotationParser implements EntityParser {
         String tableName = table.caseSensitiveTable() ? table.name() : table.name().toLowerCase();
 
         ConsistencyLevel writeConsistency = table.writeConsistency()
-                                                 .isEmpty() ? null : ConsistencyLevel.valueOf(table.writeConsistency().toUpperCase());
+                                                 .isEmpty() ? null : ConsistencyLevel.valueOf(table.writeConsistency()
+                                                                                                   .toUpperCase());
         ConsistencyLevel readConsistency = table.readConsistency()
-                                                .isEmpty() ? null : ConsistencyLevel.valueOf(table.readConsistency().toUpperCase());
+                                                .isEmpty() ? null : ConsistencyLevel.valueOf(table.readConsistency()
+                                                                                                  .toUpperCase());
 
         if (Strings.isNullOrEmpty(table.keyspace())) {
             ksName = mappingManager.getSession().getLoggedKeyspace();
-            if (Strings.isNullOrEmpty(ksName))
+            if (Strings.isNullOrEmpty(ksName)) {
                 throw new IllegalArgumentException(String.format("Error creating mapper for class %s, the @%s annotation declares no default keyspace, and the session is not currently logged to any keyspace",
                                                                  entityClass.getSimpleName(), Table.class.getSimpleName()));
+            }
         }
 
         EntityMapper<T> mapper = factory.create(entityClass, ksName, tableName, writeConsistency, readConsistency);
@@ -100,32 +102,36 @@ public class AnnotationParser implements EntityParser {
         Field versionField = null;
 
         for (Field field : entityClass.getDeclaredFields()) {
-            if (field.isSynthetic() || (field.getModifiers() & Modifier.STATIC) == Modifier.STATIC)
+            if (field.isSynthetic() || (field.getModifiers() & Modifier.STATIC) == Modifier.STATIC) {
                 continue;
+            }
 
-            if (mappingManager.isCassandraV1 && field.getAnnotation(Computed.class) != null)
+            if (mappingManager.isCassandraV1 && field.getAnnotation(Computed.class) != null) {
                 throw new UnsupportedOperationException("Computed fields are not supported with native protocol v1");
+            }
 
             AnnotationChecks.validateAnnotations(field, "entity", Column.class, ClusteringColumn.class, Frozen.class, FrozenKey.class,
                                                  FrozenValue.class, PartitionKey.class, Transient.class, Computed.class, Version.class);
 
-            if (field.getAnnotation(Transient.class) != null)
+            if (field.getAnnotation(Transient.class) != null) {
                 continue;
-
-            switch (kind(field)) {
-            case PARTITION_KEY:
-                pks.add(field);
-                break;
-            case CLUSTERING_COLUMN:
-                ccs.add(field);
-                break;
-            default:
-                rgs.add(field);
-                break;
             }
 
-            if (field.getAnnotation(Version.class) != null)
+            switch (kind(field)) {
+                case PARTITION_KEY:
+                    pks.add(field);
+                    break;
+                case CLUSTERING_COLUMN:
+                    ccs.add(field);
+                    break;
+                default:
+                    rgs.add(field);
+                    break;
+            }
+
+            if (field.getAnnotation(Version.class) != null) {
                 versionField = field;
+            }
         }
 
         AtomicInteger columnCounter = mappingManager.isCassandraV1 ? null : new AtomicInteger(0);
@@ -167,33 +173,40 @@ public class AnnotationParser implements EntityParser {
 
         if (Strings.isNullOrEmpty(udt.keyspace())) {
             ksName = mappingManager.getSession().getLoggedKeyspace();
-            if (Strings.isNullOrEmpty(ksName))
+            if (Strings.isNullOrEmpty(ksName)) {
                 throw new IllegalArgumentException(String.format("Error creating UDT codec for class %s, the @%s annotation declares no default keyspace, and the session is not currently logged to any keyspace",
                                                                  udtClass.getSimpleName(), UDT.class.getSimpleName()));
+            }
         }
 
-        UserType userType = mappingManager.getSession().getCluster().getMetadata().getKeyspace(ksName).getUserType(udtName);
+        UserType userType = mappingManager.getSession()
+                                          .getCluster()
+                                          .getMetadata()
+                                          .getKeyspace(ksName)
+                                          .getUserType(udtName);
 
         List<Field> columns = new ArrayList<Field>();
 
         for (Field field : udtClass.getDeclaredFields()) {
-            if (field.isSynthetic() || (field.getModifiers() & Modifier.STATIC) == Modifier.STATIC)
+            if (field.isSynthetic() || (field.getModifiers() & Modifier.STATIC) == Modifier.STATIC) {
                 continue;
+            }
 
             AnnotationChecks.validateAnnotations(field, "UDT", org.everthrift.cassandra.com.datastax.driver.mapping.annotations.Field.class,
                                                  Frozen.class, FrozenKey.class, FrozenValue.class, Transient.class);
 
-            if (field.getAnnotation(Transient.class) != null)
+            if (field.getAnnotation(Transient.class) != null) {
                 continue;
+            }
 
             switch (kind(field)) {
-            case PARTITION_KEY:
-                throw new IllegalArgumentException("Annotation @PartitionKey is not allowed in a class annotated by @UDT");
-            case CLUSTERING_COLUMN:
-                throw new IllegalArgumentException("Annotation @ClusteringColumn is not allowed in a class annotated by @UDT");
-            default:
-                columns.add(field);
-                break;
+                case PARTITION_KEY:
+                    throw new IllegalArgumentException("Annotation @PartitionKey is not allowed in a class annotated by @UDT");
+                case CLUSTERING_COLUMN:
+                    throw new IllegalArgumentException("Annotation @ClusteringColumn is not allowed in a class annotated by @UDT");
+                default:
+                    columns.add(field);
+                    break;
             }
         }
         Map<String, ColumnMapper<T>> columnMappers = createFieldMappers(columns, factory, udtClass, mappingManager, null);
@@ -216,20 +229,21 @@ public class AnnotationParser implements EntityParser {
         for (int i = 0; i < fields.size(); i++) {
             Field field = fields.get(i);
             int pos = position(field);
-            if (pos != i)
+            if (pos != i) {
                 throw new IllegalArgumentException(String.format("Invalid ordering value %d for annotation %s of column %s, was expecting %d",
                                                                  pos, annotation, field.getName(), i));
+            }
         }
     }
 
     private static int position(Field field) {
         switch (kind(field)) {
-        case PARTITION_KEY:
-            return field.getAnnotation(PartitionKey.class).value();
-        case CLUSTERING_COLUMN:
-            return field.getAnnotation(ClusteringColumn.class).value();
-        default:
-            return -1;
+            case PARTITION_KEY:
+                return field.getAnnotation(PartitionKey.class).value();
+            case CLUSTERING_COLUMN:
+                return field.getAnnotation(ClusteringColumn.class).value();
+            default:
+                return -1;
         }
     }
 
@@ -237,9 +251,10 @@ public class AnnotationParser implements EntityParser {
         PartitionKey pk = field.getAnnotation(PartitionKey.class);
         ClusteringColumn cc = field.getAnnotation(ClusteringColumn.class);
         Computed comp = field.getAnnotation(Computed.class);
-        if (pk != null && cc != null)
+        if (pk != null && cc != null) {
             throw new IllegalArgumentException("Field " + field.getName()
-                                               + " cannot have both the @PartitionKey and @ClusteringColumn annotations");
+                                                   + " cannot have both the @PartitionKey and @ClusteringColumn annotations");
+        }
 
         if (pk != null) {
             return ColumnMapper.Kind.PARTITION_KEY;
@@ -278,15 +293,15 @@ public class AnnotationParser implements EntityParser {
     private static TypeCodec<Object> customCodec(Field field) {
         Class<? extends TypeCodec<?>> codecClass = getCodecClass(field);
 
-        if (codecClass.equals(Defaults.NoCodec.class))
+        if (codecClass.equals(Defaults.NoCodec.class)) {
             return null;
+        }
 
         try {
             @SuppressWarnings("unchecked")
             TypeCodec<Object> instance = (TypeCodec<Object>) codecClass.newInstance();
             return instance;
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw new IllegalArgumentException(String.format("Cannot create an instance of custom codec %s for field %s", codecClass,
                                                              field),
                                                e);
@@ -300,27 +315,31 @@ public class AnnotationParser implements EntityParser {
 
     private static Class<? extends TypeCodec<?>> getCodecClass(Field field) {
         Column column = field.getAnnotation(Column.class);
-        if (column != null)
+        if (column != null) {
             return column.codec();
+        }
 
         org.everthrift.cassandra.com.datastax.driver.mapping.annotations.Field udtField = field.getAnnotation(org.everthrift.cassandra.com.datastax.driver.mapping.annotations.Field.class);
-        if (udtField != null)
+        if (udtField != null) {
             return udtField.codec();
+        }
 
         return Defaults.NoCodec.class;
     }
 
     public static <T> AccessorMapper<T> parseAccessor(Class<T> accClass, AccessorMapper.Factory factory, MappingManager mappingManager) {
-        if (!accClass.isInterface())
+        if (!accClass.isInterface()) {
             throw new IllegalArgumentException("@Accessor annotation is only allowed on interfaces");
+        }
 
         AnnotationChecks.getTypeAnnotation(Accessor.class, accClass);
 
         List<MethodMapper> methods = new ArrayList<MethodMapper>();
         for (Method m : accClass.getDeclaredMethods()) {
             Query query = m.getAnnotation(Query.class);
-            if (query == null)
+            if (query == null) {
                 continue;
+            }
 
             String queryString = query.value();
 
@@ -335,20 +354,23 @@ public class AnnotationParser implements EntityParser {
                     if (a.annotationType().equals(Param.class)) {
                         Param param = (Param) a;
                         paramName = param.value();
-                        if (paramName.isEmpty())
+                        if (paramName.isEmpty()) {
                             paramName = null;
+                        }
                         codecClass = param.codec();
-                        if (Defaults.NoCodec.class.equals(codecClass))
+                        if (Defaults.NoCodec.class.equals(codecClass)) {
                             codecClass = null;
+                        }
                         break;
                     }
                 }
                 boolean thisParamNamed = (paramName != null);
-                if (allParamsNamed == null)
+                if (allParamsNamed == null) {
                     allParamsNamed = thisParamNamed;
-                else if (allParamsNamed != thisParamNamed)
+                } else if (allParamsNamed != thisParamNamed) {
                     throw new IllegalArgumentException(String.format("For method '%s', either all or none of the parameters must be named",
                                                                      m.getName()));
+                }
 
                 paramMappers[i] = newParamMapper(accClass.getName(), m.getName(), i, paramName, codecClass, paramTypes[i],
                                                  paramAnnotations[i], mappingManager);
@@ -360,7 +382,8 @@ public class AnnotationParser implements EntityParser {
 
             QueryParameters options = m.getAnnotation(QueryParameters.class);
             if (options != null) {
-                cl = options.consistency().isEmpty() ? null : ConsistencyLevel.valueOf(options.consistency().toUpperCase());
+                cl = options.consistency().isEmpty() ? null : ConsistencyLevel.valueOf(options.consistency()
+                                                                                              .toUpperCase());
                 fetchSize = options.fetchSize();
                 tracing = options.tracing();
             }
@@ -371,19 +394,21 @@ public class AnnotationParser implements EntityParser {
         return factory.create(accClass, methods);
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private static ParamMapper newParamMapper(String className, String methodName, int idx, String paramName,
                                               Class<? extends TypeCodec<?>> codecClass, Type paramType, Annotation[] paramAnnotations,
                                               MappingManager mappingManager) {
         if (paramType instanceof Class) {
             Class<?> paramClass = (Class<?>) paramType;
-            if (TypeMappings.isMappedUDT(paramClass))
+            if (TypeMappings.isMappedUDT(paramClass)) {
                 mappingManager.getUDTCodec(paramClass);
+            }
 
             return new ParamMapper(paramName, idx, TypeToken.of(paramType), codecClass);
         } else if (paramType instanceof ParameterizedType) {
-            for (Class<?> udt : TypeMappings.findUDTs(paramType))
+            for (Class<?> udt : TypeMappings.findUDTs(paramType)) {
                 mappingManager.getUDTCodec(udt);
+            }
 
             return new ParamMapper(paramName, idx, TypeToken.of(paramType), codecClass);
         } else {

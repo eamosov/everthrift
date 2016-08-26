@@ -16,6 +16,12 @@
 
 package org.everthrift.utils.beans;
 
+import org.apache.thrift.TBase;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.CachedIntrospectionResults;
+import org.springframework.util.ObjectUtils;
+
 import java.awt.Image;
 import java.beans.BeanDescriptor;
 import java.beans.BeanInfo;
@@ -36,28 +42,22 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
-import org.apache.thrift.TBase;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.CachedIntrospectionResults;
-import org.springframework.util.ObjectUtils;
-
 /**
  * Decorator for a standard {@link BeanInfo} object, e.g. as created by
  * {@link Introspector#getBeanInfo(Class)}, designed to discover and register static
  * and/or non-void returning setter methods. For example:
  * <pre class="code">
  * public class Bean {
- *     private Foo foo;
- *
- *     public Foo getFoo() {
- *         return this.foo;
- *     }
- *
- *     public Bean setFoo(Foo foo) {
- *         this.foo = foo;
- *         return this;
- *     }
+ * private Foo foo;
+ * <p>
+ * public Foo getFoo() {
+ * return this.foo;
+ * }
+ * <p>
+ * public Bean setFoo(Foo foo) {
+ * this.foo = foo;
+ * return this;
+ * }
  * }</pre>
  * The standard JavaBeans {@code Introspector} will discover the {@code getFoo} read
  * method, but will bypass the {@code #setFoo(Foo)} write method, because its non-void
@@ -71,10 +71,10 @@ import org.springframework.util.ObjectUtils;
  * indexed properties</a> are fully supported.
  *
  * @author Chris Beams
- * @since 3.1
  * @see #ExtendedBeanInfo(BeanInfo)
  * @see ThriftBeanInfoFactory
  * @see CachedIntrospectionResults
+ * @since 3.1
  */
 class ThriftBeanInfo implements BeanInfo {
 
@@ -83,7 +83,7 @@ class ThriftBeanInfo implements BeanInfo {
     private final BeanInfo delegate;
 
     private final Set<PropertyDescriptor> propertyDescriptors =
-            new TreeSet<PropertyDescriptor>(new PropertyDescriptorComparator());
+        new TreeSet<PropertyDescriptor>(new PropertyDescriptorComparator());
 
 
     /**
@@ -93,9 +93,10 @@ class ThriftBeanInfo implements BeanInfo {
      * variant that bypasses default JDK weak/soft reference management; then search
      * through its method descriptors to find any non-void returning write methods and
      * update or create the corresponding {@link PropertyDescriptor} for each one found.
+     *
      * @param delegate the wrapped {@code BeanInfo}, which is never modified
      * @throws IntrospectionException if any problems occur creating and adding new
-     * property descriptors
+     *                                property descriptors
      * @see #getPropertyDescriptors()
      */
     public ThriftBeanInfo(BeanInfo delegate) throws IntrospectionException {
@@ -103,10 +104,9 @@ class ThriftBeanInfo implements BeanInfo {
         for (PropertyDescriptor pd : delegate.getPropertyDescriptors()) {
             try {
                 this.propertyDescriptors.add(pd instanceof IndexedPropertyDescriptor ?
-                        new SimpleIndexedPropertyDescriptor((IndexedPropertyDescriptor) pd) :
-                            new SimplePropertyDescriptor(pd));
-            }
-            catch (IntrospectionException ex) {
+                                             new SimpleIndexedPropertyDescriptor((IndexedPropertyDescriptor) pd) :
+                                             new SimplePropertyDescriptor(pd));
+            } catch (IntrospectionException ex) {
                 // Probably simply a method that wasn't meant to follow the JavaBeans pattern...
                 if (logger.isDebugEnabled()) {
                     logger.debug("Ignoring invalid bean property '" + pd.getName() + "': " + ex.getMessage());
@@ -118,8 +118,7 @@ class ThriftBeanInfo implements BeanInfo {
             for (Method method : findCandidateWriteMethods(methodDescriptors)) {
                 try {
                     handleCandidateWriteMethod(method);
-                }
-                catch (IntrospectionException ex) {
+                } catch (IntrospectionException ex) {
                     // We're only trying to find candidates, can easily ignore extra ones here...
                     if (logger.isDebugEnabled()) {
                         logger.debug("Ignoring candidate write method [" + method + "]: " + ex.getMessage());
@@ -155,8 +154,8 @@ class ThriftBeanInfo implements BeanInfo {
         Class<?>[] parameterTypes = method.getParameterTypes();
         int nParams = parameterTypes.length;
         return (methodName.length() > 3 && methodName.startsWith("set") && Modifier.isPublic(method.getModifiers()) &&
-                (!void.class.isAssignableFrom(method.getReturnType()) || Modifier.isStatic(method.getModifiers())) &&
-                (nParams == 1 || (nParams == 2 && int.class == parameterTypes[0])));
+            (!void.class.isAssignableFrom(method.getReturnType()) || Modifier.isStatic(method.getModifiers())) &&
+            (nParams == 1 || (nParams == 2 && int.class == parameterTypes[0])));
     }
 
     private void handleCandidateWriteMethod(Method method) throws IntrospectionException {
@@ -167,26 +166,21 @@ class ThriftBeanInfo implements BeanInfo {
         if (nParams == 1) {
             if (existingPd == null) {
                 this.propertyDescriptors.add(new SimplePropertyDescriptor(propertyName, null, method));
-            }
-            else {
+            } else {
                 existingPd.setWriteMethod(method);
             }
-        }
-        else if (nParams == 2) {
+        } else if (nParams == 2) {
             if (existingPd == null) {
                 this.propertyDescriptors.add(
-                        new SimpleIndexedPropertyDescriptor(propertyName, null, null, null, method));
-            }
-            else if (existingPd instanceof IndexedPropertyDescriptor) {
+                    new SimpleIndexedPropertyDescriptor(propertyName, null, null, null, method));
+            } else if (existingPd instanceof IndexedPropertyDescriptor) {
                 ((IndexedPropertyDescriptor) existingPd).setIndexedWriteMethod(method);
-            }
-            else {
+            } else {
                 this.propertyDescriptors.remove(existingPd);
                 this.propertyDescriptors.add(new SimpleIndexedPropertyDescriptor(
-                        propertyName, existingPd.getReadMethod(), existingPd.getWriteMethod(), null, method));
+                    propertyName, existingPd.getReadMethod(), existingPd.getWriteMethod(), null, method));
             }
-        }
-        else {
+        } else {
             throw new IllegalArgumentException("Write method must have exactly 1 or 2 parameters: " + method);
         }
     }
@@ -199,14 +193,13 @@ class ThriftBeanInfo implements BeanInfo {
                 IndexedPropertyDescriptor ipd = (IndexedPropertyDescriptor) pd;
                 candidateType = ipd.getIndexedPropertyType();
                 if (candidateName.equals(propertyName) &&
-                        (candidateType.equals(propertyType) || candidateType.equals(propertyType.getComponentType()))) {
+                    (candidateType.equals(propertyType) || candidateType.equals(propertyType.getComponentType()))) {
                     return pd;
                 }
-            }
-            else {
+            } else {
                 candidateType = pd.getPropertyType();
                 if (candidateName.equals(propertyName) &&
-                        (candidateType.equals(propertyType) || propertyType.equals(candidateType.getComponentType()))) {
+                    (candidateType.equals(propertyType) || propertyType.equals(candidateType.getComponentType()))) {
                     return pd;
                 }
             }
@@ -223,6 +216,7 @@ class ThriftBeanInfo implements BeanInfo {
      * Return the set of {@link PropertyDescriptor}s from the wrapped {@link BeanInfo}
      * object as well as {@code PropertyDescriptor}s for each non-void returning setter
      * method found during construction.
+     *
      * @see #ExtendedBeanInfo(BeanInfo)
      */
     @Override
@@ -291,22 +285,24 @@ class ThriftBeanInfo implements BeanInfo {
             patchWriteMethod();
         }
 
-        private void patchReadMethod(){
-            if (readMethod !=null && TBase.class.isAssignableFrom(readMethod.getDeclaringClass()))
+        private void patchReadMethod() {
+            if (readMethod != null && TBase.class.isAssignableFrom(readMethod.getDeclaringClass())) {
                 try {
                     ReadThriftMethodAccessor.patch(readMethod.getDeclaringClass(), this.getName(), readMethod);
                 } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
                     throw new RuntimeException(e);
                 }
+            }
         }
 
-        private void patchWriteMethod(){
-            if (writeMethod !=null && TBase.class.isAssignableFrom(writeMethod.getDeclaringClass()))
+        private void patchWriteMethod() {
+            if (writeMethod != null && TBase.class.isAssignableFrom(writeMethod.getDeclaringClass())) {
                 try {
                     WriteThriftMethodAccessor.patch(writeMethod.getDeclaringClass(), this.getName(), writeMethod);
                 } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
                     throw new RuntimeException(e);
                 }
+            }
         }
 
 
@@ -337,8 +333,7 @@ class ThriftBeanInfo implements BeanInfo {
             if (this.propertyType == null) {
                 try {
                     this.propertyType = PropertyDescriptorUtils.findPropertyType(this.readMethod, this.writeMethod);
-                }
-                catch (IntrospectionException ex) {
+                } catch (IntrospectionException ex) {
                     // Ignore, as does PropertyDescriptor#getPropertyType
                 }
             }
@@ -358,7 +353,7 @@ class ThriftBeanInfo implements BeanInfo {
         @Override
         public boolean equals(Object other) {
             return (this == other || (other instanceof PropertyDescriptor &&
-                    PropertyDescriptorUtils.equals(this, (PropertyDescriptor) other)));
+                PropertyDescriptorUtils.equals(this, (PropertyDescriptor) other)));
         }
 
         @Override
@@ -369,7 +364,7 @@ class ThriftBeanInfo implements BeanInfo {
         @Override
         public String toString() {
             return String.format("%s[name=%s, propertyType=%s, readMethod=%s, writeMethod=%s]",
-                    getClass().getSimpleName(), getName(), getPropertyType(), this.readMethod, this.writeMethod);
+                                 getClass().getSimpleName(), getName(), getPropertyType(), this.readMethod, this.writeMethod);
         }
     }
 
@@ -392,12 +387,12 @@ class ThriftBeanInfo implements BeanInfo {
 
         public SimpleIndexedPropertyDescriptor(IndexedPropertyDescriptor original) throws IntrospectionException {
             this(original.getName(), original.getReadMethod(), original.getWriteMethod(),
-                    original.getIndexedReadMethod(), original.getIndexedWriteMethod());
+                 original.getIndexedReadMethod(), original.getIndexedWriteMethod());
             PropertyDescriptorUtils.copyNonMethodProperties(original, this);
         }
 
         public SimpleIndexedPropertyDescriptor(String propertyName, Method readMethod, Method writeMethod,
-                Method indexedReadMethod, Method indexedWriteMethod) throws IntrospectionException {
+                                               Method indexedReadMethod, Method indexedWriteMethod) throws IntrospectionException {
 
             super(propertyName, null, null, null, null);
             this.readMethod = readMethod;
@@ -406,7 +401,7 @@ class ThriftBeanInfo implements BeanInfo {
             this.indexedReadMethod = indexedReadMethod;
             this.indexedWriteMethod = indexedWriteMethod;
             this.indexedPropertyType = PropertyDescriptorUtils.findIndexedPropertyType(
-                    propertyName, this.propertyType, indexedReadMethod, indexedWriteMethod);
+                propertyName, this.propertyType, indexedReadMethod, indexedWriteMethod);
         }
 
         @Override
@@ -434,8 +429,7 @@ class ThriftBeanInfo implements BeanInfo {
             if (this.propertyType == null) {
                 try {
                     this.propertyType = PropertyDescriptorUtils.findPropertyType(this.readMethod, this.writeMethod);
-                }
-                catch (IntrospectionException ex) {
+                } catch (IntrospectionException ex) {
                     // Ignore, as does IndexedPropertyDescriptor#getPropertyType
                 }
             }
@@ -467,9 +461,8 @@ class ThriftBeanInfo implements BeanInfo {
             if (this.indexedPropertyType == null) {
                 try {
                     this.indexedPropertyType = PropertyDescriptorUtils.findIndexedPropertyType(
-                            getName(), getPropertyType(), this.indexedReadMethod, this.indexedWriteMethod);
-                }
-                catch (IntrospectionException ex) {
+                        getName(), getPropertyType(), this.indexedReadMethod, this.indexedWriteMethod);
+                } catch (IntrospectionException ex) {
                     // Ignore, as does IndexedPropertyDescriptor#getIndexedPropertyType
                 }
             }
@@ -499,9 +492,9 @@ class ThriftBeanInfo implements BeanInfo {
             }
             IndexedPropertyDescriptor otherPd = (IndexedPropertyDescriptor) other;
             return (ObjectUtils.nullSafeEquals(getIndexedReadMethod(), otherPd.getIndexedReadMethod()) &&
-                    ObjectUtils.nullSafeEquals(getIndexedWriteMethod(), otherPd.getIndexedWriteMethod()) &&
-                    ObjectUtils.nullSafeEquals(getIndexedPropertyType(), otherPd.getIndexedPropertyType()) &&
-                    PropertyDescriptorUtils.equals(this, otherPd));
+                ObjectUtils.nullSafeEquals(getIndexedWriteMethod(), otherPd.getIndexedWriteMethod()) &&
+                ObjectUtils.nullSafeEquals(getIndexedPropertyType(), otherPd.getIndexedPropertyType()) &&
+                PropertyDescriptorUtils.equals(this, otherPd));
         }
 
         @Override
@@ -516,9 +509,9 @@ class ThriftBeanInfo implements BeanInfo {
         @Override
         public String toString() {
             return String.format("%s[name=%s, propertyType=%s, indexedPropertyType=%s, " +
-                    "readMethod=%s, writeMethod=%s, indexedReadMethod=%s, indexedWriteMethod=%s]",
-                    getClass().getSimpleName(), getName(), getPropertyType(), getIndexedPropertyType(),
-                    this.readMethod, this.writeMethod, this.indexedReadMethod, this.indexedWriteMethod);
+                                     "readMethod=%s, writeMethod=%s, indexedReadMethod=%s, indexedWriteMethod=%s]",
+                                 getClass().getSimpleName(), getName(), getPropertyType(), getIndexedPropertyType(),
+                                 this.readMethod, this.writeMethod, this.indexedReadMethod, this.indexedWriteMethod);
         }
     }
 
@@ -526,6 +519,7 @@ class ThriftBeanInfo implements BeanInfo {
     /**
      * Sorts PropertyDescriptor instances alpha-numerically to emulate the behavior of
      * {@link java.beans.BeanInfo#getPropertyDescriptors()}.
+     *
      * @see ThriftBeanInfo#propertyDescriptors
      */
     static class PropertyDescriptorComparator implements Comparator<PropertyDescriptor> {

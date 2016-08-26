@@ -1,9 +1,5 @@
 package org.everthrift.cli.env;
 
-import java.io.PrintWriter;
-import java.util.Arrays;
-import java.util.List;
-
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
@@ -14,6 +10,10 @@ import org.everthrift.services.thrift.cluster.ClusterService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.PrintWriter;
+import java.util.Arrays;
+import java.util.List;
+
 public class ClusterModule extends BaseModule<ClusterService.Client> {
 
     private static final Logger LOG = LoggerFactory.getLogger(ClusterModule.class);
@@ -22,11 +22,14 @@ public class ClusterModule extends BaseModule<ClusterService.Client> {
 
     public static final String GET_CLUSTER_CONFIGURATION_JSON = "getClusterConfigurationJSON";
 
-    private static final Option module = OptionBuilder.withLongOpt("cluster").withDescription("run cluster service client")
-                                                      .withType("cluster").create("c");
+    private static final Option module = OptionBuilder.withLongOpt("cluster")
+                                                      .withDescription("run cluster service client")
+                                                      .withType("cluster")
+                                                      .create("c");
 
-    private static final Option[] options = new Option[] { OptionBuilder.withDescription("cluster service: get cluster config(json)")
-                                                                        .withType("cluster").withLongOpt("cluster-conf").create("gc") };
+    private static final Option[] options = new Option[]{OptionBuilder.withDescription("cluster service: get cluster config(json)")
+                                                                      .withType("cluster")
+                                                                      .withLongOpt("cluster-conf").create("gc")};
 
     @Override
     protected ClusterService.Client newClient(String host, int port) throws TTransportException {
@@ -46,15 +49,15 @@ public class ClusterModule extends BaseModule<ClusterService.Client> {
     @Override
     public void runModule(PrintWriter out, String option, CommandLine cmd) throws Exception {
         switch (option) {
-        case "gc": {
-            out.println("\n\n");
-            out.print("not implemented");
-            out.println("\n\n");
-            break;
-        }
-        default: {
-            throw new RuntimeException("Please insert option for cluster module (gc  for get Config)");
-        }
+            case "gc": {
+                out.println("\n\n");
+                out.print("not implemented");
+                out.println("\n\n");
+                break;
+            }
+            default: {
+                throw new RuntimeException("Please insert option for cluster module (gc  for get Config)");
+            }
         }
     }
 }

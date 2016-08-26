@@ -15,12 +15,12 @@
  */
 package org.everthrift.cassandra.com.datastax.driver.mapping.annotations;
 
+import com.datastax.driver.core.DataType;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-
-import com.datastax.driver.core.DataType;
 
 /**
  * Specifies that the field decorated with this annotation maps to a CQL type
@@ -46,7 +46,7 @@ public @interface Frozen {
      * can be left out when only the top-level type is frozen.
      * <p/>
      * Examples:
-     * 
+     * <p>
      * <pre>
      * // Will map to frozen&lt;user&gt;
      * &#64;Frozen

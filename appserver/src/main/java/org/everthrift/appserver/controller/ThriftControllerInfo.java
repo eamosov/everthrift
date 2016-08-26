@@ -1,16 +1,16 @@
 package org.everthrift.appserver.controller;
 
-import java.lang.annotation.Annotation;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.NoSuchElementException;
-
 import org.apache.thrift.TBase;
 import org.apache.thrift.TException;
 import org.apache.thrift.TFieldIdEnum;
 import org.everthrift.appserver.utils.thrift.ThriftClient;
 import org.everthrift.utils.ClassUtils;
 import org.springframework.context.ApplicationContext;
+
+import java.lang.annotation.Annotation;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.NoSuchElementException;
 
 public class ThriftControllerInfo {
     private final Class<? extends ThriftController> controllerCls;
@@ -47,17 +47,15 @@ public class ThriftControllerInfo {
     @Override
     public String toString() {
         return "ThriftControllerInfo [controllerCls=" + controllerCls + ", serviceName=" + serviceName + ", methodName=" + methodName
-               + ", argCls=" + argCls + ", resultCls=" + resultCls + "]";
+            + ", argCls=" + argCls + ", resultCls=" + resultCls + "]";
     }
 
     public TBase makeArgument() {
         try {
             return argCls.newInstance();
-        }
-        catch (InstantiationException e) {
+        } catch (InstantiationException e) {
             throw new RuntimeException(e);
-        }
-        catch (IllegalAccessException e) {
+        } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
         }
     }
@@ -72,9 +70,10 @@ public class ThriftControllerInfo {
                 if (ret instanceof TException) {
                     final Method setMethod = ClassUtils.getPropertyDescriptors(resultCls).entrySet().stream()
                                                        .filter(e -> e.getValue().getReadMethod() != null
-                                                                    && e.getValue().getWriteMethod() != null && e.getValue().getReadMethod()
-                                                                                                                 .getReturnType()
-                                                                                                                 .isAssignableFrom(ret.getClass()))
+                                                           && e.getValue().getWriteMethod() != null && e.getValue()
+                                                                                                        .getReadMethod()
+                                                                                                        .getReturnType()
+                                                                                                        .isAssignableFrom(ret.getClass()))
                                                        .findFirst().get().getValue().getWriteMethod();
                     setMethod.invoke(res, ret);
                 } else {
@@ -87,20 +86,15 @@ public class ThriftControllerInfo {
                 }
             }
             return res;
-        }
-        catch (InstantiationException e) {
+        } catch (InstantiationException e) {
             throw new RuntimeException(e);
-        }
-        catch (IllegalAccessException e) {
+        } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
-        }
-        catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             throw new RuntimeException(e);
-        }
-        catch (InvocationTargetException e) {
+        } catch (InvocationTargetException e) {
             throw new RuntimeException(e);
-        }
-        catch (NoSuchElementException e) {
+        } catch (NoSuchElementException e) {
             throw new RuntimeException(e);
         }
     }

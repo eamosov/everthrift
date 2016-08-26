@@ -1,14 +1,7 @@
 package org.everthrift.sql.pgsql;
 
-import java.io.Serializable;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
-import javax.annotation.PostConstruct;
-
+import com.google.common.util.concurrent.ListeningExecutorService;
+import net.sf.ehcache.Cache;
 import org.apache.thrift.TException;
 import org.everthrift.appserver.model.AbstractCachedModelFactory;
 import org.everthrift.appserver.model.DaoEntityIF;
@@ -23,12 +16,16 @@ import org.hibernate.criterion.Restrictions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 
-import com.google.common.util.concurrent.ListeningExecutorService;
-
-import net.sf.ehcache.Cache;
+import javax.annotation.PostConstruct;
+import java.io.Serializable;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY extends DaoEntityIF, E extends TException>
-        extends AbstractCachedModelFactory<PK, ENTITY> implements RwModelFactoryIF<PK, ENTITY, E> {
+    extends AbstractCachedModelFactory<PK, ENTITY> implements RwModelFactoryIF<PK, ENTITY, E> {
 
     @Autowired
     protected SessionFactory sessionFactory;
@@ -104,8 +101,9 @@ public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY 
     @Override
     protected Map<PK, ENTITY> fetchEntityByIdAsMap(Collection<PK> ids) {
 
-        if (getCache() == null)
+        if (getCache() == null) {
             log.warn("fetch by collection, but cache is null");
+        }
 
         return dao.findByIdsAsMap(ids);
     }
@@ -114,8 +112,9 @@ public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY 
     public final void deleteEntity(ENTITY e) throws E {
         final PK pk = (PK) e.getPk();
         final ENTITY _e = fetchEntityById(pk);
-        if (_e == null)
+        if (_e == null) {
             throw createNotFoundException(pk);
+        }
 
         dao.delete(_e);
         _invalidateEhCache(pk);

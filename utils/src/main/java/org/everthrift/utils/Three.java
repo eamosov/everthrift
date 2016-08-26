@@ -3,9 +3,7 @@ package org.everthrift.utils;
 import java.io.Serializable;
 
 /**
- *
  * @author efreet (Amosov Evgeniy)
- *
  */
 public class Three<T, V, K> implements Serializable {
 
@@ -15,11 +13,11 @@ public class Three<T, V, K> implements Serializable {
     public final V second;
     public final K third;
 
-    public static <T, V, K> Three<T, V, K> create(T first, V second, K third){
+    public static <T, V, K> Three<T, V, K> create(T first, V second, K third) {
         return new Three<T, V, K>(first, second, third);
     }
 
-    public Three( T first, V second, K third ) {
+    public Three(T first, V second, K third) {
         this.first = first;
         this.second = second;
         this.third = third;
@@ -37,28 +35,37 @@ public class Three<T, V, K> implements Serializable {
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (obj == null)
+        }
+        if (obj == null) {
             return false;
-        if (getClass() != obj.getClass())
+        }
+        if (getClass() != obj.getClass()) {
             return false;
+        }
         Three other = (Three) obj;
         if (first == null) {
-            if (other.first != null)
+            if (other.first != null) {
                 return false;
-        } else if (!first.equals(other.first))
+            }
+        } else if (!first.equals(other.first)) {
             return false;
+        }
         if (second == null) {
-            if (other.second != null)
+            if (other.second != null) {
                 return false;
-        } else if (!second.equals(other.second))
+            }
+        } else if (!second.equals(other.second)) {
             return false;
+        }
         if (third == null) {
-            if (other.third != null)
+            if (other.third != null) {
                 return false;
-        } else if (!third.equals(other.third))
+            }
+        } else if (!third.equals(other.third)) {
             return false;
+        }
         return true;
     }
 

@@ -1,14 +1,13 @@
 package io.smartcat.migration;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.Statement;
-
 import io.smartcat.migration.exceptions.MigrationException;
 import io.smartcat.migration.exceptions.SchemaAgreementException;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Abstract migration class that implements session DI and exposes required
@@ -27,7 +26,8 @@ public abstract class Migration {
 
     /**
      * Create new migration with provided type and version.
-     * @param type Migration type (SCHEMA or DATA)
+     *
+     * @param type    Migration type (SCHEMA or DATA)
      * @param version Migration version
      */
     public Migration(final MigrationType type) {
@@ -36,6 +36,7 @@ public abstract class Migration {
 
     /**
      * Enables session injection into migration class.
+     *
      * @param session Session object
      */
     public void setSession(final Session session) {
@@ -44,6 +45,7 @@ public abstract class Migration {
 
     /**
      * Returns migration type (schema or data).
+     *
      * @return Migration type
      */
     public MigrationType getType() {
@@ -52,14 +54,16 @@ public abstract class Migration {
 
     protected int extractVersion(String name) {
         final Matcher m = versionPattern.matcher(name);
-        if (m.matches())
+        if (m.matches()) {
             return Integer.parseInt(m.group(1), 10);
+        }
 
         throw new RuntimeException("Coudn't parse migration version");
     }
 
     /**
      * Returns resulting database schema version of this migration.
+     *
      * @return Resulting db schema version
      */
     public int getVersion() {
@@ -68,12 +72,14 @@ public abstract class Migration {
 
     /**
      * Returns migration description (for history purposes).
+     *
      * @return migration description.
      */
     public abstract String getDescription();
 
     /**
      * Executes migration implementation.
+     *
      * @throws MigrationException exception
      */
     public abstract void execute() throws MigrationException;
@@ -82,6 +88,7 @@ public abstract class Migration {
      * Execute provided statement and checks if the schema migration has been
      * propagated to all nodes in the cluster. Use this method when executing
      * schema migrations.
+     *
      * @param statement Statement to be executed
      * @throws SchemaAgreementException exception
      */
@@ -100,16 +107,16 @@ public abstract class Migration {
     /**
      * Whether the cluster had reached schema agreement after the execution of
      * this query.
-     *
+     * <p>
      * After a successful schema-altering query (ex: creating a table), the
      * driver will check if the cluster's nodes agree on the new schema version.
      * If not, it will keep retrying for a given delay (configurable via
      * {@link com.datastax.driver.core.Cluster.Builder#withMaxSchemaAgreementWaitSeconds(int)}).
-     *
+     * <p>
      * If this method returns {@code false}, clients can call
      * {@link com.datastax.driver.core.Metadata#checkSchemaAgreement()} later to
      * perform the check manually.
-     *
+     * <p>
      * Note that the schema agreement check is only performed for
      * schema-altering queries For other query types, this method will always
      * return {@code true}.
@@ -125,7 +132,7 @@ public abstract class Migration {
     /**
      * Checks whether hosts that are currently up agree on the schema
      * definition.
-     *
+     * <p>
      * This method performs a one-time check only, without any form of retry;
      * therefore
      * {@link com.datastax.driver.core.Cluster.Builder#withMaxSchemaAgreementWaitSeconds(int)}
@@ -150,17 +157,22 @@ public abstract class Migration {
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (obj == null)
+        }
+        if (obj == null) {
             return false;
-        if (getClass() != obj.getClass())
+        }
+        if (getClass() != obj.getClass()) {
             return false;
+        }
         Migration other = (Migration) obj;
-        if (type != other.type)
+        if (type != other.type) {
             return false;
-        if (getVersion() != other.getVersion())
+        }
+        if (getVersion() != other.getVersion()) {
             return false;
+        }
         return true;
     }
 

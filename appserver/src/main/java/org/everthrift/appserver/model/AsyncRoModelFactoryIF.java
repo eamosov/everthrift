@@ -1,10 +1,10 @@
 package org.everthrift.appserver.model;
 
+import com.google.common.util.concurrent.ListenableFuture;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-
-import com.google.common.util.concurrent.ListenableFuture;
 
 public interface AsyncRoModelFactoryIF<PK, ENTITY> {
 

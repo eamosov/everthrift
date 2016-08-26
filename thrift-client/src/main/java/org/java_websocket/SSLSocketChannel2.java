@@ -5,6 +5,12 @@
  */
 package org.java_websocket;
 
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLEngineResult;
+import javax.net.ssl.SSLEngineResult.HandshakeStatus;
+import javax.net.ssl.SSLEngineResult.Status;
+import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLSession;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketAddress;
@@ -19,13 +25,6 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-
-import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLEngineResult;
-import javax.net.ssl.SSLEngineResult.HandshakeStatus;
-import javax.net.ssl.SSLEngineResult.Status;
-import javax.net.ssl.SSLException;
-import javax.net.ssl.SSLSession;
 
 /**
  * Implements the relevant portions of the SocketChannel interface with the
@@ -42,16 +41,24 @@ public class SSLSocketChannel2 implements ByteChannel, WrappedByteChannel {
 
     protected List<Future<?>> tasks;
 
-    /** raw payload incomming */
+    /**
+     * raw payload incomming
+     */
     protected ByteBuffer inData;
 
-    /** encrypted data outgoing */
+    /**
+     * encrypted data outgoing
+     */
     protected ByteBuffer outCrypt;
 
-    /** encrypted data incoming */
+    /**
+     * encrypted data incoming
+     */
     protected ByteBuffer inCrypt;
 
-    /** the underlying channel */
+    /**
+     * the underlying channel
+     */
     protected SocketChannel socketChannel;
 
     /**
@@ -74,17 +81,18 @@ public class SSLSocketChannel2 implements ByteChannel, WrappedByteChannel {
     protected int bufferallocations = 0;
 
     public SSLSocketChannel2(SocketChannel channel, SSLEngine sslEngine, ExecutorService exec, SelectionKey key) throws IOException {
-        if (channel == null || sslEngine == null || exec == null)
+        if (channel == null || sslEngine == null || exec == null) {
             throw new IllegalArgumentException("parameter must not be null");
+        }
 
         this.socketChannel = channel;
         this.sslEngine = sslEngine;
         this.exec = exec;
 
         readEngineResult = writeEngineResult = new SSLEngineResult(Status.BUFFER_UNDERFLOW, sslEngine.getHandshakeStatus(), 0, 0); // init
-                                                                                                                                   // to
-                                                                                                                                   // prevent
-                                                                                                                                   // NPEs
+        // to
+        // prevent
+        // NPEs
 
         tasks = new ArrayList<Future<?>>(3);
         if (key != null) {
@@ -104,15 +112,14 @@ public class SSLSocketChannel2 implements ByteChannel, WrappedByteChannel {
                 try {
                     f.get();
                     break;
-                }
-                catch (InterruptedException e) {
+                } catch (InterruptedException e) {
                     interrupted = true;
                 }
             }
-            if (interrupted)
+            if (interrupted) {
                 Thread.currentThread().interrupt();
-        }
-        catch (ExecutionException e) {
+            }
+        } catch (ExecutionException e) {
             throw new RuntimeException(e);
         }
     }
@@ -123,10 +130,11 @@ public class SSLSocketChannel2 implements ByteChannel, WrappedByteChannel {
      * and {@link #write(ByteBuffer)}
      **/
     private synchronized void processHandshake() throws IOException {
-        if (sslEngine.getHandshakeStatus() == HandshakeStatus.NOT_HANDSHAKING)
+        if (sslEngine.getHandshakeStatus() == HandshakeStatus.NOT_HANDSHAKING) {
             return; // since this may be called either from a reading or a
-                    // writing thread and because this method is synchronized it
-                    // is necessary to double check if we are still handshaking.
+        }
+        // writing thread and because this method is synchronized it
+        // is necessary to double check if we are still handshaking.
         if (!tasks.isEmpty()) {
             Iterator<Future<?>> it = tasks.iterator();
             while (it.hasNext()) {
@@ -134,8 +142,9 @@ public class SSLSocketChannel2 implements ByteChannel, WrappedByteChannel {
                 if (f.isDone()) {
                     it.remove();
                 } else {
-                    if (isBlocking())
+                    if (isBlocking()) {
                         consumeFutureUninterruptible(f);
+                    }
                     return;
                 }
             }
@@ -166,31 +175,31 @@ public class SSLSocketChannel2 implements ByteChannel, WrappedByteChannel {
             }
         }
         assert (sslEngine.getHandshakeStatus() != HandshakeStatus.NOT_HANDSHAKING);// this
-                                                                                   // function
-                                                                                   // could
-                                                                                   // only
-                                                                                   // leave
-                                                                                   // NOT_HANDSHAKING
-                                                                                   // after
-                                                                                   // createBuffers
-                                                                                   // was
-                                                                                   // called
-                                                                                   // unless
-                                                                                   // #190
-                                                                                   // occurs
-                                                                                   // which
-                                                                                   // means
-                                                                                   // that
-                                                                                   // nio
-                                                                                   // wrap/unwrap
-                                                                                   // never
-                                                                                   // return
-                                                                                   // HandshakeStatus.FINISHED
+        // function
+        // could
+        // only
+        // leave
+        // NOT_HANDSHAKING
+        // after
+        // createBuffers
+        // was
+        // called
+        // unless
+        // #190
+        // occurs
+        // which
+        // means
+        // that
+        // nio
+        // wrap/unwrap
+        // never
+        // return
+        // HandshakeStatus.FINISHED
 
         bufferallocations = 1; // look at variable declaration why this line
-                               // exists and #190. Without this line buffers
-                               // would not be be recreated when #190 AND a
-                               // rehandshake occur.
+        // exists and #190. Without this line buffers
+        // would not be be recreated when #190 AND a
+        // rehandshake occur.
     }
 
     private synchronized ByteBuffer wrap(ByteBuffer b) throws SSLException {
@@ -210,7 +219,7 @@ public class SSLSocketChannel2 implements ByteChannel, WrappedByteChannel {
             rem = inData.remaining();
             readEngineResult = sslEngine.unwrap(inCrypt, inData);
         } while (readEngineResult.getStatus() == SSLEngineResult.Status.OK
-                 && (rem != inData.remaining() || sslEngine.getHandshakeStatus() == HandshakeStatus.NEED_UNWRAP));
+            && (rem != inData.remaining() || sslEngine.getHandshakeStatus() == HandshakeStatus.NEED_UNWRAP));
         inData.flip();
         return inData;
     }
@@ -232,12 +241,15 @@ public class SSLSocketChannel2 implements ByteChannel, WrappedByteChannel {
             outCrypt = ByteBuffer.allocate(netBufferMax);
             inCrypt = ByteBuffer.allocate(netBufferMax);
         } else {
-            if (inData.capacity() != appBufferMax)
+            if (inData.capacity() != appBufferMax) {
                 inData = ByteBuffer.allocate(appBufferMax);
-            if (outCrypt.capacity() != netBufferMax)
+            }
+            if (outCrypt.capacity() != netBufferMax) {
                 outCrypt = ByteBuffer.allocate(netBufferMax);
-            if (inCrypt.capacity() != netBufferMax)
+            }
+            if (inCrypt.capacity() != netBufferMax) {
                 inCrypt = ByteBuffer.allocate(netBufferMax);
+            }
         }
         inData.rewind();
         inData.flip();
@@ -272,8 +284,9 @@ public class SSLSocketChannel2 implements ByteChannel, WrappedByteChannel {
      **/
     @Override
     public int read(ByteBuffer dst) throws IOException {
-        if (!dst.hasRemaining())
+        if (!dst.hasRemaining()) {
             return 0;
+        }
         if (!isHandShakeComplete()) {
             if (isBlocking()) {
                 while (!isHandShakeComplete()) {
@@ -297,8 +310,9 @@ public class SSLSocketChannel2 implements ByteChannel, WrappedByteChannel {
          * on more time(readRemaining)
          */
         int purged = readRemaining(dst);
-        if (purged != 0)
+        if (purged != 0) {
             return purged;
+        }
 
         /*
          * We only continue when we really need more data from the network.
@@ -308,22 +322,24 @@ public class SSLSocketChannel2 implements ByteChannel, WrappedByteChannel {
         assert (inData.position() == 0);
         inData.clear();
 
-        if (!inCrypt.hasRemaining())
+        if (!inCrypt.hasRemaining()) {
             inCrypt.clear();
-        else
+        } else {
             inCrypt.compact();
+        }
 
-        if (isBlocking() || readEngineResult.getStatus() == Status.BUFFER_UNDERFLOW)
+        if (isBlocking() || readEngineResult.getStatus() == Status.BUFFER_UNDERFLOW) {
             if (socketChannel.read(inCrypt) == -1) {
                 return -1;
             }
+        }
         inCrypt.flip();
         unwrap();
 
         int transfered = transfereTo(inData, dst);
         if (transfered == 0 && isBlocking()) {
             return read(dst); // "transfered" may be 0 when not enough bytes
-                              // were received or during rehandshaking
+            // were received or during rehandshaking
         }
         return transfered;
     }
@@ -336,14 +352,16 @@ public class SSLSocketChannel2 implements ByteChannel, WrappedByteChannel {
         if (inData.hasRemaining()) {
             return transfereTo(inData, dst);
         }
-        if (!inData.hasRemaining())
+        if (!inData.hasRemaining()) {
             inData.clear();
+        }
         // test if some bytes left from last read (e.g. BUFFER_UNDERFLOW)
         if (inCrypt.hasRemaining()) {
             unwrap();
             int amount = transfereTo(inData, dst);
-            if (amount > 0)
+            if (amount > 0) {
                 return amount;
+            }
         }
         return 0;
     }
@@ -356,9 +374,10 @@ public class SSLSocketChannel2 implements ByteChannel, WrappedByteChannel {
     public void close() throws IOException {
         sslEngine.closeOutbound();
         sslEngine.getSession().invalidate();
-        if (socketChannel.isOpen())
+        if (socketChannel.isOpen()) {
             socketChannel.write(wrap(emptybuffer));// FIXME what if not all
-                                                   // bytes can be written
+        }
+        // bytes can be written
         socketChannel.close();
         exec.shutdownNow();
     }
@@ -396,14 +415,14 @@ public class SSLSocketChannel2 implements ByteChannel, WrappedByteChannel {
     @Override
     public boolean isNeedWrite() {
         return outCrypt.hasRemaining() || !isHandShakeComplete(); // FIXME this
-                                                                  // condition
-                                                                  // can cause
-                                                                  // high cpu
-                                                                  // load during
-                                                                  // handshaking
-                                                                  // when
-                                                                  // network is
-                                                                  // slow
+        // condition
+        // can cause
+        // high cpu
+        // load during
+        // handshaking
+        // when
+        // network is
+        // slow
     }
 
     @Override
@@ -414,7 +433,7 @@ public class SSLSocketChannel2 implements ByteChannel, WrappedByteChannel {
     @Override
     public boolean isNeedRead() {
         return inData.hasRemaining() || (inCrypt.hasRemaining() && readEngineResult.getStatus() != Status.BUFFER_UNDERFLOW
-                                         && readEngineResult.getStatus() != Status.CLOSED);
+            && readEngineResult.getStatus() != Status.CLOSED);
     }
 
     @Override

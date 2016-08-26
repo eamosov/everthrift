@@ -1,7 +1,7 @@
 package org.everthrift.sql.pgsql;
 
-import java.io.Serializable;
-
+import com.google.common.util.concurrent.ListeningExecutorService;
+import net.sf.ehcache.Cache;
 import org.apache.thrift.TException;
 import org.everthrift.appserver.model.DaoEntityIF;
 import org.everthrift.appserver.model.LocalEventBus;
@@ -10,12 +10,10 @@ import org.everthrift.utils.Pair;
 import org.hibernate.SessionFactory;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.google.common.util.concurrent.ListeningExecutorService;
-
-import net.sf.ehcache.Cache;
+import java.io.Serializable;
 
 public class PgSqlModelFactory<PK extends Serializable, ENTITY extends DaoEntityIF>
-        extends AbstractPgSqlModelFactory<PK, ENTITY, TException> {
+    extends AbstractPgSqlModelFactory<PK, ENTITY, TException> {
 
     public PgSqlModelFactory(String cacheName, Class<ENTITY> entityClass) {
         super(cacheName, entityClass);

@@ -1,14 +1,10 @@
 package org.everthrift.appserver.utils.thrift;
 
-import java.net.URLEncoder;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.stream.Collectors;
-
+import com.google.common.collect.Lists;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
+import com.google.common.primitives.Ints;
+import com.google.common.primitives.Shorts;
 import org.apache.thrift.TBase;
 import org.apache.thrift.TEnum;
 import org.apache.thrift.TFieldIdEnum;
@@ -24,11 +20,14 @@ import org.apache.thrift.protocol.TType;
 import org.everthrift.appserver.controller.ThriftControllerInfo;
 import org.everthrift.utils.Pair;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Multimaps;
-import com.google.common.primitives.Ints;
-import com.google.common.primitives.Shorts;
+import java.net.URLEncoder;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 
 public class ThriftFormatter {
     private final String basePath;
@@ -79,10 +78,13 @@ public class ThriftFormatter {
 
         FieldValueMetaData result;
         try {
-            result = resultMap.second.entrySet().stream().filter(e -> (e.getKey().getFieldName().equals("success"))).findFirst().get()
+            result = resultMap.second.entrySet()
+                                     .stream()
+                                     .filter(e -> (e.getKey().getFieldName().equals("success")))
+                                     .findFirst()
+                                     .get()
                                      .getValue().valueMetaData;
-        }
-        catch (NoSuchElementException e) {
+        } catch (NoSuchElementException e) {
             result = null;
         }
 
@@ -95,8 +97,9 @@ public class ThriftFormatter {
         boolean coma = false;
         for (TFieldIdEnum f : argsFields) {
             FieldMetaData fmd = argsMap.second.get(f);
-            if (coma)
+            if (coma) {
                 sb.append(", ");
+            }
             sb.append(String.format("%d:%s %s %s", f.getThriftFieldId(), formatTypeName(fmd.valueMetaData),
                                     formatRequirementType(fmd.requirementType), fmd.fieldName));
             coma = true;
@@ -111,8 +114,9 @@ public class ThriftFormatter {
             for (TFieldIdEnum f : resultFields) {
                 FieldMetaData fmd = resultMap.second.get(f);
                 if (!f.getFieldName().equals("success")) {
-                    if (coma)
+                    if (coma) {
                         sb.append(", ");
+                    }
                     sb.append(String.format("%d:%s %s %s", f.getThriftFieldId(), formatTypeName(fmd.valueMetaData),
                                             formatRequirementType(fmd.requirementType), fmd.fieldName));
                     coma = true;
@@ -133,13 +137,15 @@ public class ThriftFormatter {
 
     public String formatClass(Class<? extends TBase> cls) throws ClassNotFoundException {
 
-        if (!TBase.class.isAssignableFrom(cls))
+        if (!TBase.class.isAssignableFrom(cls)) {
             throw new ClassNotFoundException(cls.getCanonicalName());
+        }
 
         final Pair<Class<? extends TBase>, Map<? extends TFieldIdEnum, FieldMetaData>> _cls = ThriftUtils.getRootThriftClass(cls);
 
-        if (_cls == null)
+        if (_cls == null) {
             throw new ClassNotFoundException(cls.getCanonicalName());
+        }
 
         final List<TFieldIdEnum> fields = sortedKeys(_cls.second);
 
@@ -164,8 +170,9 @@ public class ThriftFormatter {
 
     public String formatTEnum(Class<? extends TEnum> cls) throws ClassNotFoundException {
 
-        if (!TEnum.class.isAssignableFrom(cls))
+        if (!TEnum.class.isAssignableFrom(cls)) {
             throw new ClassNotFoundException(cls.getCanonicalName());
+        }
 
         final List<TEnum> values = Lists.newArrayList(cls.getEnumConstants());
         Collections.sort(values, (o1, o2) -> (Ints.compare(o1.getValue(), o2.getValue())));
@@ -194,20 +201,21 @@ public class ThriftFormatter {
 
     public static String formatRequirementType(int requirementType) {
         switch (requirementType) {
-        case TFieldRequirementType.DEFAULT:
-            return "";
-        case TFieldRequirementType.OPTIONAL:
-            return "optional";
-        case TFieldRequirementType.REQUIRED:
-            return "required";
+            case TFieldRequirementType.DEFAULT:
+                return "";
+            case TFieldRequirementType.OPTIONAL:
+                return "optional";
+            case TFieldRequirementType.REQUIRED:
+                return "required";
         }
         return "";
     }
 
     public String formatTypeName(FieldValueMetaData vmd) {
 
-        if (vmd == null)
+        if (vmd == null) {
             return "void";
+        }
 
         if (vmd instanceof EnumMetaData) {
             return linkEnum(((EnumMetaData) vmd).enumClass);
@@ -219,7 +227,7 @@ public class ThriftFormatter {
 
         if (vmd instanceof MapMetaData) {
             return "map&lt;" + formatTypeName(((MapMetaData) vmd).keyMetaData) + "," + formatTypeName(((MapMetaData) vmd).valueMetaData)
-                   + "&gt;";
+                + "&gt;";
         }
 
         if (vmd instanceof SetMetaData) {
@@ -231,22 +239,22 @@ public class ThriftFormatter {
         }
 
         switch (vmd.type) {
-        case TType.VOID:
-            return "void";
-        case TType.BOOL:
-            return "bool";
-        case TType.BYTE:
-            return "byte";
-        case TType.DOUBLE:
-            return "double";
-        case TType.I16:
-            return "i16";
-        case TType.I32:
-            return "i32";
-        case TType.I64:
-            return "i64";
-        case TType.STRING:
-            return "string";
+            case TType.VOID:
+                return "void";
+            case TType.BOOL:
+                return "bool";
+            case TType.BYTE:
+                return "byte";
+            case TType.DOUBLE:
+                return "double";
+            case TType.I16:
+                return "i16";
+            case TType.I32:
+                return "i32";
+            case TType.I64:
+                return "i64";
+            case TType.STRING:
+                return "string";
         }
 
         return "unknown";

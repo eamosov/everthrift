@@ -1,20 +1,5 @@
 package org.everthrift.appserver.model;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.RandomAccess;
-import java.util.Set;
-
-import org.everthrift.appserver.model.lazy.AbstractLazyLoader;
-import org.everthrift.appserver.model.lazy.Registry;
-import org.everthrift.utils.Function2;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.util.CollectionUtils;
-
 import com.google.common.base.Function;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Collections2;
@@ -22,6 +7,20 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.everthrift.appserver.model.lazy.AbstractLazyLoader;
+import org.everthrift.appserver.model.lazy.Registry;
+import org.everthrift.utils.Function2;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.util.CollectionUtils;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.RandomAccess;
+import java.util.Set;
 
 public abstract class RoModelFactoryImpl<PK, ENTITY> implements RoModelFactoryIF<PK, ENTITY> {
 
@@ -39,8 +38,9 @@ public abstract class RoModelFactoryImpl<PK, ENTITY> implements RoModelFactoryIF
     @Override
     final public Collection<ENTITY> findEntityById(Collection<PK> ids) {
 
-        if (CollectionUtils.isEmpty(ids))
+        if (CollectionUtils.isEmpty(ids)) {
             return Collections.emptyList();
+        }
 
         return Collections2.filter(findEntityByIdAsMap(ids).values(), Predicates.notNull());
     }
@@ -48,15 +48,17 @@ public abstract class RoModelFactoryImpl<PK, ENTITY> implements RoModelFactoryIF
     @Override
     final public List<ENTITY> findEntityByIdsInOrder(Collection<PK> ids) {
 
-        if (CollectionUtils.isEmpty(ids))
+        if (CollectionUtils.isEmpty(ids)) {
             return Collections.emptyList();
+        }
 
         final List<ENTITY> ret = Lists.newArrayListWithExpectedSize(ids.size());
         final Map<PK, ENTITY> loaded = findEntityByIdAsMap(ids);
         for (PK id : ids) {
             final ENTITY v = loaded.get(id);
-            if (v != null)
+            if (v != null) {
                 ret.add(v);
+            }
         }
         return ret;
     }
@@ -64,8 +66,9 @@ public abstract class RoModelFactoryImpl<PK, ENTITY> implements RoModelFactoryIF
     @Override
     public Map<List<PK>, List<ENTITY>> findEntityByCollectionIds(Collection<List<PK>> listCollection) {
 
-        if (CollectionUtils.isEmpty(listCollection))
+        if (CollectionUtils.isEmpty(listCollection)) {
             return Collections.emptyMap();
+        }
 
         final List<PK> totalIds = Lists.newArrayListWithCapacity(listCollection.size() * 2);
         for (Collection<PK> ids : listCollection) {
@@ -77,8 +80,9 @@ public abstract class RoModelFactoryImpl<PK, ENTITY> implements RoModelFactoryIF
 
         for (List<PK> ids : listCollection) {
             List<ENTITY> places = Lists.newArrayListWithCapacity(ids.size());
-            for (PK id : ids)
+            for (PK id : ids) {
                 places.add(intermediateResult.get(id));
+            }
             result.put(ids, places);
         }
         return result;
@@ -88,8 +92,9 @@ public abstract class RoModelFactoryImpl<PK, ENTITY> implements RoModelFactoryIF
 
         @Override
         protected boolean beforeLoad(XAwareIF<PK, ENTITY> key) {
-            if (!key.isSetId())
+            if (!key.isSetId()) {
                 return false;
+            }
 
             return true;
         }
@@ -104,8 +109,9 @@ public abstract class RoModelFactoryImpl<PK, ENTITY> implements RoModelFactoryIF
 
         @Override
         protected boolean beforeLoad(XAwareIF<List<PK>, List<ENTITY>> key) {
-            if (!key.isSetId())
+            if (!key.isSetId()) {
                 return false;
+            }
 
             return true;
         }
@@ -192,8 +198,9 @@ public abstract class RoModelFactoryImpl<PK, ENTITY> implements RoModelFactoryIF
 
         if (log.isDebugEnabled()) {
             int i = 0;
-            for (Object j : s)
+            for (Object j : s) {
                 i++;
+            }
             log.trace("loading {} entities", i);
         }
 
@@ -208,16 +215,17 @@ public abstract class RoModelFactoryImpl<PK, ENTITY> implements RoModelFactoryIF
      * K - тип ключа привязываемого объекта U - тип привязываемого объекта T -
      * тип объекта, к которому происходит привязка
      *
-     * @param s - список объектов, к которым добавить связь
+     * @param s           - список объектов, к которым добавить связь
      * @param getEntityId - функция получения ключа(K) связанного объекта
-     * @param setEntity - функция присвоения связи
-     * @param loader - загрузчик объектов для связи(U) по их ключам (K)
+     * @param setEntity   - функция присвоения связи
+     * @param loader      - загрузчик объектов для связи(U) по их ключам (K)
      */
     public static <K, U, T> int joinByIds(final Iterable<? extends T> s, Function<T, K> getEntityId, Function2<T, U, Void> setEntity,
                                           MultiLoader<K, U> loader) {
 
-        if (s instanceof Collection && ((Collection) s).size() == 0)
+        if (s instanceof Collection && ((Collection) s).size() == 0) {
             return 0;
+        }
 
         final Set<K> ids = new HashSet<K>();
 
@@ -227,15 +235,17 @@ public abstract class RoModelFactoryImpl<PK, ENTITY> implements RoModelFactoryIF
 
             for (int i = 0; i < _s.size(); i++) {
                 final K id = getEntityId.apply(_s.get(i));
-                if (id != null)
+                if (id != null) {
                     ids.add(id);
+                }
             }
 
         } else {
             for (T i : s) {
                 final K id = getEntityId.apply(i);
-                if (id != null)
+                if (id != null) {
                     ids.add(id);
+                }
             }
         }
 
@@ -246,8 +256,9 @@ public abstract class RoModelFactoryImpl<PK, ENTITY> implements RoModelFactoryIF
             for (int j = 0; j < _s.size(); j++) {
                 final T i = _s.get(j);
                 final K id = getEntityId.apply(i);
-                if (id == null)
+                if (id == null) {
                     continue;
+                }
 
                 final U u = loaded.get(id);
                 if (u != null) {
@@ -258,8 +269,9 @@ public abstract class RoModelFactoryImpl<PK, ENTITY> implements RoModelFactoryIF
         } else {
             for (T i : s) {
                 final K id = getEntityId.apply(i);
-                if (id == null)
+                if (id == null) {
                     continue;
+                }
 
                 final U u = loaded.get(id);
                 if (u != null) {

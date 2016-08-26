@@ -1,5 +1,10 @@
 package org.everthrift.sql.hibernate.model.types;
 
+import com.google.common.collect.Sets;
+import org.hibernate.HibernateException;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.usertype.UserType;
+
 import java.io.Serializable;
 import java.sql.Array;
 import java.sql.Connection;
@@ -8,12 +13,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.Set;
-
-import org.hibernate.HibernateException;
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.usertype.UserType;
-
-import com.google.common.collect.Sets;
 
 public abstract class HibernateSetType<T> implements UserType {
 
@@ -75,6 +74,6 @@ public abstract class HibernateSetType<T> implements UserType {
 
     @Override
     public int[] sqlTypes() {
-        return new int[] { Types.ARRAY };
+        return new int[]{Types.ARRAY};
     }
 }

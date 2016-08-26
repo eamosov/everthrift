@@ -15,12 +15,12 @@
  */
 package org.everthrift.cassandra.com.datastax.driver.mapping.annotations;
 
+import org.everthrift.cassandra.com.datastax.driver.mapping.Mapper;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-
-import org.everthrift.cassandra.com.datastax.driver.mapping.Mapper;
 
 /**
  * Defines to which table a class must be mapped to.
@@ -75,7 +75,6 @@ public @interface Table {
     String readConsistency() default "";
 
     /**
-     *
      * @return column name for IF clause (ONLY_IF)
      */
     String version() default "";

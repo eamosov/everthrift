@@ -10,8 +10,9 @@ public abstract class AbstractLazyLoader<K> implements LazyLoader<K> {
 
     @Override
     public int process(List<K> entities) {
-        if (entities.isEmpty())
+        if (entities.isEmpty()) {
             return 0;
+        }
 
         return loadImpl(entities);
     }
@@ -24,8 +25,9 @@ public abstract class AbstractLazyLoader<K> implements LazyLoader<K> {
 
     public boolean load(Registry r, K key) {
 
-        if (!beforeLoad(key))
+        if (!beforeLoad(key)) {
             return false;
+        }
 
         return r.add(this, key);
     }

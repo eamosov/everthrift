@@ -1,11 +1,5 @@
 package org.everthrift.sql.hibernate;
 
-import java.beans.PropertyDescriptor;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Member;
-import java.lang.reflect.Method;
-import java.util.Map;
-
 import org.hibernate.HibernateException;
 import org.hibernate.PropertyNotFoundException;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
@@ -15,6 +9,12 @@ import org.hibernate.property.access.spi.PropertyAccess;
 import org.hibernate.property.access.spi.PropertyAccessStrategy;
 import org.hibernate.property.access.spi.Setter;
 import org.springframework.beans.BeanUtils;
+
+import java.beans.PropertyDescriptor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Member;
+import java.lang.reflect.Method;
+import java.util.Map;
 
 public class ThriftPropertyAccess implements PropertyAccess {
 
@@ -29,8 +29,7 @@ public class ThriftPropertyAccess implements PropertyAccess {
         public void set(Object target, Object value, SessionFactoryImplementor factory) throws HibernateException {
             try {
                 writeMethod.invoke(target, value);
-            }
-            catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+            } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
                 throw new HibernateException(e);
             }
         }
@@ -65,8 +64,7 @@ public class ThriftPropertyAccess implements PropertyAccess {
         public Object get(Object target) throws HibernateException {
             try {
                 return readMethod.invoke(target);
-            }
-            catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+            } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
                 throw new HibernateException(e);
             }
         }
@@ -129,8 +127,9 @@ public class ThriftPropertyAccess implements PropertyAccess {
         this.strategy = strategy;
 
         final PropertyDescriptor pd = BeanUtils.getPropertyDescriptor(theClass, propertyName);
-        if (pd == null)
+        if (pd == null) {
             throw new PropertyNotFoundException("property " + propertyName + " not found in class" + theClass.getCanonicalName());
+        }
 
         this.setter = new ThriftSetter(pd);
         this.getter = new ThriftGetter(pd);

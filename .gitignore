@@ -11,3 +11,6 @@ tmc/target
 jsvc/bin
 target
 services/src/main/gen-perl
+*.iml
+*.ipr
+*.iws

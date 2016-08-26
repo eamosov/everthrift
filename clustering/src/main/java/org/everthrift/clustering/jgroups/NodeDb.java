@@ -1,16 +1,5 @@
 package org.everthrift.clustering.jgroups;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-
-import org.everthrift.services.thrift.cluster.Node;
-import org.jgroups.Address;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -18,6 +7,16 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
+import org.everthrift.services.thrift.cluster.Node;
+import org.jgroups.Address;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
 
 public class NodeDb {
     private static final Logger log = LoggerFactory.getLogger(NodeDb.class);
@@ -62,18 +61,23 @@ public class NodeDb {
 
         @Override
         public boolean equals(Object obj) {
-            if (this == obj)
+            if (this == obj) {
                 return true;
-            if (obj == null)
+            }
+            if (obj == null) {
                 return false;
-            if (getClass() != obj.getClass())
+            }
+            if (getClass() != obj.getClass()) {
                 return false;
+            }
             NodeDesc other = (NodeDesc) obj;
             if (sAddress == null) {
-                if (other.sAddress != null)
+                if (other.sAddress != null) {
                     return false;
-            } else if (!sAddress.equals(other.sAddress))
+                }
+            } else if (!sAddress.equals(other.sAddress)) {
                 return false;
+            }
             return true;
         }
 
@@ -85,12 +89,12 @@ public class NodeDb {
     }
 
     private Multimap<String, NodeDesc> methodsMap = ArrayListMultimap.create(); // Method
-                                                                                // name
-                                                                                // ->
-                                                                                // List<NodeDescr>
+    // name
+    // ->
+    // List<NodeDescr>
 
     private Map<String, NodeDesc> addresses = Maps.newHashMap(); // address ->
-                                                                 // NodeDescr
+    // NodeDescr
 
     private void _removeNode(String _a) {
         final NodeDesc d = addresses.remove(_a);
@@ -108,12 +112,14 @@ public class NodeDb {
         NodeDesc d = addresses.get(_a);
 
         if (d != null) {
-            if (n.equals(d.node))
+            if (n.equals(d.node)) {
                 return;
+            }
 
             if (d.node.isSetControllers()) {
-                for (String m : d.node.getControllers())
+                for (String m : d.node.getControllers()) {
                     methodsMap.remove(m, d);
+                }
             }
 
             d.setNode(n);
@@ -123,18 +129,20 @@ public class NodeDb {
 
         addresses.put(_a, d);
         if (d.node.isSetControllers()) {
-            for (String m : d.node.getControllers())
+            for (String m : d.node.getControllers()) {
                 methodsMap.put(m, d);
+            }
         }
     }
 
     public synchronized List<Address> getNode(String methodName) {
         final long now = System.currentTimeMillis();
 
-        @SuppressWarnings({ "rawtypes", "unchecked" })
+        @SuppressWarnings({"rawtypes", "unchecked"})
         final List<NodeDesc> nodes = (List) methodsMap.get(methodName);
-        if (nodes == null)
+        if (nodes == null) {
             return Collections.emptyList();
+        }
 
         final List<Address> aa = Lists.newArrayList(Iterables.transform(Iterables.filter(nodes, n -> (n.failedAt < now - failedTimeout)),
                                                                         NodeDesc::getAddress));

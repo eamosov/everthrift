@@ -1,9 +1,9 @@
 package org.everthrift.sql.jmx;
 
-import java.util.List;
-
 import org.everthrift.sql.pgsql.PgSqlModelFactory;
 import org.hibernate.criterion.Restrictions;
+
+import java.util.List;
 
 public class ApplicationPropertiesModelFactory extends PgSqlModelFactory<String, ApplicationPropertiesModel> {
 

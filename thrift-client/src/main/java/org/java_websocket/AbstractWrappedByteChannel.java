@@ -1,11 +1,10 @@
 package org.java_websocket;
 
+import javax.net.ssl.SSLException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.SocketChannel;
-
-import javax.net.ssl.SSLException;
 
 public class AbstractWrappedByteChannel implements WrappedByteChannel {
 
@@ -46,8 +45,9 @@ public class AbstractWrappedByteChannel implements WrappedByteChannel {
 
     @Override
     public void writeMore() throws IOException {
-        if (channel instanceof WrappedByteChannel)
+        if (channel instanceof WrappedByteChannel) {
             ((WrappedByteChannel) channel).writeMore();
+        }
 
     }
 
@@ -64,10 +64,11 @@ public class AbstractWrappedByteChannel implements WrappedByteChannel {
 
     @Override
     public boolean isBlocking() {
-        if (channel instanceof SocketChannel)
+        if (channel instanceof SocketChannel) {
             return ((SocketChannel) channel).isBlocking();
-        else if (channel instanceof WrappedByteChannel)
+        } else if (channel instanceof WrappedByteChannel) {
             return ((WrappedByteChannel) channel).isBlocking();
+        }
         return false;
     }
 

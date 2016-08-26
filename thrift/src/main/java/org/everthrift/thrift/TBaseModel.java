@@ -1,10 +1,9 @@
 package org.everthrift.thrift;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.util.Arrays;
-
+import com.google.common.base.Throwables;
+import net.jpountz.lz4.LZ4Compressor;
+import net.jpountz.lz4.LZ4Factory;
+import net.jpountz.lz4.LZ4FastDecompressor;
 import org.apache.thrift.TBase;
 import org.apache.thrift.TException;
 import org.apache.thrift.TFieldIdEnum;
@@ -14,11 +13,10 @@ import org.apache.thrift.transport.TMemoryInputTransport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Throwables;
-
-import net.jpountz.lz4.LZ4Compressor;
-import net.jpountz.lz4.LZ4Factory;
-import net.jpountz.lz4.LZ4FastDecompressor;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.Arrays;
 
 public interface TBaseModel<T extends TBase<T, F>, F extends TFieldIdEnum> extends TBase<T, F>, java.io.Externalizable {
 
@@ -39,7 +37,7 @@ public interface TBaseModel<T extends TBase<T, F>, F extends TFieldIdEnum> exten
 
     static int decodeFrameSize(final byte[] buf, int offset) {
         return ((buf[offset + 3] & 0xff) << 24) | ((buf[offset + 2] & 0xff) << 16) | ((buf[offset + 1] & 0xff) << 8)
-               | ((buf[offset + 0] & 0xff));
+            | ((buf[offset + 0] & 0xff));
     }
 
     public static byte[] toByteArray(TBase tBase) {
@@ -50,18 +48,19 @@ public interface TBaseModel<T extends TBase<T, F>, F extends TFieldIdEnum> exten
             final int decompressedLength = t.getPos();
             final int maxCompressedLength = compressor.maxCompressedLength(decompressedLength);
             final byte[] compressed = new byte[maxCompressedLength + 4];
-            final int compressedLength = compressor.compress(t.getBuf().array(), 0, decompressedLength, compressed, 4, maxCompressedLength);
+            final int compressedLength = compressor.compress(t.getBuf()
+                                                              .array(), 0, decompressedLength, compressed, 4, maxCompressedLength);
 
             log.debug("toByteArray: decompressedLength={}, compressedLength={}", decompressedLength, compressedLength);
 
             encodeFrameSize(decompressedLength, compressed);
 
-            if (compressedLength == maxCompressedLength)
+            if (compressedLength == maxCompressedLength) {
                 return compressed;
-            else
+            } else {
                 return Arrays.copyOf(compressed, compressedLength + 4);
-        }
-        catch (TException e) {
+            }
+        } catch (TException e) {
             throw Throwables.propagate(e);
         }
     }
@@ -82,8 +81,7 @@ public interface TBaseModel<T extends TBase<T, F>, F extends TFieldIdEnum> exten
             final byte[] restored = new byte[decompressedLength];
             decompressor.decompress(_data, offset + 4, restored, 0, decompressedLength);
             tBase.read(new TCompactProtocol(new TMemoryInputTransport(restored)));
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             log.error("fromByteArray: _data.length={}, offset={}, decompressedLength={}, _data={}", _data.length, offset,
                       decompressedLength, _data);
             throw Throwables.propagate(e);

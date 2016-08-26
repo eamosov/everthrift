@@ -1,14 +1,13 @@
 package org.everthrift.sql.hibernate.model;
 
-import java.util.List;
-import java.util.Map;
-
+import com.google.common.base.Function;
+import com.google.common.collect.Maps;
 import org.hibernate.annotations.OptimisticLockType;
 import org.hibernate.annotations.ResultCheckStyle;
 import org.hibernate.annotations.SQLInsert;
 
-import com.google.common.base.Function;
-import com.google.common.collect.Maps;
+import java.util.List;
+import java.util.Map;
 
 public class Table {
 
@@ -57,8 +56,9 @@ public class Table {
     }
 
     public void addColumns(List<Column> columns) {
-        for (Column col : columns)
+        for (Column col : columns) {
             columnsByName.put(col.getColumnName(), col);
+        }
     }
 
     public String getTableName() {
@@ -79,7 +79,7 @@ public class Table {
 
     public boolean isValid() {
         return this.primaryKey != null && this.primaryKey.getColumnNames().size() > 0
-               && this.columnsByName.keySet().containsAll(this.primaryKey.getColumnNames());
+            && this.columnsByName.keySet().containsAll(this.primaryKey.getColumnNames());
     }
 
     public OptimisticLockType getOptimisticLockType() {
@@ -92,12 +92,12 @@ public class Table {
 
     private String toXmlValue(ResultCheckStyle s) {
         switch (s) {
-        case NONE:
-            return "none";
-        case COUNT:
-            return "rowcount";
-        case PARAM:
-            return "param";
+            case NONE:
+                return "none";
+            case COUNT:
+                return "rowcount";
+            case PARAM:
+                return "param";
         }
         return null;
     }
@@ -106,13 +106,16 @@ public class Table {
         final StringBuilder sb = new StringBuilder();
 
         sb.append(String.format("<class name=\"%s\" table=\"%s\" schema=\"%s\" dynamic-update=\"true\" dynamic-insert=\"true\"  lazy=\"false\" optimistic-lock=\"%s\">\n",
-                                javaClass.getCanonicalName(), tableName, schema, optimisticLockType.name().toLowerCase()));
+                                javaClass.getCanonicalName(), tableName, schema, optimisticLockType.name()
+                                                                                                   .toLowerCase()));
 
-        if (primaryKey == null)
+        if (primaryKey == null) {
             throw new RuntimeException("No PK for table " + this.tableName);
+        }
 
-        if (primaryKey.getColumnNames().size() != 1)
+        if (primaryKey.getColumnNames().size() != 1) {
             throw new RuntimeException("Unsupported composize PK for table " + this.tableName);
+        }
 
         // final String secondLevelCache =
         // getHibernateProperties().getProperty("hibernate.cache.use_second_level_cache",
@@ -146,19 +149,22 @@ public class Table {
             if (columnModel.getColumnName().equalsIgnoreCase(pkColumnName)) {
                 // col = columnModel.toHbmXmlPk();
                 col = null;
-            } else if (optimisticLockType == OptimisticLockType.VERSION && columnModel.getColumnName().equalsIgnoreCase("version")) {
+            } else if (optimisticLockType == OptimisticLockType.VERSION && columnModel.getColumnName()
+                                                                                      .equalsIgnoreCase("version")) {
                 // col = columnModel.toHbmXmlVersion();
                 col = null;
             } else {
                 col = columnModel.toHbmXml();
             }
 
-            if (col != null)
+            if (col != null) {
                 sb.append(col.replaceAll("(?m)^", "\t") + "\n");
+            }
         }
 
         if (sqlInsert != null) {
-            sb.append(String.format("\t<sql-insert callable=\"%s\" check=\"%s\">%s</sql-insert>\n", Boolean.toString(sqlInsert.callable()),
+            sb.append(String.format("\t<sql-insert callable=\"%s\" check=\"%s\">%s</sql-insert>\n", Boolean.toString(sqlInsert
+                                                                                                                         .callable()),
                                     toXmlValue(sqlInsert.check()), sqlInsert.sql()));
         }
 

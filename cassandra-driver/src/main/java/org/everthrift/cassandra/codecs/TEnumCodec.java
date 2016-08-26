@@ -1,15 +1,14 @@
 package org.everthrift.cassandra.codecs;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.nio.ByteBuffer;
-
-import org.apache.thrift.TEnum;
-
 import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.ProtocolVersion;
 import com.datastax.driver.core.TypeCodec;
 import com.datastax.driver.core.exceptions.InvalidTypeException;
+import org.apache.thrift.TEnum;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.nio.ByteBuffer;
 
 public class TEnumCodec<T extends TEnum> extends TypeCodec<T> {
 
@@ -25,7 +24,7 @@ public class TEnumCodec<T extends TEnum> extends TypeCodec<T> {
             return cqlType.equals(DataType.cint());
         }
 
-        @SuppressWarnings({ "unchecked", "rawtypes" })
+        @SuppressWarnings({"unchecked", "rawtypes"})
         @Override
         public TypeCodec<T> create(DataType cqlType, Class<?> javaType) {
             return (TypeCodec) new TEnumCodec((Class) javaType);
@@ -41,8 +40,7 @@ public class TEnumCodec<T extends TEnum> extends TypeCodec<T> {
 
         try {
             findByValue = javaClass.getMethod("findByValue", Integer.TYPE);
-        }
-        catch (NoSuchMethodException | SecurityException e) {
+        } catch (NoSuchMethodException | SecurityException e) {
             throw new RuntimeException(e);
         }
     }
@@ -50,8 +48,7 @@ public class TEnumCodec<T extends TEnum> extends TypeCodec<T> {
     private T byValue(int value) throws InvalidTypeException {
         try {
             return (T) findByValue.invoke(null, value);
-        }
-        catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+        } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
             throw new InvalidTypeException("coudn't convert " + value + " to " + javaType.toString(), e);
         }
     }
@@ -59,8 +56,9 @@ public class TEnumCodec<T extends TEnum> extends TypeCodec<T> {
     @Override
     public ByteBuffer serialize(T value, ProtocolVersion protocolVersion) throws InvalidTypeException {
 
-        if (value == null)
+        if (value == null) {
             return null;
+        }
 
         ByteBuffer bb = ByteBuffer.allocate(4);
         bb.putInt(0, value.getValue());
@@ -70,11 +68,13 @@ public class TEnumCodec<T extends TEnum> extends TypeCodec<T> {
     @Override
     public T deserialize(ByteBuffer bytes, ProtocolVersion protocolVersion) throws InvalidTypeException {
 
-        if (bytes == null || bytes.remaining() == 0)
+        if (bytes == null || bytes.remaining() == 0) {
             return null;
+        }
 
-        if (bytes.remaining() != 4)
+        if (bytes.remaining() != 4) {
             throw new InvalidTypeException("Invalid 32-bits integer value, expecting 4 bytes but got " + bytes.remaining());
+        }
 
         return byValue(bytes.getInt(bytes.position()));
     }
@@ -84,8 +84,7 @@ public class TEnumCodec<T extends TEnum> extends TypeCodec<T> {
 
         try {
             return value == null || value.isEmpty() || value.equalsIgnoreCase("NULL") ? null : byValue(Integer.parseInt(value));
-        }
-        catch (NumberFormatException e) {
+        } catch (NumberFormatException e) {
             throw new InvalidTypeException(String.format("Cannot parse 32-bits int value from \"%s\"", value));
         }
     }
@@ -93,8 +92,9 @@ public class TEnumCodec<T extends TEnum> extends TypeCodec<T> {
     @Override
     public String format(T value) throws InvalidTypeException {
 
-        if (value == null)
+        if (value == null) {
             return "NULL";
+        }
 
         return Integer.toString(value.getValue());
     }

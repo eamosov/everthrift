@@ -1,15 +1,14 @@
 package org.everthrift.sql.jmx;
 
-import java.util.Map;
-
-import javax.management.modelmbean.ModelMBean;
-
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jmx.export.MBeanExportException;
 import org.springframework.jmx.export.annotation.AnnotationMBeanExporter;
+
+import javax.management.modelmbean.ModelMBean;
+import java.util.Map;
 
 public class PersistanceMbeanExporter extends AnnotationMBeanExporter {
 

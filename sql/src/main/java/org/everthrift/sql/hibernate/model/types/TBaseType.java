@@ -1,13 +1,6 @@
 package org.everthrift.sql.hibernate.model.types;
 
-import java.io.Serializable;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Types;
-
+import com.google.common.base.Throwables;
 import org.everthrift.thrift.TBaseLazyModel;
 import org.everthrift.thrift.TBaseModel;
 import org.hibernate.HibernateException;
@@ -16,7 +9,13 @@ import org.hibernate.usertype.UserType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Throwables;
+import java.io.Serializable;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Types;
 
 public abstract class TBaseType implements UserType {
 
@@ -28,15 +27,14 @@ public abstract class TBaseType implements UserType {
 
         try {
             init = returnedClass().getConstructor();
-        }
-        catch (NoSuchMethodException | SecurityException e) {
+        } catch (NoSuchMethodException | SecurityException e) {
             throw Throwables.propagate(e);
         }
     }
 
     @Override
     public int[] sqlTypes() {
-        return new int[] { Types.BINARY };
+        return new int[]{Types.BINARY};
     }
 
     @Override
@@ -45,11 +43,13 @@ public abstract class TBaseType implements UserType {
     @Override
     public boolean equals(Object x, Object y) throws HibernateException {
 
-        if (x == null && y == null)
+        if (x == null && y == null) {
             return true;
+        }
 
-        if ((x == null && y != null) || (x != null && y == null))
+        if ((x == null && y != null) || (x != null && y == null)) {
             return false;
+        }
 
         return x.equals(y);
     }
@@ -57,8 +57,9 @@ public abstract class TBaseType implements UserType {
     @Override
     public int hashCode(Object x) throws HibernateException {
 
-        if (x == null)
+        if (x == null) {
             return 0;
+        }
 
         return x.hashCode();
     }
@@ -69,22 +70,24 @@ public abstract class TBaseType implements UserType {
 
         final byte[] bytes = rs.getBytes(names[0]);
 
-        if (log.isDebugEnabled())
+        if (log.isDebugEnabled()) {
             log.debug("Load {} bytes for type {}", bytes == null ? 0 : bytes.length, returnedClass().getSimpleName());
+        }
 
-        if (bytes == null)
+        if (bytes == null) {
             return null;
+        }
 
         try {
             final TBaseModel o = init.newInstance();
             o.read(bytes, 0);
             return o;
-        }
-        catch (Exception e) {
-            if (e instanceof RuntimeException)
+        } catch (Exception e) {
+            if (e instanceof RuntimeException) {
                 throw (RuntimeException) e;
-            else
+            } else {
                 throw new HibernateException(e);
+            }
         }
     }
 
@@ -112,8 +115,9 @@ public abstract class TBaseType implements UserType {
     @Override
     public Serializable disassemble(Object value) throws HibernateException {
 
-        if (value == null)
+        if (value == null) {
             return null;
+        }
 
         return (value instanceof TBaseLazyModel) ? ((TBaseLazyModel) value).write() : (Serializable) deepCopy(value);
     }
@@ -121,16 +125,16 @@ public abstract class TBaseType implements UserType {
     @Override
     public Object assemble(Serializable cached, Object owner) throws HibernateException {
 
-        if (cached == null)
+        if (cached == null) {
             return null;
+        }
 
         if (cached instanceof byte[]) {
             try {
                 final TBaseModel o = init.newInstance();
                 o.read((byte[]) cached, 0);
                 return o;
-            }
-            catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+            } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
                 throw new HibernateException(e);
             }
         } else {

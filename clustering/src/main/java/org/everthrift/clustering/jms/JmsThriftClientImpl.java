@@ -1,13 +1,5 @@
 package org.everthrift.clustering.jms;
 
-import java.lang.reflect.Proxy;
-
-import javax.jms.BytesMessage;
-import javax.jms.ConnectionFactory;
-import javax.jms.JMSException;
-import javax.jms.Message;
-import javax.jms.Session;
-
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocolFactory;
 import org.apache.thrift.transport.TTransport;
@@ -20,6 +12,13 @@ import org.everthrift.clustering.thrift.ThriftProxyFactory;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.jms.support.converter.MessageConversionException;
 import org.springframework.jms.support.converter.MessageConverter;
+
+import javax.jms.BytesMessage;
+import javax.jms.ConnectionFactory;
+import javax.jms.JMSException;
+import javax.jms.Message;
+import javax.jms.Session;
+import java.lang.reflect.Proxy;
 
 public class JmsThriftClientImpl implements JmsThriftClientIF {
 
@@ -36,8 +35,9 @@ public class JmsThriftClientImpl implements JmsThriftClientIF {
             @Override
             public Message toMessage(Object object, Session session) throws JMSException, MessageConversionException {
 
-                if (!(object instanceof InvocationInfo))
+                if (!(object instanceof InvocationInfo)) {
                     throw new MessageConversionException("coudn't convert class: " + object.getClass().getSimpleName());
+                }
 
                 final BytesMessage bm = session.createBytesMessage();
                 final InvocationInfo ii = (InvocationInfo) object;
@@ -69,8 +69,7 @@ public class JmsThriftClientImpl implements JmsThriftClientIF {
                     public void write(byte[] buf, int off, int len) throws TTransportException {
                         try {
                             bm.writeBytes(buf, off, len);
-                        }
-                        catch (JMSException e) {
+                        } catch (JMSException e) {
                             throw new TTransportException(e);
                         }
                     }
@@ -91,7 +90,7 @@ public class JmsThriftClientImpl implements JmsThriftClientIF {
     @SuppressWarnings("unchecked")
     public <T> T onIface(Class<T> cls) {
 
-        return (T) Proxy.newProxyInstance(ThriftProxyFactory.class.getClassLoader(), new Class[] { cls },
+        return (T) Proxy.newProxyInstance(ThriftProxyFactory.class.getClassLoader(), new Class[]{cls},
                                           new ServiceIfaceProxy(cls, new InvocationCallback() {
 
                                               @SuppressWarnings("rawtypes")

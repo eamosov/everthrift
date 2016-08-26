@@ -1,14 +1,6 @@
 package org.everthrift.sql.hibernate.model;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Types;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
+import gnu.trove.map.hash.TLongLongHashMap;
 import org.apache.thrift.TEnum;
 import org.everthrift.sql.hibernate.ThriftPropertyAccessStrategy;
 import org.everthrift.sql.hibernate.model.types.BoxType;
@@ -52,7 +44,14 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.util.StringUtils;
 
-import gnu.trove.map.hash.TLongLongHashMap;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Types;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 public class Column {
 
@@ -201,15 +200,15 @@ public class Column {
     @Override
     public String toString() {
         return "Column [columnName=" + columnName + ", jdbcType=" + jdbcType + ", columnType=" + columnType + ", nullable=" + nullable
-               + ", length=" + length + ", scale=" + scale + ", javaClass=" + javaClass + ", propertyName=" + propertyName
-               + ", isAutoincrement=" + isAutoincrement + "]";
+            + ", length=" + length + ", scale=" + scale + ", javaClass=" + javaClass + ", propertyName=" + propertyName
+            + ", isAutoincrement=" + isAutoincrement + "]";
     }
 
     public boolean setHibernateType() {
 
         final String logFmt = "{}.{}({}/{})  <-> {}.{}({})";
-        final Object[] logArgs = new Object[] { table.getTableName(), columnName, jdbcType, columnType, table.javaClass.getSimpleName(),
-                                                propertyName, javaClass != null ? javaClass.getSimpleName() : "null" };
+        final Object[] logArgs = new Object[]{table.getTableName(), columnName, jdbcType, columnType, table.javaClass.getSimpleName(),
+            propertyName, javaClass != null ? javaClass.getSimpleName() : "null"};
 
         if (propertyName == null) {
             log.trace("Skip not existing " + logFmt, logArgs);
@@ -223,22 +222,22 @@ public class Column {
 
         if (javaClass == Long.class || javaClass == long.class) {
             switch (jdbcType) {
-            case Types.TIMESTAMP:
-                hibernateType = LongTimestampType.class.getCanonicalName();
-                break;
+                case Types.TIMESTAMP:
+                    hibernateType = LongTimestampType.class.getCanonicalName();
+                    break;
 
-            case Types.DATE:
-                hibernateType = LongDateType.class.getCanonicalName();
-                break;
+                case Types.DATE:
+                    hibernateType = LongDateType.class.getCanonicalName();
+                    break;
 
-            case Types.OTHER:
-                if (columnType.equalsIgnoreCase("interval")) {
-                    hibernateType = LongIntervalType.class.getCanonicalName();
-                    customRead = "extract(epoch from " + columnName + ")";
-                }
-                break;
-            default:
-                hibernateType = LongType.INSTANCE.getName();
+                case Types.OTHER:
+                    if (columnType.equalsIgnoreCase("interval")) {
+                        hibernateType = LongIntervalType.class.getCanonicalName();
+                        customRead = "extract(epoch from " + columnName + ")";
+                    }
+                    break;
+                default:
+                    hibernateType = LongType.INSTANCE.getName();
             }
         } else if (javaClass == Short.class || javaClass == short.class) {
 
@@ -290,15 +289,15 @@ public class Column {
         } else if (java.util.Date.class.isAssignableFrom(javaClass)) {
 
             switch (jdbcType) {
-            case Types.DATE:
-                hibernateType = DateType.INSTANCE.getName();
-                break;
-            case Types.TIME:
-                hibernateType = TimeType.INSTANCE.getName();
-                break;
-            case Types.TIMESTAMP:
-                hibernateType = TimestampType.INSTANCE.getName();
-                break;
+                case Types.DATE:
+                    hibernateType = DateType.INSTANCE.getName();
+                    break;
+                case Types.TIME:
+                    hibernateType = TimeType.INSTANCE.getName();
+                    break;
+                case Types.TIMESTAMP:
+                    hibernateType = TimestampType.INSTANCE.getName();
+                    break;
             }
 
         } else if (javaClass == Boolean.class || javaClass == boolean.class) {
@@ -306,7 +305,7 @@ public class Column {
             if (jdbcType == Types.BIT || jdbcType == Types.BOOLEAN) {
                 hibernateType = BooleanType.INSTANCE.getName();
             } else if (jdbcType == Types.NUMERIC || jdbcType == Types.DECIMAL || jdbcType == Types.INTEGER || jdbcType == Types.SMALLINT
-                       || jdbcType == Types.TINYINT || jdbcType == Types.BIGINT) {
+                || jdbcType == Types.TINYINT || jdbcType == Types.BIGINT) {
                 hibernateType = NumericBooleanType.INSTANCE.getName();
             }
 
@@ -359,10 +358,11 @@ public class Column {
         } else if (Map.class.equals(javaClass)) {
 
             if (columnType.contains("hstore")) {
-                hibernateType = propertyName.equals("deliveredAccountIds") ? org.everthrift.sql.hibernate.model.types.LongLongHstoreType.class.getCanonicalName()
+                hibernateType = propertyName.equals("deliveredAccountIds") ? org.everthrift.sql.hibernate.model.types.LongLongHstoreType.class
+                    .getCanonicalName()
                                                                            : // FIXME
-                                                                             // hack...
-                                                                           org.everthrift.sql.hibernate.model.types.HstoreType.class.getCanonicalName();
+                                // hack...
+                                org.everthrift.sql.hibernate.model.types.HstoreType.class.getCanonicalName();
                 customRead = columnName + "::hstore";
                 customWrite = "?::hstore";
             }
@@ -381,7 +381,8 @@ public class Column {
 
         } else if (jdbcType == Types.DATE && org.everthrift.sql.hibernate.model.types.DateType.isCompatible(javaClass)) {
 
-            hibernateType = CustomTypeFactory.create(javaClass, org.everthrift.sql.hibernate.model.types.DateType.class).getCanonicalName();
+            hibernateType = CustomTypeFactory.create(javaClass, org.everthrift.sql.hibernate.model.types.DateType.class)
+                                             .getCanonicalName();
 
         } else if (jdbcType == Types.OTHER && columnType.contains("box2d") && BoxType.isCompatible(javaClass)) {
 
@@ -396,13 +397,15 @@ public class Column {
         } else if (jdbcType == Types.OTHER && columnType.contains("jsonb")) {
 
             final Class model = TBaseHasModel.getModel(javaClass);
-            hibernateType = CustomTypeFactory.create(model != null ? model : javaClass, JsonType.class).getCanonicalName();
+            hibernateType = CustomTypeFactory.create(model != null ? model : javaClass, JsonType.class)
+                                             .getCanonicalName();
         } else if (jdbcType == Types.BINARY && TBaseModel.class.isAssignableFrom(javaClass)) {
 
             hibernateType = CustomTypeFactory.create(javaClass, TBaseType.class).getCanonicalName();
         } else if (jdbcType == Types.BINARY && TBaseHasModel.getModel(javaClass) != null) {
 
-            hibernateType = CustomTypeFactory.create(TBaseHasModel.getModel(javaClass), TBaseType.class).getCanonicalName();
+            hibernateType = CustomTypeFactory.create(TBaseHasModel.getModel(javaClass), TBaseType.class)
+                                             .getCanonicalName();
         }
 
         if (hibernateType == null) {
@@ -414,8 +417,9 @@ public class Column {
     }
 
     public String toHbmXmlVersion() {
-        if (!this.isValid())
+        if (!this.isValid()) {
             return null;
+        }
 
         final StringBuilder sb = new StringBuilder();
 
@@ -426,8 +430,9 @@ public class Column {
     }
 
     public String toHbmXmlPk() {
-        if (!this.isValid())
+        if (!this.isValid()) {
             return null;
+        }
 
         final StringBuilder sb = new StringBuilder();
 
@@ -436,11 +441,13 @@ public class Column {
 
         String column = String.format("<column name=\"%s\" not-null=\"true\" sql-type=\"%s\" ", columnName, columnType);
 
-        if (customRead != null)
+        if (customRead != null) {
             column += String.format("read=\"%s\" ", customRead);
+        }
 
-        if (customWrite != null)
+        if (customWrite != null) {
             column += String.format("write=\"%s\" ", customWrite);
+        }
 
         column += "/>";
 
@@ -457,8 +464,9 @@ public class Column {
     }
 
     public String toHbmXml() {
-        if (!this.isValid())
+        if (!this.isValid()) {
             return null;
+        }
 
         final StringBuilder sb = new StringBuilder();
 
@@ -469,11 +477,13 @@ public class Column {
         String column = String.format("<column name=\"%s\" not-null=\"%s\" sql-type=\"%s\" ", columnName, Boolean.toString(!nullable),
                                       columnType);
 
-        if (customRead != null)
+        if (customRead != null) {
             column += String.format("read=\"%s\" ", customRead);
+        }
 
-        if (customWrite != null)
+        if (customWrite != null) {
             column += String.format("write=\"%s\" ", customWrite);
+        }
 
         column += "/>";
 

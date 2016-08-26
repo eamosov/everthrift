@@ -1,15 +1,5 @@
 package org.everthrift.cassandra;
 
-import java.util.stream.Stream;
-
-import org.everthrift.cassandra.codecs.ByteArrayBlobCodec;
-import org.everthrift.cassandra.codecs.LongTimestampCodec;
-import org.everthrift.cassandra.codecs.StringUuidCodec;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.FactoryBean;
-import org.springframework.util.StringUtils;
-
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.ProtocolVersion;
 import com.datastax.driver.core.QueryLogger;
@@ -19,6 +9,15 @@ import com.datastax.driver.core.policies.DCAwareRoundRobinPolicy;
 import com.datastax.driver.core.policies.DefaultRetryPolicy;
 import com.datastax.driver.core.policies.LoggingRetryPolicy;
 import com.datastax.driver.core.policies.TokenAwarePolicy;
+import org.everthrift.cassandra.codecs.ByteArrayBlobCodec;
+import org.everthrift.cassandra.codecs.LongTimestampCodec;
+import org.everthrift.cassandra.codecs.StringUuidCodec;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.FactoryBean;
+import org.springframework.util.StringUtils;
+
+import java.util.stream.Stream;
 
 public class CassandraClusterFactoryBean implements FactoryBean<Cluster> {
 
@@ -40,8 +39,9 @@ public class CassandraClusterFactoryBean implements FactoryBean<Cluster> {
         Cluster.Builder builder = Cluster.builder();
         Stream.of(contactPoints.split(",")).map(String::trim).forEach(builder::addContactPoint);
 
-        if (port != null)
+        if (port != null) {
             builder.withPort(port);
+        }
 
         DCAwareRoundRobinPolicy.Builder policyBuilder = DCAwareRoundRobinPolicy.builder();
         if (!StringUtils.isEmpty(localDcName)) {
@@ -52,12 +52,16 @@ public class CassandraClusterFactoryBean implements FactoryBean<Cluster> {
         builder.withRetryPolicy(new LoggingRetryPolicy(DefaultRetryPolicy.INSTANCE));
         builder.withTimestampGenerator(new ThreadLocalMonotonicTimestampGenerator());
 
-        if (login != null || password != null)
+        if (login != null || password != null) {
             builder.withCredentials(login, password);
+        }
 
         final Cluster cluster = builder.build();
 
-        final QueryLogger queryLogger = QueryLogger.builder().withConstantThreshold(50).withMaxQueryStringLength(-1).build();
+        final QueryLogger queryLogger = QueryLogger.builder()
+                                                   .withConstantThreshold(50)
+                                                   .withMaxQueryStringLength(-1)
+                                                   .build();
         cluster.register(queryLogger);
 
         cluster.getConfiguration().getCodecRegistry().register(LongTimestampCodec.instance, StringUuidCodec.instance,

@@ -1,8 +1,8 @@
 package org.everthrift.utils.initializer;
 
-import java.util.concurrent.Callable;
-
 import com.google.common.base.Throwables;
+
+import java.util.concurrent.Callable;
 
 public class CallableInitializer<T> extends LazyInitializer<T> implements Initializer<T> {
 

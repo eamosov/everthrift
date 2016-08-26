@@ -20,8 +20,9 @@ public class UpdateEntityEvent<PK, ENTITY extends DaoEntityIF> {
 
     @Override
     public String toString() {
-        return this.getClass().getCanonicalName() + " [factory=" + factory + ", beforeUpdate=" + beforeUpdate + ", afterUpdate="
-               + afterUpdate + "]";
+        return this.getClass()
+                   .getCanonicalName() + " [factory=" + factory + ", beforeUpdate=" + beforeUpdate + ", afterUpdate="
+            + afterUpdate + "]";
     }
 
 }

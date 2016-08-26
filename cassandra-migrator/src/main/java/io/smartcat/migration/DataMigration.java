@@ -7,6 +7,7 @@ public abstract class DataMigration extends Migration {
 
     /**
      * Creates new data migration.
+     *
      * @param version Version of this data migration
      */
     public DataMigration() {
