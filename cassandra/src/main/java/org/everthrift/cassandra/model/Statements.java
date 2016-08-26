@@ -106,9 +106,11 @@ public class Statements {
 
         final UpdateEntityEvent<PK, ENTITY> event = factory.updateEntityEvent(beforeUpdate, afterUpdate);
 
-        callbacks.add(() -> {
-            factory.localEventBus.postEntityEvent(event);
-        });
+        if (factory.localEventBus !=null){
+            callbacks.add(() -> {
+                factory.localEventBus.postEntityEvent(event);
+            });
+        }
 
         if (autoCommit) {
             commit();
@@ -131,7 +133,9 @@ public class Statements {
         final UpdateEntityEvent event = factory.updateEntityEvent(beforeUpdate, (ENTITY) factory.copy(e));
         callbacks.add(() -> {
             uq.applySpecialValues(e);
-            factory.localEventBus.postEntityEvent(event);
+
+            if (factory.localEventBus !=null)
+                factory.localEventBus.postEntityEvent(event);
         });
 
         if (autoCommit) {
@@ -150,9 +154,12 @@ public class Statements {
 
         final ENTITY copy = (ENTITY) f.copy(e);
         final InsertEntityEvent event = f.insertEntityEvent(copy);
-        callbacks.add(() -> {
-            f.localEventBus.postEntityEvent(event);
-        });
+
+        if (f.localEventBus !=null){
+            callbacks.add(() -> {
+                f.localEventBus.postEntityEvent(event);
+            });
+        }
 
         if (autoCommit) {
             commit();
@@ -170,9 +177,12 @@ public class Statements {
         invalidates.put(f, pk);
 
         final DeleteEntityEvent event = f.deleteEntityEvent(e);
-        callbacks.add(() -> {
-            f.localEventBus.postEntityEvent(event);
-        });
+
+        if (f.localEventBus !=null){
+            callbacks.add(() -> {
+                f.localEventBus.postEntityEvent(event);
+            });
+        }
 
         if (autoCommit) {
             commit();

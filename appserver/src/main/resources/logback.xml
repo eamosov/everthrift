@@ -6,7 +6,7 @@
     <property name="LOG_PATTERN" value="[%d{yyyy-MM-dd HH:mm:ss.SSS}] - ${PID:-????} %5p [%t] --- %c{1}: %m%n"/>
     <property name="LOG_FILE" value="${LOG_FILE:-${LOG_PATH:-/tmp/}spring.log}"/>
 
-    <!-- <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
             <encoder>
                 <pattern>${LOG_PATTERN}</pattern>
             </encoder>
@@ -17,8 +17,8 @@
              </Pattern>
            </layout>
 
-        </appender>
-    -->
+    </appender>
+
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <encoder>
             <pattern>${LOG_PATTERN}</pattern>
@@ -33,16 +33,13 @@
         </triggeringPolicy>
 
         <layout class="ch.qos.logback.classic.PatternLayout">
-            <Pattern>
-                %date{HH:mm:ss.SSS} %-5level [%thread] %logger{1} [%file:%line]
-                %coloron%msg%coloroff%n%coloron%throwable%coloroff
-            </Pattern>
+            <Pattern>%date{HH:mm:ss.SSS} %-5level [%thread] %logger{1} [%file:%line] %coloron%msg%coloroff%n%coloron%throwable%coloroff</Pattern>
         </layout>
     </appender>
 
     <root level="${root-level:-INFO}">
-        <!--	<appender-ref ref="CONSOLE" /> -->
-        <appender-ref ref="FILE"/>
+        <appender-ref ref="CONSOLE" />
+        <!--	<appender-ref ref="FILE"/>  -->
     </root>
 
 </configuration>
