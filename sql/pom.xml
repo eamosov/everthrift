@@ -18,37 +18,6 @@
         <hibernate.version>5.2.1.Final</hibernate.version>
     </properties>
 
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-
-                <executions>
-                    <execution>
-                        <id>default-compile</id>
-                        <phase>none</phase>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>aspectj-maven-plugin</artifactId>
-
-                <configuration>
-                    <aspectLibraries>
-                        <aspectLibrary>
-                            <groupId>org.springframework</groupId>
-                            <artifactId>spring-aspects</artifactId>
-                        </aspectLibrary>
-                    </aspectLibraries>
-                </configuration>
-            </plugin>
-
-        </plugins>
-    </build>
-
     <dependencies>
         <dependency>
             <groupId>everthrift</groupId>
