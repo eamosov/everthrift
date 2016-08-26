@@ -2,4 +2,7 @@
     <aspects>
         <aspect name="org.everthrift.cassandra.codecs.CassandraDriverAspect" />
     </aspects>
+    <weaver>
+        <include within="com.datastax.driver.core.CodecRegistry"/>
+    </weaver>
 </aspectj>

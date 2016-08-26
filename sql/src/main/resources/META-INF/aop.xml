@@ -1,0 +1,7 @@
+<aspectj>
+
+    <weaver>
+        <include within="org.everthrift.sql..*" />
+    </weaver>
+
+</aspectj>
