@@ -1,9 +1,6 @@
 package org.everthrift.appserver.controller;
 
 import com.google.common.base.Function;
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import org.apache.thrift.TApplicationException;
 import org.apache.thrift.TBase;
@@ -29,6 +26,7 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 
@@ -118,7 +116,7 @@ public abstract class AbstractThriftController<ArgsType extends TBase, ResultTyp
 
         try {
             setup(args);
-            final ListenableFuture<ResultType> resultFuture = loadLazyRelations(handle());
+            final CompletableFuture<ResultType> resultFuture = loadLazyRelations(handle());
 
             if (resultFuture.isDone() || allowAsyncAnswer == false) {
                 ResultType result;
@@ -134,22 +132,17 @@ public abstract class AbstractThriftController<ArgsType extends TBase, ResultTyp
                 setEndNanos(System.nanoTime());
                 return result;
             } else {
-                Futures.addCallback(resultFuture, new FutureCallback<ResultType>() {
-
-                    @Override
-                    public void onSuccess(ResultType _answer) {
-                        final ResultType result = filterOutput(_answer);
-                        setResultSentFlag();
-                        setEndNanos(System.nanoTime());
-                        sendAnswerOrException(result);
-                    }
-
-                    @Override
-                    public void onFailure(Throwable t) {
+                resultFuture.whenCompleteAsync((_answer, t) -> {
+                    if (t !=null){
                         setResultSentFlag();
                         setEndNanos(System.nanoTime());
                         log.error("Uncought exception", t);
                         sendAnswerOrException(t);
+                    }else{
+                        final ResultType result = filterOutput(_answer);
+                        setResultSentFlag();
+                        setEndNanos(System.nanoTime());
+                        sendAnswerOrException(result);
                     }
                 }, executor);
 
@@ -190,7 +183,7 @@ public abstract class AbstractThriftController<ArgsType extends TBase, ResultTyp
         };
     }
 
-    protected ResultType waitForAnswer(ListenableFuture<? extends ResultType> lf) throws TException {
+    protected ResultType waitForAnswer(CompletableFuture<? extends ResultType> lf) throws TException {
 
         if (!allowAsyncAnswer) {
             try {
@@ -211,16 +204,8 @@ public abstract class AbstractThriftController<ArgsType extends TBase, ResultTyp
             }
 
         } else {
-            Futures.addCallback(lf, new FutureCallback<ResultType>() {
-
-                @Override
-                public void onSuccess(ResultType result) {
-                    sendAnswer(result);
-                }
-
-                @Override
-                public void onFailure(Throwable t) {
-
+            lf.whenCompleteAsync((result, t) -> {
+                if (t !=null) {
                     if (t instanceof TException) {
                         sendException((TException) t);
                     } else if (t.getCause() instanceof TException) {
@@ -229,6 +214,8 @@ public abstract class AbstractThriftController<ArgsType extends TBase, ResultTyp
                         log.error("Exception", t);
                         sendException(new TApplicationException(t.getMessage()));
                     }
+                }else{
+                    sendAnswer(result);
                 }
             }, executor);
 
@@ -245,19 +232,15 @@ public abstract class AbstractThriftController<ArgsType extends TBase, ResultTyp
     protected final synchronized void sendAnswer(ResultType answer) {
         setResultSentFlag();
 
-        Futures.addCallback(loadLazyRelations((ResultType) answer), new FutureCallback<ResultType>() {
-
-            @Override
-            public void onSuccess(ResultType _answer) {
-                final ResultType result = filterOutput(_answer);
-                setEndNanos(System.nanoTime());
-                sendAnswerOrException(result);
-            }
-
-            @Override
-            public void onFailure(Throwable t) {
+        loadLazyRelations(answer).handleAsync((_answer, t) -> {
+            if (t !=null) {
                 log.error("Uncought exception", t);
+                return null;
             }
+            final ResultType result = filterOutput(_answer);
+            setEndNanos(System.nanoTime());
+            sendAnswerOrException(result);
+            return null;
         }, executor);
     }
 
@@ -345,8 +328,8 @@ public abstract class AbstractThriftController<ArgsType extends TBase, ResultTyp
         return result;
     }
 
-    protected ListenableFuture<ResultType> loadLazyRelations(ResultType result) {
-        return loadLazyRelations ? lazyLoadManager.load(LazyLoadManager.SCENARIO_DEFAULT, result) : Futures.immediateFuture(result);
+    protected CompletableFuture<ResultType> loadLazyRelations(ResultType result) {
+        return loadLazyRelations ? lazyLoadManager.load(LazyLoadManager.SCENARIO_DEFAULT, result) : CompletableFuture.completedFuture(result);
     }
 
     protected Map<String, String[]> getHttpRequestParams() {

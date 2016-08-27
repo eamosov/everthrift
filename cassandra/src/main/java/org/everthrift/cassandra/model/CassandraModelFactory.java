@@ -16,7 +16,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import net.sf.ehcache.Cache;
@@ -56,9 +55,12 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+
+import static net.javacrumbs.futureconverter.java8guava.FutureConverter.toCompletableFuture;
 
 public abstract class CassandraModelFactory<PK extends Serializable, ENTITY extends DaoEntityIF, E extends TException>
     extends AbstractCachedModelFactory<PK, ENTITY> implements RwModelFactoryIF<PK, ENTITY, E>, AsyncRoModelFactoryIF<PK, ENTITY> {
@@ -86,14 +88,14 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
     private final AsyncLazyLoader<XAwareIF<PK, ENTITY>> asyncLazyLoader = new AsyncLazyLoader<XAwareIF<PK, ENTITY>>() {
 
         @Override
-        public ListenableFuture<Integer> processAsync(List<XAwareIF<PK, ENTITY>> entities) {
+        public CompletableFuture<Integer> processAsync(List<XAwareIF<PK, ENTITY>> entities) {
 
-            final ListenableFuture<Map<PK, ENTITY>> f = findEntityByIdAsMapAsync(entities.stream()
-                                                                                         .filter(XAwareIF<PK, ENTITY>::isSetId)
-                                                                                         .map(XAwareIF<PK, ENTITY>::getId)
-                                                                                         .collect(Collectors.toSet()));
+            final CompletableFuture<Map<PK, ENTITY>> f = findEntityByIdAsMapAsync(entities.stream()
+                                                                                          .filter(XAwareIF<PK, ENTITY>::isSetId)
+                                                                                          .map(XAwareIF<PK, ENTITY>::getId)
+                                                                                          .collect(Collectors.toSet()));
 
-            return Futures.transform(f, (Map<PK, ENTITY> loaded) -> {
+            return f.thenApply(loaded -> {
                 int n = 0;
                 for (XAwareIF<PK, ENTITY> e : entities) {
                     synchronized (e) {
@@ -107,7 +109,6 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
 
                     }
                 }
-
                 return n;
             });
         }
@@ -192,15 +193,14 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
         }
     }
 
-    final protected ListenableFuture<Map<PK, ENTITY>> fetchEntityByIdAsMapAsync(Collection<PK> _ids) {
+    final protected CompletableFuture<Map<PK, ENTITY>> fetchEntityByIdAsMapAsync(Collection<PK> _ids) {
 
         final List<PK> ids = ImmutableList.copyOf(_ids);
 
         final List<ListenableFuture<ENTITY>> ff = ids.stream().map(pk -> (mapper.getAsync(extractCompaundPk(pk))))
                                                      .collect(Collectors.toList());
 
-        return Futures.transform(Futures.allAsList(ff), (List<ENTITY> ee) -> {
-
+        return toCompletableFuture(Futures.allAsList(ff)).thenApply(ee -> {
             final Map<PK, ENTITY> ret = Maps.newHashMap();
             for (int i = 0; i < ids.size(); i++) {
                 ret.put(ids.get(i), ee.get(i));
@@ -210,17 +210,16 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
     }
 
     @Override
-    final public ListenableFuture<List<ENTITY>> findEntityByIdsInOrderAsync(final Collection<PK> ids) {
+    final public CompletableFuture<List<ENTITY>> findEntityByIdsInOrderAsync(final Collection<PK> ids) {
 
         if (CollectionUtils.isEmpty(ids)) {
-            return Futures.immediateFuture(Collections.emptyList());
+            return CompletableFuture.completedFuture(Collections.emptyList());
         }
 
-        return Futures.transform(findEntityByIdAsMapAsync(ids),
-                                 (Map<PK, ENTITY> loaded) -> (ids.stream()
-                                                                 .map(id -> loaded.get(id))
-                                                                 .filter(o -> o != null)
-                                                                 .collect(Collectors.toList())));
+        return findEntityByIdAsMapAsync(ids).thenApply(loaded -> (ids.stream()
+                                                                     .map(id -> loaded.get(id))
+                                                                     .filter(o -> o != null)
+                                                                     .collect(Collectors.toList())));
     }
 
     @Override
@@ -372,28 +371,23 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
     /*
      * save all not null fields without read Method not generates any events
      */
-    public ListenableFuture<Boolean> putEntityAsync(ENTITY entity, boolean _noSaveNulls) {
+    public CompletableFuture<Boolean> putEntityAsync(ENTITY entity, boolean _noSaveNulls) {
         if (entity.getPk() == null) {
             throw new IllegalArgumentException("pk is null");
         }
 
-        final ListenableFuture<Boolean> f;
+        final CompletableFuture<Boolean> f;
         if (_noSaveNulls) {
-            f = mapper.saveAsync(entity, noSaveNulls);
+            f = toCompletableFuture(mapper.saveAsync(entity, noSaveNulls));
         } else {
-            f = mapper.saveAsync(entity);
+            f = toCompletableFuture(mapper.saveAsync(entity));
         }
 
-        Futures.addCallback(f, new FutureCallback<Boolean>() {
-
-            @Override
-            public void onSuccess(Boolean result) {
-                invalidate((PK) entity.getPk());
-            }
-
-            @Override
-            public void onFailure(Throwable t) {
+        f.whenComplete((result, t) -> {
+            if (t != null) {
                 log.error("putEntityAsync", t);
+            } else {
+                invalidate((PK) entity.getPk());
             }
         });
 
@@ -483,9 +477,9 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
     }
 
     @Override
-    final public ListenableFuture<Map<PK, ENTITY>> findEntityByIdAsMapAsync(Collection<PK> ids) {
+    final public CompletableFuture<Map<PK, ENTITY>> findEntityByIdAsMapAsync(Collection<PK> ids) {
         if (CollectionUtils.isEmpty(ids)) {
-            return Futures.immediateFuture(Collections.emptyMap());
+            return CompletableFuture.completedFuture(Collections.emptyMap());
         }
 
         if (getCache() == null) {
@@ -508,7 +502,7 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
                                                             .map(pk -> (mapper.getAsync(extractCompaundPk(pk))))
                                                             .collect(Collectors.toList());
 
-        return Futures.transform(Futures.allAsList(ff), (List<ENTITY> ee) -> {
+        return toCompletableFuture(Futures.allAsList(ff)).thenApply(ee -> {
 
             for (int i = 0; i < keysToLoad.size(); i++) {
                 final PK key = keysToLoad.get(i);
@@ -531,19 +525,19 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
     }
 
     @Override
-    final public ListenableFuture<ENTITY> findEntityByIdAsync(PK id) {
+    final public CompletableFuture<ENTITY> findEntityByIdAsync(PK id) {
 
         if (getCache() == null) {
-            return mapper.getAsync(extractCompaundPk(id));
+            return toCompletableFuture(mapper.getAsync(extractCompaundPk(id)));
         }
 
         final Element cached = getCache().get(id);
 
         if (cached != null) {
-            return Futures.immediateFuture((ENTITY) cached.getObjectValue());
+            return CompletableFuture.completedFuture((ENTITY) cached.getObjectValue());
         }
 
-        return Futures.transform(mapper.getAsync(extractCompaundPk(id)), (ENTITY value) -> {
+        return toCompletableFuture(mapper.getAsync(extractCompaundPk(id))).thenApply(value -> {
             final Element toPut = new Element(id, value);
             getCache().put(toPut);
 

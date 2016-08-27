@@ -67,7 +67,7 @@ public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY 
     private void _afterPropertiesSet() {
 
         dao.setSessionFactory(sessionFactory);
-        dao.setListeningExecutorService(listeningExecutorService);
+        dao.setExecutor(listeningExecutorService);
 
         localEventBus.register(this);
     }

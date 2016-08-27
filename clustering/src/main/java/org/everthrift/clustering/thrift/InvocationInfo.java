@@ -16,9 +16,10 @@ import org.apache.thrift.transport.TTransport;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.util.concurrent.CompletableFuture;
 
 @SuppressWarnings("rawtypes")
-public class InvocationInfo<T> extends AbstractFuture<T> {
+public class InvocationInfo<T> extends CompletableFuture<T> {
     public final String fullMethodName;
 
     public final String serviceName;
@@ -106,16 +107,16 @@ public class InvocationInfo<T> extends AbstractFuture<T> {
     public T setReply(TTransport inT, TProtocolFactory protocolFactory) throws TException {
         try {
             final T ret = (T) this.parseReply(inT, protocolFactory);
-            super.set(ret);
+            super.complete(ret);
             return ret;
         } catch (TException e) {
-            super.setException(e);
+            super.completeExceptionally(e);
             throw e;
         }
     }
 
     public void setException(TException e) {
-        super.setException(e);
+        super.completeExceptionally(e);
     }
 
     @SuppressWarnings("unchecked")

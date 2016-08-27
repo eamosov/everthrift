@@ -1,9 +1,5 @@
 package org.everthrift.clustering.jgroups;
 
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.SettableFuture;
 import org.apache.thrift.TException;
 import org.everthrift.clustering.thrift.InvocationInfo;
 import org.everthrift.clustering.thrift.InvocationInfoThreadHolder;
@@ -13,6 +9,7 @@ import org.jgroups.blocks.ResponseMode;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 public interface ClusterThriftClientIF {
 
@@ -69,53 +66,48 @@ public interface ClusterThriftClientIF {
         }
     }
 
-    default public <T> ListenableFuture<Map<Address, Reply<T>>> call(T methodCall, Options... options) throws TException {
+    default public <T> CompletableFuture<Map<Address, Reply<T>>> call(T methodCall, Options... options) throws TException {
         return call(InvocationInfoThreadHolder.getInvocationInfo(), options);
     }
 
     @SuppressWarnings("rawtypes")
-    default public <T> ListenableFuture<Map<Address, Reply<T>>> call(final InvocationInfo ii, Options... options) throws TException {
+    default public <T> CompletableFuture<Map<Address, Reply<T>>> call(final InvocationInfo ii, Options... options) throws TException {
         return call(null, null, ii, options);
     }
 
-    default public <T> ListenableFuture<T> call(Address destination, T methodCall, Options... options) throws TException {
+    default public <T> CompletableFuture<T> call(Address destination, T methodCall, Options... options) throws TException {
         return call(destination, InvocationInfoThreadHolder.getInvocationInfo(), options);
     }
 
     @SuppressWarnings("rawtypes")
-    default public <T> ListenableFuture<T> call(Address destination, InvocationInfo ii, Options... options) throws TException {
-        final ListenableFuture<Map<Address, Reply<T>>> ret = call(Collections.singleton(destination), null, ii, options);
+    default public <T> CompletableFuture<T> call(Address destination, InvocationInfo ii, Options... options) throws TException {
+        final CompletableFuture<Map<Address, Reply<T>>> ret = call(Collections.singleton(destination), null, ii, options);
 
-        final SettableFuture<T> s = SettableFuture.create();
+        final CompletableFuture<T> s = new CompletableFuture();
 
-        Futures.addCallback(ret, new FutureCallback<Map<Address, Reply<T>>>() {
-
-            @Override
-            public void onSuccess(Map<Address, Reply<T>> m) {
-                try {
-                    s.set(m.get(destination).get());
-                } catch (TException e) {
-                    s.setException(e);
-                }
-            }
-
-            @Override
-            public void onFailure(Throwable t) {
-                s.setException(t);
-            }
+        ret.whenComplete((m, t) -> {
+           if (t !=null){
+               s.completeExceptionally(t);
+           }else{
+               try {
+                   s.complete(m.get(destination).get());
+               } catch (TException e) {
+                   s.completeExceptionally(e);
+               }
+           }
         });
 
         return s;
     }
 
     @SuppressWarnings("rawtypes")
-    public <T> ListenableFuture<Map<Address, Reply<T>>> call(Collection<Address> dest, Collection<Address> exclusionList,
-                                                             InvocationInfo tInfo, Options... options) throws TException;
+    public <T> CompletableFuture<Map<Address, Reply<T>>> call(Collection<Address> dest, Collection<Address> exclusionList,
+                                                              InvocationInfo tInfo, Options... options) throws TException;
 
-    default public <T> ListenableFuture<T> callOne(T methodCall, Options... options) throws TException {
+    default public <T> CompletableFuture<T> callOne(T methodCall, Options... options) throws TException {
         return callOne(InvocationInfoThreadHolder.getInvocationInfo(), options);
     }
 
     @SuppressWarnings("rawtypes")
-    public <T> ListenableFuture<T> callOne(InvocationInfo ii, Options... options) throws TException;
+    public <T> CompletableFuture<T> callOne(InvocationInfo ii, Options... options) throws TException;
 }

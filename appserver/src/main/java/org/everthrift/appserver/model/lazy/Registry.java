@@ -1,6 +1,6 @@
 package org.everthrift.appserver.model.lazy;
 
-import com.google.common.util.concurrent.ListenableFuture;
+import java.util.concurrent.CompletableFuture;
 
 public interface Registry {
 
@@ -10,7 +10,7 @@ public interface Registry {
 
     void clear();
 
-    ListenableFuture<Integer> load();
+    CompletableFuture<Integer> load();
 
     Object[] getArgs();
 }

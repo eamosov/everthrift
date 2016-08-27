@@ -1,8 +1,6 @@
 package org.everthrift.sql.hibernate.dao;
 
 import com.google.common.base.Function;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
 import org.everthrift.appserver.model.DaoEntityIF;
 import org.everthrift.appserver.model.UniqueException;
 import org.everthrift.utils.Pair;
@@ -20,6 +18,8 @@ import org.hibernate.type.Type;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 public interface AbstractDao<K, V extends DaoEntityIF> {
 
@@ -33,7 +33,6 @@ public interface AbstractDao<K, V extends DaoEntityIF> {
      * Если entity не найдено, то метод возвращает null для этого ключа
      *
      * @param id
-     * @param keyExtractor
      * @return
      */
     public Map<K, V> findByIdsAsMap(Collection<K> id);
@@ -59,11 +58,11 @@ public interface AbstractDao<K, V extends DaoEntityIF> {
     public List<V> findByCriteria(Criterion criterion, Projection proj, LockMode lockMode, List<Order> order, Integer limit,
                                   Integer offset);
 
-    public ListenableFuture<List<V>> findByCriteriaAsync(Criterion criterion, Order order);
+    public CompletableFuture<List<V>> findByCriteriaAsync(Criterion criterion, Order order);
 
     public V findFirstByCriteria(Criterion criterion, Order order);
 
-    public ListenableFuture<V> findFirstByCriteriaAsync(Criterion criterion, Order order);
+    public CompletableFuture<V> findFirstByCriteriaAsync(Criterion criterion, Order order);
 
     public <X> List<X> findBySQLQuery(String query, Map<String, Type> mapping, ResultTransformer resultTransformer, Object... params);
 
@@ -75,7 +74,7 @@ public interface AbstractDao<K, V extends DaoEntityIF> {
 
     public Session getCurrentSession();
 
-    public void setListeningExecutorService(ListeningExecutorService listeningExecutorService);
+    public void setExecutor(Executor executor);
 
     public AbstractDao<K, V> with(SessionFactory sessionFactory);
 }

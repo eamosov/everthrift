@@ -1,7 +1,6 @@
 package org.everthrift.appserver.controller;
 
 import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.ListenableFuture;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.thrift.TApplicationException;
 import org.apache.thrift.TBase;
@@ -40,6 +39,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * На каждый registry по экземпляру ThriftProcessor
@@ -229,7 +229,7 @@ public class ThriftProcessor implements TProcessor {
             }
 
             @Override
-            protected ListenableFuture thriftCall(Object sessionId, int timeout, InvocationInfo tInfo) throws TException {
+            protected CompletableFuture thriftCall(Object sessionId, int timeout, InvocationInfo tInfo) throws TException {
                 throw new NotImplementedException();
             }
 

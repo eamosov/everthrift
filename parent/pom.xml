@@ -561,6 +561,11 @@
                 <version>1.3</version>
             </dependency>
 
+            <dependency>
+                <groupId>com.jason-goodwin</groupId>
+                <artifactId>better-monads</artifactId>
+                <version>0.4.0</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -588,6 +593,7 @@
                         <complianceLevel>1.8</complianceLevel>
                         <encoding>UTF-8</encoding>
                         <verbose>true</verbose>
+                        <outxmlfile>META-INF/aop-ajc.xml</outxmlfile>
                     </configuration>
                 </plugin>
 

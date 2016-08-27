@@ -12,9 +12,8 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.Sets;
-import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
+import net.javacrumbs.futureconverter.java8guava.FutureConverter;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.thrift.TException;
 import org.everthrift.appserver.model.CreatedAtIF;
@@ -27,14 +26,19 @@ import org.everthrift.cassandra.com.datastax.driver.mapping.Mapper.Option;
 import org.everthrift.cassandra.com.datastax.driver.mapping.Mapper.UpdateQuery;
 import org.everthrift.thrift.TFunction;
 import org.everthrift.utils.LongTimestamp;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 
 public class Statements {
+
+    private static final Logger log = LoggerFactory.getLogger(Statements.class);
 
     private List<Statement> statements = Lists.newArrayList();
 
@@ -106,7 +110,7 @@ public class Statements {
 
         final UpdateEntityEvent<PK, ENTITY> event = factory.updateEntityEvent(beforeUpdate, afterUpdate);
 
-        if (factory.localEventBus !=null){
+        if (factory.localEventBus != null) {
             callbacks.add(() -> {
                 factory.localEventBus.postEntityEvent(event);
             });
@@ -134,8 +138,9 @@ public class Statements {
         callbacks.add(() -> {
             uq.applySpecialValues(e);
 
-            if (factory.localEventBus !=null)
+            if (factory.localEventBus != null) {
                 factory.localEventBus.postEntityEvent(event);
+            }
         });
 
         if (autoCommit) {
@@ -155,7 +160,7 @@ public class Statements {
         final ENTITY copy = (ENTITY) f.copy(e);
         final InsertEntityEvent event = f.insertEntityEvent(copy);
 
-        if (f.localEventBus !=null){
+        if (f.localEventBus != null) {
             callbacks.add(() -> {
                 f.localEventBus.postEntityEvent(event);
             });
@@ -178,7 +183,7 @@ public class Statements {
 
         final DeleteEntityEvent event = f.deleteEntityEvent(e);
 
-        if (f.localEventBus !=null){
+        if (f.localEventBus != null) {
             callbacks.add(() -> {
                 f.localEventBus.postEntityEvent(event);
             });
@@ -232,36 +237,31 @@ public class Statements {
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public ListenableFuture<?> commitAsync(Executor executor) {
-        final ListenableFuture f;
+    public CompletableFuture<?> commitAsync(Executor executor) {
+        final CompletableFuture f;
 
         if (isBatch() && statements.size() > 1) {
             final BatchStatement batch = new BatchStatement(batchType);
             batch.setDefaultTimestamp(timestamp);
-            statements.forEach(s -> batch.add(s));
-            f = executeAsync(batch);
+            statements.forEach(batch::add);
+            f = FutureConverter.toCompletableFuture(executeAsync(batch));
         } else {
             final List<ResultSetFuture> ff = Lists.newArrayList();
             for (Statement s : statements) {
                 ff.add(executeAsync(s));
             }
-            f = Futures.successfulAsList(ff);
+            f = FutureConverter.toCompletableFuture(Futures.allAsList(ff));
         }
 
-        Futures.addCallback(f, new FutureCallback<Object>() {
-
-            @Override
-            public void onSuccess(Object result) {
+        f.whenComplete((result, t) -> {
+            if (t != null) {
+                log.error("Commit error", t);
+            } else {
                 for (Map.Entry<CassandraModelFactory, Object> e : invalidates.entries()) {
                     e.getKey().invalidate(e.getValue());
                 }
 
-                callbacks.forEach(c -> c.run());
-            }
-
-            @Override
-            public void onFailure(Throwable t) {
-                t.printStackTrace();
+                callbacks.forEach(Runnable::run);
             }
         });
 
@@ -275,17 +275,17 @@ public class Statements {
             final BatchStatement batch = new BatchStatement(batchType);
             batch.setIdempotent(false);
             batch.setDefaultTimestamp(timestamp);
-            statements.forEach(s -> batch.add(s));
+            statements.forEach(batch::add);
             execute(batch);
         } else {
-            statements.forEach(s -> execute(s));
+            statements.forEach(this::execute);
         }
 
         for (Map.Entry<CassandraModelFactory, Object> e : invalidates.entries()) {
             e.getKey().invalidate(e.getValue());
         }
 
-        callbacks.forEach(c -> c.run());
+        callbacks.forEach(Runnable::run);
 
         statements.clear();
         invalidates.clear();

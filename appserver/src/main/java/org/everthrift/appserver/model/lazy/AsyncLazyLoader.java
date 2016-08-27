@@ -1,9 +1,9 @@
 package org.everthrift.appserver.model.lazy;
 
 import com.google.common.base.Throwables;
-import com.google.common.util.concurrent.ListenableFuture;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 public interface AsyncLazyLoader<K> extends LazyLoader<K> {
@@ -19,5 +19,5 @@ public interface AsyncLazyLoader<K> extends LazyLoader<K> {
         }
     }
 
-    ListenableFuture<Integer> processAsync(List<K> entities);
+    CompletableFuture<Integer> processAsync(List<K> entities);
 }

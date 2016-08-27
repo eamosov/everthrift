@@ -113,7 +113,7 @@ public class JgroupsThriftClientServerImpl extends AbstractJgroupsThriftClientIm
     public synchronized void viewAccepted(View new_view) {
 
         if (!this.viewAccepted.isDone()) {
-            this.viewAccepted.set(null);
+            this.viewAccepted.complete(null);
         }
 
         nodeDb.retain(new_view.getMembers());

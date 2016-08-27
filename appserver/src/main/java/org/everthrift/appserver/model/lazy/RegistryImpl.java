@@ -2,8 +2,7 @@ package org.everthrift.appserver.model.lazy;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
+import com.jasongoodwin.monads.Try;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,6 +11,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 public class RegistryImpl implements Registry {
 
@@ -104,14 +104,14 @@ public class RegistryImpl implements Registry {
 
     @Override
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public ListenableFuture<Integer> load() {
+    public CompletableFuture<Integer> load() {
 
         int nLoaded = 0;
-        final List<ListenableFuture<Integer>> asyncLoaders = Lists.newArrayList();
+        final List<CompletableFuture<Integer>> asyncLoaders = Lists.newArrayList();
 
         synchronized (this) {
             if (loadList.isEmpty()) {
-                return Futures.immediateFuture(0);
+                return CompletableFuture.completedFuture(0);
             }
 
             for (Map.Entry<LazyLoader<?>, Collection<Object>> e : loadList.asMap().entrySet()) {
@@ -128,13 +128,18 @@ public class RegistryImpl implements Registry {
         }
 
         if (asyncLoaders.isEmpty()) {
-            return Futures.immediateFuture(nLoaded);
+            return CompletableFuture.completedFuture(nLoaded);
         }
 
         final int _nLoaded = nLoaded;
 
-        return Futures.transform(Futures.successfulAsList(asyncLoaders),
-                                 (List<Integer> s) -> s.stream().mapToInt(i -> i == null ? 0 : i).sum() + _nLoaded);
+        return CompletableFuture.allOf(asyncLoaders.toArray(new CompletableFuture[asyncLoaders.size()]))
+                                .thenApply(V ->
+                                               asyncLoaders
+                                                   .stream()
+                                                   .mapToInt(f -> Try.ofFailable(() -> f.get()).orElse(0))
+                                                   .sum() + _nLoaded
+                                );
     }
 
     @Override

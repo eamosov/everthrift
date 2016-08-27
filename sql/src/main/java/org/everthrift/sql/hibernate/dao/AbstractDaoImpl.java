@@ -3,7 +3,6 @@ package org.everthrift.sql.hibernate.dao;
 import com.google.common.base.Function;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import org.everthrift.appserver.model.CreatedAtIF;
 import org.everthrift.appserver.model.DaoEntityIF;
@@ -38,7 +37,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -52,7 +52,7 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
 
     protected final Class<V> entityClass;
 
-    private ListeningExecutorService listeningExecutorService;
+    private Executor executor;
 
     private static final Pattern pkey = Pattern.compile("^[^_]+_pkey$");
 
@@ -62,10 +62,10 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
         this.entityClass = entityClass;
     }
 
-    private AbstractDaoImpl(SessionFactory sessionFactory, Class<V> entityClass, ListeningExecutorService listeningExecutorService) {
+    private AbstractDaoImpl(SessionFactory sessionFactory, Class<V> entityClass, Executor executor) {
         this.sessionFactory = sessionFactory;
         this.entityClass = entityClass;
-        this.listeningExecutorService = listeningExecutorService;
+        this.executor = executor;
     }
 
     @Override
@@ -82,13 +82,13 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
         return sessionFactory.openStatelessSession();
     }
 
-    public ListeningExecutorService getListeningExecutorService() {
-        return listeningExecutorService;
+    public Executor getExecutor() {
+        return executor;
     }
 
     @Override
-    public void setListeningExecutorService(ListeningExecutorService listeningExecutorService) {
-        this.listeningExecutorService = listeningExecutorService;
+    public void setExecutor(Executor executor) {
+        this.executor = executor;
     }
 
     @Override
@@ -492,32 +492,18 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
     }
 
     @Override
-    public ListenableFuture<List<V>> findByCriteriaAsync(final Criterion criterion, final Order order) {
-
-        return listeningExecutorService.submit(new Callable<List<V>>() {
-
-            @Override
-            public List<V> call() throws Exception {
-                return findByCriteria(criterion, order);
-            }
-        });
-
+    public CompletableFuture<List<V>> findByCriteriaAsync(final Criterion criterion, final Order order) {
+        return CompletableFuture.supplyAsync(() -> findByCriteria(criterion, order), executor);
     }
 
     @Override
-    public ListenableFuture<V> findFirstByCriteriaAsync(final Criterion criterion, final Order order) {
-        return listeningExecutorService.submit(new Callable<V>() {
-
-            @Override
-            public V call() throws Exception {
-                return findFirstByCriteria(criterion, order);
-            }
-        });
+    public CompletableFuture<V> findFirstByCriteriaAsync(final Criterion criterion, final Order order) {
+        return CompletableFuture.supplyAsync(() -> findFirstByCriteria(criterion, order), executor);
     }
 
     @Override
     public AbstractDao<K, V> with(final SessionFactory sessionFactory) {
-        return new AbstractDaoImpl<>(sessionFactory, this.entityClass, this.listeningExecutorService);
+        return new AbstractDaoImpl<>(sessionFactory, this.entityClass, this.executor);
     }
 
     @Override

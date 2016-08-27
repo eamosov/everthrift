@@ -1,9 +1,5 @@
 package org.everthrift.clustering.jgroups;
 
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.SettableFuture;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocolFactory;
@@ -25,6 +21,7 @@ import org.springframework.util.Assert;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -36,21 +33,21 @@ public abstract class AbstractJgroupsThriftClientImpl extends ClusterThriftClien
 
     public abstract MessageDispatcher getMessageDispatcher();
 
-    protected SettableFuture<?> viewAccepted = SettableFuture.create();
+    protected CompletableFuture<?> viewAccepted = new CompletableFuture();
 
     public Address getLocalAddress() {
         return getCluster().getAddress();
     }
 
     @SuppressWarnings("rawtypes")
-    private <T> ListenableFuture<Map<Address, Reply<T>>> _thriftCall(Collection<Address> dest, Collection<Address> exclusionList,
-                                                                     boolean loopBack, int timeout, ResponseMode responseMode,
-                                                                     InvocationInfo tInfo) throws TException {
+    private <T> CompletableFuture<Map<Address, Reply<T>>> _thriftCall(Collection<Address> dest, Collection<Address> exclusionList,
+                                                                      boolean loopBack, int timeout, ResponseMode responseMode,
+                                                                      InvocationInfo tInfo) throws TException {
 
         final Message msg = new Message();
         msg.setObject(new MessageWrapper(tInfo.buildCall(0, binaryProtocolFactory)));
 
-        if (loopBack == false) {
+        if (!loopBack) {
             msg.setTransientFlag(TransientFlag.DONT_LOOPBACK);
         }
 
@@ -64,7 +61,7 @@ public abstract class AbstractJgroupsThriftClientImpl extends ClusterThriftClien
             options.setAnycasting(true);
         }
 
-        final SettableFuture<Map<Address, Reply<T>>> f = SettableFuture.create();
+        final CompletableFuture<Map<Address, Reply<T>>> f = new CompletableFuture<>();
 
         log.debug("call {}, dest={}, excl={}, loopback={}, timeout={}, respMode={}", tInfo.fullMethodName, dest, exclusionList, loopBack,
                   timeout, responseMode);
@@ -81,13 +78,13 @@ public abstract class AbstractJgroupsThriftClientImpl extends ClusterThriftClien
                     try {
                         resp = future.get();
                     } catch (InterruptedException | ExecutionException e1) {
-                        f.setException(e1);
+                        f.completeExceptionally(e1);
                         return;
                     }
 
                     log.trace("RspList:{}", resp);
 
-                    final Map<Address, Reply<T>> ret = new HashMap<Address, Reply<T>>();
+                    final Map<Address, Reply<T>> ret = new HashMap<>();
 
                     for (Rsp<MessageWrapper> responce : resp) {
                         if (responce.getValue() != null) {
@@ -99,51 +96,38 @@ public abstract class AbstractJgroupsThriftClientImpl extends ClusterThriftClien
                         }
                     }
 
-                    f.set(ret);
+                    f.complete(ret);
                 }
             });
         } catch (Exception e) {
-            f.setException(e);
+            f.completeExceptionally(e);
         }
 
         return f;
     }
 
     @Override
-    public <T> ListenableFuture<Map<Address, Reply<T>>> call(Collection<Address> dest, Collection<Address> exclusionList,
-                                                             InvocationInfo tInfo, Options... options) throws TException {
+    public <T> CompletableFuture<Map<Address, Reply<T>>> call(Collection<Address> dest, Collection<Address> exclusionList,
+                                                              InvocationInfo tInfo, Options... options) throws TException {
 
         Assert.notNull(tInfo, "tInfo must not be null");
 
-        final SettableFuture<Map<Address, Reply<T>>> ret = SettableFuture.create();
+        final CompletableFuture<Map<Address, Reply<T>>> ret = new CompletableFuture<>();
 
-        Futures.addCallback(viewAccepted, new FutureCallback<Object>() {
-
-            @Override
-            public void onSuccess(Object result) {
-
+        viewAccepted.whenComplete((result, t) -> {
+            if (t == null) {
                 try {
-                    Futures.addCallback(_thriftCall(dest, exclusionList, isLoopback(options), getTimeout(options), getResponseMode(options),
-                                                    tInfo),
-                                        new FutureCallback<Map<Address, Reply<T>>>() {
-
-                                            @Override
-                                            public void onSuccess(Map<Address, Reply<T>> result) {
-                                                ret.set(result);
-                                            }
-
-                                            @Override
-                                            public void onFailure(Throwable t) {
-                                                ret.setException(t);
-                                            }
-                                        });
+                    this.<T>_thriftCall(dest, exclusionList, isLoopback(options), getTimeout(options), getResponseMode(options), tInfo)
+                        .whenComplete((result2, t2) -> {
+                            if (t2 != null) {
+                                ret.completeExceptionally(t2);
+                            } else {
+                                ret.complete(result2);
+                            }
+                        });
                 } catch (TException e) {
-                    ret.setException(e);
+                    ret.completeExceptionally(e);
                 }
-            }
-
-            @Override
-            public void onFailure(Throwable t) {
             }
         });
 

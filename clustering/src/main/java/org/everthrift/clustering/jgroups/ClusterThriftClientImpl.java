@@ -1,9 +1,5 @@
 package org.everthrift.clustering.jgroups;
 
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.SettableFuture;
 import org.apache.thrift.TApplicationException;
 import org.apache.thrift.TException;
 import org.everthrift.clustering.thrift.InvocationInfo;
@@ -16,7 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 public abstract class ClusterThriftClientImpl implements ClusterThriftClientIF {
 
@@ -174,9 +170,9 @@ public abstract class ClusterThriftClientImpl implements ClusterThriftClientIF {
         nodeDb.retain(getCluster().getView().getMembers());
     }
 
-    private <T> void _callOne(Iterator<Address> it, SettableFuture<T> f, InvocationInfo ii, Options[] options) {
+    private <T> void _callOne(Iterator<Address> it, CompletableFuture<T> f, InvocationInfo ii, Options[] options) {
         if (!it.hasNext()) {
-            f.setException(new TApplicationException("all nodes failed"));
+            f.completeExceptionally(new TApplicationException("all nodes failed"));
             return;
         }
 
@@ -184,10 +180,13 @@ public abstract class ClusterThriftClientImpl implements ClusterThriftClientIF {
         log.debug("Try call {} on {}", ii.fullMethodName, a);
 
         try {
-            Futures.addCallback(call(Collections.singletonList(a), null, ii, options), new FutureCallback<Map<Address, Reply<T>>>() {
+            this.<T>call(Collections.singletonList(a), null, ii, options).whenComplete((result, t) -> {
 
-                @Override
-                public void onSuccess(Map<Address, Reply<T>> result) {
+                if (t !=null) {
+                    log.debug("Failed call {} on {}", ii.fullMethodName, a);
+                    nodeDb.failed(a);
+                    _callOne(it, f, ii, options);
+                }else {
                     if (!result.containsKey(a)) {
                         log.debug("Failed call {} on {}", ii.fullMethodName, a);
                         nodeDb.failed(a);
@@ -196,18 +195,11 @@ public abstract class ClusterThriftClientImpl implements ClusterThriftClientIF {
                         log.debug("Success call {} on {}", ii.fullMethodName, a);
                         nodeDb.success(a);
                         try {
-                            f.set(result.get(a).get());
+                            f.complete(result.get(a).get());
                         } catch (TException e) {
-                            f.setException(e);
+                            f.completeExceptionally(e);
                         }
                     }
-                }
-
-                @Override
-                public void onFailure(Throwable t) {
-                    log.debug("Failed call {} on {}", ii.fullMethodName, a);
-                    nodeDb.failed(a);
-                    _callOne(it, f, ii, options);
                 }
             });
         } catch (TException e) {
@@ -219,8 +211,8 @@ public abstract class ClusterThriftClientImpl implements ClusterThriftClientIF {
 
     @Override
     @SuppressWarnings("rawtypes")
-    public <T> ListenableFuture<T> callOne(InvocationInfo ii, Options... options) throws TException {
-        final SettableFuture<T> f = SettableFuture.create();
+    public <T> CompletableFuture<T> callOne(InvocationInfo ii, Options... options) throws TException {
+        final CompletableFuture<T> f = new CompletableFuture();
         _callOne(nodeDb.getNode(ii.fullMethodName).iterator(), f, ii, options);
         return f;
     }

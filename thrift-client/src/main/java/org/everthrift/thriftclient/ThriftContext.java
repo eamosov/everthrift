@@ -1,6 +1,5 @@
 package org.everthrift.thriftclient;
 
-import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -34,7 +33,7 @@ import java.lang.reflect.Proxy;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -366,7 +365,7 @@ public class ThriftContext implements Closeable {
 
                                                   final int seqId = async.nextSeqId();
 
-                                                  final ListenableFuture<T> future;
+                                                  final CompletableFuture<T> future;
 
                                                   if ((use == Transport.WEBSOCKET || use == Transport.ANY) && tPersistWsTransport != null
                                                       && tPersistWsTransport.isConnected()) {
@@ -374,29 +373,25 @@ public class ThriftContext implements Closeable {
 
                                                   } else if ((use == Transport.HTTP || use == Transport.ANY) && tHttpTransport != null) {
 
-                                                      future = executor.submit(new Callable<T>() {
-
-                                                          @Override
-                                                          public T call() throws Exception {
+                                                      future = CompletableFuture.supplyAsync(() -> {
+                                                          try {
                                                               return (T) httpClientCall(ii, seqId);
+                                                          } catch (TException e) {
+                                                              throw new RuntimeException(e);
                                                           }
-                                                      });
+                                                      }, executor);
+
                                                   } else {
                                                       throw new TTransportException(TTransportException.NOT_OPEN);
                                                   }
 
                                                   if (ii.asyncMethodCallback != null) {
-                                                      Futures.addCallback(future, new FutureCallback<T>() {
-
-                                                          @Override
-                                                          public void onSuccess(T result) {
-                                                              ii.asyncMethodCallback.onComplete(result);
-                                                          }
-
-                                                          @Override
-                                                          public void onFailure(Throwable t) {
+                                                      future.whenCompleteAsync((result, t) -> {
+                                                          if (t != null) {
                                                               ii.asyncMethodCallback.onError(t instanceof Exception ? (Exception) t
                                                                                                                     : new Exception(t));
+                                                          } else {
+                                                              ii.asyncMethodCallback.onComplete(result);
                                                           }
                                                       }, executor);
                                                   }
@@ -435,7 +430,7 @@ public class ThriftContext implements Closeable {
                                           }));
     }
 
-    public <R> ListenableFuture<R> result(R unused) throws TTransportException {
+    public <R> CompletableFuture<R> result(R unused) throws TTransportException {
         return result(unused, asyncCallTimeout, Transport.ANY);
     }
 
@@ -452,7 +447,7 @@ public class ThriftContext implements Closeable {
      * @throws TTransportException
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public <R> ListenableFuture<R> result(R unused, long tmMs, Transport use) throws TTransportException {
+    public <R> CompletableFuture<R> result(R unused, long tmMs, Transport use) throws TTransportException {
 
         if (!opened) {
             throw new TTransportException(TTransportException.NOT_OPEN);
@@ -465,13 +460,14 @@ public class ThriftContext implements Closeable {
             return websocketCall(ii, seqId, tmMs);
         } else if ((use == Transport.HTTP || use == Transport.ANY) && tHttpTransport != null) {
 
-            return executor.submit(new Callable<R>() {
-
-                @Override
-                public R call() throws Exception {
+            return CompletableFuture.supplyAsync(() -> {
+                try {
                     return httpClientCall(ii, seqId);
+                } catch (TException e) {
+                    throw new RuntimeException(e);
                 }
-            });
+            }, executor);
+
         } else {
             throw new TTransportException(TTransportException.NOT_OPEN);
         }

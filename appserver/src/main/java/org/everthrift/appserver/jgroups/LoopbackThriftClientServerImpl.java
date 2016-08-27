@@ -1,7 +1,6 @@
 package org.everthrift.appserver.jgroups;
 
 import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.thrift.TException;
 import org.apache.thrift.TProcessor;
@@ -28,6 +27,7 @@ import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 public class LoopbackThriftClientServerImpl extends ClusterThriftClientImpl {
 
@@ -48,11 +48,11 @@ public class LoopbackThriftClientServerImpl extends ClusterThriftClientImpl {
     }
 
     @Override
-    public <T> ListenableFuture<Map<Address, Reply<T>>> call(Collection<Address> dest, Collection<Address> exclusionList,
-                                                             InvocationInfo tInfo, Options... options) throws TException {
+    public <T> CompletableFuture<Map<Address, Reply<T>>> call(Collection<Address> dest, Collection<Address> exclusionList,
+                                                              InvocationInfo tInfo, Options... options) throws TException {
 
         if (isLoopback(options) == false) {
-            return Futures.immediateFuture(Collections.emptyMap());
+            return CompletableFuture.completedFuture(Collections.emptyMap());
         }
 
         final TMemoryBuffer in = tInfo.buildCall(0, binary);
@@ -61,7 +61,7 @@ public class LoopbackThriftClientServerImpl extends ClusterThriftClientImpl {
         final TProtocol outP = binary.getProtocol(out);
 
         thriftProcessor.process(inP, outP);
-        return Futures.immediateFuture(Collections.singletonMap(new Address() {
+        return CompletableFuture.completedFuture(Collections.singletonMap(new Address() {
 
             @Override
             public void writeTo(DataOutput out) throws Exception {

@@ -9,7 +9,6 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.everthrift.appserver.model.lazy.AbstractLazyLoader;
 import org.everthrift.appserver.model.lazy.Registry;
-import org.everthrift.utils.Function2;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.CollectionUtils;
@@ -21,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.RandomAccess;
 import java.util.Set;
+import java.util.function.BiFunction;
 
 public abstract class RoModelFactoryImpl<PK, ENTITY> implements RoModelFactoryIF<PK, ENTITY> {
 
@@ -154,7 +154,7 @@ public abstract class RoModelFactoryImpl<PK, ENTITY> implements RoModelFactoryIF
         }
     };
 
-    private Function2<XAwareIF<List<PK>, List<ENTITY>>, List<ENTITY>, Void> _listSetEntity = new Function2<XAwareIF<List<PK>, List<ENTITY>>, List<ENTITY>, Void>() {
+    private BiFunction<XAwareIF<List<PK>, List<ENTITY>>, List<ENTITY>, Void> _listSetEntity = new BiFunction<XAwareIF<List<PK>, List<ENTITY>>, List<ENTITY>, Void>() {
 
         @Override
         public Void apply(XAwareIF<List<PK>, List<ENTITY>> input1, List<ENTITY> input2) {
@@ -177,7 +177,7 @@ public abstract class RoModelFactoryImpl<PK, ENTITY> implements RoModelFactoryIF
         }
     };
 
-    private Function2<XAwareIF<PK, ENTITY>, ENTITY, Void> _setEntity = new Function2<XAwareIF<PK, ENTITY>, ENTITY, Void>() {
+    private BiFunction<XAwareIF<PK, ENTITY>, ENTITY, Void> _setEntity = new BiFunction<XAwareIF<PK, ENTITY>, ENTITY, Void>() {
 
         @Override
         public Void apply(XAwareIF<PK, ENTITY> input1, ENTITY input2) {
@@ -207,7 +207,7 @@ public abstract class RoModelFactoryImpl<PK, ENTITY> implements RoModelFactoryIF
         return joinByIds(s, _getEntityId, _setEntity);
     }
 
-    public <T> int joinByIds(Iterable<? extends T> s, Function<T, PK> getEntityId, Function2<T, ENTITY, Void> setEntity) {
+    public <T> int joinByIds(Iterable<? extends T> s, Function<T, PK> getEntityId, BiFunction<T, ENTITY, Void> setEntity) {
         return joinByIds(s, getEntityId, setEntity, multiLoader);
     }
 
@@ -220,7 +220,7 @@ public abstract class RoModelFactoryImpl<PK, ENTITY> implements RoModelFactoryIF
      * @param setEntity   - функция присвоения связи
      * @param loader      - загрузчик объектов для связи(U) по их ключам (K)
      */
-    public static <K, U, T> int joinByIds(final Iterable<? extends T> s, Function<T, K> getEntityId, Function2<T, U, Void> setEntity,
+    public static <K, U, T> int joinByIds(final Iterable<? extends T> s, Function<T, K> getEntityId, BiFunction<T, U, Void> setEntity,
                                           MultiLoader<K, U> loader) {
 
         if (s instanceof Collection && ((Collection) s).size() == 0) {

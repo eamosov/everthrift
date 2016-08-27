@@ -4,7 +4,6 @@ import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.ListenableFuture;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.thrift.TApplicationException;
@@ -48,6 +47,7 @@ import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 public abstract class AbstractThriftServlet extends HttpServlet implements InitializingBean {
@@ -278,7 +278,7 @@ public abstract class AbstractThriftServlet extends HttpServlet implements Initi
                 }
 
                 @Override
-                protected <T> ListenableFuture<T> thriftCall(Object sessionId, int timeout, InvocationInfo tInfo) throws TException {
+                protected <T> CompletableFuture<T> thriftCall(Object sessionId, int timeout, InvocationInfo tInfo) throws TException {
                     throw new NotImplementedException();
                 }
             });

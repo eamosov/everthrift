@@ -1,12 +1,12 @@
 package org.everthrift.appserver.utils.thrift;
 
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import org.apache.thrift.TException;
 import org.apache.thrift.transport.TTransportException;
 import org.everthrift.clustering.thrift.InvocationInfo;
 import org.everthrift.clustering.thrift.InvocationInfoThreadHolder;
+
+import java.util.concurrent.CompletableFuture;
+import java.util.function.BiConsumer;
 
 public abstract class AbstractThriftClient<S> extends ThriftClient<S> {
 
@@ -15,15 +15,15 @@ public abstract class AbstractThriftClient<S> extends ThriftClient<S> {
     }
 
     @Override
-    public <T> ListenableFuture<T> thriftCall(int timeout, T methodCall, FutureCallback<T> callback) throws TException {
-        final ListenableFuture<T> lf = thriftCall(timeout, methodCall);
-        Futures.addCallback(lf, callback);
+    public <T> CompletableFuture<T> thriftCall(int timeout, T methodCall, BiConsumer<? super T, ? super Throwable> callback) throws TException {
+        final CompletableFuture<T> lf = thriftCall(timeout, methodCall);
+        lf.whenComplete(callback);
         return lf;
     }
 
     @SuppressWarnings("rawtypes")
     @Override
-    public <T> ListenableFuture<T> thriftCall(int timeout, T methodCall) throws TException {
+    public <T> CompletableFuture<T> thriftCall(int timeout, T methodCall) throws TException {
         final InvocationInfo info = InvocationInfoThreadHolder.getInvocationInfo();
         if (info == null) {
             throw new TTransportException("info is NULL");
@@ -34,11 +34,11 @@ public abstract class AbstractThriftClient<S> extends ThriftClient<S> {
 
     @SuppressWarnings("rawtypes")
     @Override
-    public <T> ListenableFuture<T> thriftCallByInfo(int timeout, InvocationInfo tInfo) throws TException {
+    public <T> CompletableFuture<T> thriftCallByInfo(int timeout, InvocationInfo tInfo) throws TException {
         return thriftCall(sessionId, timeout, tInfo);
     }
 
     @SuppressWarnings("rawtypes")
-    protected abstract <T> ListenableFuture<T> thriftCall(S sessionId, int timeout, InvocationInfo tInfo) throws TException;
+    protected abstract <T> CompletableFuture<T> thriftCall(S sessionId, int timeout, InvocationInfo tInfo) throws TException;
 
 }

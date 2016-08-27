@@ -3,7 +3,6 @@ package org.everthrift.jetty.transport.websocket;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.SettableFuture;
 import org.apache.thrift.TException;
@@ -51,6 +50,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -295,7 +295,7 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
         }
     }
 
-    public <T> ListenableFuture<T> thriftCall(String sessionId, int timeout, InvocationInfo tInfo) throws TException {
+    public <T> CompletableFuture<T> thriftCall(String sessionId, int timeout, InvocationInfo tInfo) throws TException {
 
         final SessionData sd = sessionRegistry.get(sessionId);
         if (sd == null) {
@@ -331,7 +331,7 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
         return new AbstractThriftClient<String>(sessionId) {
 
             @Override
-            protected <T> ListenableFuture<T> thriftCall(String sessionId, int timeout, InvocationInfo tInfo) throws TException {
+            protected <T> CompletableFuture<T> thriftCall(String sessionId, int timeout, InvocationInfo tInfo) throws TException {
                 return WebsocketThriftHandler.this.thriftCall(sessionId, timeout, tInfo);
             }
 

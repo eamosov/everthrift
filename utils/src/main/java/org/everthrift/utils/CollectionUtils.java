@@ -16,6 +16,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class CollectionUtils {
@@ -351,9 +352,9 @@ public class CollectionUtils {
         return c;
     }
 
-    public static <T> void aggregate(Iterator<T> it, int size, VoidFunction<List<T>> f) {
+    public static <T> void aggregate(Iterator<T> it, int size, Consumer<List<T>> f) {
         Iterators.partition(it, size).forEachRemaining(a -> {
-            f.apply(a);
+            f.accept(a);
         });
     }
 
