@@ -106,7 +106,7 @@ public class GsonSerializer {
 
                 final PropertyDescriptor pd = pds.get(e.getKey());
 
-                if (pd == null) {
+                if (pd == null || pd.getWriteMethod() == null) {
                     if (log.isDebugEnabled()) {
                         log.debug("coudn't find property {} for class {}, json={}", e.getKey(), o.getClass()
                                                                                                  .getSimpleName(),

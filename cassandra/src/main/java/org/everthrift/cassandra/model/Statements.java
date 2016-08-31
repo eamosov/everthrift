@@ -253,7 +253,7 @@ public class Statements {
             f = FutureConverter.toCompletableFuture(Futures.allAsList(ff));
         }
 
-        f.whenComplete((result, t) -> {
+        return f.whenComplete((result, t) -> {
             if (t != null) {
                 log.error("Commit error", t);
             } else {
@@ -264,8 +264,6 @@ public class Statements {
                 callbacks.forEach(Runnable::run);
             }
         });
-
-        return f;
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})

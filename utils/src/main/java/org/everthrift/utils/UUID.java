@@ -161,6 +161,10 @@ public class UUID implements Comparable<UUID>, Serializable {
         return (int) ((mostSigBits >> 56) & 0xFF);
     }
 
+    public static int getSpace8bit(String uuid) {
+        return Character.digit(uuid.charAt(0), 16) * 16 + Character.digit(uuid.charAt(1), 16);
+    }
+
     public long getHi32Bits() {
         return (mostSigBits >> 24) & 0xFFFFFFFFL;
     }

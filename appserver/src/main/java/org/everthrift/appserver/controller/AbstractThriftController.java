@@ -235,6 +235,8 @@ public abstract class AbstractThriftController<ArgsType extends TBase, ResultTyp
         loadLazyRelations(answer).handleAsync((_answer, t) -> {
             if (t !=null) {
                 log.error("Uncought exception", t);
+                setEndNanos(System.nanoTime());
+                sendAnswerOrException(new TApplicationException(TApplicationException.INTERNAL_ERROR, t.getMessage()));
                 return null;
             }
             final ResultType result = filterOutput(_answer);

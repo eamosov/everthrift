@@ -3,11 +3,10 @@ package org.everthrift.appserver.model;
 import com.google.common.base.Function;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Collections2;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import org.everthrift.appserver.model.lazy.AbstractLazyLoader;
+import org.everthrift.appserver.model.lazy.LazyLoader;
 import org.everthrift.appserver.model.lazy.Registry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +20,7 @@ import java.util.Map;
 import java.util.RandomAccess;
 import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 
 public abstract class RoModelFactoryImpl<PK, ENTITY> implements RoModelFactoryIF<PK, ENTITY> {
 
@@ -88,111 +88,47 @@ public abstract class RoModelFactoryImpl<PK, ENTITY> implements RoModelFactoryIF
         return result;
     }
 
-    protected final AbstractLazyLoader<XAwareIF<PK, ENTITY>> lazyLoader = new AbstractLazyLoader<XAwareIF<PK, ENTITY>>() {
+    protected final LazyLoader<XAwareIF<PK, ENTITY>> lazyLoader = entities -> _load(entities);
 
-        @Override
-        protected boolean beforeLoad(XAwareIF<PK, ENTITY> key) {
-            if (!key.isSetId()) {
-                return false;
-            }
-
-            return true;
-        }
-
-        @Override
-        protected int loadImpl(List<XAwareIF<PK, ENTITY>> entities) {
-            return _load(entities);
-        }
-    };
-
-    protected final AbstractLazyLoader<XAwareIF<List<PK>, List<ENTITY>>> lazyListLoader = new AbstractLazyLoader<XAwareIF<List<PK>, List<ENTITY>>>() {
-
-        @Override
-        protected boolean beforeLoad(XAwareIF<List<PK>, List<ENTITY>> key) {
-            if (!key.isSetId()) {
-                return false;
-            }
-
-            return true;
-        }
-
-        @Override
-        protected int loadImpl(List<XAwareIF<List<PK>, List<ENTITY>>> entities) {
-            return _loadList(entities);
-        }
-    };
-
-    private final MultiLoader<PK, ENTITY> multiLoader = new MultiLoader<PK, ENTITY>() {
-
-        @Override
-        public Map<PK, ENTITY> findByIds(Collection<PK> ids) {
-            return findEntityByIdAsMap(ids);
-        }
-    };
-
-    private final MultiLoader<List<PK>, List<ENTITY>> multiListLoader = new MultiLoader<List<PK>, List<ENTITY>>() {
-
-        @Override
-        public Map<List<PK>, List<ENTITY>> findByIds(Collection<List<PK>> ids) {
-            return RoModelFactoryImpl.this.findEntityByCollectionIds(ids);
-        }
-    };
+    protected final LazyLoader<XAwareIF<List<PK>, List<ENTITY>>> lazyListLoader = entities -> _loadList(entities);
 
     public boolean lazyLoad(Registry r, XAwareIF<PK, ENTITY> m) {
-        return lazyLoader.load(r, m);
+        if (m.isSetId()) {
+            return r.add(lazyLoader, m);
+        } else {
+            return false;
+        }
+    }
+
+    public boolean lazyLoad(Registry r, XAwareIF<PK, ENTITY> m, Object uniqueKey) {
+        if (m.isSetId()) {
+            return r.addWithUnique(lazyLoader, m, uniqueKey);
+        } else {
+            return false;
+        }
     }
 
     public void lazyListLoad(Registry r, XAwareIF<List<PK>, List<ENTITY>> m) {
-        lazyListLoader.load(r, m);
+        if (m.isSetId()) {
+            r.add(lazyListLoader, m);
+        }
     }
 
-    private Function<XAwareIF<List<PK>, List<ENTITY>>, List<PK>> _listGetEntityId = new Function<XAwareIF<List<PK>, List<ENTITY>>, List<PK>>() {
-
-        @Override
-        public List<PK> apply(XAwareIF<List<PK>, List<ENTITY>> input) {
-            return input.isSetId() ? input.getId() : null;
+    public void lazyListLoad(Registry r, XAwareIF<List<PK>, List<ENTITY>> m, Object uniqueKey) {
+        if (m.isSetId()) {
+            r.addWithUnique(lazyListLoader, m, uniqueKey);
         }
-    };
-
-    private BiFunction<XAwareIF<List<PK>, List<ENTITY>>, List<ENTITY>, Void> _listSetEntity = new BiFunction<XAwareIF<List<PK>, List<ENTITY>>, List<ENTITY>, Void>() {
-
-        @Override
-        public Void apply(XAwareIF<List<PK>, List<ENTITY>> input1, List<ENTITY> input2) {
-            input1.set(Lists.newArrayList(Iterables.filter(input2, Predicates.notNull())));
-            return null;
-        }
-    };
+    }
 
     protected int _loadList(Iterable<? extends XAwareIF<List<PK>, List<ENTITY>>> s) {
-
-        return joinByIds(s, _listGetEntityId, _listSetEntity, multiListLoader);
-
+        return joinByIds(s,
+                         input -> input.isSetId() ? input.getId() : null,
+                         (input1, input2) -> {
+                             input1.set(input2.stream().filter(i -> i!=null).collect(Collectors.toList()));
+                             return null;
+                         },
+                         ids -> RoModelFactoryImpl.this.findEntityByCollectionIds(ids));
     }
-
-    private Function<XAwareIF<PK, ENTITY>, PK> _getEntityId = new Function<XAwareIF<PK, ENTITY>, PK>() {
-
-        @Override
-        public PK apply(XAwareIF<PK, ENTITY> input) {
-            return input.isSetId() ? input.getId() : null;
-        }
-    };
-
-    private BiFunction<XAwareIF<PK, ENTITY>, ENTITY, Void> _setEntity = new BiFunction<XAwareIF<PK, ENTITY>, ENTITY, Void>() {
-
-        @Override
-        public Void apply(XAwareIF<PK, ENTITY> input1, ENTITY input2) {
-            if (input2 instanceof List) {
-                input1.set((ENTITY) Lists.newArrayList(Iterables.filter((List) input2, Predicates.notNull())));
-            } else if (input2 instanceof Set) {
-                input1.set((ENTITY) Sets.filter((Set) input2, Predicates.notNull()));
-            } else if (input2 instanceof Collection) {
-                input1.set((ENTITY) Collections2.filter((Set) input2, Predicates.notNull()));
-            } else {
-                input1.set(input2);
-            }
-            return null;
-        }
-    };
 
     protected int _load(Iterable<? extends XAwareIF<PK, ENTITY>> s) {
 
@@ -204,11 +140,24 @@ public abstract class RoModelFactoryImpl<PK, ENTITY> implements RoModelFactoryIF
             log.trace("loading {} entities", i);
         }
 
-        return joinByIds(s, _getEntityId, _setEntity);
+        return joinByIds(s,
+                         input -> input.isSetId() ? input.getId() : null,
+                         (input1, input2) -> {
+                             if (input2 instanceof List) {
+                                 input1.set((ENTITY)(((List)input2).stream().filter(_i -> _i!=null).collect(Collectors.toList())));
+                             } else if (input2 instanceof Set) {
+                                 input1.set((ENTITY) Sets.filter((Set) input2, Predicates.notNull()));
+                             } else if (input2 instanceof Collection) {
+                                 input1.set((ENTITY) Collections2.filter((Set) input2, Predicates.notNull()));
+                             } else {
+                                 input1.set(input2);
+                             }
+                             return null;
+                         });
     }
 
     public <T> int joinByIds(Iterable<? extends T> s, Function<T, PK> getEntityId, BiFunction<T, ENTITY, Void> setEntity) {
-        return joinByIds(s, getEntityId, setEntity, multiLoader);
+        return joinByIds(s, getEntityId, setEntity, ids -> findEntityByIdAsMap(ids));
     }
 
     /**

@@ -4,9 +4,17 @@ import java.util.concurrent.CompletableFuture;
 
 public interface Registry {
 
-    <K> boolean add(LazyLoader<K> l, K e, Object eq);
+    //уникальность контролируется uniqueKey
+    <K> boolean addWithUnique(LazyLoader<K> l, K e, Object uniqueKey);
 
-    <K> boolean add(LazyLoader<K> l, K e);
+    //уникальность контролируется парой (e,eq)
+    default <K> boolean add(LazyLoader<K> l, K e, Object eq){
+        return addWithUnique(l, e, new UniqKey(e, eq));
+    }
+
+    default <K> boolean add(LazyLoader<K> l, K e){
+        return add(l, e, null);
+    }
 
     void clear();
 

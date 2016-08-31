@@ -5,6 +5,8 @@ import org.apache.thrift.TException;
 import org.apache.thrift.TFieldIdEnum;
 import org.everthrift.appserver.utils.thrift.ThriftClient;
 import org.everthrift.utils.ClassUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 
 import java.lang.annotation.Annotation;
@@ -13,6 +15,9 @@ import java.lang.reflect.Method;
 import java.util.NoSuchElementException;
 
 public class ThriftControllerInfo {
+
+    private static final Logger log = LoggerFactory.getLogger(ThriftControllerInfo.class);
+
     private final Class<? extends ThriftController> controllerCls;
 
     private final String serviceName;
@@ -68,14 +73,19 @@ public class ThriftControllerInfo {
 
             if (ret != null) {
                 if (ret instanceof TException) {
-                    final Method setMethod = ClassUtils.getPropertyDescriptors(resultCls).entrySet().stream()
-                                                       .filter(e -> e.getValue().getReadMethod() != null
-                                                           && e.getValue().getWriteMethod() != null && e.getValue()
-                                                                                                        .getReadMethod()
-                                                                                                        .getReturnType()
-                                                                                                        .isAssignableFrom(ret.getClass()))
-                                                       .findFirst().get().getValue().getWriteMethod();
-                    setMethod.invoke(res, ret);
+                    try{
+                        final Method setMethod = ClassUtils.getPropertyDescriptors(resultCls).entrySet().stream()
+                                                           .filter(e -> e.getValue().getReadMethod() != null
+                                                               && e.getValue().getWriteMethod() != null && e.getValue()
+                                                                                                            .getReadMethod()
+                                                                                                            .getReturnType()
+                                                                                                            .isAssignableFrom(ret.getClass()))
+                                                           .findFirst().get().getValue().getWriteMethod();
+                        setMethod.invoke(res, ret);
+                    }catch (NoSuchElementException e){
+                        log.error("Coudn't find Exception of type {} in {}", ret.getClass().getCanonicalName(), resultCls.getCanonicalName());
+                        throw new RuntimeException(ret.getClass().getSimpleName() + ":" + ((TException) ret).getMessage(), (TException)ret);
+                    }
                 } else {
                     final TFieldIdEnum f = (TFieldIdEnum) findResultFieldByName.invoke(null, "success");
                     if (f == null) {

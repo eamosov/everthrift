@@ -16,6 +16,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -370,5 +371,9 @@ public class CollectionUtils {
         }
 
         return false;
+    }
+
+    public static <K, T> List<T> orderBy(Map<K, T> items, List<K> keys){
+        return keys.stream().map(items::get).filter(i -> i != null).collect(Collectors.toList());
     }
 }
