@@ -22,8 +22,10 @@ import javax.annotation.PreDestroy;
 import java.lang.reflect.Proxy;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -45,11 +47,13 @@ public class LocalJmsThriftClientServerImpl implements JmsThriftClientIF {
 
     private final ExecutorService executor;
 
-    private boolean block = false;
+    private final boolean block;
 
-    public LocalJmsThriftClientServerImpl() {
+    public LocalJmsThriftClientServerImpl(boolean block) {
 
-        executor = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(), new ThreadFactory() {
+        this.block = block;
+
+        final ThreadFactory tf = new ThreadFactory() {
 
             private final AtomicInteger threadNumber = new AtomicInteger(1);
 
@@ -64,7 +68,13 @@ public class LocalJmsThriftClientServerImpl implements JmsThriftClientIF {
                 }
                 return t;
             }
-        });
+        };
+
+        if (block){
+            executor = new ThreadPoolExecutor(1, Integer.MAX_VALUE, 10L, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(), tf);
+        }else{
+            executor = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(), tf);
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -124,9 +134,4 @@ public class LocalJmsThriftClientServerImpl implements JmsThriftClientIF {
     public boolean isBlock() {
         return block;
     }
-
-    public void setBlock(boolean block) {
-        this.block = block;
-    }
-
 }

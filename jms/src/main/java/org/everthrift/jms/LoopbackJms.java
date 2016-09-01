@@ -14,11 +14,7 @@ public class LoopbackJms {
 
     @Bean
     public LocalJmsThriftClientServerImpl localJmsThriftClientServerImpl(@Qualifier("testMode") boolean testMode) {
-        final LocalJmsThriftClientServerImpl jms = new LocalJmsThriftClientServerImpl();
-        if (testMode) {
-            jms.setBlock(true);
-        }
-        return jms;
+        return new LocalJmsThriftClientServerImpl(testMode);
     }
 
 }
