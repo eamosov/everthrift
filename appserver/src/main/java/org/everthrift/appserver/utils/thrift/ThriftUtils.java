@@ -61,4 +61,11 @@ public class ThriftUtils {
 
         return Pair.<Class<? extends TBase>, Map<? extends TFieldIdEnum, FieldMetaData>>create(thriftClass, map);
     }
+
+    public static <S extends TBase, D extends S> void copyFields(S from,  D to, TFieldIdEnum ... fields){
+        for(int i=0; i< fields.length; i++){
+            final TFieldIdEnum id = fields[i];
+            to.setFieldValue(id, from.isSet(id) ? from.getFieldValue(id) : null);
+        }
+    }
 }
