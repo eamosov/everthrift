@@ -1,10 +1,11 @@
 package org.everthrift.utils;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.stream.Collectors;
 
 /**
  * Created by fluder on 27.08.16.
@@ -12,34 +13,31 @@ import java.util.concurrent.Executor;
 public class FuturesSupport {
 
     public static <V> CompletableFuture<List<V>> allOf(CompletableFuture<? extends V>... futures) {
-        return CompletableFuture.allOf(futures).thenApply(unused -> {
-            final List<V> ret = new ArrayList<V>();
-            for (CompletableFuture<? extends V> f : futures) {
-                try {
-                    ret.add(f.get());
-                } catch (Exception e) {
-                    ret.add(null);
-                }
-            }
-            return ret;
-        });
+        return CompletableFuture
+            .allOf(futures)
+            .thenApply(v -> Arrays.stream(futures)
+                                  .map(CompletableFuture::join)
+                                  .collect(Collectors.toList())
+            );
+
     }
 
     public static <V> CompletableFuture<List<V>> allOf(Collection<? extends CompletableFuture<? extends V>> futures) {
-        final CompletableFuture<V> arr[] = new CompletableFuture[futures.size()];
-        int i = 0;
-        for (CompletableFuture<? extends V> v : futures) {
-            arr[i++] = (CompletableFuture<V>) v;
-        }
-        ;
-        return allOf(arr);
+
+        return CompletableFuture
+            .allOf(futures.toArray(new CompletableFuture[futures.size()]))
+            .thenApply(v -> futures.stream()
+                                   .map(CompletableFuture::join)
+                                   .collect(Collectors.toList())
+            );
+
     }
 
     private static <I, O> void _transformAsync(I result, Throwable t, final CompletableFuture<O> ret, CompletableAsyncFunction<? super I, ? extends O> function) {
         if (t != null) {
             ret.completeExceptionally(t);
         } else {
-            try{
+            try {
                 function.apply(result).whenComplete((result2, t2) -> {
                     if (t2 != null) {
                         ret.completeExceptionally(t2);
@@ -47,7 +45,7 @@ public class FuturesSupport {
                         ret.complete(result2);
                     }
                 });
-            }catch (Throwable e){
+            } catch (Throwable e) {
                 ret.completeExceptionally(e);
             }
         }
