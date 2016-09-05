@@ -152,7 +152,7 @@ public class ThriftProcessor implements TProcessor {
                 try {
                     return tps.result(e, controllerInfo);
                 } finally {
-                    logEnd(log, controller, msg.name, tps.getSessionId(), null);
+                    logEnd(log, controller, msg.name, tps.getSessionId(), e);
                 }
             }
         } catch (RuntimeException e) {
@@ -293,7 +293,12 @@ public class ThriftProcessor implements TProcessor {
                 } else if (o instanceof Exception && !(o instanceof TException)) {
                     return result(new TApplicationException(TApplicationException.INTERNAL_ERROR, ((Exception) o).getMessage()));
                 } else {
-                    final TBase result = tInfo.makeResult(o);
+                    final TBase result;
+                    try {
+                        result = tInfo.makeResult(o);
+                    }catch (TApplicationException e){
+                        return result(e);
+                    }
 
                     try {
                         out.writeMessageBegin(new TMessage(msg.name, TMessageType.REPLY, msg.seqid));

@@ -84,7 +84,14 @@ public class DefaultTProtocolSupport implements ThriftProtocolSupportIF<MessageW
         } else if (o instanceof Exception && !(o instanceof TException)) {
             return result(new TApplicationException(TApplicationException.INTERNAL_ERROR, ((Exception) o).getMessage()));
         } else {
-            final TBase result = tInfo.makeResult(o);
+
+            final TBase result;
+            try {
+                result = tInfo.makeResult(o);
+            }catch (TApplicationException e){
+                return result(e);
+            }
+
             final TMemoryBuffer outT = new TMemoryBuffer(1024);
             final TProtocol out = protocolFactory.getProtocol(outT);
 

@@ -1,5 +1,6 @@
 package org.everthrift.appserver.controller;
 
+import org.apache.thrift.TApplicationException;
 import org.apache.thrift.TBase;
 import org.apache.thrift.TException;
 import org.apache.thrift.TFieldIdEnum;
@@ -65,7 +66,7 @@ public class ThriftControllerInfo {
         }
     }
 
-    public TBase makeResult(Object ret) {
+    public TBase makeResult(Object ret) throws TApplicationException{
 
         try {
 
@@ -84,7 +85,7 @@ public class ThriftControllerInfo {
                         setMethod.invoke(res, ret);
                     }catch (NoSuchElementException e){
                         log.error("Coudn't find Exception of type {} in {}", ret.getClass().getCanonicalName(), resultCls.getCanonicalName());
-                        throw new RuntimeException(ret.getClass().getSimpleName() + ":" + ((TException) ret).getMessage(), (TException)ret);
+                        throw new TApplicationException(TApplicationException.INTERNAL_ERROR, ret.getClass().getSimpleName() + ":" + ((TException) ret).getMessage());
                     }
                 } else {
                     final TFieldIdEnum f = (TFieldIdEnum) findResultFieldByName.invoke(null, "success");
