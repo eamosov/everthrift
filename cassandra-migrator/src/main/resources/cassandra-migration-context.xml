@@ -9,19 +9,20 @@
     <context:property-placeholder/>
 
     <bean id="cluster" class="org.everthrift.cassandra.CassandraClusterFactoryBean">
-        <property name="contactPoints" value="${cassandra.host}"/>
+        <property name="contactPoints" value="${cassandra.contactpoints}"/>
     </bean>
 
     <bean id="session" class="org.everthrift.cassandra.CassandraSessionFactoryBean">
         <constructor-arg ref="cluster"></constructor-arg>
         <constructor-arg>
-            <value>${cassandra.ks}</value>
+            <value>${cassandra.keyspace}</value>
         </constructor-arg>
     </bean>
 
     <bean id="Migrator" class="org.everthrift.cassandra.migrator.CMigrationProcessor">
         <property name="session" ref="session"></property>
         <property name="basePackage" value="${cassandra.migrations.basePackage}"></property>
+        <property name="schemaVersionCf" value="${cassandra.migrations.schemaVersionCf:schema_version}"></property>
     </bean>
 
 </beans>
