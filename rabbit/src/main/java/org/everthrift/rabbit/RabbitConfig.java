@@ -39,8 +39,21 @@ public class RabbitConfig {
     }
 
     @Bean
-    public RabbitThriftClientServerImpl rabbitThriftClientServerImpl(ConnectionFactory connectionFactory) {
-        return new RabbitThriftClientServerImpl(connectionFactory);
+    public RabbitThriftClientServerImpl rabbitThriftClientServerImpl(ConnectionFactory connectionFactory,
+                                                                     @Value("${rabbit.queue.prefix:}")
+                                                                         String queuePrefix,
+                                                                     @Value("${rabbit.queue.suffix:}")
+                                                                         String queueSuffix,
+                                                                     @Value("${rabbit.exchange.prefix:}")
+                                                                         String exchangePrefix,
+                                                                     @Value("${rabbit.exchange.suffix:}")
+                                                                         String exchangeSuffix) {
+        final RabbitThriftClientServerImpl r = new RabbitThriftClientServerImpl(connectionFactory);
+        r.setQueuePrefix(queuePrefix);
+        r.setQueueSuffix(queueSuffix);
+        r.setExchangePrefix(exchangePrefix);
+        r.setExchangeSuffix(exchangeSuffix);
+        return r;
     }
 
 }

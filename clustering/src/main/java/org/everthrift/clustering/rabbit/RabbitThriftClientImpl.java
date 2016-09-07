@@ -23,6 +23,9 @@ public class RabbitThriftClientImpl implements RabbitThriftClientIF {
 
     private TProtocolFactory protocolFactory = new TBinaryProtocol.Factory();
 
+    private String exchangePrefix = "";
+    private String exchangeSuffix = "";
+
     public RabbitThriftClientImpl(final ConnectionFactory rabbitConnectionFactory) {
 
         rabbitTemplate = new RabbitTemplate(rabbitConnectionFactory);
@@ -59,15 +62,31 @@ public class RabbitThriftClientImpl implements RabbitThriftClientIF {
     public <T> T onIface(Class<T> cls) {
 
         return (T) Proxy.newProxyInstance(ThriftProxyFactory.class.getClassLoader(), new Class[]{cls},
-                                          new ServiceIfaceProxy(cls, new InvocationCallback() {
-
-                                              @SuppressWarnings("rawtypes")
-                                              @Override
-                                              public Object call(InvocationInfo ii) throws NullResult {
-                                                  rabbitTemplate.convertAndSend(ii.serviceName, ii.methodName, ii);
-                                                  throw new NullResult();
-                                              }
+                                          new ServiceIfaceProxy(cls, ii -> {
+                                              rabbitTemplate.convertAndSend(getExchangeName(ii.serviceName), ii.methodName, ii);
+                                              throw new NullResult();
                                           }));
+    }
+
+    @Override
+    public String getExchangeName(String serviceName){
+        return exchangePrefix + serviceName + exchangeSuffix;
+    }
+
+    public String getExchangePrefix() {
+        return exchangePrefix;
+    }
+
+    public void setExchangePrefix(String exchangePrefix) {
+        this.exchangePrefix = exchangePrefix;
+    }
+
+    public String getExchangeSuffix() {
+        return exchangeSuffix;
+    }
+
+    public void setExchangeSuffix(String exchangeSuffix) {
+        this.exchangeSuffix = exchangeSuffix;
     }
 
 }

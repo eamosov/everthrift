@@ -54,9 +54,13 @@ public class RabbitThriftClientServerImpl implements RabbitThriftClientIF {
 
     private ThriftProcessor thriftProcessor;
 
-    private final RabbitThriftClientIF rabbitThriftClient;
+    private final RabbitThriftClientImpl rabbitThriftClient;
 
     private final RabbitAdmin admin;
+
+    private String queuePrefix = "";
+
+    private String queueSuffix = "";
 
     private MessageListener listener = new MessageListener() {
 
@@ -139,28 +143,22 @@ public class RabbitThriftClientServerImpl implements RabbitThriftClientIF {
         listeners.clear();
     }
 
-    private synchronized SimpleMessageListenerContainer addListener(final String queueName) {
+    private synchronized SimpleMessageListenerContainer addListener(final String serviceName) {
 
-        final String bindQueueName = context.getEnvironment().getProperty("rabbit.rpc." + queueName + ".queue");
+        final String exchangeName = rabbitThriftClient.getExchangeName(serviceName);
+        final String queueName = getQueueName(serviceName);
 
-        final Queue queue = new Queue(bindQueueName != null ? bindQueueName : queueName);
+        final Queue queue = new Queue(queueName);
         admin.declareQueue(queue);
 
-        if (bindQueueName == null) {
-            // Автоматически создавать exchange/binding только для конфигурации
-            // по-умолчанию
+        if (!isExchangeExists(exchangeName)) {
+            log.info("Creating exchange '{}'", exchangeName);
+            final FanoutExchange exchange = new FanoutExchange(exchangeName);
+            admin.declareExchange(exchange);
 
-            final String exchangeName = queueName;
-
-            if (!isExchangeExists(exchangeName)) {
-                log.info("Creating exchange '{}'", exchangeName);
-                final FanoutExchange exchange = new FanoutExchange(exchangeName);
-                admin.declareExchange(exchange);
-
-                admin.declareBinding(BindingBuilder.bind(queue).to(exchange));
-            } else {
-                log.debug("Exchange '{}' has been allready existed");
-            }
+            admin.declareBinding(BindingBuilder.bind(queue).to(exchange));
+        } else {
+            log.debug("Exchange '{}' has been allready existed");
         }
 
         final SimpleMessageListenerContainer l = (SimpleMessageListenerContainer) context.getBean("thriftRabbitMessageListener",
@@ -185,6 +183,42 @@ public class RabbitThriftClientServerImpl implements RabbitThriftClientIF {
     @Override
     public <T> T onIface(Class<T> cls) {
         return rabbitThriftClient.onIface(cls);
+    }
+
+    public String getQueuePrefix() {
+        return queuePrefix;
+    }
+
+    public void setQueuePrefix(String queuePrefix) {
+        this.queuePrefix = queuePrefix;
+    }
+
+    public String getQueueSuffix() {
+        return queueSuffix;
+    }
+
+    public void setQueueSuffix(String queueSuffix) {
+        this.queueSuffix = queueSuffix;
+    }
+
+    public String getQueueName(String serviceName) {
+        return queuePrefix + serviceName + queueSuffix;
+    }
+
+    public String getExchangePrefix() {
+        return rabbitThriftClient.getExchangePrefix();
+    }
+
+    public void setExchangePrefix(String exchangePrefix) {
+        rabbitThriftClient.setExchangePrefix(exchangePrefix);
+    }
+
+    public String getExchangeSuffix() {
+        return rabbitThriftClient.getExchangeSuffix();
+    }
+
+    public void setExchangeSuffix(String exchangeSuffix) {
+        rabbitThriftClient.setExchangeSuffix(exchangeSuffix);
     }
 
 }
