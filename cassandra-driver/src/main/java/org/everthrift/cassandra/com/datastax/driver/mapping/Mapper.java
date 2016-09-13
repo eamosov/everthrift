@@ -467,12 +467,12 @@ public class Mapper<T> {
 
         final Update.Where uWhere = update.where();
         for (int i = 0; i < mapper.primaryKeySize(); i++) {
-            uWhere.and(QueryBuilder.eq(mapper.getPrimaryKeyColumn(i).getColumnNameUnquoted(), pks.get(i)));
+            uWhere.and(QueryBuilder.eq(mapper.getPrimaryKeyColumn(i).getColumnNameUnquoted(), QueryBuilder.bindMarker()));
         }
 
         update.setConsistencyLevel(getWriteConsistency());
 
-        return update;
+        return session().prepare(update).bind(pks.toArray(new Object[pks.size()]));
     }
 
     private static boolean shouldSaveNullFields(EnumMap<Option.Type, Option> options) {

@@ -5,9 +5,7 @@ public interface CreatedAtIF {
 
     long getCreatedAt();
 
-    public static void setCreatedAt(Object e) {
-        final long now = System.currentTimeMillis();
-
+    static void setCreatedAt(Object e, long now) {
         if (e instanceof CreatedAtIF && (((CreatedAtIF) e).getCreatedAt() == 0)) {
             ((CreatedAtIF) e).setCreatedAt(now);
         }
@@ -15,13 +13,10 @@ public interface CreatedAtIF {
         if (e instanceof UpdatedAtIF) {
             ((UpdatedAtIF) e).setUpdatedAt(now);
         }
-
     }
 
-    public static void setUpdatedAt(Object e) {
-        if (e instanceof UpdatedAtIF) {
-            ((UpdatedAtIF) e).setUpdatedAt(System.currentTimeMillis());
-        }
+    static void setCreatedAt(Object e) {
+        setCreatedAt(e, System.currentTimeMillis());
     }
 
 }

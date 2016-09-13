@@ -163,10 +163,6 @@ public abstract class AbstractCachedModelFactory<PK, ENTITY> extends RoModelFact
      * Spring-bean
      *
      * @param cacheName
-     * @param entityClass
-     * @param storage
-     * @param optimisticUpdateFailExceptions
-     * @param keyExtractor
      */
     public AbstractCachedModelFactory(String cacheName) {
         super();
@@ -305,7 +301,7 @@ public abstract class AbstractCachedModelFactory<PK, ENTITY> extends RoModelFact
     }
 
     protected void setUpdatedAt(ENTITY e) {
-        CreatedAtIF.setUpdatedAt(e);
+        UpdatedAtIF.setUpdatedAt(e);
     }
 
 }

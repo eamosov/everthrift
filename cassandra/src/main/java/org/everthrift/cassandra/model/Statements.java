@@ -84,7 +84,7 @@ public class Statements {
                                                                                                                  Consumer<Assignments> assignment) {
 
         final Statement s = factory.mapper.updateQuery(assignment,
-                                                       ArrayUtils.add(factory.extractCompaundPk(pk), Option.updatedAt(timestamp / 1000)));
+                                                       ArrayUtils.add(factory.extractCompaundPk(pk), Option.updatedAt(currentTimeMillis())));
 
         statements.add(s);
         invalidates.put(factory, pk);
@@ -97,7 +97,7 @@ public class Statements {
         }
 
         afterUpdate.setPk(pk);
-        afterUpdate.setUpdatedAt(timestamp / 1000);
+        afterUpdate.setUpdatedAt(currentTimeMillis());
 
         final ENTITY beforeUpdate;
         try {
@@ -111,9 +111,7 @@ public class Statements {
         final UpdateEntityEvent<PK, ENTITY> event = factory.updateEntityEvent(beforeUpdate, afterUpdate);
 
         if (factory.localEventBus != null) {
-            callbacks.add(() -> {
-                factory.localEventBus.postEntityEvent(event);
-            });
+            callbacks.add(() -> factory.localEventBus.postEntityEvent(event));
         }
 
         if (autoCommit) {
@@ -127,7 +125,7 @@ public class Statements {
         final ENTITY beforeUpdate = (ENTITY) factory.copy(e);
 
         final UpdateQuery uq = factory.updateQuery(beforeUpdate, e, mutator,
-                                                   (Option[]) ArrayUtils.add(options, Option.updatedAt(timestamp / 1000)));
+                                                   (Option[]) ArrayUtils.add(options, Option.updatedAt(currentTimeMillis())));
         if (uq == null) {
             return e;
         }
@@ -154,7 +152,7 @@ public class Statements {
     public <ENTITY extends DaoEntityIF> ENTITY save(ENTITY e, Option... options) {
         final CassandraModelFactory f = of(e);
 
-        CreatedAtIF.setCreatedAt(e);
+        CreatedAtIF.setCreatedAt(e, currentTimeMillis());
         addStatement(f, f.insertQuery(e, options), e);
 
         final ENTITY copy = (ENTITY) f.copy(e);
