@@ -15,13 +15,13 @@ public class LazyLoadManager {
 
     private static final Logger log = LoggerFactory.getLogger(LazyLoadManager.class);
 
-    public static int MAX_LOAD_ITERATIONS = 5;
+    public static final int MAX_LOAD_ITERATIONS = 5;
 
-    public static String SCENARIO_DEFAULT = "default";
+    public static final String SCENARIO_DEFAULT = "default";
 
-    public static String SCENARIO_ADMIN = "admin";
+    public static final String SCENARIO_ADMIN = "admin";
 
-    public static String SCENARIO_JSON = "json";
+    public static final String SCENARIO_JSON = "json";
 
     final RegistryImpl registry = new RegistryImpl();
 
