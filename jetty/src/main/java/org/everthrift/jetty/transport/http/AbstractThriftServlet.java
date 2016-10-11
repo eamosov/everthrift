@@ -49,6 +49,8 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
+import java.util.zip.CRC32;
+import java.util.zip.Checksum;
 
 public abstract class AbstractThriftServlet extends HttpServlet implements InitializingBean {
 
@@ -68,6 +70,10 @@ public abstract class AbstractThriftServlet extends HttpServlet implements Initi
 
     protected abstract TProtocolFactory getProtocolFactory();
 
+    //    protected void service(HttpServletRequest req, HttpServletResponse resp)  throws ServletException, IOException {
+    //
+    //    }
+
     @Override
     protected void doOptions(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException {
         response.setHeader("Access-Control-Allow-Origin", "*");
@@ -80,6 +86,13 @@ public abstract class AbstractThriftServlet extends HttpServlet implements Initi
     }
 
     private void out(AsyncContext asyncContext, HttpServletResponse response, byte buf[], int length) throws IOException {
+        response.setContentLength(length);
+
+        response.setHeader("X-Packet-Length", Integer.toString(length));
+        final Checksum checksum = new CRC32();
+        checksum.update(buf, 0, length);
+        response.setHeader("X-Packet-CRC32", Long.toString(checksum.getValue()));
+
         final ServletOutputStream out = response.getOutputStream();
 
         out.setWriteListener(new WriteListener() {

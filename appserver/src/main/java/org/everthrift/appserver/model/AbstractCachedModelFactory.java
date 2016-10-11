@@ -206,35 +206,21 @@ public abstract class AbstractCachedModelFactory<PK, ENTITY> extends RoModelFact
 
     public void invalidate(PK id) {
         if (cache != null) {
+            log.debug("invalidate {}/{}", getEntityClass().getSimpleName(), id);
             cache.remove(id);
         }
     }
 
     public void invalidateLocal(PK id) {
         if (cache != null) {
+            log.debug("invalidateLocal {}/{}", getEntityClass().getSimpleName(), id);
             cache.remove(id, true);
         }
     }
 
-    // /**
-    // * Использовать этот метод нужно с большой осторожностью, т.к. если далее
-    // объект, положенный в кэш, будет изменен (н-р в результате lazyLoad),
-    // * то такие изменения проникнут и в кеш. Хорошим решением является всегда
-    // передавать в этот метод свежую копию объекта
-    // *
-    // * По аналогичным причинам нужно быть уверенным, что передается чистый
-    // объект, не испорченный каким-нибудь load***
-    // * @param e
-    // */
-    // public void refresh(ENTITY e){
-    // if (cache!=null){
-    // final Element el = new Element(e.getPk(), e);
-    // cache.put(el);
-    // }
-    // }
-
     public void invalidate(Collection<PK> ids) {
         if (cache != null) {
+            log.debug("invalidateLocal {}/{}", getEntityClass().getSimpleName(), ids);
             cache.removeAll(ids);
         }
     }

@@ -5,6 +5,7 @@ import org.everthrift.appserver.jgroups.JgroupsThriftClientServerImpl;
 import org.everthrift.appserver.jgroups.RpcJGroupsRegistry;
 import org.jgroups.JChannel;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportResource;
@@ -14,7 +15,12 @@ import org.springframework.context.annotation.ImportResource;
 public class JGroups {
 
     @Bean
-    public JChannel yocluster() throws Exception {
+    public JChannel yocluster(@Value("${jgroups.multicast.bind_addr:127.0.0.1}") String bindAddr,
+                              @Value("${jgroups.udp.mcast_port:45588}") String mcastPort) throws Exception {
+
+        System.setProperty("jgroups.multicast.bind_addr", bindAddr);
+        System.setProperty("jgroups.udp.mcast_port", mcastPort);
+
         return new JChannel("jgroups.xml");
     }
 

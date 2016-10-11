@@ -47,11 +47,25 @@
         <property name="ensureUniqueRuntimeObjectNames" value="false"/>
     </bean>
 
+    <bean id="jmxmpServerConnector" class="org.springframework.jmx.support.ConnectorServerFactoryBean">
+        <property name="threaded" value="true"/>
+        <property name="daemon" value="true"/>
+        <property name="server" ref="mbeanServer"/>
+        <property name="serviceUrl" value="service:jmx:jmxmp://${jmx.jmxmp.host}:${jmx.jmxmp.port}/"/>
+        <property name="objectName" value="connector:name=jmxmp"/>
+    </bean>
+
+    <bean id="registry" class="org.springframework.remoting.rmi.RmiRegistryFactoryBean">
+        <property name="port" value="${jmx.rmi.port}"/>
+    </bean>
+
     <bean id="jmxServerConnector" class="org.springframework.jmx.support.ConnectorServerFactoryBean">
         <property name="threaded" value="true"/>
         <property name="daemon" value="true"/>
         <property name="server" ref="mbeanServer"/>
-        <property name="serviceUrl" value="${jmx.serviceUrl}"/>
+        <property name="serviceUrl" value="service:jmx:rmi://0.0.0.0/jndi/rmi://0.0.0.0:${jmx.rmi.port}/jmxrmi"/>
+        <property name="objectName" value="connector:name=rmi"/>
+
     </bean>
 
     <bean class="org.springframework.jmx.support.MBeanServerFactoryBean">

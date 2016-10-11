@@ -53,6 +53,8 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
+import java.util.zip.CRC32;
+import java.util.zip.Checksum;
 
 public class PlainJsonThriftServlet extends HttpServlet {
 
@@ -98,6 +100,12 @@ public class PlainJsonThriftServlet extends HttpServlet {
 
         ((HttpServletResponse) asyncContext.getResponse()).setStatus(status);
         asyncContext.getResponse().setContentType(contentType);
+        asyncContext.getResponse().setContentLength(length);
+
+        ((HttpServletResponse) asyncContext.getResponse()).setHeader("X-Packet-Length", Integer.toString(length));
+        final Checksum checksum = new CRC32();
+        checksum.update(buf, 0, length);
+        ((HttpServletResponse) asyncContext.getResponse()).setHeader("X-Packet-CRC32", Long.toString(checksum.getValue()));
 
         final ServletOutputStream out = asyncContext.getResponse().getOutputStream();
 

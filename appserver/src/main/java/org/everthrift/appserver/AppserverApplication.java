@@ -242,7 +242,7 @@ public class AppserverApplication {
             try {
                 context.register(Class.forName("org.everthrift.rabbit.LocalRabbitConfig"));
             } catch (ClassNotFoundException e) {
-                log.warn("Cound't find LoopbackJms. @RpcJms Service will be disabled.");
+                log.warn("Cound't find LocalRabbitConfig. @RpcRabbit Service will be disabled.");
             }
         }
 

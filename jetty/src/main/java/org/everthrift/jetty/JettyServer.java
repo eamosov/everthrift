@@ -2,6 +2,7 @@ package org.everthrift.jetty;
 
 import com.google.common.base.Throwables;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -125,6 +126,27 @@ public class JettyServer implements SmartLifecycle {
         http_config.setSendDateHeader(false);
 
         final ServerConnector http = new ServerConnector(jettyServer, new HttpConnectionFactory(http_config));
+        http.setIdleTimeout(30000);
+        http.setReuseAddress(false);
+        http.setSoLingerTime(2000);
+
+        http.addBean(new Connection.Listener(){
+            @Override
+            public void onOpened(Connection connection) {
+                log.debug("Open connection: {}:{}", connection.getEndPoint().getRemoteAddress(), connection.getEndPoint().getLocalAddress());
+            }
+
+            @Override
+            public void onClosed(Connection connection) {
+                log.debug("Close connection: {}:{}, bytes in/out: {}/{}, messages in/out:{}/{}",
+                          connection.getEndPoint().getRemoteAddress(),
+                          connection.getEndPoint().getLocalAddress(),
+                          connection.getBytesIn(),
+                          connection.getBytesOut(),
+                          connection.getMessagesIn(),
+                          connection.getMessagesOut());
+            }
+        });
         http.setHost(jettyHost);
         http.setPort(Integer.parseInt(jettyPort));
         jettyServer.addConnector(http);

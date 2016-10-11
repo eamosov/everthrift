@@ -205,6 +205,8 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
             for (int i = 0; i < ids.size(); i++) {
                 ret.put(ids.get(i), ee.get(i));
             }
+            if (log.isDebugEnabled())
+                log.debug("fetchEntityByIdAsMapAsync {}: {}", getEntityClass().getSimpleName(), ret);
             return ret;
         });
     }
@@ -224,7 +226,10 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
 
     @Override
     final protected ENTITY fetchEntityById(PK id) {
-        return mapper.get(extractCompaundPk(id));
+        final ENTITY e = mapper.get(extractCompaundPk(id));
+        if (log.isDebugEnabled())
+            log.debug("fetchEntityById {}/{}:{}", getEntityClass().getSimpleName(), id, e);
+        return e;
     }
 
     public final <T> Iterator<T> fetchAll(String fieldName) {
