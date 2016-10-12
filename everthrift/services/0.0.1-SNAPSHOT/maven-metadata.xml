@@ -5,32 +5,32 @@
   <version>0.0.1-SNAPSHOT</version>
   <versioning>
     <snapshot>
-      <timestamp>20161011.055609</timestamp>
+      <timestamp>20161012.224737</timestamp>
       <buildNumber>1</buildNumber>
     </snapshot>
-    <lastUpdated>20161011055609</lastUpdated>
+    <lastUpdated>20161012224737</lastUpdated>
     <snapshotVersions>
       <snapshotVersion>
         <extension>jar</extension>
-        <value>0.0.1-20161011.055609-1</value>
-        <updated>20161011055609</updated>
+        <value>0.0.1-20161012.224737-1</value>
+        <updated>20161012224737</updated>
       </snapshotVersion>
       <snapshotVersion>
         <extension>pom</extension>
-        <value>0.0.1-20161011.055609-1</value>
-        <updated>20161011055609</updated>
+        <value>0.0.1-20161012.224737-1</value>
+        <updated>20161012224737</updated>
       </snapshotVersion>
       <snapshotVersion>
         <classifier>sources</classifier>
         <extension>jar</extension>
-        <value>0.0.1-20161011.055609-1</value>
-        <updated>20161011055609</updated>
+        <value>0.0.1-20161012.224737-1</value>
+        <updated>20161012224737</updated>
       </snapshotVersion>
       <snapshotVersion>
         <classifier>gen-php</classifier>
         <extension>zip</extension>
-        <value>0.0.1-20161011.055609-1</value>
-        <updated>20161011055609</updated>
+        <value>0.0.1-20161012.224737-1</value>
+        <updated>20161012224737</updated>
       </snapshotVersion>
     </snapshotVersions>
   </versioning>
