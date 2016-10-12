@@ -119,7 +119,7 @@ public class JettyServer implements SmartLifecycle {
         final HttpConfiguration http_config = new HttpConfiguration();
         http_config.setSecureScheme("https");
         http_config.setSecurePort(Integer.parseInt(jettySslPort));
-        http_config.setOutputBufferSize(32768);
+        http_config.setOutputBufferSize(1024 * 16);
         http_config.setRequestHeaderSize(8192);
         http_config.setResponseHeaderSize(8192);
         http_config.setSendServerVersion(true);
@@ -127,8 +127,6 @@ public class JettyServer implements SmartLifecycle {
 
         final ServerConnector http = new ServerConnector(jettyServer, new HttpConnectionFactory(http_config));
         http.setIdleTimeout(30000);
-        http.setReuseAddress(false);
-        http.setSoLingerTime(2000);
 
         http.addBean(new Connection.Listener(){
             @Override

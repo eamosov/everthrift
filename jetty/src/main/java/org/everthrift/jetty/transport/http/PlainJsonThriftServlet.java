@@ -38,8 +38,6 @@ import org.springframework.context.ApplicationContext;
 import javax.annotation.PostConstruct;
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.WriteListener;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -53,8 +51,8 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
-import java.util.zip.CRC32;
-import java.util.zip.Checksum;
+
+import static org.everthrift.jetty.transport.http.AbstractThriftServlet.out;
 
 public class PlainJsonThriftServlet extends HttpServlet {
 
@@ -90,41 +88,6 @@ public class PlainJsonThriftServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         doPost(request, response);
-    }
-
-    private void out(AsyncContext asyncContext, int status, String contentType, byte buf[]) throws IOException {
-        out(asyncContext, status, contentType, buf, buf.length);
-    }
-
-    private void out(AsyncContext asyncContext, int status, String contentType, byte buf[], int length) throws IOException {
-
-        ((HttpServletResponse) asyncContext.getResponse()).setStatus(status);
-        asyncContext.getResponse().setContentType(contentType);
-        asyncContext.getResponse().setContentLength(length);
-
-        ((HttpServletResponse) asyncContext.getResponse()).setHeader("X-Packet-Length", Integer.toString(length));
-        final Checksum checksum = new CRC32();
-        checksum.update(buf, 0, length);
-        ((HttpServletResponse) asyncContext.getResponse()).setHeader("X-Packet-CRC32", Long.toString(checksum.getValue()));
-
-        final ServletOutputStream out = asyncContext.getResponse().getOutputStream();
-
-        out.setWriteListener(new WriteListener() {
-
-            @Override
-            public void onWritePossible() throws IOException {
-
-                if (out.isReady()) {
-                    out.write(buf, 0, length);
-                    asyncContext.complete();
-                }
-            }
-
-            @Override
-            public void onError(Throwable t) {
-
-            }
-        });
     }
 
     @Override
@@ -273,7 +236,8 @@ public class PlainJsonThriftServlet extends HttpServlet {
                 public void asyncResult(Object o, AbstractThriftController controller) {
                     final Pair<TMemoryBuffer, Integer> tt = result(o, controller.getInfo());
                     try {
-                        out(asyncContext, tt.second, "application/json; charset=utf-8", tt.first.getArray(), tt.first.length());
+                        out(asyncContext, response, tt.second, "application/json; charset=utf-8", tt.first
+                            .getArray(), tt.first.length());
                     } catch (IOException e) {
                         log.error("Async Error", e);
                     }
@@ -331,10 +295,11 @@ public class PlainJsonThriftServlet extends HttpServlet {
             });
 
             if (mw != null) {
-                out(asyncContext, mw.second, "application/json; charset=utf-8", mw.first.getArray(), mw.first.length());
+                out(asyncContext, response, mw.second, "application/json; charset=utf-8", mw.first
+                    .getArray(), mw.first.length());
             }
         } catch (Exception e) {
-            out(asyncContext, 500, "text/plain", e.getMessage().getBytes(StandardCharsets.UTF_8));
+            out(asyncContext, response, 500, "text/plain", e.getMessage().getBytes(StandardCharsets.UTF_8));
         }
     }
 }

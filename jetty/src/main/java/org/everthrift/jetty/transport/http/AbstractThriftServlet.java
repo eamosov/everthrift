@@ -18,6 +18,7 @@ import org.apache.thrift.protocol.TProtocolUtil;
 import org.apache.thrift.protocol.TType;
 import org.apache.thrift.transport.TMemoryBuffer;
 import org.apache.thrift.transport.TMemoryInputTransport;
+import org.eclipse.jetty.server.HttpOutput;
 import org.everthrift.appserver.controller.AbstractThriftController;
 import org.everthrift.appserver.controller.ThriftControllerInfo;
 import org.everthrift.appserver.controller.ThriftProcessor;
@@ -41,9 +42,11 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Map;
@@ -81,13 +84,16 @@ public abstract class AbstractThriftServlet extends HttpServlet implements Initi
         super.doOptions(req, response);
     }
 
-    private void out(AsyncContext asyncContext, HttpServletResponse response, byte buf[]) throws IOException {
-        out(asyncContext, response, buf, buf.length);
+    static void out(AsyncContext asyncContext, HttpServletResponse response,  int status, String contentType, byte buf[]) throws IOException {
+        out(asyncContext, response, status, contentType, buf, buf.length);
     }
 
-    private void out(AsyncContext asyncContext, HttpServletResponse response, byte buf[], int length) throws IOException {
-        response.setContentLength(length);
+    static void out(AsyncContext asyncContext, HttpServletResponse response, int status, String contentType, byte buf[], int length) throws IOException {
 
+        response.setStatus(status);
+        response.setContentType(contentType);
+        response.setContentLength(length);
+        response.setBufferSize(length);
         response.setHeader("X-Packet-Length", Integer.toString(length));
         final Checksum checksum = new CRC32();
         checksum.update(buf, 0, length);
@@ -95,16 +101,57 @@ public abstract class AbstractThriftServlet extends HttpServlet implements Initi
 
         final ServletOutputStream out = response.getOutputStream();
 
+        final ByteArrayInputStream contentBA;
+        final ByteBuffer contentBB;
+
+        if (out instanceof HttpOutput){
+            contentBB = ByteBuffer.wrap(buf, 0, length);
+            contentBA = null;
+        }else{
+            contentBA = new ByteArrayInputStream(buf, 0, length);
+            contentBB = null;
+        }
+
         out.setWriteListener(new WriteListener() {
             @Override
             public void onWritePossible() throws IOException {
-                out.write(buf, 0, length);
-                asyncContext.complete();
+
+                if (log.isDebugEnabled())
+                    log.debug("onWritePossible, out.class={}", out.getClass().getSimpleName());
+
+                if (contentBB !=null){
+                    while(out.isReady())
+                    {
+                        if (!contentBB.hasRemaining())
+                        {
+                            asyncContext.complete();
+                            return;
+                        }
+                        ((HttpOutput)out).write(contentBB);
+                    }
+                }else{
+                    final byte[] buffer = new byte[1024 * 4];
+
+                    while(out.isReady()){
+                        // read some content into the copy buffer
+                        final int len=contentBA.read(buffer);
+
+                        // If we are at EOF then complete
+                        if (len < 0)    {
+                            log.debug("complete");
+                            asyncContext.complete();
+                            return;
+                        }
+
+                        // write out the copy buffer. 
+                        out.write(buffer,0,len);
+                    }
+                }
             }
 
             @Override
             public void onError(Throwable t) {
-                log.error("Async Error", t);
+                log.debug("Async Error",t);
                 asyncContext.complete();
             }
         });
@@ -145,9 +192,7 @@ public abstract class AbstractThriftServlet extends HttpServlet implements Initi
         try {
             tMessage = in.readMessageBegin();
         } catch (TException e2) {
-            response.setStatus(500);
-            response.setContentType("text/plain");
-            out(asyncContext, response, e2.getMessage().getBytes(StandardCharsets.UTF_8));
+            out(asyncContext, response, 500, "text/plain", e2.getMessage().getBytes(StandardCharsets.UTF_8));
             return;
         }
 
@@ -244,7 +289,7 @@ public abstract class AbstractThriftServlet extends HttpServlet implements Initi
                 public void asyncResult(Object o, AbstractThriftController controller) {
                     final TMemoryBuffer tt = result(o, controller.getInfo());
                     try {
-                        out(asyncContext, response, tt.getArray(), tt.length());
+                        out(asyncContext, response, 200, getContentType(), tt.getArray(), tt.length());
                     } catch (IOException e) {
                         log.error("Async Error", e);
                     }
@@ -302,14 +347,10 @@ public abstract class AbstractThriftServlet extends HttpServlet implements Initi
             });
 
             if (mw != null) {
-                response.setStatus(200);
-                response.setContentType(getContentType());
-                out(asyncContext, response, mw.getArray(), mw.length());
+                out(asyncContext, response, 200, getContentType(), mw.getArray(), mw.length());
             }
         } catch (Exception e) {
-            response.setStatus(500);
-            response.setContentType("text/plain");
-            out(asyncContext, response, e.getMessage().getBytes(StandardCharsets.UTF_8));
+            out(asyncContext, response, 500, "text/plain", e.getMessage().getBytes(StandardCharsets.UTF_8));
         }
     }
 
