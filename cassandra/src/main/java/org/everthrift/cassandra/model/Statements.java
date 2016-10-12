@@ -79,46 +79,6 @@ public class Statements {
         }
     }
 
-    public <PK extends Serializable, ENTITY extends DaoEntityIF & UpdatedAtIF, E extends TException> void update(CassandraModelFactory<PK, ENTITY, E> factory,
-                                                                                                                 PK pk,
-                                                                                                                 Consumer<Assignments> assignment) {
-
-        final Statement s = factory.mapper.updateQuery(assignment,
-                                                       ArrayUtils.add(factory.extractCompaundPk(pk), Option.updatedAt(currentTimeMillis())));
-
-        statements.add(s);
-        invalidates.put(factory, pk);
-
-        final ENTITY afterUpdate;
-        try {
-            afterUpdate = factory.getEntityClass().newInstance();
-        } catch (InstantiationException | IllegalAccessException e) {
-            throw Throwables.propagate(e);
-        }
-
-        afterUpdate.setPk(pk);
-        afterUpdate.setUpdatedAt(currentTimeMillis());
-
-        final ENTITY beforeUpdate;
-        try {
-            beforeUpdate = factory.getEntityClass().newInstance();
-        } catch (InstantiationException | IllegalAccessException e) {
-            throw Throwables.propagate(e);
-        }
-
-        beforeUpdate.setPk(pk);
-
-        final UpdateEntityEvent<PK, ENTITY> event = factory.updateEntityEvent(beforeUpdate, afterUpdate);
-
-        if (factory.localEventBus != null) {
-            callbacks.add(() -> factory.localEventBus.postEntityEvent(event));
-        }
-
-        if (autoCommit) {
-            commit();
-        }
-    }
-
     @SuppressWarnings({"rawtypes", "unchecked"})
     public <ENTITY extends DaoEntityIF> ENTITY update(ENTITY e, TFunction<ENTITY, Boolean> mutator, Option... options) throws TException {
         final CassandraModelFactory factory = of(e);
