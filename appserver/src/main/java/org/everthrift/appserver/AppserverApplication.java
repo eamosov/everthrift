@@ -115,8 +115,19 @@ public class AppserverApplication {
         return !env.getProperty("rabbit", "false").equalsIgnoreCase("false");
     }
 
+    public void init(String[] args, String version) {
+        try {
+            _init(args, version);
+        }catch (Exception e){
+            //Могут оставаться (и остаются от Cassandra) не daemon потоки,
+            //которые блокируют завершение JVM
+            log.error("Exception while initializing app", e);
+            System.exit(255);
+        }
+    }
+
     @SuppressWarnings("rawtypes")
-    public synchronized void init(String[] args, String version) {
+    private synchronized void _init(String[] args, String version) {
 
         final Resource resource = context.getResource("classpath:application.properties");
 
@@ -276,6 +287,8 @@ public class AppserverApplication {
         final Class<Callable> proc = (Class) Class.forName(className);
 
         final ClassPathXmlApplicationContext xmlContext = new ClassPathXmlApplicationContext(new String[]{xmlConfig}, false);
+        xmlContext.registerShutdownHook();
+
         try {
             for (final PropertySource p : env.getPropertySources()) {
                 xmlContext.getEnvironment().getPropertySources().addLast(p);
