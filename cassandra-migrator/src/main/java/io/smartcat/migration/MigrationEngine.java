@@ -1,5 +1,6 @@
 package io.smartcat.migration;
 
+import com.datastax.driver.core.ConsistencyLevel;
 import com.datastax.driver.core.Session;
 import io.smartcat.migration.exceptions.MigrationException;
 import org.slf4j.Logger;
@@ -66,16 +67,30 @@ public class MigrationEngine {
             for (final Migration migration : resources.getMigrations()) {
                 final MigrationType type = migration.getType();
                 final int migrationVersion = migration.getVersion();
-                final int version = versioner.getCurrentVersion(type);
 
-                LOGGER.info("Db is version {} for type {}.", version, type.name());
-                LOGGER.info("Compare {} migration version {} with description {}", type.name(), migrationVersion,
-                            migration.getDescription());
+                if (!force) {
+                    final int version = versioner.getCurrentVersion(type, ConsistencyLevel.LOCAL_QUORUM);
 
-                if (migrationVersion <= version && !force) {
-                    LOGGER.warn("Skipping migration [{}] with version {} since db is on higher version {}.", migration.getDescription(),
-                                migrationVersion, version);
-                    continue;
+                    LOGGER.info("Db is version {} for type {}.", version, type.name());
+                    LOGGER.info("Compare {} migration version {} with description {}", type.name(), migrationVersion,
+                                migration.getDescription());
+
+                    if (migrationVersion <= version) {
+                        LOGGER.warn("Skipping migration [{}] with version {} since db is on higher version {}.", migration
+                                        .getDescription(),
+                                    migrationVersion, version);
+                        continue;
+                    }
+
+                    LOGGER.debug("Checking version second time with ALL consistency");
+                    final int allVersion = versioner.getCurrentVersion(type, ConsistencyLevel.ALL);
+                    if (allVersion != version) {
+                        LOGGER.error("Version mismatch error, allVersion={}, version={}, migrationVersion={}", allVersion, version, migrationVersion);
+                        return false;
+                    }
+                } else {
+                    //Check ConsistencyLevel.ALL is available
+                    versioner.getCurrentVersion(type, ConsistencyLevel.ALL);
                 }
 
                 migration.setSession(session);

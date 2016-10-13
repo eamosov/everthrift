@@ -62,13 +62,13 @@ public class CassandraVersioner {
      * @param type Migration type
      * @return Database version for given type
      */
-    public int getCurrentVersion(final MigrationType type) {
+    public int getCurrentVersion(final MigrationType type, ConsistencyLevel consistencyLevel) {
         final Statement select = QueryBuilder.select()
                                              .all()
                                              .from(SCHEMA_VERSION_CF)
                                              .where(QueryBuilder.eq(TYPE, type.name()))
                                              .limit(1)
-                                             .setConsistencyLevel(ConsistencyLevel.ALL);
+                                             .setConsistencyLevel(consistencyLevel);
         final ResultSet result = session.execute(select);
 
         final Row row = result.one();
