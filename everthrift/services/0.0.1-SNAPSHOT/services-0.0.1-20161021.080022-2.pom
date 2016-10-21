@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <groupId>everthrift</groupId>
+        <artifactId>all</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>services</artifactId>
+
+    <packaging>jar</packaging>
+
+    <properties>
+        <antLogLevel>warn</antLogLevel>
+    </properties>
+
+    <build>
+
+        <resources>
+            <resource>
+                <directory>src/main/thrift</directory>
+            </resource>
+
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+        </resources>
+
+        <plugins>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>2.10</version>
+
+                <executions>
+                    <execution>
+                        <id>unpack</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>unpack</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>org.apache</groupId>
+                                    <artifactId>thrift</artifactId>
+                                    <classifier>compiller</classifier>
+                                    <version>${thrift.version}</version>
+                                </artifactItem>
+                            </artifactItems>
+                            <outputDirectory>${project.build.directory}/thrift</outputDirectory>
+                            <includes>bin/*</includes>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>1.7</version>
+                <executions>
+                    <execution>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <!-- Dependency plugin discards file permissions so we need to set  them back manually -->
+                                <chmod dir="${project.build.directory}/thrift/bin" includes="*" perm="ugo+rx"/>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>1.3</version>
+                <executions>
+                    <execution>
+                        <id>gen-thrift</id>
+                        <phase>generate-sources</phase>
+                        <configuration>
+                            <executable>java</executable>
+                            <arguments>
+                                <argument>-cp</argument>
+                                <classpath/>
+                                <argument>-Dloglevel=${antLogLevel}</argument>
+                                <argument>org.apache.tools.ant.launch.Launcher</argument>
+                                <argument>-nouserlib</argument>
+                                <argument>-noclasspath</argument>
+                                <argument>-buildfile</argument>
+                                <argument>build-thrift.xml</argument>
+                            </arguments>
+                        </configuration>
+
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                    </execution>
+
+                    <execution>
+                        <id>clean-thrift</id>
+                        <phase>clean</phase>
+                        <configuration>
+                            <executable>java</executable>
+                            <arguments>
+                                <argument>-cp</argument>
+                                <classpath/>
+                                <argument>-Dloglevel=${antLogLevel}</argument>
+                                <argument>org.apache.tools.ant.launch.Launcher</argument>
+                                <argument>-nouserlib</argument>
+                                <argument>-noclasspath</argument>
+                                <argument>-buildfile</argument>
+                                <argument>build-thrift.xml</argument>
+                                <argument>clean</argument>
+                            </arguments>
+                        </configuration>
+
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                    </execution>
+
+                </executions>
+                <configuration>
+                    <classpathScope>compile</classpathScope>
+                </configuration>
+            </plugin>
+
+
+            <plugin>
+                <!-- Добавляем исходники, сгенерированные Thrift в проект -->
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>1.8</version>
+                <executions>
+                    <execution>
+                        <configuration>
+                            <sources>
+                                <param>src/main/gen-javabean</param>
+                            </sources>
+                        </configuration>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>make-gen-php</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <finalName></finalName>
+                            <descriptors>
+                                <descriptor>assembly.xml</descriptor>
+                            </descriptors>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <dependencies>
+
+        <dependency>
+            <groupId>org.apache</groupId>
+            <artifactId>thrift</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.ant</groupId>
+            <artifactId>ant</artifactId>
+            <version>1.9.6</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.ant</groupId>
+            <artifactId>ant-launcher</artifactId>
+            <version>1.9.6</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>ant-contrib</groupId>
+            <artifactId>ant-contrib</artifactId>
+            <version>1.0b3</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.codehaus.groovy</groupId>
+            <artifactId>groovy-all</artifactId>
+            <version>2.4.4</version>
+            <scope>provided</scope>
+        </dependency>
+
+    </dependencies>
+</project>
+
