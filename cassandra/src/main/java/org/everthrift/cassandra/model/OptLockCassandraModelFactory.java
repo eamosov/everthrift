@@ -55,7 +55,7 @@ public abstract class OptLockCassandraModelFactory<PK extends Serializable, ENTI
     }
 
     @Override
-    public final ENTITY insertEntity(ENTITY e) {
+    public ENTITY insertEntity(ENTITY e) {
         return optInsert(e).afterUpdate;
     }
 
