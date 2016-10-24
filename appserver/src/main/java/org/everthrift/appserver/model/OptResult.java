@@ -4,6 +4,7 @@ import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
 import org.springframework.util.CollectionUtils;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -57,7 +58,7 @@ public class OptResult<ENTITY extends DaoEntityIF> {
         inner.add(e);
     }
 
-    public <PK, T extends DaoEntityIF> Collection<OptResult> getInner(OptimisticLockModelFactoryIF<PK, T, ?> factory) {
+    public <PK extends Serializable, T extends DaoEntityIF> Collection<OptResult> getInner(OptimisticLockModelFactoryIF<PK, T, ?> factory) {
         if (CollectionUtils.isEmpty(inner)) {
             return Collections.emptyList();
         }
@@ -65,7 +66,7 @@ public class OptResult<ENTITY extends DaoEntityIF> {
         return Collections2.filter(inner, r -> (r.factory == factory));
     }
 
-    public <PK, T extends DaoEntityIF> T getInnerUpdated(OptimisticLockModelFactoryIF<PK, T, ?> factory, T defaultValue) {
+    public <PK extends Serializable, T extends DaoEntityIF> T getInnerUpdated(OptimisticLockModelFactoryIF<PK, T, ?> factory, T defaultValue) {
 
         if (CollectionUtils.isEmpty(inner)) {
             return defaultValue;

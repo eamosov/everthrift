@@ -5,7 +5,9 @@ import org.everthrift.appserver.model.events.DeleteEntityEvent;
 import org.everthrift.appserver.model.events.InsertEntityEvent;
 import org.everthrift.appserver.model.events.UpdateEntityEvent;
 
-public interface RwModelFactoryIF<PK, ENTITY extends DaoEntityIF, E extends TException> extends RoModelFactoryIF<PK, ENTITY> {
+import java.io.Serializable;
+
+public interface RwModelFactoryIF<PK extends Serializable, ENTITY extends DaoEntityIF, E extends TException> extends RoModelFactoryIF<PK, ENTITY> {
 
     ENTITY insertEntity(ENTITY e) throws UniqueException;
 

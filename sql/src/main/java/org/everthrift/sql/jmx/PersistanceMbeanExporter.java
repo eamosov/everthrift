@@ -6,6 +6,7 @@ import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jmx.export.MBeanExportException;
 import org.springframework.jmx.export.annotation.AnnotationMBeanExporter;
+import org.springframework.jmx.export.annotation.ManagedResource;
 
 import javax.management.modelmbean.ModelMBean;
 import java.util.Map;
@@ -39,8 +40,13 @@ public class PersistanceMbeanExporter extends AnnotationMBeanExporter {
         if (name == null) {
             return wrapper;
         }
-        ProxyFactory factory = new ProxyFactory(wrapper);
-        factory.addAdvice(new PersistMBeanInterceptor(bean, propertiesModelFactory));
+
+        final ManagedResource mr = bean.getClass().getDeclaredAnnotation(ManagedResource.class);
+        if (mr == null || mr.persistName().isEmpty())
+            return wrapper;
+
+        final ProxyFactory factory = new ProxyFactory(wrapper);
+        factory.addAdvice(new PersistMBeanInterceptor(bean, mr.persistName(), propertiesModelFactory));
         return factory.getProxy();
     }
 

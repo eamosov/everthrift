@@ -39,9 +39,9 @@ public class PersistMBeanInterceptor implements MethodInterceptor {
 
     private static final String SET_ATTRIBUTES = "setAttributes";
 
-    public PersistMBeanInterceptor(Object obj, ApplicationPropertiesModelFactory propertiesModelFactory) {
+    public PersistMBeanInterceptor(Object obj, final String persistName, ApplicationPropertiesModelFactory propertiesModelFactory) {
         this.clazzObj = obj;
-        this.persistencaName = this.clazzObj.getClass().getAnnotation(ManagedResource.class).persistName();
+        this.persistencaName = persistName;
         this.propertiesModelFactory = propertiesModelFactory;
 
         this.load(clazzObj);

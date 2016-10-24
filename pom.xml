@@ -223,5 +223,6 @@
         <module>maven-migration-plugin</module>
         <module>common-cli</module>
         <module>thrift-client</module>
+        <module>elastic</module>
     </modules>
 </project>

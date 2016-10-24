@@ -4,8 +4,8 @@ import java.io.Serializable;
 
 public interface DaoEntityIF extends Serializable {
 
-    public Serializable getPk();
+    Serializable getPk();
 
-    public void setPk(Serializable identifier);
+    void setPk(Serializable identifier);
 
 }

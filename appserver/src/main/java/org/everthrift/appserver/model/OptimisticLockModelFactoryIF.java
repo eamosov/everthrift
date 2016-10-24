@@ -4,9 +4,10 @@ import org.apache.thrift.TException;
 import org.everthrift.appserver.model.pgsql.OptimisticUpdateFailException;
 import org.everthrift.thrift.TFunction;
 
+import java.io.Serializable;
 import java.util.Random;
 
-public interface OptimisticLockModelFactoryIF<PK, ENTITY extends DaoEntityIF, E extends TException>
+public interface OptimisticLockModelFactoryIF<PK extends Serializable, ENTITY extends DaoEntityIF, E extends TException>
     extends RwModelFactoryIF<PK, ENTITY, E> {
 
     OptResult<ENTITY> updateUnchecked(PK id, TFunction<ENTITY, Boolean> mutator);
