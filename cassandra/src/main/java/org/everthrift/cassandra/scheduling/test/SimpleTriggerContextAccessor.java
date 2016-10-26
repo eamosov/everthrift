@@ -31,7 +31,8 @@ public class SimpleTriggerContextAccessor implements TriggerContextAccessor {
 
     @Override
     public synchronized SettableTriggerContext get() {
-        return new SettableTriggerContextImpl(serial, lastScheduledExecutionTime, lastActualExecutionTime, lastCompletionTime);
+        return new SettableTriggerContextImpl(serial, lastScheduledExecutionTime, lastActualExecutionTime, lastCompletionTime,
+                                              null, null, null, false);
     }
 
     @Override

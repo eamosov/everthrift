@@ -1,12 +1,19 @@
 package org.everthrift.cassandra.scheduling;
 
+import com.google.common.base.Throwables;
 import javaslang.control.Option;
 import javaslang.control.Try;
+import org.everthrift.appserver.model.LocalEventBus;
+import org.everthrift.cassandra.scheduling.context.SettableTriggerContext;
 import org.everthrift.cassandra.scheduling.context.TriggerContextAccessor;
 import org.everthrift.cassandra.scheduling.context.TriggerContextAccessorFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.context.SmartLifecycle;
 import org.springframework.core.task.TaskRejectedException;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
@@ -14,13 +21,16 @@ import org.springframework.scheduling.support.TaskUtils;
 import org.springframework.util.Assert;
 import org.springframework.util.ErrorHandler;
 
+import java.io.Serializable;
 import java.util.Date;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 
-public class DistributedScheduledExecutorService implements DistributedTaskScheduler, ApplicationContextAware {
+public class DistributedScheduledExecutorService implements DistributedTaskScheduler, ApplicationContextAware, SmartLifecycle {
+
+    private static final Logger log = LoggerFactory.getLogger(DistributedScheduledExecutorService.class);
 
     private volatile ErrorHandler errorHandler;
 
@@ -28,11 +38,16 @@ public class DistributedScheduledExecutorService implements DistributedTaskSched
 
     private volatile ScheduledExecutorService executor;
 
+    @Autowired(required = false)
+    private LocalEventBus localEventBus;
+
     private volatile long errorDelay = 10000;
 
     private ApplicationContext applicationContext;
 
     private static String DEFAULT_SCHEDULER_NAME = "scheduler";
+
+    private boolean running = false;
 
     public DistributedScheduledExecutorService() {
         super();
@@ -108,17 +123,17 @@ public class DistributedScheduledExecutorService implements DistributedTaskSched
 
     @Override
     public ScheduledFuture<?> schedule(String taskName, Runnable task, Trigger trigger) {
-        return schedule(getTriggerContextAccessorFactory().get(taskName), task, trigger);
+        return schedule(getTriggerContextAccessorFactory().get(taskName, false), task, trigger);
     }
 
     @Override
     public ScheduledFuture<?> scheduleAtFixedRate(String taskName, Runnable task, long period) {
-        return scheduleAtFixedRate(getTriggerContextAccessorFactory().get(taskName), task, period);
+        return scheduleAtFixedRate(getTriggerContextAccessorFactory().get(taskName, false), task, period);
     }
 
     @Override
     public ScheduledFuture<?> scheduleAtFixedRate(String taskName, Runnable task, Date startTime, long period) {
-        return scheduleAtFixedRate(getTriggerContextAccessorFactory().get(taskName), task, startTime, period);
+        return scheduleAtFixedRate(getTriggerContextAccessorFactory().get(taskName, false), task, startTime, period);
     }
 
     public ScheduledFuture<?> scheduleWithFixedDelay(TriggerContextAccessor ctxh, Runnable task, Date startTime, long delay) {
@@ -129,7 +144,7 @@ public class DistributedScheduledExecutorService implements DistributedTaskSched
 
     @Override
     public ScheduledFuture<?> scheduleWithFixedDelay(String taskName, Runnable task, Date startTime, long delay) {
-        return scheduleWithFixedDelay(getTriggerContextAccessorFactory().get(taskName), task, startTime, delay);
+        return scheduleWithFixedDelay(getTriggerContextAccessorFactory().get(taskName, false), task, startTime, delay);
     }
 
     public ScheduledFuture<?> scheduleWithFixedDelay(TriggerContextAccessor ctxh, Runnable task, long delay) {
@@ -138,7 +153,7 @@ public class DistributedScheduledExecutorService implements DistributedTaskSched
 
     @Override
     public ScheduledFuture<?> scheduleWithFixedDelay(String taskName, Runnable task, long delay) {
-        return scheduleWithFixedDelay(getTriggerContextAccessorFactory().get(taskName), task, delay);
+        return scheduleWithFixedDelay(getTriggerContextAccessorFactory().get(taskName, false), task, delay);
     }
 
     @Override
@@ -152,5 +167,133 @@ public class DistributedScheduledExecutorService implements DistributedTaskSched
 
     public void setErrorDelay(long errorDelay) {
         this.errorDelay = errorDelay;
+    }
+
+    /**
+     *  TODO в случе какой-то рассинхронизации может получится так, что reScheduleDynamic вызовется несколько раз
+     *  для одной и той же задачи. Хотя к ошибкам это и не приведет, нужно устранить такую возможность, т.к. она может
+     *  создать лишний контеншн
+    */
+    public ScheduledFuture reScheduleDynamic(final String taskName) {
+        final TriggerContextAccessor ctxh = getTriggerContextAccessorFactory().get(taskName, true);
+
+        final SettableTriggerContext tx;
+        try {
+            tx = ctxh.get();
+        } catch (ContextAccessError contextAccessError) {
+            log.error("Coudn't read task context, id=" + taskName, contextAccessError);
+            return null;
+        }
+
+        if (tx == null) {
+            log.warn("No task context, id={}", taskName);
+            return null;
+        }
+
+        if (!tx.isDynamic()) {
+            log.error("Task {} is not dynamic", taskName);
+            return null;
+        }
+
+        if (tx.isCancelled()) {
+            log.warn("Task {} is cancelled", taskName);
+            return null;
+        }
+
+        final DynamicTaskRunnable r;
+
+        try {
+            r = applicationContext.getBean(tx.getBeanName(), DynamicTaskRunnable.class);
+        } catch (BeansException e) {
+            log.debug("No bean of name {}", tx.getBeanName());
+            return null;
+        }
+
+        return schedule(ctxh, () -> r.runTask(taskName, tx.getArg()), new DistributedPeriodicTrigger(tx.getPeriod()));
+    }
+
+    @Override
+    public ScheduledFuture<?> scheduleAtFixedRate(String taskName, String beanName, Serializable arg, Date startTime, long period) throws DuplicatedTaskException {
+        getTriggerContextAccessorFactory().createDynamic(taskName, period, startTime.getTime(), beanName, arg);
+
+        if (localEventBus != null) {
+            localEventBus.postAsync(new DynamicTaskEvent(taskName));
+        }
+
+        return reScheduleDynamic(taskName);
+    }
+
+    @Override
+    public void cancel(String taskName) {
+        final TriggerContextAccessor accessor = getTriggerContextAccessorFactory().get(taskName, true);
+        SettableTriggerContext ctx;
+
+        try {
+            do {
+                ctx = accessor.get();
+                if (ctx == null) {
+                    log.warn("Task '{}' not found", taskName);
+                    return;
+                }
+
+                if (!ctx.isDynamic()) {
+                    log.warn("Cancelling not dynamic task {}", taskName);
+                }
+
+                if (ctx.isCancelled()) {
+                    return;
+                }
+
+                ctx.setCancelled(true);
+            } while (!accessor.update(ctx));
+
+        } catch (ContextAccessError e) {
+            throw Throwables.propagate(e);
+        }
+    }
+
+    @Override
+    public boolean isAutoStartup() {
+        return true;
+    }
+
+    @Override
+    public void stop(Runnable callback) {
+        stop();
+        callback.run();
+    }
+
+    @Override
+    public void start() {
+        running = true;
+        getTriggerContextAccessorFactory().getAllDynamic().forEach(this::reScheduleDynamic);
+    }
+
+    @Override
+    public void stop() {
+        running = false;
+    }
+
+    @Override
+    public boolean isRunning() {
+        return running;
+    }
+
+    @Override
+    public int getPhase() {
+        return 0;
+    }
+
+    public LocalEventBus getLocalEventBus() {
+        return localEventBus;
+    }
+
+    public void setLocalEventBus(LocalEventBus localEventBus) {
+        this.localEventBus = localEventBus;
+    }
+
+    @Override
+    public void onDynamicTaskEvent(DynamicTaskEvent e) {
+        reScheduleDynamic(e.getTaskName());
     }
 }

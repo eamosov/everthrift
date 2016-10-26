@@ -9,7 +9,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.lang.reflect.Field;
+import java.nio.ByteBuffer;
 import java.util.Map;
 
 
@@ -67,11 +69,15 @@ public class ClassUtils {
     }
 
     public static Object readObject(byte[] b) throws ClassNotFoundException {
-        ByteArrayInputStream is = new ByteArrayInputStream(b);
+        return readObject(ByteBuffer.wrap(b));
+    }
+
+    public static Object readObject(ByteBuffer bb) throws ClassNotFoundException {
+        final ByteBufferInputStream is = new ByteBufferInputStream(bb);
 
         try {
-            ObjectInputStream os = new ObjectInputStream(is);
-            Object co = (Object) os.readObject();
+            final ObjectInputStream os = new ObjectInputStream(is);
+            final Object co = (Object) os.readObject();
             return co;
         } catch (IOException e) {
             throw new RuntimeException(e);

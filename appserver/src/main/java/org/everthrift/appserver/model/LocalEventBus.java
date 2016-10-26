@@ -78,9 +78,9 @@ public class LocalEventBus implements InitializingBean {
 
     public void postAsyncIfNotTest(Object event) {
         if (testMode)
-            eventBus.post(event);
+            post(event);
         else
-            asyncEventBus.post(event);
+            postAsync(event);
     }
 
     public Executor getExecutor() {

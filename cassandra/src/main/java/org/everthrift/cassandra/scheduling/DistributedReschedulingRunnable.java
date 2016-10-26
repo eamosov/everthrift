@@ -47,6 +47,9 @@ class DistributedReschedulingRunnable extends DelegatingErrorHandlingRunnable im
         while (true) {
             final SettableTriggerContext ctx = ctxh.get();
 
+            if (ctx.isCancelled())
+                return null;
+
             if (ctx.lastScheduledExecutionTime() != null) {
                 return schedule(ctx.lastScheduledExecutionTime());
             } else {
@@ -94,7 +97,9 @@ class DistributedReschedulingRunnable extends DelegatingErrorHandlingRunnable im
 
             final SettableTriggerContext ctx = ctxh.get();
 
-            if (ctx.lastScheduledExecutionTime() == null) {
+            if (ctx.isCancelled()) {
+                return null;
+            } else if (ctx.lastScheduledExecutionTime() == null) {
 
                 ctx.setLastScheduledExecutionTime(trigger.nextExecutionTime(ctx));
 

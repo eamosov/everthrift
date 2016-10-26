@@ -2,6 +2,7 @@ package org.everthrift.cassandra.scheduling.context;
 
 import org.springframework.scheduling.TriggerContext;
 
+import java.io.Serializable;
 import java.util.Date;
 
 public interface SettableTriggerContext extends TriggerContext {
@@ -12,4 +13,16 @@ public interface SettableTriggerContext extends TriggerContext {
 
     void setLastCompletionTime(Date lastCompletionTime);
 
+    default boolean isDynamic() {
+        return getBeanName() != null;
+    }
+
+    Long getPeriod();
+
+    String getBeanName();
+
+    Serializable getArg();
+
+    boolean isCancelled();
+    void setCancelled(boolean cancelled);
 }

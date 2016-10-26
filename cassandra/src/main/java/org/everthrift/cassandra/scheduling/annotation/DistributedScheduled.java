@@ -114,6 +114,8 @@ public @interface DistributedScheduled {
      */
     String initialDelayString() default "";
 
-
-    final static ThreadLocal<TriggerContext> triggerContext = new ThreadLocal<TriggerContext>();
+    /**
+     * For accessing TriggerContext from Runnable tasks
+     */
+    ThreadLocal<TriggerContext> triggerContext = new ThreadLocal<>();
 }

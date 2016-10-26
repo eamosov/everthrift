@@ -1,5 +1,6 @@
 package org.everthrift.cassandra.scheduling.context;
 
+import java.io.Serializable;
 import java.util.Date;
 
 public class SettableTriggerContextImpl implements SettableTriggerContext {
@@ -9,12 +10,23 @@ public class SettableTriggerContextImpl implements SettableTriggerContext {
     private Date lastActualExecutionTime;
     private Date lastCompletionTime;
 
-    public SettableTriggerContextImpl(long serial, Date lastScheduledExecutionTime, Date lastActualExecutionTime, Date lastCompletionTime) {
+    private Long period;
+    private String beanName;
+    private Serializable arg;
+    private boolean cancelled;
+
+    public SettableTriggerContextImpl(long serial, Date lastScheduledExecutionTime, Date lastActualExecutionTime, Date lastCompletionTime,
+                                      Long period, String beanName, Serializable arg, boolean cancelled) {
         super();
         this.serial = serial;
         this.lastScheduledExecutionTime = lastScheduledExecutionTime;
         this.lastActualExecutionTime = lastActualExecutionTime;
         this.lastCompletionTime = lastCompletionTime;
+
+        this.period = period;
+        this.beanName = beanName;
+        this.arg = arg;
+        this.cancelled = cancelled;
     }
 
     @Override
@@ -51,5 +63,30 @@ public class SettableTriggerContextImpl implements SettableTriggerContext {
 
     public long getSerial() {
         return serial;
+    }
+
+    @Override
+    public Long getPeriod() {
+        return period;
+    }
+
+    @Override
+    public String getBeanName() {
+        return beanName;
+    }
+
+    @Override
+    public Serializable getArg() {
+        return arg;
+    }
+
+    @Override
+    public boolean isCancelled() {
+        return cancelled;
+    }
+
+    @Override
+    public void setCancelled(boolean cancelled) {
+        this.cancelled = cancelled;
     }
 }
