@@ -7,6 +7,7 @@ import org.everthrift.cassandra.scheduling.DuplicatedTaskException;
 import org.everthrift.cassandra.scheduling.context.TriggerContextAccessor;
 import org.everthrift.cassandra.scheduling.context.TriggerContextAccessorFactory;
 import org.everthrift.utils.ClassUtils;
+import org.springframework.beans.factory.annotation.Value;
 
 import javax.annotation.PostConstruct;
 import java.io.Serializable;
@@ -24,6 +25,7 @@ public class CasTriggerContextAccessorFactory implements TriggerContextAccessorF
 
     private String tableName = "distributed_scheduler";
 
+    @Value("${distributed_scheduler.createTable:true}")
     private boolean createTable = true;
 
     @PostConstruct

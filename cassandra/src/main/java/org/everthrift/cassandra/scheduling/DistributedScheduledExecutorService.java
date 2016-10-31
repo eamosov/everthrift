@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.SmartLifecycle;
@@ -48,6 +49,9 @@ public class DistributedScheduledExecutorService implements DistributedTaskSched
     private static String DEFAULT_SCHEDULER_NAME = "scheduler";
 
     private boolean running = false;
+
+    @Value("${distributed_scheduler.enableDynamicTasks:true}")
+    private boolean enableDynamicTasks = true;
 
     public DistributedScheduledExecutorService() {
         super();
@@ -266,7 +270,9 @@ public class DistributedScheduledExecutorService implements DistributedTaskSched
     @Override
     public void start() {
         running = true;
-        getTriggerContextAccessorFactory().getAllDynamic().forEach(this::reScheduleDynamic);
+        if (enableDynamicTasks) {
+            getTriggerContextAccessorFactory().getAllDynamic().forEach(this::reScheduleDynamic);
+        }
     }
 
     @Override
