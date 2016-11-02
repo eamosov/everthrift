@@ -85,7 +85,8 @@ public class ClassUtils {
     }
 
     public static Map<String, PropertyDescriptor> getPropertyDescriptors(Class cls) {
-        final Map<String, PropertyDescriptor> m = Maps.newHashMap();
+        final PropertyDescriptor[] pds = BeanUtils.getPropertyDescriptors(cls);
+        final Map<String, PropertyDescriptor> m = Maps.newHashMapWithExpectedSize(pds.length);
         for (PropertyDescriptor d : BeanUtils.getPropertyDescriptors(cls)) {
             m.put(d.getName(), d);
         }

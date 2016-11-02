@@ -1,5 +1,7 @@
 package org.everthrift.appserver.utils.thrift;
 
+import com.google.gson.FieldNamingPolicy;
+import com.google.gson.FieldNamingStrategy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializationContext;
@@ -17,6 +19,7 @@ import org.everthrift.thrift.TBaseHasModel;
 import org.everthrift.utils.ClassUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
 
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
@@ -35,10 +38,20 @@ public class GsonSerializer {
 
     public static class TBaseSerializer<T extends TBase> implements JsonSerializer<T>, JsonDeserializer<T> {
 
+        private final FieldNamingStrategy namingStrategy;
+
         final public static Type tBaseCollection = new TypeToken<Collection<TBase>>() {
         }.getType();
 
         private final static Logger log = LoggerFactory.getLogger(TBaseSerializer.class);
+
+        public TBaseSerializer(){
+            namingStrategy = FieldNamingPolicy.IDENTITY;
+        }
+
+        public TBaseSerializer(FieldNamingStrategy namingStrategy){
+            this.namingStrategy = namingStrategy;
+        }
 
         @Override
         public JsonElement serialize(T src, Type typeOfSrc, JsonSerializationContext context) {
@@ -53,8 +66,9 @@ public class GsonSerializer {
             }
 
             final JsonObject jo = new JsonObject();
+            final Class<TBase> classOfSrc = (Class)src.getClass();
 
-            final Map<? extends TFieldIdEnum, FieldMetaData> map = ThriftUtils.getRootThriftClass(src.getClass()).second;
+            final Map<? extends TFieldIdEnum, FieldMetaData> map = ThriftUtils.getRootThriftClass(classOfSrc).second;
 
             if (map == null) {
                 log.error("coudn't serialize class {}", src.getClass());
@@ -65,18 +79,36 @@ public class GsonSerializer {
 
                 if (src.isSet(f) && !excludes.contains(f.getFieldName())) {
 
+                    final String fieldName;
+
+                    if (namingStrategy != FieldNamingPolicy.IDENTITY){
+                        try {
+                            fieldName = namingStrategy.translateName(ClassUtils.getDeclaredField(classOfSrc, f.getFieldName()));
+                        } catch (SecurityException | NoSuchFieldException e1) {
+                            throw new JsonParseException("class " + ((Class) classOfSrc).getSimpleName(), e1);
+                        }
+                    }else{
+                        fieldName = f.getFieldName();
+                    }
+
                     final Object v = src.getFieldValue(f);
 
                     if (v instanceof TBase) {
-                        jo.add(f.getFieldName(),
-                               context.serialize(v/* , TBase.class */));
-                    } else if (v instanceof Collection && !((Collection) v).isEmpty()
-                        && ((Collection) v).iterator().next() instanceof TBase) {
-                        jo.add(f.getFieldName(), context.serialize(v, tBaseCollection));
+
+                        jo.add(fieldName, context.serialize(v));
+
+                    } else if (v instanceof Collection && !((Collection) v).isEmpty() &&
+                        ((Collection) v).iterator().next() instanceof TBase) {
+
+                        jo.add(fieldName, context.serialize(v, tBaseCollection));
+
                     } else if (v instanceof String) {
-                        jo.add(f.getFieldName(), context.serialize(((String) v).replace("%", "%25")));
+
+                        jo.add(fieldName, context.serialize(((String) v).replace("%", "%25")));
+
                     } else {
-                        jo.add(f.getFieldName(), context.serialize(v));
+
+                        jo.add(fieldName, context.serialize(v));
                     }
                 }
             }
@@ -100,30 +132,41 @@ public class GsonSerializer {
                 throw new JsonParseException(e1);
             }
 
-            final Map<String, PropertyDescriptor> pds = ClassUtils.getPropertyDescriptors(o.getClass());
-
-            for (Map.Entry<String, JsonElement> e : json.getAsJsonObject().entrySet()) {
-
-                final PropertyDescriptor pd = pds.get(e.getKey());
-
-                if (pd == null || pd.getWriteMethod() == null) {
-                    if (log.isDebugEnabled()) {
-                        log.debug("coudn't find property {} for class {}, json={}", e.getKey(), o.getClass()
-                                                                                                 .getSimpleName(),
-                                  json.toString());
-                    }
+            final JsonObject jsonObject = json.getAsJsonObject();
+            for (PropertyDescriptor pd: BeanUtils.getPropertyDescriptors(objCls)){
+                if (pd.getWriteMethod() == null)
                     continue;
-                }
 
                 final Field f;
-                try {
-                    f = ClassUtils.getDeclaredField((Class) objCls, e.getKey());
-                } catch (SecurityException | NoSuchFieldException e1) {
-                    throw new JsonParseException("class " + ((Class) objCls).getSimpleName(), e1);
+                final JsonElement value;
+
+                if (namingStrategy == FieldNamingPolicy.IDENTITY){
+                     value = jsonObject.get(pd.getName());
+
+                    if (value == null)
+                        continue;
+
+                    try {
+                        f = ClassUtils.getDeclaredField((Class) objCls, pd.getName());
+                    } catch (SecurityException | NoSuchFieldException e1) {
+                        throw new JsonParseException("class " + ((Class) objCls).getSimpleName(), e1);
+                    }
+                }else {
+
+                    try {
+                        f = ClassUtils.getDeclaredField((Class) objCls, pd.getName());
+                    } catch (SecurityException | NoSuchFieldException e1) {
+                        continue;
+                    }
+
+                    value = jsonObject.get(namingStrategy.translateName(f));
+
+                    if (value == null)
+                        continue;
                 }
 
                 try {
-                    pd.getWriteMethod().invoke(o, new Object[]{context.deserialize(e.getValue(), f.getGenericType())});
+                    pd.getWriteMethod().invoke(o, new Object[]{context.deserialize(value, f.getGenericType())});
                 } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e1) {
                     throw new RuntimeException(e1);
                 }

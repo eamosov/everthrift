@@ -5,8 +5,6 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.Statement;
-import com.datastax.driver.core.querybuilder.Update.Assignments;
-import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
@@ -18,13 +16,13 @@ import org.apache.commons.lang.ArrayUtils;
 import org.apache.thrift.TException;
 import org.everthrift.appserver.model.CreatedAtIF;
 import org.everthrift.appserver.model.DaoEntityIF;
-import org.everthrift.appserver.model.UpdatedAtIF;
 import org.everthrift.appserver.model.events.DeleteEntityEvent;
 import org.everthrift.appserver.model.events.InsertEntityEvent;
 import org.everthrift.appserver.model.events.UpdateEntityEvent;
 import org.everthrift.cassandra.com.datastax.driver.mapping.Mapper.Option;
 import org.everthrift.cassandra.com.datastax.driver.mapping.Mapper.UpdateQuery;
 import org.everthrift.thrift.TFunction;
+import org.everthrift.utils.ExceptionUtils;
 import org.everthrift.utils.LongTimestamp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.function.Consumer;
 
 public class Statements {
 
@@ -77,6 +74,10 @@ public class Statements {
             statements.add(s);
             invalidates.put(f, e.getPk());
         }
+    }
+
+    public <ENTITY extends DaoEntityIF> ENTITY updateUnchecked(ENTITY e, TFunction<ENTITY, Boolean> mutator, Option... options){
+        return ExceptionUtils.asUnchecked(() -> update(e, mutator, options));
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
