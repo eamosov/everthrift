@@ -23,7 +23,7 @@
             <arg line="${file}"/>
         </exec>
         <exec executable="${thrift.binary}" dir="src/main" failonerror="true">
-            <arg line="--gen php:server -I thrift-includes/META-INF/thrift/ -I thrift"/>
+            <arg line="--gen php:psr4 -I thrift-includes/META-INF/thrift/ -I thrift"/>
             <arg line="-o ."/>
             <arg line="${file}"/>
         </exec>
