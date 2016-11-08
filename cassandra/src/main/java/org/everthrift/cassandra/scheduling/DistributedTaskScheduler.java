@@ -31,6 +31,7 @@ public interface DistributedTaskScheduler {
     ScheduledFuture<?> scheduleAtFixedRate(String taskName, String beanName, Serializable arg, Date startTime, long period) throws DuplicatedTaskException;
 
     void cancel(String taskName);
+    void update(String taskName, Date startTime, long period);
 
     void onDynamicTaskEvent(DynamicTaskEvent e);
 }

@@ -213,7 +213,7 @@ public class DistributedScheduledExecutorService implements DistributedTaskSched
             return null;
         }
 
-        return schedule(ctxh, () -> r.runTask(taskName, tx.getArg()), new DistributedPeriodicTrigger(tx.getPeriod()));
+        return schedule(ctxh, () -> r.runTask(taskName, tx.getArg()), new DistributedPeriodicDynamicTrigger());
     }
 
     @Override
@@ -249,6 +249,32 @@ public class DistributedScheduledExecutorService implements DistributedTaskSched
                 }
 
                 ctx.setCancelled(true);
+            } while (!accessor.update(ctx));
+
+        } catch (ContextAccessError e) {
+            throw Throwables.propagate(e);
+        }
+    }
+
+    @Override
+    public void update(String taskName, Date startTime, long period){
+        final TriggerContextAccessor accessor = getTriggerContextAccessorFactory().get(taskName, true);
+        SettableTriggerContext ctx;
+
+        try {
+            do {
+                ctx = accessor.get();
+                if (ctx == null) {
+                    log.warn("Task '{}' not found", taskName);
+                    return;
+                }
+
+                if (!ctx.isDynamic()) {
+                    log.warn("Updating not dynamic task {}", taskName);
+                }
+
+                ctx.setLastScheduledExecutionTime(startTime);
+                ctx.setPeriod(period);
             } while (!accessor.update(ctx));
 
         } catch (ContextAccessError e) {

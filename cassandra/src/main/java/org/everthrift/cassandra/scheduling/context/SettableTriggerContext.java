@@ -18,6 +18,7 @@ public interface SettableTriggerContext extends TriggerContext {
     }
 
     Long getPeriod();
+    void setPeriod(Long period);
 
     String getBeanName();
 

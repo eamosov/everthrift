@@ -71,6 +71,11 @@ public class SettableTriggerContextImpl implements SettableTriggerContext {
     }
 
     @Override
+    public void setPeriod(Long period) {
+        this.period = period;
+    }
+
+    @Override
     public String getBeanName() {
         return beanName;
     }

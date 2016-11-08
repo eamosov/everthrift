@@ -102,6 +102,7 @@ class TriggerContextAccessorImpl implements TriggerContextAccessor {
                                                                                  .lastCompletionTime()))
                                                                              .and(set("serial", _ctx.getSerial() + 1))
                                                                              .and(set("cancelled", _ctx.isCancelled()))
+                                                                             .and(set("period", _ctx.getPeriod()))
                                                                              .where(eq("id", taskName))
                                                                              .onlyIf(QueryBuilder.eq("serial", _ctx
                                                                                  .getSerial())))
