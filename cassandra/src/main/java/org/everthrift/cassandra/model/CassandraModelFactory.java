@@ -32,6 +32,7 @@ import org.everthrift.appserver.model.UniqueException;
 import org.everthrift.appserver.model.XAwareIF;
 import org.everthrift.appserver.model.lazy.AsyncLazyLoader;
 import org.everthrift.appserver.model.lazy.Registry;
+import org.everthrift.appserver.model.lazy.UniqKey;
 import org.everthrift.cassandra.DLock;
 import org.everthrift.cassandra.DLockFactory;
 import org.everthrift.cassandra.com.datastax.driver.mapping.ColumnMapper;
@@ -85,33 +86,29 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
 
     protected abstract E createNotFoundException(PK id);
 
-    private final AsyncLazyLoader<XAwareIF<PK, ENTITY>> asyncLazyLoader = new AsyncLazyLoader<XAwareIF<PK, ENTITY>>() {
+    private final AsyncLazyLoader<XAwareIF<PK, ENTITY>> asyncLazyLoader = entities -> {
 
-        @Override
-        public CompletableFuture<Integer> processAsync(List<XAwareIF<PK, ENTITY>> entities) {
+        final CompletableFuture<Map<PK, ENTITY>> f = findEntityByIdAsMapAsync(entities.stream()
+                                                                                      .filter(XAwareIF::isSetId)
+                                                                                      .map(XAwareIF::getId)
+                                                                                      .collect(Collectors.toSet()));
 
-            final CompletableFuture<Map<PK, ENTITY>> f = findEntityByIdAsMapAsync(entities.stream()
-                                                                                          .filter(XAwareIF<PK, ENTITY>::isSetId)
-                                                                                          .map(XAwareIF<PK, ENTITY>::getId)
-                                                                                          .collect(Collectors.toSet()));
-
-            return f.thenApply(loaded -> {
-                int n = 0;
-                for (XAwareIF<PK, ENTITY> e : entities) {
-                    synchronized (e) {
-                        if (e.isSetId()) {
-                            final ENTITY l = loaded.get(e.getId());
-                            e.set(l);
-                            if (l != null) {
-                                n++;
-                            }
+        return f.thenApply(loaded -> {
+            int n = 0;
+            for (XAwareIF<PK, ENTITY> e : entities) {
+                synchronized (e) {
+                    if (e.isSetId()) {
+                        final ENTITY l = loaded.get(e.getId());
+                        e.set(l);
+                        if (l != null) {
+                            n++;
                         }
-
                     }
+
                 }
-                return n;
-            });
-        }
+            }
+            return n;
+        });
     };
 
     // private volatile Map<String, PreparedStatement> preparedQueries =
@@ -561,8 +558,31 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
 
     @Override
     public boolean lazyLoad(Registry r, XAwareIF<PK, ENTITY> m) {
-        return r.add(asyncLazyLoader, m);
+        if (m.isSetId()) {
+            return r.add(asyncLazyLoader, m);
+        } else {
+            return false;
+        }
     }
+
+    @Override
+    public boolean lazyLoad(Registry r, XAwareIF<PK, ENTITY> m, Object entity, String propertyName) {
+        if (m.isSetId()) {
+            return r.addWithUnique(asyncLazyLoader, m, new UniqKey(entity, propertyName));
+        } else {
+            return false;
+        }
+    }
+
+    @Override
+    public boolean lazyLoad(Registry r, XAwareIF<PK, ENTITY> m, Object uniqueKey) {
+        if (m.isSetId()) {
+            return r.addWithUnique(asyncLazyLoader, m, uniqueKey);
+        } else {
+            return false;
+        }
+    }
+
 
     public void truncate() {
         mapper.getManager().getSession().execute(QueryBuilder.truncate(mapper.getTableName()));

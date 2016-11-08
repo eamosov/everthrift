@@ -8,6 +8,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.everthrift.appserver.model.lazy.LazyLoader;
 import org.everthrift.appserver.model.lazy.Registry;
+import org.everthrift.appserver.model.lazy.UniqKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.CollectionUtils;
@@ -95,6 +96,14 @@ public abstract class RoModelFactoryImpl<PK, ENTITY> implements RoModelFactoryIF
     public boolean lazyLoad(Registry r, XAwareIF<PK, ENTITY> m) {
         if (m.isSetId()) {
             return r.add(lazyLoader, m);
+        } else {
+            return false;
+        }
+    }
+
+    public boolean lazyLoad(Registry r, XAwareIF<PK, ENTITY> m, Object entity, String propertyName) {
+        if (m.isSetId()) {
+            return r.addWithUnique(lazyLoader, m, new UniqKey(entity, propertyName));
         } else {
             return false;
         }
