@@ -1,6 +1,8 @@
 package io.smartcat.migration;
 
 import io.smartcat.migration.exceptions.MigrationException;
+import org.apache.commons.io.Charsets;
+import org.apache.commons.io.IOUtils;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -29,21 +31,7 @@ public class CqlMigration extends Migration {
     }
 
     public String loadResource(InputStream input) throws IOException {
-
-        String result = null;
-        int available = input.available();
-        if (available > 0) {
-            // Read max 64k. This is a damn lazy implementation...
-            final int MAX_BYTES = 65535;
-
-            // Read all available bytes in one chunk
-            byte[] buffer = new byte[Math.min(available, MAX_BYTES)];
-            int numRead = input.read(buffer);
-
-            result = new String(buffer, 0, numRead, "UTF-8");
-        }
-
-        return result;
+        return IOUtils.toString(input, Charsets.UTF_8);
     }
 
     private String loadResource(String path) throws IOException {

@@ -194,7 +194,6 @@ public abstract class OptLockCassandraModelFactory<PK extends Serializable, ENTI
         mapper.delete(e);
         invalidate((PK) e.getPk());
         final OptResult<ENTITY> r = OptResult.create(this, null, e, true);
-        ;
         localEventBus.postEntityEvent(deleteEntityEvent(e));
         return r;
     }

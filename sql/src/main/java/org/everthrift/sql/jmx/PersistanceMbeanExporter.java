@@ -32,22 +32,22 @@ public class PersistanceMbeanExporter extends AnnotationMBeanExporter {
 
     @Override
     protected ModelMBean createAndConfigureMBean(Object managedResource, String beanKey) throws MBeanExportException {
-        return (ModelMBean) getProxy(super.createAndConfigureMBean(managedResource, beanKey), managedResource);
+        return getProxy(super.createAndConfigureMBean(managedResource, beanKey), managedResource);
     }
 
-    private Object getProxy(Object wrapper, Object bean) {
-        final String name = getBeanName(bean);
+    private ModelMBean getProxy(ModelMBean modelMbean, Object managedResource) {
+        final String name = getBeanName(managedResource);
         if (name == null) {
-            return wrapper;
+            return modelMbean;
         }
 
-        final ManagedResource mr = bean.getClass().getDeclaredAnnotation(ManagedResource.class);
+        final ManagedResource mr = managedResource.getClass().getDeclaredAnnotation(ManagedResource.class);
         if (mr == null || mr.persistName().isEmpty())
-            return wrapper;
+            return modelMbean;
 
-        final ProxyFactory factory = new ProxyFactory(wrapper);
-        factory.addAdvice(new PersistMBeanInterceptor(bean, mr.persistName(), propertiesModelFactory));
-        return factory.getProxy();
+        final ProxyFactory factory = new ProxyFactory(modelMbean);
+        factory.addAdvice(new PersistMBeanInterceptor(managedResource, mr.persistName(), propertiesModelFactory));
+        return (ModelMBean)factory.getProxy();
     }
 
     private String getBeanName(Object target) {

@@ -417,11 +417,8 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
 
     @Override
     public ENTITY insertEntity(ENTITY e) throws UniqueException {
-
         setCreatedAt(e);
-
         putEntity(e, false);
-
         localEventBus.postEntityEvent(insertEntityEvent(e));
         return e;
     }
@@ -439,6 +436,7 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
     @Override
     public void deleteEntity(ENTITY e) {
         mapper.delete(extractCompaundPk((PK) e.getPk()));
+        invalidate((PK) e.getPk());
     }
 
     public ENTITY copy(ENTITY e) {
