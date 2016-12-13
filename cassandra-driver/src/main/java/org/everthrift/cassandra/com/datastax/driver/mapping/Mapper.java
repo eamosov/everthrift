@@ -386,9 +386,19 @@ public class Mapper<T> {
                     values.put(cm, _value);
                     specialValues.put(cm, _value);
                 } else if (mapper.isUpdatedAt(cm)) {
-                    final Object _value = updatedAtOption != null ? updatedAtOption.getValue() : System.currentTimeMillis();
+
+                    final Object _value;
+
+                    if (!Objects.equal(value, origValue)) {
+                        nUpdatedFields++;
+                        _value = value;
+                    }else{
+                        _value = updatedAtOption != null ? updatedAtOption.getValue() : System.currentTimeMillis();
+                    }
+
                     values.put(cm, _value);
                     specialValues.put(cm, _value);
+
                 } else if (cm.kind == ColumnMapper.Kind.REGULAR) {
                     if (!Objects.equal(value, origValue)) {
                         values.put(cm, value);
