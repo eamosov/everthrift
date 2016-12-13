@@ -266,6 +266,11 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
                                                                                                  .get(MessageWrapper.HTTP_REQUEST_PARAMS)))
                                                         .build();
 
+        /**
+            TODO т.к. обработка происходит асинхронно и очередь не гарантирует очередность выполнения задач,
+            то может произойти ситуация, когда прийдет первое сообщение в сокет, а сервер ещё не успел авторизовать соединение.
+            нужно запилить фикс. Подумать на счет обработки onOpen в этом же потоке
+        */
         try {
             inWebsocketChannel.send(m);
         } catch (MessageDeliveryException e) {

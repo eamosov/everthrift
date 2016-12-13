@@ -245,6 +245,7 @@ public class TBaseScannerFactory {
             scanners = _scanners;
             return s;
         } catch (CannotCompileException | NotFoundException | InstantiationException | IllegalAccessException | IOException e) {
+            log.error("Exception", e);
             throw new RuntimeException(e);
         }
     }
