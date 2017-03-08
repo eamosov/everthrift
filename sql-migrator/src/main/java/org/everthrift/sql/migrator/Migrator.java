@@ -1,0 +1,52 @@
+package org.everthrift.sql.migrator;
+
+import ch.qos.logback.classic.PatternLayout;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.context.support.AbstractXmlApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.core.env.SimpleCommandLinePropertySource;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.ResourcePropertySource;
+
+import java.io.IOException;
+
+public class Migrator {
+
+    static {
+        PatternLayout.defaultConverterMap.put("coloron", ColorOnConverter.class.getName());
+        PatternLayout.defaultConverterMap.put("coloroff", ColorOffConverter.class.getName());
+    }
+
+    private static AbstractXmlApplicationContext context;
+
+    private static ConfigurableEnvironment env;
+
+    private static SqlMigrationProcessor processor;
+
+    private static final Logger log = LoggerFactory.getLogger(Migrator.class);
+
+    public static void main(String[] args) throws Exception {
+        context = new ClassPathXmlApplicationContext(new String[]{"classpath:sql-migration-context.xml"}, false);
+        context.registerShutdownHook();
+        env = context.getEnvironment();
+        env.getPropertySources().addFirst(new SimpleCommandLinePropertySource(args));
+        final Resource resource = context.getResource("classpath:application.properties");
+        try {
+            env.getPropertySources().addLast(new ResourcePropertySource(resource));
+        } catch (IOException e) {
+            log.error("Error loading resource: " + resource.toString(), e);
+        }
+
+        context.refresh();
+        processor = context.getBean(SqlMigrationProcessor.class);
+
+        try {
+            processor.migrate();
+        } finally {
+            context.close();
+        }
+    }
+
+}

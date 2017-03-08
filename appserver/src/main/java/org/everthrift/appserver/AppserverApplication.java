@@ -170,7 +170,7 @@ public class AppserverApplication {
             }
         }
 
-        if (Boolean.parseBoolean(env.getProperty("sqlmigrator.run", "false"))) {
+        if (Boolean.parseBoolean(env.getProperty("sql.migrator.run", "false"))) {
             try {
                 runSqlMigrator();
             } catch (Exception e) {
@@ -312,7 +312,7 @@ public class AppserverApplication {
     private void runSqlMigrator() throws Exception {
         log.info("Executing SQL migrations");
 
-        runInContext("migration-context.xml", "org.everthrift.sql.migration.MigrationProcessor", "migrate");
+        runInContext("sql-migration-context.xml", "org.everthrift.sql.migrator.SqlMigrationProcessor", "migrate");
     }
 
     private void runCMigrationProcessor() throws Exception {
