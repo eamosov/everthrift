@@ -10,11 +10,14 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.everthrift.appserver.model.AsyncRoModelFactoryIF;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.io.Serializable;
 import java.util.Collections;
@@ -30,6 +33,9 @@ public abstract class BasicEsService {
 
     @Autowired
     protected Client esClient;
+
+    @Value("${es.index.prefix}")
+    private String indexPrefix;
 
     abstract protected <T> T deserialize(String s, Class<T> cls);
 
@@ -95,20 +101,20 @@ public abstract class BasicEsService {
 
     }
 
-    public <PK extends Serializable, ENTITY extends EsIndexableIF> ESearchResult<PK, ENTITY> searchQuery(EsProviderIF<PK, ENTITY> factory, SearchType searchType, boolean scroll, String query) throws ElasticsearchException {
-        return searchQuery(factory, searchType, scroll, null, query, false);
+    public <PK extends Serializable, ENTITY extends EsIndexableIF> ESearchResult<PK, ENTITY> searchQuery(EsProviderIF<PK, ENTITY> factory, SearchType searchType, boolean scroll, SearchSourceBuilder sourceBuilder) throws ElasticsearchException {
+        return searchQuery(factory, searchType, scroll, null, sourceBuilder, false);
     }
 
-    public <PK extends Serializable, ENTITY extends EsIndexableIF> ESearchResult<PK, ENTITY> searchQuery(EsProviderIF<PK, ENTITY> factory, SearchType searchType, boolean scroll, String query, boolean parseSource)
+    public <PK extends Serializable, ENTITY extends EsIndexableIF> ESearchResult<PK, ENTITY> searchQuery(EsProviderIF<PK, ENTITY> factory, SearchType searchType, boolean scroll, SearchSourceBuilder sourceBuilder, boolean parseSource)
         throws ElasticsearchException {
-        return searchQuery(factory, searchType, scroll, null, query, parseSource);
+        return searchQuery(factory, searchType, scroll, null, sourceBuilder, parseSource);
     }
 
-    public <PK extends Serializable, ENTITY extends EsIndexableIF> ESearchResult<PK, ENTITY> searchQuery(EsProviderIF<PK, ENTITY> factory, SearchType searchType, boolean scroll, String innerName, String query,
+    public <PK extends Serializable, ENTITY extends EsIndexableIF> ESearchResult<PK, ENTITY> searchQuery(EsProviderIF<PK, ENTITY> factory, SearchType searchType, boolean scroll, String innerName, SearchSourceBuilder sourceBuilder,
                                                                                                          boolean parseSource) throws ElasticsearchException {
 
         try {
-            return searchQueryAsync(factory, searchType, scroll, innerName, query, parseSource).get();
+            return searchQueryAsync(factory, searchType, scroll, innerName, sourceBuilder, parseSource).get();
         } catch (ExecutionException e) {
             Throwables.propagateIfPossible(e.getCause(), ElasticsearchException.class);
             throw Throwables.propagate(e);
@@ -158,7 +164,7 @@ public abstract class BasicEsService {
             }
 
             @Override
-            public void onFailure(Throwable e) {
+            public void onFailure(Exception e) {
                 esClient.clearScroll(esClient.prepareClearScroll().addScrollId(scrollId).request());
                 f.completeExceptionally(e);
             }
@@ -168,15 +174,15 @@ public abstract class BasicEsService {
     }
 
     public <PK extends Serializable, ENTITY extends EsIndexableIF> CompletableFuture<ESearchResult<PK, ENTITY>> searchQueryAsync(EsProviderIF<PK, ENTITY> factory, SearchType searchType, boolean scroll, String innerName,
-                                                                                                                                 String query, boolean parseSource) throws ElasticsearchException {
+                                                                                                                                 SearchSourceBuilder sourceBuilder, boolean parseSource) throws ElasticsearchException {
 
-        log.trace("query: {}", query);
+        log.trace("query: {}", sourceBuilder.toString());
 
         final SearchRequest sr = new SearchRequest();
 
-        sr.indices(factory.getIndexName());
+        sr.indices(indexPrefix + factory.getIndexName());
         sr.types(factory.getMappingName());
-        sr.source(query);
+        sr.source(sourceBuilder);
         sr.searchType(searchType);
 
         if (scroll) {
@@ -213,11 +219,19 @@ public abstract class BasicEsService {
             }
 
             @Override
-            public void onFailure(Throwable e) {
+            public void onFailure(Exception e) {
                 f.completeExceptionally(e);
             }
         });
 
         return f;
+    }
+
+    public String getIndexPrefix() {
+        return indexPrefix;
+    }
+
+    public void setIndexPrefix(String indexPrefix) {
+        this.indexPrefix = indexPrefix;
     }
 }

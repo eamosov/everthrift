@@ -10,6 +10,7 @@ import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequestBuilder;
+import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.index.VersionType;
 import org.everthrift.appserver.model.LocalEventBus;
@@ -21,6 +22,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.util.CollectionUtils;
 
@@ -57,6 +59,9 @@ public abstract class Indexer implements InitializingBean, DisposableBean {
 
     @Autowired
     private boolean testMode;
+
+    @Value("${es.index.prefix}")
+    private String indexPrefix;
 
     protected abstract void addToQueue(List<? extends IndexTaskIF> tasks) throws TException;
 
@@ -250,7 +255,7 @@ public abstract class Indexer implements InitializingBean, DisposableBean {
                 toIndex.add(o);
             } else if (o == null) {
                 tasks.add(createIndexTask(EsOp.DELETE,
-                                          factory.getIndexName(),
+                                          indexPrefix + factory.getIndexName(),
                                           factory.getMappingName(),
                                           factory.getVersionType().getValue(),
                                           0,
@@ -280,7 +285,7 @@ public abstract class Indexer implements InitializingBean, DisposableBean {
 
         tasks.addAll(toIndex.stream()
                             .map(o -> createIndexTask(EsOp.INDEX,
-                                                      factory.getIndexName(),
+                                                      indexPrefix + factory.getIndexName(),
                                                       factory.getMappingName(),
                                                       factory.getVersionType()
                                                              .getValue(),
@@ -328,7 +333,7 @@ public abstract class Indexer implements InitializingBean, DisposableBean {
             }
         }
 
-        bulkRequest.setRefresh(true);
+        bulkRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.WAIT_UNTIL);
 
         final BulkResponse response = bulkRequest.get();
 
@@ -363,9 +368,9 @@ public abstract class Indexer implements InitializingBean, DisposableBean {
 
     public void deleteIndex(String indexName) {
 
-        log.info("Delete index: {}", indexName);
+        log.info("Delete index: {}", indexPrefix + indexName);
         try {
-            esClient.admin().indices().prepareDelete(indexName).execute().actionGet();
+            esClient.admin().indices().prepareDelete(indexPrefix + indexName).execute().actionGet();
         } catch (Exception e) {
             log.error("deleteIndex", e);
         }
@@ -376,11 +381,11 @@ public abstract class Indexer implements InitializingBean, DisposableBean {
     }
 
     public void createIndex(String indexName) throws IOException {
-        createIndex(indexName, resourceContent(String.format("classpath:es/%s/_settings.json", indexName)));
+        createIndex(indexPrefix + indexName, resourceContent(String.format("classpath:es/%s/_settings.json", indexName)));
         putMapping(indexName, "_default_");
     }
 
-    public void createIndex(String indexName, String settings) {
+    private void createIndex(String indexName, String settings) {
 
         log.info("Create index: {}", indexName);
 
@@ -392,10 +397,10 @@ public abstract class Indexer implements InitializingBean, DisposableBean {
     }
 
     public void putMapping(String indexName, String typeName) throws IOException {
-        putMapping(indexName, typeName, resourceContent(String.format("classpath:es/%s/%s.json", indexName, typeName)));
+        putMapping(indexPrefix + indexName, typeName, resourceContent(String.format("classpath:es/%s/%s.json", indexName, typeName)));
     }
 
-    public void putMapping(String indexName, String typeName, String mapping) {
+    private void putMapping(String indexName, String typeName, String mapping) {
 
         log.info("Put mapping: {}.{}", indexName, typeName);
 
@@ -410,5 +415,13 @@ public abstract class Indexer implements InitializingBean, DisposableBean {
         } catch (Exception e) {
             log.error("putMapping", e);
         }
+    }
+
+    public String getIndexPrefix() {
+        return indexPrefix;
+    }
+
+    public void setIndexPrefix(String indexPrefix) {
+        this.indexPrefix = indexPrefix;
     }
 }
