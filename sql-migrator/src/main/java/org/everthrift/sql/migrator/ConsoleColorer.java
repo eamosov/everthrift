@@ -1,4 +1,4 @@
-package org.everthrift.sql.migration.logging;
+package org.everthrift.sql.migrator;
 
 /**
  * @author efreet (Amosov Evgeniy)

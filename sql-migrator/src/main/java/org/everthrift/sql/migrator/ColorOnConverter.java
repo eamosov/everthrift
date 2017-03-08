@@ -1,4 +1,4 @@
-package org.everthrift.sql.migration.logging;
+package org.everthrift.sql.migrator;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.pattern.ClassicConverter;
