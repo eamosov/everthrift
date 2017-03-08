@@ -26,6 +26,9 @@ public class JmsThriftClientImpl implements JmsThriftClientIF {
 
     private TProtocolFactory protocolFactory = new TBinaryProtocol.Factory();
 
+    private String queuePrefix = "";
+    private String queueSuffix = "";
+
     public JmsThriftClientImpl(final ConnectionFactory jmsConnectionFactory) {
 
         jmsTemplate = new JmsTemplate(jmsConnectionFactory);
@@ -96,10 +99,25 @@ public class JmsThriftClientImpl implements JmsThriftClientIF {
                                               @SuppressWarnings("rawtypes")
                                               @Override
                                               public Object call(InvocationInfo ii) throws NullResult {
-                                                  jmsTemplate.convertAndSend(ii.serviceName, ii);
+                                                  jmsTemplate.convertAndSend(queuePrefix + ii.serviceName + queueSuffix, ii);
                                                   throw new NullResult();
                                               }
                                           }));
     }
 
+    public String getQueuePrefix() {
+        return queuePrefix;
+    }
+
+    public void setQueuePrefix(String queuePrefix) {
+        this.queuePrefix = queuePrefix;
+    }
+
+    public String getQueueSuffix() {
+        return queueSuffix;
+    }
+
+    public void setQueueSuffix(String queueSuffix) {
+        this.queueSuffix = queueSuffix;
+    }
 }

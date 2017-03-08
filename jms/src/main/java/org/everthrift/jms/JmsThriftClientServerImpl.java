@@ -46,6 +46,10 @@ public class JmsThriftClientServerImpl implements InitializingBean, DisposableBe
 
     private ThriftProcessor thriftProcessor;
 
+    private String queuePrefix = "";
+
+    private String queueSuffix = "";
+
     private final TProtocolFactory binaryProtocolFactory = new TBinaryProtocol.Factory();
 
     private List<AbstractMessageListenerContainer> listeners = Lists.newArrayList();
@@ -142,6 +146,8 @@ public class JmsThriftClientServerImpl implements InitializingBean, DisposableBe
     public JmsThriftClientServerImpl(ConnectionFactory jmsConnectionFactory) {
         this.jmsConnectionFactory = jmsConnectionFactory;
         this.jmsThriftClient = new JmsThriftClientImpl(jmsConnectionFactory);
+        this.jmsThriftClient.setQueuePrefix(queuePrefix);
+        this.jmsThriftClient.setQueueSuffix(queueSuffix);
     }
 
     private JMSException asJMSException(Exception e) {
@@ -178,7 +184,7 @@ public class JmsThriftClientServerImpl implements InitializingBean, DisposableBe
         }
 
         for (String s : services) {
-            addJmsListener(s);
+            addJmsListener(getQueueName(s));
         }
 
     }
@@ -202,6 +208,28 @@ public class JmsThriftClientServerImpl implements InitializingBean, DisposableBe
     @Override
     public <T> T onIface(Class<T> cls) {
         return jmsThriftClient.onIface(cls);
+    }
+
+    public String getQueuePrefix() {
+        return queuePrefix;
+    }
+
+    public void setQueuePrefix(String queuePrefix) {
+        this.queuePrefix = queuePrefix;
+        this.jmsThriftClient.setQueuePrefix(queuePrefix);
+    }
+
+    public String getQueueSuffix() {
+        return queueSuffix;
+    }
+
+    public void setQueueSuffix(String queueSuffix) {
+        this.queueSuffix = queueSuffix;
+        this.jmsThriftClient.setQueueSuffix(queueSuffix);
+    }
+
+    public String getQueueName(String serviceName) {
+        return queuePrefix + serviceName + queueSuffix;
     }
 
 }
