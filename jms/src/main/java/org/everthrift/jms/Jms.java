@@ -1,5 +1,6 @@
 package org.everthrift.jms;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -35,8 +36,14 @@ public class Jms {
     }
 
     @Bean
-    public JmsThriftClientServerImpl jmsThriftClientServerImpl(ConnectionFactory jmsConnectionFactory) {
-        return new JmsThriftClientServerImpl(jmsConnectionFactory);
+    public JmsThriftClientServerImpl jmsThriftClientServerImpl(ConnectionFactory jmsConnectionFactory,
+                                                               @Value("${activemq.queue.prefix:}") String queuePrefix,
+                                                               @Value("${activemq.queue.suffix:}") String queueSuffix) {
+        final JmsThriftClientServerImpl s = new JmsThriftClientServerImpl(jmsConnectionFactory);
+        s.setQueuePrefix(queuePrefix);
+        s.setQueueSuffix(queueSuffix);
+
+        return s;
     }
 
 }
