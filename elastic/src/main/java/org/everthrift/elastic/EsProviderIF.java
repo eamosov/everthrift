@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 @ManagedResource(objectName = "bean:name=replaced")
@@ -57,15 +58,23 @@ public interface EsProviderIF<PK extends Serializable, ENTITY extends EsIndexabl
     default void fetchIndexAllInES(ExecutorService executor, int batchSize) {
         executor.submit(() -> {
 
+            final AtomicInteger size = new AtomicInteger(0);
             try {
                 fetchAll(batchSize, entities -> {
                     final Indexer indexer = getApplicationContext().getBean(Indexer.class);
                     indexer.runIndexTasks(indexer.buildIndexTasks(getBeanName(), entities));
+                    final int indexed = size.addAndGet(entities.size());
+                    if (indexed % 1000 == 0){
+                        _log.info("Indexing {}/{}: {}", indexer.getIndexPrefix() + getIndexName(), getMappingName(), indexed);
+                    }
                 });
             } catch (Exception e) {
                 _log.error("Exception in fetchIndexAllInES", e);
                 throw Throwables.propagate(e);
             }
+
+            final Indexer indexer = getApplicationContext().getBean(Indexer.class);
+            _log.info("Finished indexing {}/{}:{}", indexer.getIndexPrefix() + getIndexName(), getMappingName(), size.get());
         });
     }
 
