@@ -138,7 +138,7 @@ public abstract class Indexer implements InitializingBean, DisposableBean {
                 log.error("Entity {} must be instanceof EsIndexableIF", event.entity.getClass().getCanonicalName());
             }
 
-            scheduleIndex(((EsProviderIF<?, ?>) event.factory).getBeanName(), (EsIndexableIF) event.entity);
+            scheduleIndex(((EsProviderIF<?, ?, ?>) event.factory).getBeanName(), (EsIndexableIF) event.entity);
         }
     }
 
@@ -146,10 +146,10 @@ public abstract class Indexer implements InitializingBean, DisposableBean {
     public void onProperyUpdateEvent(UpdateEntityEvent<?, ?> event) throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
 
         if (event.factory instanceof EsProviderIF) {
-            final Set<String> triggers = ((EsProviderIF<?, ?>) event.factory).getIndexTriggers();
+            final Set<String> triggers = ((EsProviderIF<?, ?, ?>) event.factory).getIndexTriggers();
 
             if (event.updatedByPk != null) {
-                scheduleIndex(((EsProviderIF<?, ?>) event.factory).getBeanName(), new EsIndexableImpl(event.updatedByPk, 0));
+                scheduleIndex(((EsProviderIF<?, ?, ?>) event.factory).getBeanName(), new EsIndexableImpl(event.updatedByPk, 0));
             } else if (triggers == null) {
                 if (!event.afterUpdate.equals(event.beforeUpdate)) {
                     if (log.isDebugEnabled()) {
@@ -158,7 +158,7 @@ public abstract class Indexer implements InitializingBean, DisposableBean {
                                   event.afterUpdate.getPk());
                     }
 
-                    scheduleIndex(((EsProviderIF<?, ?>) event.factory).getBeanName(), (EsIndexableIF) event.afterUpdate);
+                    scheduleIndex(((EsProviderIF<?, ?, ?>) event.factory).getBeanName(), (EsIndexableIF) event.afterUpdate);
                 }
             } else {
                 for (String propertyName : triggers) {
@@ -176,7 +176,7 @@ public abstract class Indexer implements InitializingBean, DisposableBean {
                                 .getSimpleName(), event.afterUpdate.getPk());
                         }
 
-                        scheduleIndex(((EsProviderIF<?, ?>) event.factory).getBeanName(), (EsIndexableIF) event.afterUpdate);
+                        scheduleIndex(((EsProviderIF<?, ?, ?>) event.factory).getBeanName(), (EsIndexableIF) event.afterUpdate);
                     }
                 }
             }
@@ -234,7 +234,8 @@ public abstract class Indexer implements InitializingBean, DisposableBean {
             return Collections.emptyList();
         }
 
-        final EsProviderIF<Serializable, EsIndexableIF> factory = (EsProviderIF<Serializable, EsIndexableIF>) context.getBean(factoryName, EsProviderIF.class);
+        final EsProviderIF<Serializable, EsIndexableIF, ?> factory = (EsProviderIF<Serializable, EsIndexableIF, ?>) context
+            .getBean(factoryName, EsProviderIF.class);
 
         if (factory == null) {
             log.error("Couldn't find factory: {}", factoryName);

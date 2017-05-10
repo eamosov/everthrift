@@ -3,7 +3,6 @@ package org.everthrift.sql.hibernate.dao;
 import com.google.common.base.Function;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
-import com.google.common.util.concurrent.ListeningExecutorService;
 import org.everthrift.appserver.model.CreatedAtIF;
 import org.everthrift.appserver.model.DaoEntityIF;
 import org.everthrift.appserver.model.UniqueException;
@@ -15,7 +14,7 @@ import org.hibernate.Query;
 import org.hibernate.SQLQuery;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
-import org.hibernate.StatelessSession;
+import org.hibernate.Transaction;
 import org.hibernate.criterion.Criterion;
 import org.hibernate.criterion.Order;
 import org.hibernate.criterion.Projection;
@@ -24,13 +23,14 @@ import org.hibernate.criterion.Projections;
 import org.hibernate.criterion.Restrictions;
 import org.hibernate.exception.ConstraintViolationException;
 import org.hibernate.persister.entity.AbstractEntityPersister;
+import org.hibernate.query.NativeQuery;
 import org.hibernate.transform.ResultTransformer;
 import org.hibernate.type.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
+import javax.persistence.PersistenceException;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
@@ -39,14 +39,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> implements AbstractDao<K, V> {
 
     private static final Logger log = LoggerFactory.getLogger(AbstractDaoImpl.class);
-
-    private static final String NO_SESSION_FOR_THREAD = "Could not obtain transaction-synchronized Session for current thread";
 
     private SessionFactory sessionFactory;
 
@@ -75,11 +74,42 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
 
     @Override
     public Session getCurrentSession() {
-        return sessionFactory.getCurrentSession();
+        try {
+            return sessionFactory.getCurrentSession();
+        } catch (HibernateException e) {
+            return sessionFactory.openSession();
+        }
     }
 
-    private StatelessSession getStatelessSession() {
-        return sessionFactory.openStatelessSession();
+    private static class TxWrap {
+        private final Transaction tx;
+        private final boolean isActive;
+
+        TxWrap(Transaction tx) {
+            this.tx = tx;
+            this.isActive = tx.isActive();
+        }
+
+        TxWrap begin() {
+            if (!isActive) {
+                tx.begin();
+            }
+            return this;
+        }
+
+        void rollback() {
+            tx.rollback();
+        }
+
+        void commit() {
+            if (!isActive) {
+                tx.commit();
+            }
+        }
+    }
+
+    private TxWrap beginTransaction(Session session) {
+        return new TxWrap(session.getTransaction()).begin();
     }
 
     public Executor getExecutor() {
@@ -94,29 +124,14 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
     @Override
     public V findById(K id) {
 
-        try {
-            final Session session = getCurrentSession();
+        final Session session = getCurrentSession();
 
-            if (log.isDebugEnabled()) {
-                log.debug("findById tx={}: {}#{}", session.getTransaction()
-                                                          .getStatus(), entityClass.getSimpleName(), id);
-            }
-
-            return (V) session.get(entityClass, id);
-        } catch (HibernateException he) {
-            propogateIfAbsentMessage(he, NO_SESSION_FOR_THREAD);
-            final StatelessSession ss = getStatelessSession();
-            try {
-
-                if (log.isDebugEnabled()) {
-                    log.debug("findById stateless: {}#{}", entityClass.getSimpleName(), id);
-                }
-
-                return (V) ss.get(entityClass, id);
-            } finally {
-                ss.close();
-            }
+        if (log.isDebugEnabled()) {
+            log.debug("findById tx={}: {}#{}", session.getTransaction()
+                                                      .getStatus(), entityClass.getSimpleName(), id);
         }
+
+        return session.get(entityClass, id);
     }
 
     @Override
@@ -154,20 +169,20 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
         return new UniqueException(fieldName, isPrimaryKey, null);
     }
 
-    @Transactional
     @Override
     public void persist(V e) throws UniqueException {
-        final Session session = getCurrentSession();
-
         try {
-            session.persist(e);
-        } catch (ConstraintViolationException e1) {
-            throw uniqueException(e1);
+
+            tx(session -> {
+                session.persist(e);
+            });
+
+        } catch (Exception e1) {
+            throw convert(e1);
         }
     }
 
     @Override
-    @Transactional
     public Pair<V, Boolean> saveOrUpdate(V e) throws UniqueException {
 
         try {
@@ -176,31 +191,29 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
                                                                        .getSimpleName(), System.identityHashCode(e), e.getPk());
             }
 
-            final Session session = getCurrentSession();
-
-            if (log.isDebugEnabled()) {
-                log.debug("saveOrUpdate tx={}: {}", session.getTransaction().getStatus(), e);
-            }
-
-            if (e.getPk() == null) {
-                e.setPk(session.save(e));
-                session.refresh(e);
-                return Pair.create((V) session.get(entityClass, e.getPk()), true);
-            } else {
-                V ret = (V) session.merge(e);
-                if (session.isDirty()) {
-                    session.flush();
+            return tx(session -> {
+                if (log.isDebugEnabled()) {
+                    log.debug("saveOrUpdate tx={}: {}", session.getTransaction().getStatus(), e);
                 }
 
-                return Pair.create(ret, EntityInterceptor.INSTANCE.isDirty(e));
-            }
-        } catch (ConstraintViolationException e1) {
-            throw uniqueException(e1);
+                if (e.getPk() == null) {
+                    e.setPk(session.save(e));
+                    session.refresh(e);
+                    return Pair.create((V) session.get(entityClass, e.getPk()), true);
+                } else {
+                    V ret = (V) session.merge(e);
+                    if (session.isDirty()) {
+                        session.flush();
+                    }
+                    return Pair.create(ret, EntityInterceptor.INSTANCE.isDirty(e));
+                }
+            });
+        } catch (Exception e1) {
+            throw convert(e1);
         }
     }
 
     @Override
-    @Transactional
     public Pair<V, Boolean> save(V e) throws UniqueException {
 
         try {
@@ -209,70 +222,96 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
                                                                .getSimpleName(), System.identityHashCode(e), e.getPk());
             }
 
-            final Session session = getCurrentSession();
-
-            if (log.isDebugEnabled()) {
-                log.debug("save tx={}: {}", session.getTransaction().getStatus(), e);
-            }
-
-            CreatedAtIF.setCreatedAt(e);
-
-            if (e.getPk() == null) {
-                e.setPk(session.save(e));
-                session.refresh(e);
-                return Pair.create((V) session.get(entityClass, e.getPk()), true);
-            } else {
-                V ret = (V) session.merge(e);
-                if (session.isDirty()) {
-                    session.flush();
+            return tx(session -> {
+                if (log.isDebugEnabled()) {
+                    log.debug("save tx={}: {}", session.getTransaction().getStatus(), e);
                 }
 
-                return Pair.create(ret, EntityInterceptor.INSTANCE.isDirty(e));
-            }
-        } catch (ConstraintViolationException e1) {
-            throw uniqueException(e1);
+                CreatedAtIF.setCreatedAt(e);
+
+                if (e.getPk() == null) {
+                    e.setPk(session.save(e));
+                    session.refresh(e);
+                    return Pair.create((V) session.get(entityClass, e.getPk()), true);
+                } else {
+                    V ret = (V) session.merge(e);
+                    if (session.isDirty()) {
+                        session.flush();
+                    }
+                    return Pair.create(ret, EntityInterceptor.INSTANCE.isDirty(e));
+                }
+            });
+        } catch (Exception e1) {
+            throw convert(e1);
         }
     }
 
-    @Override
-    @Transactional
-    public void delete(V e) {
+    private void tx(Consumer<Session> r) {
+        final Session session = getCurrentSession();
+        final TxWrap tx = beginTransaction(session);
         try {
-            final Session session = getCurrentSession();
+            r.accept(session);
+            tx.commit();
+        } catch (Exception ex) {
+            tx.rollback();
+            throw ex;
+        }
+    }
 
+    private <R> R tx(Function<Session, R> r) {
+        final Session session = getCurrentSession();
+        final TxWrap tx = beginTransaction(session);
+        try {
+            final R result = r.apply(session);
+            tx.commit();
+            return result;
+        } catch (Exception ex) {
+            tx.rollback();
+            throw ex;
+        }
+    }
+
+
+    @Override
+    public void delete(V e) {
+        tx(session -> {
             if (log.isDebugEnabled()) {
                 log.debug("delete tx={}: {}", session.getTransaction().getStatus(), e);
             }
 
             session.delete(e);
-        } catch (HibernateException he) {
-            propogateIfAbsentMessage(he, NO_SESSION_FOR_THREAD);
-            final StatelessSession ss = getStatelessSession();
-            try {
-                if (log.isDebugEnabled()) {
-                    log.debug("delete stateless: {}", e);
-                }
-
-                ss.delete(e);
-            } finally {
-                ss.close();
-            }
-        }
+        });
     }
 
     @Override
-    @Transactional
     public void deleteAll() {
-        final Session session = getCurrentSession();
-        session.createQuery("DELETE FROM " + ((AbstractEntityPersister) sessionFactory.getClassMetadata(entityClass)).getEntityName())
-               .executeUpdate();
+
+        tx(session -> {
+            session.createQuery(
+                "DELETE FROM " + ((AbstractEntityPersister) sessionFactory.getClassMetadata(entityClass)).getEntityName())
+                   .executeUpdate();
+        });
+    }
+
+    public int deleteByCriteria(Criterion criterion) {
+
+        return tx(session -> {
+            final List<V> ee = findByCriteria(criterion, null);
+
+            if (!CollectionUtils.isEmpty(ee)) {
+                ee.forEach(this::delete);
+                return ee.size();
+            }
+
+            return 0;
+        });
     }
 
     @Override
     public Object uniqueResult(Criterion criterion, Projection... projections) {
-        Pair<Criteria, StatelessSession> pair = createCriteria();
-        try {
-            final Criteria criteria = pair.first;
+        return tx(session -> {
+            final Criteria criteria = session.createCriteria(entityClass);
+
             criteria.add(criterion);
             ProjectionList projectionList = Projections.projectionList();
             for (Projection p : projections) {
@@ -280,37 +319,7 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
             }
             criteria.setProjection(projectionList);
             return criteria.uniqueResult();
-        } finally {
-            if (pair.second != null) {
-                pair.second.close();
-            }
-        }
-    }
-
-    private Pair<Criteria, StatelessSession> createCriteria() {
-        StatelessSession ss = null;
-        Criteria criteria;
-        try {
-            final Session session = getCurrentSession();
-
-            criteria = session.createCriteria(entityClass);
-
-            if (log.isDebugEnabled()) {
-                log.debug("createCriteria tx={}: {}", session.getTransaction()
-                                                             .getStatus(), entityClass.getSimpleName());
-            }
-
-        } catch (HibernateException he) {
-            propogateIfAbsentMessage(he, NO_SESSION_FOR_THREAD);
-            ss = getStatelessSession();
-            criteria = ss.createCriteria(entityClass);
-
-            if (log.isDebugEnabled()) {
-                log.debug("Create stateless session: {}", entityClass.getSimpleName());
-            }
-
-        }
-        return new Pair<Criteria, StatelessSession>(criteria, ss);
+        });
     }
 
     @Override
@@ -328,9 +337,10 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
     @Override
     public List<V> findByCriteria(Criterion criterion, Projection proj, LockMode lockMode, List<Order> order, Integer limit,
                                   Integer offset) {
-        final Pair<Criteria, StatelessSession> pair = createCriteria();
-        try {
-            final Criteria criteria = pair.first;
+
+        return tx(session -> {
+            final Criteria criteria = session.createCriteria(entityClass);
+
             criteria.add(criterion);
 
             if (!CollectionUtils.isEmpty(order)) {
@@ -356,12 +366,9 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
             if (offset != null) {
                 criteria.setFirstResult(offset);
             }
+
             return Lists.newArrayList(criteria.list());
-        } finally {
-            if (pair.second != null) {
-                pair.second.close();
-            }
-        }
+        });
     }
 
     /**
@@ -376,29 +383,15 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
      */
     @Override
     public <X> List<X> findBySQLQuery(String query, Map<String, Type> mapping, ResultTransformer resultTransformer, Object... params) {
-        StatelessSession ss = null;
 
-        try {
-            SQLQuery q;
-            try {
-                final Session session = getCurrentSession();
-                q = session.createSQLQuery(query);
+        return tx(session -> {
+            final NativeQuery<X> q = session.createSQLQuery(query);
 
-                if (log.isDebugEnabled()) {
-                    log.debug("findBySQLQuery tx={}: {}#{}", session.getTransaction()
-                                                                    .getStatus(), entityClass.getSimpleName(), query);
-                }
-
-            } catch (HibernateException he) {
-                propogateIfAbsentMessage(he, NO_SESSION_FOR_THREAD);
-                ss = getStatelessSession();
-                q = ss.createSQLQuery(query);
-
-                if (log.isDebugEnabled()) {
-                    log.debug("findBySQLQuery stateless: {}#{}", entityClass.getSimpleName(), query);
-                }
-
+            if (log.isDebugEnabled()) {
+                log.debug("findBySQLQuery tx={}: {}#{}", session.getTransaction()
+                                                                .getStatus(), entityClass.getSimpleName(), query);
             }
+
             for (int i = 0; i < params.length; i++) {
                 q.setParameter(i, params[i]);
             }
@@ -412,12 +405,9 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
             if (resultTransformer != null && mapping != null) {
                 q.setResultTransformer(resultTransformer);
             }
+
             return q.list();
-        } finally {
-            if (ss != null) {
-                ss.close();
-            }
-        }
+        });
     }
 
     @Override
@@ -437,30 +427,39 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
         });
     }
 
+    private RuntimeException convert(Exception e){
+        if (e instanceof ConstraintViolationException)
+            throw uniqueException((ConstraintViolationException)e);
+        else if (e instanceof PersistenceException && e.getCause() instanceof ConstraintViolationException)
+            throw uniqueException((ConstraintViolationException)e.getCause());
+
+        throw Throwables.propagate(e);
+    }
+
     @Override
-    @Transactional
     public int executeCustomUpdate(K evictId, String query, Function<SQLQuery, Query> bindFunction) {
         try {
 
-            final Session session = getCurrentSession();
-            final SQLQuery q = session.createSQLQuery(query);
+            return tx(session -> {
+                final SQLQuery q = session.createSQLQuery(query);
 
-            if (log.isDebugEnabled()) {
-                log.debug("executeCustomUpdate tx={}: {}#{}", session.getTransaction()
-                                                                     .getStatus(), entityClass.getSimpleName(), query);
-            }
-
-            bindFunction.apply(q);
-
-            try {
-                return q.executeUpdate();
-            } finally {
-                if (evictId != null) {
-                    sessionFactory.getCache().evictEntity(entityClass, evictId);
+                if (log.isDebugEnabled()) {
+                    log.debug("executeCustomUpdate tx={}: {}#{}", session.getTransaction()
+                                                                         .getStatus(), entityClass.getSimpleName(), query);
                 }
-            }
-        } catch (ConstraintViolationException e) {
-            throw uniqueException(e);
+
+                bindFunction.apply(q);
+
+                try {
+                    return q.executeUpdate();
+                } finally {
+                    if (evictId != null) {
+                        sessionFactory.getCache().evictEntity(entityClass, evictId);
+                    }
+                }
+            });
+        } catch (Exception e) {
+            throw convert(e);
         }
     }
 

@@ -4,99 +4,81 @@ import org.everthrift.sql.io.smartcat.migration.exceptions.MigrationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
- * Migration engine wraps Migrator and provides DSL like API.
+ * Migrator handles migrations and errors.
  */
 public class MigrationEngine {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MigrationEngine.class);
 
-    private MigrationEngine() {
-    }
+    private final PlatformTransactionManager txManager;
+
+    private final JdbcTemplate jdbcTemplate;
+
+    private final SqlVersioner versioner;
 
     /**
-     * Create migrator out of session fully prepared for doing migration of
-     * resources.
+     * Create new Migrator with active Cassandra session.
      *
-     * @param jdbcTemplate Datastax driver session object
-     * @return migrator instance with versioner and session which can migrate
-     * resources
+     * @param jdbcTemplate Active Cassandra session
      */
-    public static Migrator withJdbcTemplate(final JdbcTemplate jdbcTemplate, final String schemaVersionCf) {
-        return new Migrator(jdbcTemplate, schemaVersionCf);
-    }
-
-    public static Migrator withJdbcTemplate(final JdbcTemplate jdbcTemplate) {
-        return new Migrator(jdbcTemplate, "schema_version");
+    public MigrationEngine(PlatformTransactionManager txManager, final JdbcTemplate jdbcTemplate, final String schemaVersionCf) {
+        this.txManager = txManager;
+        this.jdbcTemplate = jdbcTemplate;
+        this.versioner = new SqlVersioner(jdbcTemplate, schemaVersionCf);
     }
 
     /**
-     * Migrator handles migrations and errors.
+     * Method that executes all migration from migration resources that are
+     * higher version than db version. If migration fails, method will exit.
+     *
+     * @param resources Collection of migrations to be executed
+     * @return Success of migration
      */
-    public static class Migrator {
-        private final JdbcTemplate jdbcTemplate;
+    public boolean migrate(final MigrationResources resources, boolean force) {
+        LOGGER.debug("Start migration");
 
-        private final SqlVersioner versioner;
+        final TransactionTemplate txTemplate = new TransactionTemplate(txManager);
 
-        /**
-         * Create new Migrator with active Cassandra session.
-         *
-         * @param jdbcTemplate Active Cassandra session
-         */
-        Migrator(final JdbcTemplate jdbcTemplate, final String schemaVersionCf) {
-            this.jdbcTemplate = jdbcTemplate;
-            this.versioner = new SqlVersioner(jdbcTemplate, schemaVersionCf);
-        }
 
-        public boolean migrate(final MigrationResources resources) {
-            return migrate(resources, false);
-        }
+        for (final Migration migration : resources.getMigrations()) {
+            final MigrationType type = migration.getType();
+            final int migrationVersion = migration.getVersion();
 
-        /**
-         * Method that executes all migration from migration resources that are
-         * higher version than db version. If migration fails, method will exit.
-         *
-         * @param resources Collection of migrations to be executed
-         * @return Success of migration
-         */
-        public boolean migrate(final MigrationResources resources, boolean force) {
-            LOGGER.debug("Start migration");
+            if (!force) {
+                final int version = versioner.getCurrentVersion(type);
 
-            for (final Migration migration : resources.getMigrations()) {
-                final MigrationType type = migration.getType();
-                final int migrationVersion = migration.getVersion();
+                LOGGER.info("Db is version {} for type {}.", version, type.name());
+                LOGGER.info("Compare {} migration version {} with description {}", type.name(), migrationVersion,
+                            migration.getDescription());
 
-                if (!force) {
-                    final int version = versioner.getCurrentVersion(type);
-
-                    LOGGER.info("Db is version {} for type {}.", version, type.name());
-                    LOGGER.info("Compare {} migration version {} with description {}", type.name(), migrationVersion,
-                                migration.getDescription());
-
-                    if (migrationVersion <= version) {
-                        LOGGER.warn("Skipping migration [{}] with version {} since db is on higher version {}.", migration
-                                        .getDescription(),
-                                    migrationVersion, version);
-                        continue;
-                    }
-
-                    LOGGER.debug("Checking version second time with ALL consistency");
-                    final int allVersion = versioner.getCurrentVersion(type);
-                    if (allVersion != version) {
-                        LOGGER.error("Version mismatch error, allVersion={}, version={}, migrationVersion={}", allVersion, version, migrationVersion);
-                        return false;
-                    }
-                } else {
-                    //Check ConsistencyLevel.ALL is available
-                    versioner.getCurrentVersion(type);
+                if (migrationVersion <= version) {
+                    LOGGER.warn("Skipping migration [{}] with version {} since db is on higher version {}.", migration
+                                    .getDescription(),
+                                migrationVersion, version);
+                    continue;
                 }
 
-                migration.setJdbcTemplate(jdbcTemplate);
+                LOGGER.debug("Checking version second time with ALL consistency");
+                final int allVersion = versioner.getCurrentVersion(type);
+                if (allVersion != version) {
+                    LOGGER.error("Version mismatch error, allVersion={}, version={}, migrationVersion={}", allVersion, version, migrationVersion);
+                    return false;
+                }
+            } else {
+                //Check ConsistencyLevel.ALL is available
+                versioner.getCurrentVersion(type);
+            }
 
-                final long start = System.currentTimeMillis();
-                LOGGER.info("Start executing migration to version {}.", migrationVersion);
+            migration.setJdbcTemplate(jdbcTemplate);
 
+            final long start = System.currentTimeMillis();
+            LOGGER.info("Start executing migration to version {}.", migrationVersion);
+
+            txTemplate.execute(status -> {
                 try {
                     migration.execute();
                 } catch (final MigrationException e) {
@@ -110,10 +92,12 @@ public class MigrationEngine {
                 LOGGER.info("Migration [{}] to version {} finished in {} seconds.", migration.getDescription(), migrationVersion, seconds);
 
                 versioner.updateVersion(migration);
-            }
+                return  true;
+            });
 
-            return true;
         }
-    }
 
+        return true;
+    }
 }
+

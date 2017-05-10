@@ -1,5 +1,6 @@
 package org.everthrift.clustering;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import org.apache.thrift.transport.TMemoryBuffer;
 import org.apache.thrift.transport.TMemoryInputTransport;
@@ -49,15 +50,15 @@ public class MessageWrapper implements Serializable {
     public MessageWrapper(TTransport tTransport) {
         super();
         this.tTransport = tTransport;
-        this.attributes = new HashMap<String, Object>();
+        this.attributes = new HashMap<>();
     }
 
     @Override
-    public String toString() {
+    public synchronized String toString() {
         return "MessageWrapper [tTransport=" + tTransport + ", attributes=" + attributes + "]";
     }
 
-    public MessageWrapper copySerializeableAttributes(MessageWrapper old) {
+    public synchronized MessageWrapper copySerializeableAttributes(MessageWrapper old) {
         for (Entry<String, Object> e : old.attributes.entrySet()) {
             if (e.getValue() instanceof Serializable) {
                 attributes.put(e.getKey(), e.getValue());
@@ -66,53 +67,53 @@ public class MessageWrapper implements Serializable {
         return this;
     }
 
-    public MessageWrapper copyAttributes(MessageWrapper old) {
+    public synchronized MessageWrapper copyAttributes(MessageWrapper old) {
         copyAttributes(old.attributes);
         return this;
     }
 
-    public MessageWrapper copyAttributes(Map<String, Object> attributes) {
+    public synchronized MessageWrapper copyAttributes(Map<String, Object> attributes) {
         this.attributes.putAll(attributes);
         return this;
     }
 
-    public MessageWrapper setSessionId(String sessionId) {
+    public synchronized MessageWrapper setSessionId(String sessionId) {
         attributes.put(SESSION_ID, sessionId);
         return this;
     }
 
-    public String getSessionId() {
+    public synchronized String getSessionId() {
         return (String) attributes.get(SESSION_ID);
     }
 
-    public MessageWrapper setWebsocketContentType(WebsocketContentType websocketContentType) {
+    public synchronized MessageWrapper setWebsocketContentType(WebsocketContentType websocketContentType) {
         attributes.put(WS_CONTENT_TYPE, websocketContentType);
         return this;
     }
 
-    public WebsocketContentType getWebsocketContentType() {
+    public synchronized WebsocketContentType getWebsocketContentType() {
         return (WebsocketContentType) attributes.get(WS_CONTENT_TYPE);
     }
 
-    public MessageWrapper setOutChannel(MessageChannel outChannel) {
+    public synchronized MessageWrapper setOutChannel(MessageChannel outChannel) {
         attributes.put(OUT_CHANNEL, outChannel);
         return this;
     }
 
-    public MessageChannel getOutChannel() {
+    public synchronized MessageChannel getOutChannel() {
         return (MessageChannel) attributes.get(OUT_CHANNEL);
     }
 
-    public MessageWrapper setMessageHeaders(MessageHeaders messageHeaders) {
+    public synchronized MessageWrapper setMessageHeaders(MessageHeaders messageHeaders) {
         attributes.put(MESSAGE_HEADERS, messageHeaders);
         return this;
     }
 
-    public MessageHeaders getMessageHeaders() {
+    public synchronized MessageHeaders getMessageHeaders() {
         return (MessageHeaders) attributes.remove(MESSAGE_HEADERS);
     }
 
-    public MessageWrapper removeCorrelationHeaders() {
+    public synchronized MessageWrapper removeCorrelationHeaders() {
         attributes.remove(MESSAGE_HEADERS);
         attributes.remove(OUT_CHANNEL);
         return this;
@@ -126,20 +127,20 @@ public class MessageWrapper implements Serializable {
         return tTransport;
     }
 
-    public Map<String, String[]> getHttpRequestParams() {
+    public synchronized Map<String, String[]> getHttpRequestParams() {
         return (Map) attributes.get(HTTP_REQUEST_PARAMS);
     }
 
-    public MessageWrapper setHttpRequestParams(Map<String, String[]> params) {
+    public synchronized MessageWrapper setHttpRequestParams(Map<String, String[]> params) {
         attributes.put(HTTP_REQUEST_PARAMS, params);
         return this;
     }
 
-    public Map<String, String> getHttpHeaders() {
+    public synchronized Map<String, String> getHttpHeaders() {
         return (Map<String, String>) attributes.get(MessageWrapper.HTTP_HEADERS);
     }
 
-    private void writeObject(ObjectOutputStream oos) throws IOException {
+    private synchronized void writeObject(ObjectOutputStream oos) throws IOException {
 
         if (tTransport == null) {
             oos.writeObject(null);
@@ -156,7 +157,7 @@ public class MessageWrapper implements Serializable {
         }
     }
 
-    private void readObject(ObjectInputStream ois) throws ClassNotFoundException, IOException {
+    private synchronized void readObject(ObjectInputStream ois) throws ClassNotFoundException, IOException {
         byte[] tt = (byte[]) ois.readObject();
         if (tt == null) {
             tTransport = null;
@@ -170,19 +171,19 @@ public class MessageWrapper implements Serializable {
         }
     }
 
-    public Object getAttribute(String name) {
+    public synchronized Object getAttribute(String name) {
         return attributes.get(name);
     }
 
-    public Map<String, Object> getAttributes() {
-        return attributes;
+    public synchronized Map<String, Object> getAttributes() {
+        return ImmutableMap.copyOf(attributes);
     }
 
-    public Object removeAttribute(String name) {
+    public synchronized Object removeAttribute(String name) {
         return attributes.remove(name);
     }
 
-    public MessageWrapper setAttribute(String name, Object value) {
+    public synchronized MessageWrapper setAttribute(String name, Object value) {
         attributes.put(name, value);
         return this;
     }

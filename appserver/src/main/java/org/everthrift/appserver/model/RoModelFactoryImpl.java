@@ -23,7 +23,7 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
-public abstract class RoModelFactoryImpl<PK, ENTITY> implements RoModelFactoryIF<PK, ENTITY> {
+public abstract class RoModelFactoryImpl<PK, ENTITY, E extends Exception> implements RoModelFactoryIF<PK, ENTITY, E> {
 
     public RoModelFactoryImpl() {
 

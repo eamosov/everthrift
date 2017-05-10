@@ -16,7 +16,9 @@
 
 package org.everthrift.utils.beans;
 
+import com.jasongoodwin.monads.Try;
 import org.apache.thrift.TBase;
+import org.apache.thrift.TDoc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.CachedIntrospectionResults;
@@ -39,6 +41,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -288,7 +291,14 @@ class ThriftBeanInfo implements BeanInfo {
         private void patchReadMethod() {
             if (readMethod != null && TBase.class.isAssignableFrom(readMethod.getDeclaringClass())) {
                 try {
-                    ReadThriftMethodAccessor.patch(readMethod.getDeclaringClass(), this.getName(), readMethod);
+                    Optional.ofNullable(ReadThriftMethodAccessor.patch(readMethod.getDeclaringClass(), this.getName(), readMethod))
+                            .map(fid -> Try.ofFailable(() -> fid.getClass()
+                                                                .getField(((Enum) fid).name())
+                                                                .getAnnotation(TDoc.class)))
+                            .orElse(Try.failure(new Exception()))
+                            .toOptional()
+                            .ifPresent(doc -> setValue("doc", doc.value()));
+
                 } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
                     throw new RuntimeException(e);
                 }
@@ -298,7 +308,13 @@ class ThriftBeanInfo implements BeanInfo {
         private void patchWriteMethod() {
             if (writeMethod != null && TBase.class.isAssignableFrom(writeMethod.getDeclaringClass())) {
                 try {
-                    WriteThriftMethodAccessor.patch(writeMethod.getDeclaringClass(), this.getName(), writeMethod);
+                    Optional.ofNullable(WriteThriftMethodAccessor.patch(writeMethod.getDeclaringClass(), this.getName(), writeMethod))
+                            .map(fid -> Try.ofFailable(() -> fid.getClass()
+                                                                .getField(((Enum) fid).name())
+                                                                .getAnnotation(TDoc.class)))
+                            .orElse(Try.failure(new Exception()))
+                            .toOptional()
+                            .ifPresent(doc -> setValue("doc", doc.value()));
                 } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
                     throw new RuntimeException(e);
                 }

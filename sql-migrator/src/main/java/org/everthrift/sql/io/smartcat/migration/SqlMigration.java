@@ -10,6 +10,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -67,9 +68,15 @@ public class SqlMigration extends Migration {
         }
     }
 
-    private List<String> loadCQLStatements(String resourceName) throws MigrationException {
+    private List<String> loadSqlStatements(String resourceName) throws MigrationException {
 
-        final List<String> statements = new ArrayList<>();
+        try {
+            return Collections.singletonList(loadResource(resourceName));
+        } catch (IOException e) {
+            throw new MigrationException("Could not load resource \"" + resourceName + "\"", e);
+        }
+
+        /*final List<String> statements = new ArrayList<>();
 
         final String source;
         try {
@@ -109,17 +116,18 @@ public class SqlMigration extends Migration {
         }
 
         return statements;
+        */
     }
 
     @Override
     public String getDescription() {
         final Matcher m = filenamePattern.matcher(resourceName);
-        return "CQL:" + (m.matches() ? m.group(2) : resourceName);
+        return "SQL:" + (m.matches() ? m.group(2) : resourceName);
     }
 
     @Override
     public void execute() throws MigrationException {
-        for (String s : loadCQLStatements(resourceName)) {
+        for (String s : loadSqlStatements(resourceName)) {
             jdbcTemplate.execute(s);
         }
     }

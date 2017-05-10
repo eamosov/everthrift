@@ -179,7 +179,7 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
                 try {
                     inWebsocketChannel.send(m);
                 } catch (MessageDeliveryException e) {
-                    log.warn("Reject websocket message, sessionId={}", this.getSessionId(session));
+                    log.error("Reject websocket message, sessionId=" + this.getSessionId(session), e);
                     session.close(CloseStatus.SERVICE_OVERLOAD);
                 }
             }

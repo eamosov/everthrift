@@ -10,7 +10,6 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.unit.TimeValue;
-import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.everthrift.appserver.model.AsyncRoModelFactoryIF;
@@ -46,11 +45,11 @@ public abstract class BasicEsService {
         public final List<SearchHit> hits;
         public final List<SearchHit> innerHits;
         public final SearchResponse response;
-        private final EsProviderIF<PK, ENTITY> factory;
+        private final EsProviderIF<PK, ENTITY, ?> factory;
         public final List<ENTITY> loaded;
         private List<PK> ids;
 
-        ESearchResult(EsProviderIF<PK, ENTITY> factory, SearchResponse response, int total, List<SearchHit> hits, List<SearchHit> innerHits, List<ENTITY> sources) {
+        ESearchResult(EsProviderIF<PK, ENTITY, ?> factory, SearchResponse response, int total, List<SearchHit> hits, List<SearchHit> innerHits, List<ENTITY> sources) {
             super();
             this.total = total;
             this.hits = hits;
@@ -73,7 +72,7 @@ public abstract class BasicEsService {
             this.loaded = loaded;
         }
 
-        public static <PK extends Serializable, ENTITY extends EsIndexableIF> ESearchResult<PK, ENTITY> empty(EsProviderIF<PK, ENTITY> factory) {
+        public static <PK extends Serializable, ENTITY extends EsIndexableIF> ESearchResult<PK, ENTITY> empty(EsProviderIF<PK, ENTITY, ?> factory) {
             return new ESearchResult<>(factory, null, 0, Collections.emptyList(), Collections.emptyList(), Collections
                 .emptyList());
         }
@@ -101,16 +100,16 @@ public abstract class BasicEsService {
 
     }
 
-    public <PK extends Serializable, ENTITY extends EsIndexableIF> ESearchResult<PK, ENTITY> searchQuery(EsProviderIF<PK, ENTITY> factory, SearchType searchType, boolean scroll, SearchSourceBuilder sourceBuilder) throws ElasticsearchException {
+    public <PK extends Serializable, ENTITY extends EsIndexableIF> ESearchResult<PK, ENTITY> searchQuery(EsProviderIF<PK, ENTITY, ?> factory, SearchType searchType, boolean scroll, SearchSourceBuilder sourceBuilder) throws ElasticsearchException {
         return searchQuery(factory, searchType, scroll, null, sourceBuilder, false);
     }
 
-    public <PK extends Serializable, ENTITY extends EsIndexableIF> ESearchResult<PK, ENTITY> searchQuery(EsProviderIF<PK, ENTITY> factory, SearchType searchType, boolean scroll, SearchSourceBuilder sourceBuilder, boolean parseSource)
+    public <PK extends Serializable, ENTITY extends EsIndexableIF> ESearchResult<PK, ENTITY> searchQuery(EsProviderIF<PK, ENTITY, ?> factory, SearchType searchType, boolean scroll, SearchSourceBuilder sourceBuilder, boolean parseSource)
         throws ElasticsearchException {
         return searchQuery(factory, searchType, scroll, null, sourceBuilder, parseSource);
     }
 
-    public <PK extends Serializable, ENTITY extends EsIndexableIF> ESearchResult<PK, ENTITY> searchQuery(EsProviderIF<PK, ENTITY> factory, SearchType searchType, boolean scroll, String innerName, SearchSourceBuilder sourceBuilder,
+    public <PK extends Serializable, ENTITY extends EsIndexableIF> ESearchResult<PK, ENTITY> searchQuery(EsProviderIF<PK, ENTITY, ?> factory, SearchType searchType, boolean scroll, String innerName, SearchSourceBuilder sourceBuilder,
                                                                                                          boolean parseSource) throws ElasticsearchException {
 
         try {
@@ -173,7 +172,7 @@ public abstract class BasicEsService {
         return f;
     }
 
-    public <PK extends Serializable, ENTITY extends EsIndexableIF> CompletableFuture<ESearchResult<PK, ENTITY>> searchQueryAsync(EsProviderIF<PK, ENTITY> factory, SearchType searchType, boolean scroll, String innerName,
+    public <PK extends Serializable, ENTITY extends EsIndexableIF> CompletableFuture<ESearchResult<PK, ENTITY>> searchQueryAsync(EsProviderIF<PK, ENTITY, ?> factory, SearchType searchType, boolean scroll, String innerName,
                                                                                                                                  SearchSourceBuilder sourceBuilder, boolean parseSource) throws ElasticsearchException {
 
         log.trace("query: {}", sourceBuilder.toString());

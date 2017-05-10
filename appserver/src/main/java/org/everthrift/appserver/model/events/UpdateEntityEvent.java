@@ -7,7 +7,7 @@ import java.io.Serializable;
 
 public class UpdateEntityEvent<PK extends Serializable, ENTITY extends DaoEntityIF> {
 
-    public final RoModelFactoryIF<PK, ENTITY> factory;
+    public final RoModelFactoryIF<PK, ENTITY, ?> factory;
 
     public final ENTITY beforeUpdate;
 
@@ -15,7 +15,7 @@ public class UpdateEntityEvent<PK extends Serializable, ENTITY extends DaoEntity
 
     public final PK updatedByPk;
 
-    public UpdateEntityEvent(RoModelFactoryIF<PK, ENTITY> factory, ENTITY beforeUpdate, ENTITY afterUpdate) {
+    public UpdateEntityEvent(RoModelFactoryIF<PK, ENTITY, ?> factory, ENTITY beforeUpdate, ENTITY afterUpdate) {
         super();
         this.factory = factory;
         this.beforeUpdate = beforeUpdate;
@@ -23,7 +23,7 @@ public class UpdateEntityEvent<PK extends Serializable, ENTITY extends DaoEntity
         this.updatedByPk = null;
     }
 
-    public UpdateEntityEvent(RoModelFactoryIF<PK, ENTITY> factory, PK updatedByPk) {
+    public UpdateEntityEvent(RoModelFactoryIF<PK, ENTITY, ?> factory, PK updatedByPk) {
         super();
         this.factory = factory;
         this.beforeUpdate = null;

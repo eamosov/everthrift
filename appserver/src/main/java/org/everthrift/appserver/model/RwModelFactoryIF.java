@@ -7,7 +7,7 @@ import org.everthrift.appserver.model.events.UpdateEntityEvent;
 
 import java.io.Serializable;
 
-public interface RwModelFactoryIF<PK extends Serializable, ENTITY extends DaoEntityIF, E extends TException> extends RoModelFactoryIF<PK, ENTITY> {
+public interface RwModelFactoryIF<PK extends Serializable, ENTITY extends DaoEntityIF, E extends TException> extends RoModelFactoryIF<PK, ENTITY, E> {
 
     ENTITY insertEntity(ENTITY e) throws UniqueException;
 
@@ -20,15 +20,15 @@ public interface RwModelFactoryIF<PK extends Serializable, ENTITY extends DaoEnt
     void deleteEntity(ENTITY e) throws E;
 
     default InsertEntityEvent<PK, ENTITY> insertEntityEvent(ENTITY entity) {
-        return new InsertEntityEvent<PK, ENTITY>(this, entity);
+        return new InsertEntityEvent<>(this, entity);
     }
 
     default UpdateEntityEvent<PK, ENTITY> updateEntityEvent(ENTITY before, ENTITY after) {
-        return new UpdateEntityEvent<PK, ENTITY>(this, before, after);
+        return new UpdateEntityEvent<>(this, before, after);
     }
 
     default DeleteEntityEvent<PK, ENTITY> deleteEntityEvent(ENTITY entity) {
-        return new DeleteEntityEvent<PK, ENTITY>(this, entity);
+        return new DeleteEntityEvent<>(this, entity);
     }
 
 }

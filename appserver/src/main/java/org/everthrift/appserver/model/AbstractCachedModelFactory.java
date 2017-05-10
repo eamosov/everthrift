@@ -16,7 +16,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-public abstract class AbstractCachedModelFactory<PK, ENTITY> extends RoModelFactoryImpl<PK, ENTITY> {
+public abstract class AbstractCachedModelFactory<PK, ENTITY, E extends Exception> extends RoModelFactoryImpl<PK, ENTITY, E> {
 
     @Autowired(required = false)
     private CacheManager cm;

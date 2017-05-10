@@ -19,6 +19,7 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
 import org.springframework.core.type.filter.AssignableTypeFilter;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 
@@ -39,6 +40,8 @@ public class SqlMigrationProcessor implements ApplicationContextAware {
     private ApplicationContext context;
 
     private JdbcTemplate jdbcTemplate;
+
+    private PlatformTransactionManager txManager;
 
     private String schemaVersionCf = "schema_version";
 
@@ -81,10 +84,10 @@ public class SqlMigrationProcessor implements ApplicationContextAware {
         return migrations;
     }
 
-    private List<Migration> findCQLMigrations(final String rootResourcePath) throws URISyntaxException, IOException {
+    private List<Migration> findSQLMigrations(final String rootResourcePath) throws URISyntaxException, IOException {
         final List<Migration> migrations = new ArrayList<>();
 
-        for (String r : ResourceScanner.getInstance().getResources(rootResourcePath, Pattern.compile(".*\\.cql"),
+        for (String r : ResourceScanner.getInstance().getResources(rootResourcePath, Pattern.compile(".*\\.sql"),
                                                                    SqlMigrationProcessor.class.getClassLoader())) {
             migrations.add(new SqlMigration(MigrationType.SCHEMA, r));
         }
@@ -116,9 +119,9 @@ public class SqlMigrationProcessor implements ApplicationContextAware {
         List<Migration> migrations = new ArrayList<>();
         migrations.addAll(findMigrations(basePackage));
         try {
-            migrations.addAll(findCQLMigrations(basePackage.replaceAll("\\.", "/")));
+            migrations.addAll(findSQLMigrations(basePackage.replaceAll("\\.", "/")));
         } catch (URISyntaxException | IOException e) {
-            new MigrationException("Coudn't load CQL migrations", e);
+            new MigrationException("Coudn't load SQL migrations", e);
         }
 
         migrations = migrations.stream().filter(filter).collect(Collectors.toList());
@@ -127,7 +130,7 @@ public class SqlMigrationProcessor implements ApplicationContextAware {
 
         resources.addMigrations(migrations);
 
-        if (MigrationEngine.withJdbcTemplate(jdbcTemplate, schemaVersionCf).migrate(resources, force) == false) {
+        if (new MigrationEngine(txManager, jdbcTemplate, schemaVersionCf).migrate(resources, force) == false) {
             throw new RuntimeException("Error in SQL migrations");
         }
     }
@@ -161,4 +164,11 @@ public class SqlMigrationProcessor implements ApplicationContextAware {
         this.context = applicationContext;
     }
 
+    public PlatformTransactionManager getTxManager() {
+        return txManager;
+    }
+
+    public void setTxManager(PlatformTransactionManager txManager) {
+        this.txManager = txManager;
+    }
 }

@@ -1,6 +1,7 @@
 package org.everthrift.utils.beans;
 
 import org.apache.thrift.TBase;
+import org.apache.thrift.TFieldIdEnum;
 import sun.reflect.MethodAccessor;
 
 import java.lang.reflect.InvocationTargetException;
@@ -8,16 +9,19 @@ import java.lang.reflect.Method;
 
 class ReadThriftMethodAccessor extends ThriftMethodAccessor {
 
-    static void patch(Class entityClass, String propertyName, Method readMethod) throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+    static TFieldIdEnum patch(Class entityClass, String propertyName, Method readMethod) throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
 
         final sun.reflect.MethodAccessor old = (MethodAccessor) getMethodAccessor.invoke(readMethod);
         if (old != null && old instanceof ThriftMethodAccessor) {
-            return;
+            return ((ThriftMethodAccessor) old).fId;
         }
 
         try {
-            setMethodAccessor.invoke(readMethod, new ReadThriftMethodAccessor(entityClass, propertyName));
+            final ReadThriftMethodAccessor methodAccessor = new ReadThriftMethodAccessor(entityClass, propertyName);
+            setMethodAccessor.invoke(readMethod, methodAccessor);
+            return methodAccessor.fId;
         } catch (NotThriftProperty e) {
+            return null;
         }
     }
 

@@ -11,7 +11,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 
-public class LongTimestampType implements UserType {
+public class LongTimestampType implements UserType, Serializable {
 
     public LongTimestampType() {
 

@@ -52,6 +52,7 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public class Column {
 
@@ -83,8 +84,18 @@ public class Column {
 
     protected String customWrite;
 
+    protected String doc;
+
     public Column(Table table) {
         this.table = table;
+    }
+
+    public String getDoc() {
+        return doc;
+    }
+
+    public void setDoc(String doc) {
+        this.doc = doc;
     }
 
     public String getColumnName() {
@@ -358,11 +369,7 @@ public class Column {
         } else if (Map.class.equals(javaClass)) {
 
             if (columnType.contains("hstore")) {
-                hibernateType = propertyName.equals("deliveredAccountIds") ? org.everthrift.sql.hibernate.model.types.LongLongHstoreType.class
-                    .getCanonicalName()
-                                                                           : // FIXME
-                                // hack...
-                                org.everthrift.sql.hibernate.model.types.HstoreType.class.getCanonicalName();
+                hibernateType = org.everthrift.sql.hibernate.model.types.HstoreType.class.getCanonicalName();
                 customRead = columnName + "::hstore";
                 customWrite = "?::hstore";
             }
@@ -409,6 +416,11 @@ public class Column {
         }
 
         if (hibernateType == null) {
+            hibernateType = CustomTypesRegistry.getInstance()
+                                               .get(table.javaClass, javaClass, propertyName, jdbcType, columnType, columnName);
+        }
+
+        if (hibernateType == null) {
             log.error("Unknown mapping " + logFmt, logArgs);
             throw new RuntimeException("Coudn't map some fields");
         }
@@ -427,6 +439,13 @@ public class Column {
                                 ThriftPropertyAccessStrategy.class.getCanonicalName()));
 
         return sb.toString();
+    }
+
+    public String toHbmXmlKeyProperty() {
+        if (!this.isValid()) {
+            return null;
+        }
+        return String.format("<key-property name=\"%s\" column=\"%s\" type=\"%s\"/>", propertyName, columnName, hibernateType);
     }
 
     public String toHbmXmlPk() {
@@ -492,5 +511,12 @@ public class Column {
         sb.append("\n</property>\n");
 
         return sb.toString();
+    }
+
+    public Optional<String> getComment() {
+        return Optional.ofNullable(doc)
+                       .map(String::trim)
+                       .filter(s -> !s.isEmpty())
+                       .map(s -> String.format("COMMENT ON COLUMN %s.%s.%s IS '%s';", table.getSchema(), table.getTableName(), columnName, s.replace("'", "''")));
     }
 }

@@ -1,23 +1,23 @@
 package org.everthrift.sql.hibernate.model;
 
 import com.google.common.base.CaseFormat;
+import org.apache.thrift.TDoc;
 import org.hibernate.annotations.OptimisticLocking;
 import org.hibernate.annotations.SQLInsert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.BeanUtils;
-import org.springframework.jdbc.support.DatabaseMetaDataCallback;
 import org.springframework.jdbc.support.JdbcUtils;
 import org.springframework.jdbc.support.MetaDataAccessException;
 
 import javax.sql.DataSource;
 import java.beans.PropertyDescriptor;
-import java.sql.DatabaseMetaData;
-import java.sql.SQLException;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import java.util.stream.Collectors;
+
+import static org.springframework.beans.BeanUtils.getPropertyDescriptor;
 
 public class MetaDataProvider {
 
@@ -55,6 +55,9 @@ public class MetaDataProvider {
     }
 
     private void addTable(final String schemaTable, final String modelName) {
+
+        LOG.info("Building HBM mapping: {} <-> {}", schemaTable, modelName);
+
         try {
             if (schemaTable.indexOf(".") < 0) {
                 LOG.warn("Skip table {} due to can't find delimiter \".\" between schema.table", schemaTable);
@@ -89,15 +92,12 @@ public class MetaDataProvider {
 
     @SuppressWarnings({"unchecked"})
     private List<Column> readColumns(final Table table, Class clazz) throws MetaDataAccessException {
-        List<Column> columns = (List<Column>) JdbcUtils.extractDatabaseMetaData(dataSource, new DatabaseMetaDataCallback() {
-            @Override
-            public Object processMetaData(DatabaseMetaData dbmd) throws SQLException, MetaDataAccessException {
-                List<Column> columns = new Column.ColumnExtractor(table).extractData(dbmd.getColumns(null, null,
-                                                                                                     table.getTableName()
-                                                                                                          .toLowerCase(),
-                                                                                                     null));
-                return columns;
-            }
+        List<Column> columns = (List<Column>) JdbcUtils.extractDatabaseMetaData(dataSource, dbmd -> {
+            List<Column> columns1 = new Column.ColumnExtractor(table).extractData(dbmd.getColumns(null, null,
+                                                                                                  table.getTableName()
+                                                                                                       .toLowerCase(),
+                                                                                                  null));
+            return columns1;
         });
         for (Column column : columns) {
             setColProperiesDetails(column, clazz);
@@ -107,8 +107,9 @@ public class MetaDataProvider {
     }
 
     private void setColProperiesDetails(Column column, Class clazz) {
-        String lowerCase = column.getColumnName().toLowerCase();
-        String camelCase = CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, lowerCase.toUpperCase());
+        final String lowerCase = column.getColumnName().toLowerCase();
+        final String camelCase = CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, lowerCase.toUpperCase());
+
         String camelCaseTs = null;
         switch (column.getJdbcType()) {
             case Types.TIMESTAMP:
@@ -118,20 +119,20 @@ public class MetaDataProvider {
         }
 
         final PropertyDescriptor property = (camelCaseTs != null
-            && BeanUtils.getPropertyDescriptor(clazz,
-                                               camelCaseTs) != null) ? BeanUtils.getPropertyDescriptor(clazz,
-                                                                                                       camelCaseTs)
-                                                                     : BeanUtils.getPropertyDescriptor(clazz,
-                                                                                                       camelCase) != null ? BeanUtils
-                                                                           .getPropertyDescriptor(clazz,
-                                                                                                  camelCase)
-                                                                                                                          : BeanUtils
-                                                                           .getPropertyDescriptor(clazz,
-                                                                                                  lowerCase);
+            && getPropertyDescriptor(clazz, camelCaseTs) != null) ? getPropertyDescriptor(clazz, camelCaseTs)
+                                                                  : getPropertyDescriptor(clazz, camelCase) != null ?
+                                                                    getPropertyDescriptor(clazz, camelCase) :
+                                                                    getPropertyDescriptor(clazz, lowerCase);
 
         if (property != null) {
             column.setJavaClass(property.getPropertyType());
             column.setPropertyName(property.getName());
+
+            if (property.getValue("doc") != null) {
+                column.setDoc((String) property.getValue("doc"));
+            } else if (property.getReadMethod().getAnnotation(TDoc.class) != null) {
+                column.setDoc(property.getReadMethod().getAnnotation(TDoc.class).value());
+            }
         } else {
             // System.err.println("Coudn't find property " +
             // column.getColumnName() + " in class " + meta.getName());
@@ -140,13 +141,12 @@ public class MetaDataProvider {
     }
 
     private PrimaryKey readPK(final String tableName) throws MetaDataAccessException {
-        PrimaryKey primaryKey = (PrimaryKey) JdbcUtils.extractDatabaseMetaData(dataSource, new DatabaseMetaDataCallback() {
-            @Override
-            public Object processMetaData(DatabaseMetaData dbmd) throws SQLException, MetaDataAccessException {
-                PrimaryKey pk = new PrimaryKey.PKExtractor().extractData(dbmd.getPrimaryKeys(null, null, tableName.toLowerCase()));
-                return pk;
-            }
-        });
+        PrimaryKey primaryKey = (PrimaryKey) JdbcUtils.extractDatabaseMetaData(dataSource,
+                                                                               dbmd -> new PrimaryKey
+                                                                                   .PKExtractor()
+                                                                                   .extractData(dbmd.getPrimaryKeys(null, null, tableName
+                                                                                       .toLowerCase())));
+
         if (primaryKey == null && tableName.endsWith(VIEW_POSTFIX)) {
             primaryKey = new PrimaryKey();
             primaryKey.setPrimaryKeyName(tableName + "_pk");
@@ -173,6 +173,10 @@ public class MetaDataProvider {
         sb.append("</hibernate-mapping>");
         sb.toString();
         return sb.toString();
+    }
+
+    public String getComments() {
+        return tableModels.stream().flatMap(t -> t.getComments().stream()).collect(Collectors.joining("\n"));
     }
 
 }

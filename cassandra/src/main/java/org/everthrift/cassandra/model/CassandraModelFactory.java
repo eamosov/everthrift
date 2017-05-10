@@ -64,7 +64,7 @@ import java.util.stream.Collectors;
 import static net.javacrumbs.futureconverter.java8guava.FutureConverter.toCompletableFuture;
 
 public abstract class CassandraModelFactory<PK extends Serializable, ENTITY extends DaoEntityIF, E extends TException>
-    extends AbstractCachedModelFactory<PK, ENTITY> implements RwModelFactoryIF<PK, ENTITY, E>, AsyncRoModelFactoryIF<PK, ENTITY> {
+    extends AbstractCachedModelFactory<PK, ENTITY, E> implements RwModelFactoryIF<PK, ENTITY, E>, AsyncRoModelFactoryIF<PK, ENTITY> {
 
     private final Class<ENTITY> entityClass;
 
@@ -83,8 +83,6 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
     private final static Option noSaveNulls = Option.saveNullFields(false);
 
     private final List<Pair<ColumnMapper<ENTITY>, PreparedStatement>> uniqueColumns = Lists.newArrayList();
-
-    protected abstract E createNotFoundException(PK id);
 
     private final AsyncLazyLoader<XAwareIF<PK, ENTITY>> asyncLazyLoader = entities -> {
 

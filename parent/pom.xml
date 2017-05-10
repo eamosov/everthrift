@@ -587,15 +587,16 @@
             </dependency>
 
             <dependency>
-                <groupId>com.jason-goodwin</groupId>
-                <artifactId>better-monads</artifactId>
-                <version>0.4.0</version>
-            </dependency>
-
-            <dependency>
                 <groupId>com.google.code.gson</groupId>
                 <artifactId>gson</artifactId>
                 <version>2.6.2</version>
+            </dependency>
+
+            <!-- https://mvnrepository.com/artifact/com.jason-goodwin/better-monads -->
+            <dependency>
+                <groupId>com.jason-goodwin</groupId>
+                <artifactId>better-monads</artifactId>
+                <version>0.4.1</version>
             </dependency>
 
         </dependencies>

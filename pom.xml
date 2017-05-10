@@ -17,6 +17,13 @@
         <github.global.server>github</github.global.server>
     </properties>
 
+    <dependencies>
+        <dependency>
+            <groupId>com.jason-goodwin</groupId>
+            <artifactId>better-monads</artifactId>
+        </dependency>
+    </dependencies>
+
     <build>
         <plugins>
 

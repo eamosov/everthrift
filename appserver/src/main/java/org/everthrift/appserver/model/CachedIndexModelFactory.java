@@ -10,8 +10,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-public abstract class CachedIndexModelFactory<PK, ENTITY> extends AbstractCachedModelFactory<PK, List<ENTITY>>
-    implements RoModelFactoryIF<PK, List<ENTITY>> {
+public abstract class CachedIndexModelFactory<PK, ENTITY, E extends Exception> extends AbstractCachedModelFactory<PK, List<ENTITY>, E>
+    implements RoModelFactoryIF<PK, List<ENTITY>, E> {
 
     /**
      * @param keys

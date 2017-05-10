@@ -7,7 +7,10 @@ import org.everthrift.appserver.model.DaoEntityIF;
 import org.everthrift.appserver.model.LocalEventBus;
 import org.everthrift.appserver.model.UniqueException;
 import org.everthrift.utils.Pair;
+import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.Serializable;
@@ -15,12 +18,10 @@ import java.io.Serializable;
 public class PgSqlModelFactory<PK extends Serializable, ENTITY extends DaoEntityIF>
     extends AbstractPgSqlModelFactory<PK, ENTITY, TException> {
 
-    public PgSqlModelFactory(String cacheName, Class<ENTITY> entityClass) {
-        super(cacheName, entityClass);
-    }
-
-    public PgSqlModelFactory(Cache cache, Class<ENTITY> entityClass, ListeningExecutorService listeningExecutorService,
-                             SessionFactory sessionFactory, LocalEventBus localEventBus) {
+    public PgSqlModelFactory(Cache cache, Class<ENTITY> entityClass,
+                             @Qualifier("listeningCallerRunsBoundQueueExecutor") ListeningExecutorService listeningExecutorService,
+                             SessionFactory sessionFactory,
+                             LocalEventBus localEventBus) {
         super(cache, entityClass, listeningExecutorService, sessionFactory, localEventBus);
     }
 
@@ -35,26 +36,37 @@ public class PgSqlModelFactory<PK extends Serializable, ENTITY extends DaoEntity
     }
 
     @Override
-    @Transactional
     public final ENTITY updateEntity(ENTITY e, ENTITY old) throws UniqueException {
         final ENTITY before;
-        if (e.getPk() != null) {
-            before = getDao().findById((PK) e.getPk());
-        } else {
-            before = null;
-        }
 
-        final Pair<ENTITY, Boolean> r = getDao().saveOrUpdate(e);
-        _invalidateEhCache((PK) r.first.getPk());
+        final Session session = getDao().getCurrentSession();
+        Transaction tx = session.beginTransaction();
 
-        if (r.second) {
-            localEventBus.postEntityEvent(updateEntityEvent(before, r.first));
+        try{
+
+            if (e.getPk() != null) {
+                before = getDao().findById((PK) e.getPk());
+            } else {
+                before = null;
+            }
+
+            final Pair<ENTITY, Boolean> r = getDao().saveOrUpdate(e);
+            tx.commit();
+
+            _invalidateEhCache((PK) r.first.getPk());
+
+            if (r.second) {
+                localEventBus.postEntityEvent(updateEntityEvent(before, r.first));
+            }
+            return r.first;
+        }catch (Exception ex){
+            tx.rollback();
+            throw  ex;
         }
-        return r.first;
     }
 
     @Override
-    protected final TException createNotFoundException(PK id) {
+    public final TException createNotFoundException(PK id) {
         return new TException("Entity " + id + "not found");
     }
 

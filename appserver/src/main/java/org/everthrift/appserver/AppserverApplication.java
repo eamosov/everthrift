@@ -18,15 +18,22 @@ package org.everthrift.appserver;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
+import com.sun.jna.Library;
+import com.sun.jna.Native;
+import net.sf.ehcache.CacheManager;
+import net.sf.ehcache.management.ManagementService;
 import org.everthrift.appserver.configs.AppserverConfig;
 import org.everthrift.appserver.configs.AsyncTcpThrift;
+import org.everthrift.appserver.configs.EhConfig;
 import org.everthrift.appserver.configs.JGroups;
 import org.everthrift.appserver.configs.LoopbackJGroups;
 import org.everthrift.appserver.configs.TcpThrift;
+import org.everthrift.appserver.configs.ZooConfig;
 import org.everthrift.thrift.MetaDataMapBuilder;
 import org.everthrift.utils.SocketUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.core.env.ConfigurableEnvironment;
@@ -37,7 +44,12 @@ import org.springframework.core.env.SimpleCommandLinePropertySource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.ResourcePropertySource;
 
+import javax.management.MBeanServer;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -50,6 +62,13 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 public class AppserverApplication {
+
+    private interface CLibrary extends Library {
+        CLibrary INSTANCE = (CLibrary) Native.loadLibrary("c", CLibrary.class);
+
+        int getpid();
+    }
+
 
     private static final Logger log = LoggerFactory.getLogger(AppserverApplication.class);
 
@@ -115,10 +134,10 @@ public class AppserverApplication {
         return !env.getProperty("rabbit", "false").equalsIgnoreCase("false");
     }
 
-    public void init(String[] args, String version) {
+    public void init(String[] args) {
         try {
-            _init(args, version);
-        }catch (Exception e){
+            _init(args);
+        } catch (Exception e) {
             //Могут оставаться (и остаются от Cassandra) не daemon потоки,
             //которые блокируют завершение JVM
             log.error("Exception while initializing app", e);
@@ -127,7 +146,7 @@ public class AppserverApplication {
     }
 
     @SuppressWarnings("rawtypes")
-    private synchronized void _init(String[] args, String version) {
+    private synchronized void _init(String[] args) {
 
         final Resource resource = context.getResource("classpath:application.properties");
 
@@ -142,8 +161,6 @@ public class AppserverApplication {
         env.getPropertySources().addFirst(sclps);
         env.getPropertySources()
            .addLast(new MapPropertySource("thriftScanPathList", Collections.singletonMap("thrift.scan", (Object) thriftScanPathList)));
-        env.getPropertySources()
-           .addLast(new MapPropertySource("version", Collections.singletonMap("version", (Object) version)));
 
         PropertySource lastAdded = null;
         final Pattern resourcePattern = Pattern.compile("(.+)\\.properties");
@@ -270,6 +287,24 @@ public class AppserverApplication {
         } catch (ClassNotFoundException e) {
         }
 
+        try {
+            context.register(Class.forName("org.everthrift.sql.SqlConfig"));
+        } catch (ClassNotFoundException e) {
+        }
+
+        try {
+            context.register(Class.forName("org.everthrift.elastic.EsConfig"));
+        } catch (ClassNotFoundException e) {
+        }
+
+        if (context.getResource("/ehcache.xml").exists()) {
+            context.register(EhConfig.class);
+        }
+
+        if (env.getProperty("zookeeper.connection_string") != null) {
+            context.register(ZooConfig.class);
+        }
+
         context.refresh();
 
         final List<String> propertySources = StreamSupport.stream(context.getEnvironment()
@@ -279,6 +314,29 @@ public class AppserverApplication {
         log.info("Used property sources:{}", propertySources);
 
         initialized = true;
+
+        //register ehcache JMX
+        try {
+            final CacheManager manager = context.getBean(CacheManager.class);
+            final MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
+            ManagementService.registerMBeans(manager, mBeanServer, true, true, true, true);
+        } catch (NoSuchBeanDefinitionException e) {
+
+        }
+
+        //creating pid file
+        final String pidPath = env.getProperty("pid");
+        if (pidPath != null) {
+            int pid = CLibrary.INSTANCE.getpid();
+            log.info("writing pid {} to {}", pid, pidPath);
+            try {
+                Files.write(Paths.get(pidPath), Integer.toString(pid).getBytes(),
+                            StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
+            } catch (IOException e) {
+                throw Throwables.propagate(e);
+            }
+        }
+
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})

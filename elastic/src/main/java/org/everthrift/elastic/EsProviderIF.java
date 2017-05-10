@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 @ManagedResource(objectName = "bean:name=replaced")
-public interface EsProviderIF<PK extends Serializable, ENTITY extends EsIndexableIF> extends RoModelFactoryIF<PK, ENTITY>, RuntimeJmxNames, BeanNameAware, BeanNameHolder, ApplicationContextAware {
+public interface EsProviderIF<PK extends Serializable, ENTITY extends EsIndexableIF, E extends Exception> extends RoModelFactoryIF<PK, ENTITY, E>, RuntimeJmxNames, BeanNameAware, BeanNameHolder, ApplicationContextAware {
 
     final static Logger _log = LoggerFactory.getLogger(EsProviderIF.class);
 
@@ -64,7 +64,7 @@ public interface EsProviderIF<PK extends Serializable, ENTITY extends EsIndexabl
                     final Indexer indexer = getApplicationContext().getBean(Indexer.class);
                     indexer.runIndexTasks(indexer.buildIndexTasks(getBeanName(), entities));
                     final int indexed = size.addAndGet(entities.size());
-                    if (indexed % 1000 == 0){
+                    if (indexed % 1000 == 0) {
                         _log.info("Indexing {}/{}: {}", indexer.getIndexPrefix() + getIndexName(), getMappingName(), indexed);
                     }
                 });

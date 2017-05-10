@@ -1,6 +1,7 @@
 package org.everthrift.utils.beans;
 
 import org.apache.thrift.TBase;
+import org.apache.thrift.TFieldIdEnum;
 import org.apache.thrift.protocol.TType;
 import sun.reflect.MethodAccessor;
 
@@ -13,16 +14,19 @@ class WriteThriftMethodAccessor extends ThriftMethodAccessor {
 
     private final Class fieldType;
 
-    static void patch(Class entityClass, String propertyName, Method writeMethod) throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+    static TFieldIdEnum patch(Class entityClass, String propertyName, Method writeMethod) throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
 
         final sun.reflect.MethodAccessor old = (MethodAccessor) getMethodAccessor.invoke(writeMethod);
         if (old != null && old instanceof ThriftMethodAccessor) {
-            return;
+            return ((ThriftMethodAccessor) old).fId;
         }
 
         try {
-            setMethodAccessor.invoke(writeMethod, new WriteThriftMethodAccessor(entityClass, propertyName, writeMethod));
+            final WriteThriftMethodAccessor methodAccessor = new WriteThriftMethodAccessor(entityClass, propertyName, writeMethod);
+            setMethodAccessor.invoke(writeMethod, methodAccessor);
+            return methodAccessor.fId;
         } catch (NotThriftProperty e) {
+            return null;
         }
     }
 

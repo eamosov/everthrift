@@ -1,5 +1,6 @@
 package org.everthrift.sql.pgsql;
 
+import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import net.sf.ehcache.Cache;
 import org.apache.thrift.TException;
@@ -13,7 +14,6 @@ import org.hibernate.SessionFactory;
 import org.hibernate.criterion.Order;
 import org.hibernate.criterion.Projections;
 import org.hibernate.criterion.Restrictions;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 
 import javax.annotation.PostConstruct;
@@ -23,32 +23,34 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY extends DaoEntityIF, E extends TException>
-    extends AbstractCachedModelFactory<PK, ENTITY> implements RwModelFactoryIF<PK, ENTITY, E> {
+    extends AbstractCachedModelFactory<PK, ENTITY, E> implements RwModelFactoryIF<PK, ENTITY, E> {
 
-    @Autowired
-    protected SessionFactory sessionFactory;
+    private final SessionFactory sessionFactory;
 
-    @Autowired
-    @Qualifier("listeningCallerRunsBoundQueueExecutor")
-    private ListeningExecutorService listeningExecutorService;
+    private final ListeningExecutorService listeningExecutorService;
 
-    @Autowired
-    protected LocalEventBus localEventBus;
+    protected final LocalEventBus localEventBus;
 
     private final AbstractDao<PK, ENTITY> dao;
 
     protected final Class<ENTITY> entityClass;
 
-    protected abstract E createNotFoundException(PK id);
+    @Override
+    public E createNotFoundException(PK id) {
+        return (E) new TException("Entity with PK '" + id + "' not found");
+    }
 
-    protected AbstractPgSqlModelFactory(Cache cache, Class<ENTITY> entityClass, ListeningExecutorService listeningExecutorService,
-                                        SessionFactory sessionFactory, LocalEventBus localEventBus) {
+    protected AbstractPgSqlModelFactory(Cache cache, Class<ENTITY> entityClass,
+                                        @Qualifier("listeningCallerRunsBoundQueueExecutor") ListeningExecutorService listeningExecutorService,
+                                        SessionFactory sessionFactory,
+                                        LocalEventBus localEventBus) {
         super(cache);
 
         this.entityClass = entityClass;
-        dao = new AbstractDaoImpl<PK, ENTITY>(this.entityClass);
+        dao = new AbstractDaoImpl<>(this.entityClass);
 
         this.listeningExecutorService = listeningExecutorService;
         this.localEventBus = localEventBus;
@@ -56,12 +58,19 @@ public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY 
         _afterPropertiesSet();
     }
 
-    protected AbstractPgSqlModelFactory(String cacheName, Class<ENTITY> entityClass) {
-
+    protected AbstractPgSqlModelFactory(String cacheName, Class<ENTITY> entityClass,
+                                        @Qualifier("listeningCallerRunsBoundQueueExecutor") ListeningExecutorService listeningExecutorService,
+                                        SessionFactory sessionFactory,
+                                        LocalEventBus localEventBus) {
         super(cacheName);
 
         this.entityClass = entityClass;
-        dao = new AbstractDaoImpl<PK, ENTITY>(this.entityClass);
+        dao = new AbstractDaoImpl<>(this.entityClass);
+
+        this.listeningExecutorService = listeningExecutorService;
+        this.localEventBus = localEventBus;
+        this.sessionFactory = sessionFactory;
+        _afterPropertiesSet();
     }
 
     private void _afterPropertiesSet() {
@@ -134,6 +143,15 @@ public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY 
     @Override
     public final Class<ENTITY> getEntityClass() {
         return this.entityClass;
+    }
+
+    public void fetchAll(final int batchSize, Consumer<List<ENTITY>> consumer) {
+
+        final List<ENTITY> entities = getDao().findByCriteria(Restrictions.sqlRestriction("true"), null);
+
+        for (List<ENTITY> batch : Lists.partition(entities, batchSize)) {
+            consumer.accept(batch);
+        }
     }
 
 }

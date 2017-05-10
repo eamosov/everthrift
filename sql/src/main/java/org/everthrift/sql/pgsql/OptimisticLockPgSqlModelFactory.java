@@ -15,9 +15,13 @@ import org.everthrift.appserver.model.UniqueException;
 import org.everthrift.thrift.TFunction;
 import org.everthrift.utils.LongTimestamp;
 import org.everthrift.utils.Pair;
+import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.StaleStateException;
+import org.hibernate.Transaction;
+import org.hibernate.annotations.OptimisticLocking;
 import org.hibernate.criterion.Restrictions;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.ConcurrencyFailureException;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -32,9 +36,6 @@ import java.util.function.Consumer;
 public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable, ENTITY extends DaoEntityIF, E extends TException>
     extends AbstractPgSqlModelFactory<PK, ENTITY, E> implements OptimisticLockModelFactoryIF<PK, ENTITY, E> {
 
-    @Override
-    protected abstract E createNotFoundException(PK id);
-
     /**
      * Cache need only because Hibernate does not cache rows selected by "IN"
      * statement
@@ -42,13 +43,15 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable, E
      * @param cacheName
      * @param entityClass
      */
-    public OptimisticLockPgSqlModelFactory(String cacheName, Class<ENTITY> entityClass) {
-        super(cacheName, entityClass);
-    }
+    public OptimisticLockPgSqlModelFactory(String cacheName, Class<ENTITY> entityClass,
+                                           @Qualifier("listeningCallerRunsBoundQueueExecutor") ListeningExecutorService listeningExecutorService,
+                                           SessionFactory sessionFactory,
+                                           LocalEventBus localEventBus) {
+        super(cacheName, entityClass, listeningExecutorService, sessionFactory, localEventBus);
 
-    public OptimisticLockPgSqlModelFactory(Cache cache, Class<ENTITY> entityClass, ListeningExecutorService listeningExecutorService,
-                                           SessionFactory sessionFactory, LocalEventBus localEventBus) {
-        super(cache, entityClass, listeningExecutorService, sessionFactory, localEventBus);
+        if (entityClass.getAnnotation(OptimisticLocking.class) == null) {
+            throw new RuntimeException("Class " + entityClass.getCanonicalName() + " must have OptimisticLocking annotation to use with OptimisticLockPgSqlModelFactory");
+        }
     }
 
     @Override
@@ -84,16 +87,24 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable, E
         }
     }
 
-    @Transactional
     private ENTITY tryOptimisticDelete(PK id) throws EntityNotFoundException {
 
-        ENTITY e = this.fetchEntityById(id);
-        if (e == null) {
-            throw new EntityNotFoundException(id);
-        }
+        final Session session = getDao().getCurrentSession();
+        final Transaction tx = session.beginTransaction();
 
-        this.getDao().delete(e);
-        return e;
+        try {
+            final ENTITY e = this.fetchEntityById(id);
+            if (e == null) {
+                throw new EntityNotFoundException(id);
+            }
+
+            this.getDao().delete(e);
+            tx.commit();
+            return e;
+        }catch (Exception ex){
+            tx.rollback();
+            throw  ex;
+        }
     }
 
     @Override
@@ -153,15 +164,34 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable, E
     }
 
     @Override
-    @Transactional
     protected final ENTITY fetchEntityById(PK id) {
-        return super.fetchEntityById(id);
+        final Session session = getDao().getCurrentSession();
+        final Transaction tx = session.beginTransaction();
+
+        try{
+            final ENTITY e = super.fetchEntityById(id);
+            tx.commit();
+            return e;
+        }catch (Exception ex){
+            tx.rollback();
+            throw ex;
+        }
     }
 
     @Override
-    @Transactional
     protected final Map<PK, ENTITY> fetchEntityByIdAsMap(Collection<PK> ids) {
-        return super.fetchEntityByIdAsMap(ids);
+
+        final Session session = getDao().getCurrentSession();
+        final Transaction tx = session.beginTransaction();
+
+        try{
+            final Map<PK, ENTITY>  e = super.fetchEntityByIdAsMap(ids);
+            tx.commit();
+            return e;
+        }catch (Exception ex){
+            tx.rollback();
+            throw ex;
+        }
     }
 
     /**
@@ -205,81 +235,90 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable, E
         return ret;
     }
 
-    @Transactional(rollbackFor = Exception.class)
     private OptResult<ENTITY> tryOptimisticUpdate(PK id, TFunction<ENTITY, Boolean> mutator,
                                                   final EntityFactory<PK, ENTITY> factory) throws TException, EntityNotFoundException, StaleStateException, ConcurrencyFailureException {
 
-        try {
-            ENTITY e;
-            final ENTITY orig;
+        final Session session = getDao().getCurrentSession();
+        final Transaction tx = session.beginTransaction();
 
-            e = this.fetchEntityById(id);
-            if (e == null) {
-                if (factory == null) {
-                    throw new EntityNotFoundException(id);
+        try{
+            try {
+                ENTITY e;
+                final ENTITY orig;
+
+                e = this.fetchEntityById(id);
+                if (e == null) {
+                    if (factory == null) {
+                        throw new EntityNotFoundException(id);
+                    }
+
+                    orig = null;
+                    e = factory.create(id);
+                    setCreatedAt(e);
+
+                    getDao().persist(e);
+                } else {
+                    try {
+                        orig = this.entityClass.getConstructor(this.entityClass).newInstance(e);
+                    } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
+                        | NoSuchMethodException | SecurityException e1) {
+                        throw Throwables.propagate(e1);
+                    }
                 }
 
-                orig = null;
-                e = factory.create(id);
-                setCreatedAt(e);
-
-                getDao().persist(e);
-            } else {
-                try {
-                    orig = this.entityClass.getConstructor(this.entityClass).newInstance(e);
-                } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
-                    | NoSuchMethodException | SecurityException e1) {
-                    throw Throwables.propagate(e1);
+                if (mutator.apply(e)) {
+                    final Pair<ENTITY, Boolean> r = getDao().saveOrUpdate(e);
+                    tx.commit();
+                    return OptResult.create(this, r.first, orig, r.second);
+                } else {
+                    tx.commit();
+                    return OptResult.create(this, e, e, false);
                 }
+            } catch (EntityNotFoundException e) {
+                log.debug("tryOptimisticUpdate ends with exception of type {}", e.getClass().getSimpleName());
+                throw e;
+            } catch (TException e) {
+                log.warn("tryOptimisticUpdate ends with exception of type {}", e.getClass().getSimpleName());
+                throw e;
+            } catch (StaleStateException | ConcurrencyFailureException e) {
+                throw e;
+            } catch (Exception e) {
+                log.warn("tryOptimisticUpdate ends with exception of type {}", e.getClass().getSimpleName());
+                throw Throwables.propagate(e);
             }
 
-            if (mutator.apply(e)) {
-                final Pair<ENTITY, Boolean> r = getDao().saveOrUpdate(e);
-                return OptResult.create(this, r.first, orig, r.second);
-            } else {
-                return OptResult.create(this, e, e, false);
-            }
-        } catch (EntityNotFoundException e) {
-            log.debug("tryOptimisticUpdate ends with exception of type {}", e.getClass().getSimpleName());
-            throw e;
-        } catch (TException e) {
-            log.warn("tryOptimisticUpdate ends with exception of type {}", e.getClass().getSimpleName());
-            throw e;
-        } catch (StaleStateException | ConcurrencyFailureException e) {
-            throw e;
-        } catch (Exception e) {
-            log.warn("tryOptimisticUpdate ends with exception of type {}", e.getClass().getSimpleName());
-            throw Throwables.propagate(e);
+        }catch (Exception ex){
+            tx.rollback();
+            throw ex;
         }
     }
 
     @Override
-    @Transactional
     public final ENTITY updateEntity(ENTITY e, ENTITY old) throws UniqueException {
 
-        final ENTITY before;
-        if (e.getPk() != null) {
-            before = getDao().findById((PK) e.getPk());
-        } else {
-            before = null;
-        }
+        final Session session = getDao().getCurrentSession();
+        final Transaction tx = session.beginTransaction();
 
-        final Pair<ENTITY, Boolean> r = getDao().saveOrUpdate(e);
+        try {
+            final ENTITY before;
+            if (e.getPk() != null) {
+                before = getDao().findById((PK) e.getPk());
+            } else {
+                before = null;
+            }
 
-        final OptResult<ENTITY> ret = new OptResult<ENTITY>(this, r.first, before, true);
+            final Pair<ENTITY, Boolean> r = getDao().saveOrUpdate(e);
+            tx.commit();
 
-        if (r.second) {
-            localEventBus.postEntityEvent(updateEntityEvent(before, r.first));
-        }
-        return r.first;
-    }
+            final OptResult<ENTITY> ret = new OptResult<>(this, r.first, before, true);
 
-    public void fetchAll(final int batchSize, Consumer<List<ENTITY>> consumer) {
-
-        final List<ENTITY> entities = getDao().findByCriteria(Restrictions.sqlRestriction("true"), null);
-
-        for (List<ENTITY> batch : Lists.partition(entities, batchSize)) {
-            consumer.accept(batch);
+            if (r.second) {
+                localEventBus.postEntityEvent(updateEntityEvent(before, r.first));
+            }
+            return r.first;
+        }catch (Exception ex){
+            tx.rollback();
+            throw  ex;
         }
     }
 }

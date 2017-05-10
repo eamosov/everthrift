@@ -29,6 +29,7 @@ import javax.jms.Message;
 import javax.jms.Session;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class JmsThriftClientServerImpl implements InitializingBean, DisposableBean, JmsThriftClientIF {
 
@@ -179,19 +180,28 @@ public class JmsThriftClientServerImpl implements InitializingBean, DisposableBe
         thriftProcessor = ThriftProcessor.create(context, rpcJmsRegistry);
 
         final Set<String> services = Sets.newHashSet();
-        for (ThriftControllerInfo i : rpcJmsRegistry.getControllers().values()) {
-            services.add(i.getServiceName());
-        }
+        services.addAll(rpcJmsRegistry.getControllers()
+                                      .values()
+                                      .stream()
+                                      .map(ThriftControllerInfo::getServiceName)
+                                      .collect(Collectors.toList()));
 
         for (String s : services) {
-            addJmsListener(getQueueName(s));
+            addJmsListener(getQueueName(s), s);
         }
 
     }
 
-    private synchronized DefaultMessageListenerContainer addJmsListener(String queueName) {
-        DefaultMessageListenerContainer l = (DefaultMessageListenerContainer) context.getBean("thriftJmsMessageListener", queueName,
-                                                                                              jmsConnectionFactory, listener);
+    private synchronized DefaultMessageListenerContainer addJmsListener(String queueName, String serviceName) {
+
+        final int consumers = Integer.parseInt(context.getEnvironment()
+                                                      .getProperty("jms." + serviceName + ".consumers", "1"));
+
+        final DefaultMessageListenerContainer l = (DefaultMessageListenerContainer) context.getBean("thriftJmsMessageListener",
+                                                                                                    queueName,
+                                                                                                    jmsConnectionFactory,
+                                                                                                    listener,
+                                                                                                    consumers);
         listeners.add(l);
         return l;
     }

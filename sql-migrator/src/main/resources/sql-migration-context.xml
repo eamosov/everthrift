@@ -12,6 +12,7 @@
         <property name="jdbcTemplate" ref="jdbcTemplate"></property>
         <property name="basePackage" value="${sql.migrations.basePackage}"></property>
         <property name="schemaVersionCf" value="${sql.migrations.schemaVersionCf:schema_version}"></property>
+        <property name="txManager" ref="txManager"></property>
     </bean>
 
     <bean name="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">

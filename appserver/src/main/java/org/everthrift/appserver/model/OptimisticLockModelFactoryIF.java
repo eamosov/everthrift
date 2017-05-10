@@ -23,20 +23,20 @@ public interface OptimisticLockModelFactoryIF<PK extends Serializable, ENTITY ex
 
     OptResult<ENTITY> optInsert(final ENTITY e) throws UniqueException;
 
-    public static final int MAX_ITERATIONS = 20;
+    int MAX_ITERATIONS = 20;
 
-    public static final int MAX_TIMEOUT = 100;
+    int MAX_TIMEOUT = 100;
 
-    public static interface UpdateFunction<T> {
+    interface UpdateFunction<T> {
         T apply(int count) throws TException, EntityNotFoundException;
     }
 
-    public static <T> T optimisticUpdate(UpdateFunction<T> updateFunction) throws OptimisticUpdateFailException, EntityNotFoundException, TException {
+    static <T> T optimisticUpdate(UpdateFunction<T> updateFunction) throws OptimisticUpdateFailException, EntityNotFoundException, TException {
         return optimisticUpdate(updateFunction, MAX_ITERATIONS, MAX_TIMEOUT);
     }
 
-    public static <T> T optimisticUpdate(UpdateFunction<T> updateFunction, int maxIteration,
-                                         int maxTimeoutMillis) throws OptimisticUpdateFailException, EntityNotFoundException, TException {
+    static <T> T optimisticUpdate(UpdateFunction<T> updateFunction, int maxIteration,
+                                  int maxTimeoutMillis) throws OptimisticUpdateFailException, EntityNotFoundException, TException {
         int i = 0;
         T updated = null;
         do {

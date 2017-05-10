@@ -15,10 +15,21 @@ public class LocalSessionFactoryBean extends org.springframework.orm.hibernate5.
     private static final Logger LOG = LoggerFactory.getLogger(LocalSessionFactoryBean.class);
 
     private MetaDataProvider metaDataProvider;
+    private final boolean dumpHbm;
+
+    public LocalSessionFactoryBean(boolean dumpHbm) {
+        this.dumpHbm = dumpHbm;
+    }
 
     @Override
     protected SessionFactory buildSessionFactory(LocalSessionFactoryBuilder sfb) {
-        sfb.addInputStream(new ByteArrayInputStream(metaDataProvider.toHbmXml().getBytes(StandardCharsets.UTF_8)));
+        final String hbmXml = metaDataProvider.toHbmXml();
+
+        if (dumpHbm) {
+            LOG.info("HBM:\n{}", hbmXml);
+        }
+
+        sfb.addInputStream(new ByteArrayInputStream(hbmXml.getBytes(StandardCharsets.UTF_8)));
         sfb.setInterceptor(EntityInterceptor.INSTANCE);
         final SessionFactory ret = super.buildSessionFactory(sfb);
         return ret;

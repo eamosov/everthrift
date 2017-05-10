@@ -2,12 +2,15 @@ package org.everthrift.sql.hibernate.model;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Maps;
+import org.apache.thrift.TDoc;
 import org.hibernate.annotations.OptimisticLockType;
 import org.hibernate.annotations.ResultCheckStyle;
 import org.hibernate.annotations.SQLInsert;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public class Table {
 
@@ -113,59 +116,62 @@ public class Table {
             throw new RuntimeException("No PK for table " + this.tableName);
         }
 
-        if (primaryKey.getColumnNames().size() != 1) {
-            throw new RuntimeException("Unsupported composize PK for table " + this.tableName);
-        }
-
-        // final String secondLevelCache =
-        // getHibernateProperties().getProperty("hibernate.cache.use_second_level_cache",
-        // "false");
-
-        // if (secondLevelCache.equalsIgnoreCase("true"))
-        // clazz.setCacheConcurrencyStrategy(AccessType.NONSTRICT_READ_WRITE.getExternalName());
-
         sb.append("\t<cache usage=\"nonstrict-read-write\" />\n");
 
-        final String pkColumnName = primaryKey.getColumnNames().get(0);
+        if (primaryKey.getColumnNames().size() == 1) {
+            sb.append(getColumnsByName().get(primaryKey.getColumnNames().get(0))
+                                        .toHbmXmlPk()
+                                        .replaceAll("(?m)^", "\t"));
+        } else {
+            final StringBuilder ci = new StringBuilder();
+            ci.append(String.format("<composite-id name=\"pk\" class=\"%s$Key\">\n", javaClass.getCanonicalName()));
+            for (String pk : primaryKey.getColumnNames()) {
+                ci.append(getColumnsByName().get(pk).toHbmXmlKeyProperty().replaceAll("(?m)^", "\t"));
+                ci.append("\n");
+            }
+            ci.append("</composite-id>");
+            sb.append(ci.toString().replaceAll("(?m)^", "\t"));
+        }
 
-        final Column pk = getColumnsByName().get(pkColumnName);
-        sb.append(pk.toHbmXmlPk().replaceAll("(?m)^", "\t") + "\n");
+        sb.append("\n");
 
         if (optimisticLockType == OptimisticLockType.VERSION) {
             final Column v = getColumnsByName().get("version");
-            sb.append(v.toHbmXmlVersion().replaceAll("(?m)^", "\t") + "\n");
+            if (v == null) {
+                throw new RuntimeException("No column \"version\" in type " + javaClass.getCanonicalName());
+            }
+
+            sb.append(v.toHbmXmlVersion().replaceAll("(?m)^", "\t"));
+            sb.append("\n");
         }
 
         for (Column columnModel : getColumnsByName().values()) {
 
             if (!columnModel.isValid()) {
-                // System.out.println("Invalid column " +
-                // columnModel.getColumnName() + " in table " +
-                // this.getTableName());
                 continue;
             }
 
             final String col;
-            if (columnModel.getColumnName().equalsIgnoreCase(pkColumnName)) {
-                // col = columnModel.toHbmXmlPk();
+            if (primaryKey.getColumnNames().contains(columnModel.getColumnName())) {
                 col = null;
             } else if (optimisticLockType == OptimisticLockType.VERSION && columnModel.getColumnName()
                                                                                       .equalsIgnoreCase("version")) {
-                // col = columnModel.toHbmXmlVersion();
                 col = null;
             } else {
                 col = columnModel.toHbmXml();
             }
 
             if (col != null) {
-                sb.append(col.replaceAll("(?m)^", "\t") + "\n");
+                sb.append(col.replaceAll("(?m)^", "\t"));
+                sb.append("\n");
             }
         }
 
         if (sqlInsert != null) {
-            sb.append(String.format("\t<sql-insert callable=\"%s\" check=\"%s\">%s</sql-insert>\n", Boolean.toString(sqlInsert
-                                                                                                                         .callable()),
-                                    toXmlValue(sqlInsert.check()), sqlInsert.sql()));
+            sb.append(String.format("\t<sql-insert callable=\"%s\" check=\"%s\">%s</sql-insert>\n",
+                                    Boolean.toString(sqlInsert.callable()),
+                                    toXmlValue(sqlInsert.check()),
+                                    sqlInsert.sql()));
         }
 
         sb.append("</class>\n");
@@ -178,4 +184,15 @@ public class Table {
         return schema + "." + tableName;
     }
 
+    public List<String> getComments() {
+        final List<String> list = new ArrayList<>();
+        Optional.ofNullable((TDoc) javaClass.getAnnotation(TDoc.class))
+                .map(TDoc::value)
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .ifPresent(c -> list.add(String.format("COMMENT ON TABLE %s.%s IS '%s';", schema, tableName, c.replace("'", "''"))));
+
+        getColumnsByName().values().forEach(columnModel -> columnModel.getComment().ifPresent(list::add));
+        return list;
+    }
 }

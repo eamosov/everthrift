@@ -4,7 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-import java.sql.Date;
+import java.sql.Timestamp;
 
 /**
  * Class responsible for version management.
@@ -23,7 +23,7 @@ public class SqlVersioner {
 
     private static final String DESCRIPTION = "description";
 
-    private final String CREATE_SCHEMA_VERSION_CQL;
+    private final String CREATE_SCHEMA_VERSION_SQL;
 
     private final JdbcTemplate jdbcTemplate;
 
@@ -36,8 +36,8 @@ public class SqlVersioner {
         this.jdbcTemplate = jdbcTemplate;
         this.SCHEMA_VERSION_CF = schemaVersionCf;
 
-        CREATE_SCHEMA_VERSION_CQL = String.format("CREATE TABLE IF NOT EXISTS %s (", SCHEMA_VERSION_CF) + String.format("%s text,", TYPE)
-            + String.format("%s int,", VERSION) + String.format("%s bigint,", TIMESTAMP)
+        CREATE_SCHEMA_VERSION_SQL = String.format("CREATE TABLE IF NOT EXISTS %s (", SCHEMA_VERSION_CF) + String.format("%s text,", TYPE)
+            + String.format("%s int,", VERSION) + String.format("%s timestamp with time zone,", TIMESTAMP)
             + String.format("%s text,", DESCRIPTION) + String.format("PRIMARY KEY (%s, %s)", TYPE, VERSION)
             + String.format(")");
 
@@ -46,7 +46,7 @@ public class SqlVersioner {
 
     private void createSchemaVersion() {
         LOGGER.debug("Try to create schema version column family");
-        this.jdbcTemplate.execute(CREATE_SCHEMA_VERSION_CQL);
+        this.jdbcTemplate.execute(CREATE_SCHEMA_VERSION_SQL);
     }
 
     /**
@@ -76,7 +76,7 @@ public class SqlVersioner {
     public void updateVersion(final Migration migration) {
 
 
-        jdbcTemplate.update(String.format("INSERT INTO %s(%s,%s,%s,%s) VALUES ($,$,$,$)",
+        jdbcTemplate.update(String.format("INSERT INTO %s(%s,%s,%s,%s) VALUES (?,?,?,?)",
                                           SCHEMA_VERSION_CF,
                                           TYPE,
                                           VERSION,
@@ -84,7 +84,7 @@ public class SqlVersioner {
                                           DESCRIPTION),
                             migration.getType().name(),
                             migration.getVersion(),
-                            new Date(System.currentTimeMillis()),
+                            new Timestamp(System.currentTimeMillis()),
                             migration.getDescription());
 
     }
