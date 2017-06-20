@@ -10,6 +10,7 @@ import net.sf.ehcache.Ehcache;
 import net.sf.ehcache.Status;
 import net.sf.ehcache.loader.CacheLoader;
 import org.apache.commons.lang.NotImplementedException;
+import org.apache.thrift.TException;
 import org.everthrift.appserver.model.DaoEntityIF;
 import org.everthrift.appserver.model.LocalEventBus;
 import org.everthrift.appserver.model.XAwareIF;
@@ -28,7 +29,7 @@ import java.util.Map;
 
 public abstract class DictionaryModelFactory<ENTITY extends DaoEntityIF> implements InitializingBean {
 
-    private PgSqlModelFactory<Integer, ENTITY> factory;
+    private PgSqlModelFactory<Integer, ENTITY, TException> factory;
 
     protected final String REMOVE_BY_ID;
 
@@ -182,7 +183,7 @@ public abstract class DictionaryModelFactory<ENTITY extends DaoEntityIF> impleme
             throw new RuntimeException("Can't find cache: " + CACHE_NAME);
         }
 
-        factory = new PgSqlModelFactory<Integer, ENTITY>(null, cls, listeningExecutorService, sessionFactory, localEventBus);
+        factory = new PgSqlModelFactory<Integer, ENTITY, TException>(null, cls, listeningExecutorService, sessionFactory, localEventBus);
 
         loader = new CacheLoader() {
 

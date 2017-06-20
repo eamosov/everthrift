@@ -129,6 +129,12 @@ public abstract class RoModelFactoryImpl<PK, ENTITY, E extends Exception> implem
         }
     }
 
+    public void lazyListLoad(Registry r, XAwareIF<List<PK>, List<ENTITY>> m, Object entity, String propertyName) {
+        if (m.isSetId()) {
+            r.addWithUnique(lazyListLoader, m, new UniqKey(entity, propertyName));
+        }
+    }
+
     protected int _loadList(Iterable<? extends XAwareIF<List<PK>, List<ENTITY>>> s) {
         return joinByIds(s,
                          input -> input.isSetId() ? input.getId() : null,

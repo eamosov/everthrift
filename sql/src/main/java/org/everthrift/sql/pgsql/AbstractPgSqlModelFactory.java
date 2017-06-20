@@ -145,10 +145,13 @@ public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY 
         return this.entityClass;
     }
 
+    public List<ENTITY> listAll() {
+        return getDao().findByCriteria(Restrictions.sqlRestriction("true"), null);
+    }
+
     public void fetchAll(final int batchSize, Consumer<List<ENTITY>> consumer) {
-
-        final List<ENTITY> entities = getDao().findByCriteria(Restrictions.sqlRestriction("true"), null);
-
+        //TODO fetchAll можно переделать на курсор
+        final List<ENTITY> entities = listAll();
         for (List<ENTITY> batch : Lists.partition(entities, batchSize)) {
             consumer.accept(batch);
         }

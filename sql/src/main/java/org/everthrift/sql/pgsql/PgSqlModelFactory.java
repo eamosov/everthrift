@@ -11,12 +11,11 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.io.Serializable;
 
-public class PgSqlModelFactory<PK extends Serializable, ENTITY extends DaoEntityIF>
-    extends AbstractPgSqlModelFactory<PK, ENTITY, TException> {
+public class PgSqlModelFactory<PK extends Serializable, ENTITY extends DaoEntityIF, E extends TException>
+    extends AbstractPgSqlModelFactory<PK, ENTITY, E> {
 
     public PgSqlModelFactory(Cache cache, Class<ENTITY> entityClass,
                              @Qualifier("listeningCallerRunsBoundQueueExecutor") ListeningExecutorService listeningExecutorService,
@@ -42,7 +41,7 @@ public class PgSqlModelFactory<PK extends Serializable, ENTITY extends DaoEntity
         final Session session = getDao().getCurrentSession();
         Transaction tx = session.beginTransaction();
 
-        try{
+        try {
 
             if (e.getPk() != null) {
                 before = getDao().findById((PK) e.getPk());
@@ -59,15 +58,10 @@ public class PgSqlModelFactory<PK extends Serializable, ENTITY extends DaoEntity
                 localEventBus.postEntityEvent(updateEntityEvent(before, r.first));
             }
             return r.first;
-        }catch (Exception ex){
+        } catch (Exception ex) {
             tx.rollback();
-            throw  ex;
+            throw ex;
         }
-    }
-
-    @Override
-    public final TException createNotFoundException(PK id) {
-        return new TException("Entity " + id + "not found");
     }
 
 }

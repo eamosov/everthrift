@@ -38,6 +38,7 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 import javax.management.MBeanServer;
+import javax.servlet.MultipartConfigElement;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -92,6 +93,15 @@ public class JettyServer implements SmartLifecycle {
     @Value("${jetty.ssl.port:443}")
     private String jettySslPort;
 
+    @Value("${spring.http.multipart.max-file-size:-1}")
+    private long maxFileSize;
+
+    @Value("${spring.http.multipart.max-request-size:-1}")
+    private long maxRequestSize;
+
+    @Value("${spring.http.multipart.file-size-threshold:0}")
+    private int fileSizeThreshold;
+
     @PostConstruct
     private void initJetty() {
 
@@ -128,10 +138,12 @@ public class JettyServer implements SmartLifecycle {
         final ServerConnector http = new ServerConnector(jettyServer, new HttpConnectionFactory(http_config));
         http.setIdleTimeout(30000);
 
-        http.addBean(new Connection.Listener(){
+        http.addBean(new Connection.Listener() {
             @Override
             public void onOpened(Connection connection) {
-                log.debug("Open connection: {}:{}", connection.getEndPoint().getRemoteAddress(), connection.getEndPoint().getLocalAddress());
+                log.debug("Open connection: {}:{}", connection.getEndPoint()
+                                                              .getRemoteAddress(), connection.getEndPoint()
+                                                                                             .getLocalAddress());
             }
 
             @Override
@@ -207,7 +219,13 @@ public class JettyServer implements SmartLifecycle {
         springWebApplicationContext.setConfigLocation(webContextXml);
 
         final DispatcherServlet dispatcherServlet = new DispatcherServlet(springWebApplicationContext);
-        jettyContext.addServlet(new ServletHolder(dispatcherServlet), "/*");
+        final ServletHolder servletHolder = new ServletHolder(dispatcherServlet);
+
+        servletHolder.getRegistration().setMultipartConfig(new MultipartConfigElement(
+            System.getProperty("java.io.tmpdir"),
+            maxFileSize, maxRequestSize, fileSizeThreshold));
+
+        jettyContext.addServlet(servletHolder, "/*");
         springWebApplicationContext.refresh();
 
         // hack for disable CORS

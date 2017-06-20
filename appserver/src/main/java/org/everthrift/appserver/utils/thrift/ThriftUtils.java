@@ -1,5 +1,6 @@
 package org.everthrift.appserver.utils.thrift;
 
+import com.google.common.base.Throwables;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
 import org.apache.thrift.TBase;
@@ -8,6 +9,7 @@ import org.apache.thrift.meta_data.FieldMetaData;
 import org.everthrift.utils.Pair;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class ThriftUtils {
@@ -75,6 +77,29 @@ public class ThriftUtils {
             if (from.isSet(id)) {
                 to.setFieldValue(id, from.getFieldValue(id));
             }
+        }
+    }
+
+    public static TFieldIdEnum[] getFieldIds(TBase tBase) {
+        Objects.requireNonNull(tBase);
+        return getFieldIds(tBase.getClass());
+    }
+
+    public static TFieldIdEnum[] getFieldIds(Class<? extends TBase> cls) {
+        try {
+            return (TFieldIdEnum[]) Class.forName(cls.getCanonicalName() + "$_Fields").getMethod("values").invoke(null);
+        } catch (Exception e) {
+            throw Throwables.propagate(e);
+        }
+    }
+
+    public static TFieldIdEnum getFieldId(Class<? extends TBase> cls, String name) {
+        try {
+            return (TFieldIdEnum) Class.forName(cls.getCanonicalName() + "$_Fields")
+                                       .getMethod("findByName", String.class)
+                                       .invoke(null, name);
+        } catch (Exception e) {
+            throw Throwables.propagate(e);
         }
     }
 
