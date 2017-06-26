@@ -11,6 +11,8 @@ import org.everthrift.utils.Pair;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ThriftUtils {
 
@@ -103,4 +105,32 @@ public class ThriftUtils {
         }
     }
 
+    private static final Pattern pattern = Pattern.compile("(^.*\\.([^\\.]+))\\$_Fields$");
+
+    public static String getStructName(TFieldIdEnum id) {
+        final Matcher matcher = pattern.matcher(id.getClass().getName());
+        if (matcher.matches()) {
+            return matcher.group(2);
+        } else {
+            return null;
+        }
+    }
+
+    public static String getStructFullName(TFieldIdEnum id) {
+        final Matcher matcher = pattern.matcher(id.getClass().getName());
+        if (matcher.matches()) {
+            return matcher.group(1);
+        } else {
+            return null;
+        }
+    }
+
+    public static String getFieldName(TFieldIdEnum id) {
+        final String structName = getStructName(id);
+        if (structName != null) {
+            return structName + "." + id.getFieldName();
+        } else {
+            return id.getFieldName();
+        }
+    }
 }
