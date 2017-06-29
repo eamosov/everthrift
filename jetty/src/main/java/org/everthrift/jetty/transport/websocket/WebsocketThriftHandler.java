@@ -257,25 +257,20 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
         final String sessionId = getSessionId(session);
         log.debug("Establish websocket connection: {}, attributes: {}", sessionId, session.getAttributes());
 
-        sessionRegistry.put(sessionId, new SessionData(session));
+        final SessionData sd = new SessionData(session);
+        sessionRegistry.put(sessionId, sd);
 
-        final Message<MessageWrapper> m = MessageBuilder.withPayload(new MessageWrapper(null).setAttribute("onOpen", true)
-                                                                                             .setSessionId(sessionId)
-                                                                                             .setHttpRequestParams((Map) session
-                                                                                                 .getAttributes()
-                                                                                                 .get(MessageWrapper.HTTP_REQUEST_PARAMS)))
-                                                        .build();
+        final MessageWrapper mw = new MessageWrapper(null).setSessionId(sessionId)
+                                                          .setHttpRequestParams((Map) session
+                                                              .getAttributes()
+                                                              .get(MessageWrapper.HTTP_REQUEST_PARAMS));
 
-        /**
-            TODO т.к. обработка происходит асинхронно и очередь не гарантирует очередность выполнения задач,
-            то может произойти ситуация, когда прийдет первое сообщение в сокет, а сервер ещё не успел авторизовать соединение.
-            нужно запилить фикс. Подумать на счет обработки onOpen в этом же потоке
-        */
-        try {
-            inWebsocketChannel.send(m);
-        } catch (MessageDeliveryException e) {
-            log.warn("Reject websocket message, sessionId={}", this.getSessionId(session));
-            session.close(CloseStatus.SERVICE_OVERLOAD);
+        if (tp.processOnOpen(mw, thriftClient(sessionId, sd)) == false) {
+            try {
+                session.close(CloseStatus.POLICY_VIOLATION);
+            } catch (IOException e) {
+
+            }
         }
     }
 
@@ -324,15 +319,7 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
         return tInfo;
     }
 
-    @Override
-    public ThriftClient getThriftClient(final String sessionId) {
-
-        final SessionData sd = sessionRegistry.get(sessionId);
-        if (sd == null) {
-            log.warn("websocket connection {} not found", sessionId);
-            return null;
-        }
-
+    private ThriftClient thriftClient(String sessionId, final SessionData sd) {
         return new AbstractThriftClient<String>(sessionId) {
 
             @Override
@@ -374,6 +361,18 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
     }
 
     @Override
+    public ThriftClient getThriftClient(final String sessionId) {
+
+        final SessionData sd = sessionRegistry.get(sessionId);
+        if (sd == null) {
+            log.warn("websocket connection {} not found", sessionId);
+            return null;
+        }
+
+        return thriftClient(sessionId, sd);
+    }
+
+    @Override
     public void afterPropertiesSet() throws Exception {
         tp = ThriftProcessor.create(context, rpcWebsocketRegistry);
     }
@@ -393,24 +392,11 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
 
         final ThriftClient tc = getThriftClient(sessionId);
 
-        if (w.getAttribute("onOpen") != null) {
-            if (tp.processOnOpen(w, tc) == false) {
-                final SessionData sd = sessionRegistry.get(sessionId);
-                if (sd != null) {
-                    try {
-                        sd.session.close(CloseStatus.POLICY_VIOLATION);
-                    } catch (IOException e) {
-                    }
-                }
-            }
+        try {
+            return tp.process(new DefaultTProtocolSupport(w, protocolFactory), tc);
+        } catch (Exception e) {
+            log.error("Exception while execution thrift processor:", e);
             return null;
-        } else {
-            try {
-                return tp.process(new DefaultTProtocolSupport(w, protocolFactory), tc);
-            } catch (Exception e) {
-                log.error("Exception while execution thrift processor:", e);
-                return null;
-            }
         }
     }
 
