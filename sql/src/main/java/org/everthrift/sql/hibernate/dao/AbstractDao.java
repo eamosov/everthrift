@@ -1,6 +1,5 @@
 package org.everthrift.sql.hibernate.dao;
 
-import com.google.common.base.Function;
 import org.everthrift.appserver.model.DaoEntityIF;
 import org.everthrift.appserver.model.UniqueException;
 import org.everthrift.utils.Pair;
@@ -20,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.function.Function;
 
 public interface AbstractDao<K, V extends DaoEntityIF> {
 
@@ -65,6 +65,8 @@ public interface AbstractDao<K, V extends DaoEntityIF> {
     public V findFirstByCriteria(Criterion criterion, Order order);
 
     public CompletableFuture<V> findFirstByCriteriaAsync(Criterion criterion, Order order);
+
+    public <R> R withSession(Function<Session, R> r);
 
     public <X> List<X> findBySQLQuery(String query, Map<String, Type> mapping, ResultTransformer resultTransformer, Object... params);
 

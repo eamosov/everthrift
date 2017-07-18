@@ -1,6 +1,5 @@
 package org.everthrift.sql.hibernate.dao;
 
-import com.google.common.base.Function;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import org.everthrift.appserver.model.CreatedAtIF;
@@ -40,6 +39,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -371,6 +371,15 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
         });
     }
 
+    @Override
+    public <R> R withSession(Function<Session, R> r) {
+        try {
+            return tx(r);
+        } catch (Exception e) {
+            throw convert(e);
+        }
+    }
+
     /**
      * @param query             sql query : "?" - param placeholder
      * @param mapping           ResultSet mapping --> columnName -> columnType, may be
@@ -427,11 +436,12 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
         });
     }
 
-    private RuntimeException convert(Exception e){
-        if (e instanceof ConstraintViolationException)
-            throw uniqueException((ConstraintViolationException)e);
-        else if (e instanceof PersistenceException && e.getCause() instanceof ConstraintViolationException)
-            throw uniqueException((ConstraintViolationException)e.getCause());
+    private RuntimeException convert(Exception e) {
+        if (e instanceof ConstraintViolationException) {
+            throw uniqueException((ConstraintViolationException) e);
+        } else if (e instanceof PersistenceException && e.getCause() instanceof ConstraintViolationException) {
+            throw uniqueException((ConstraintViolationException) e.getCause());
+        }
 
         throw Throwables.propagate(e);
     }

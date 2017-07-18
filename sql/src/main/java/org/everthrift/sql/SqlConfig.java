@@ -1,5 +1,6 @@
 package org.everthrift.sql;
 
+import com.google.common.base.Throwables;
 import net.sf.log4jdbc.sql.jdbcapi.DataSourceSpy;
 import org.apache.commons.dbcp2.ConnectionFactory;
 import org.apache.commons.dbcp2.DriverManagerConnectionFactory;
@@ -8,19 +9,26 @@ import org.apache.commons.dbcp2.PoolableConnectionFactory;
 import org.apache.commons.dbcp2.PoolingDataSource;
 import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.everthrift.sql.hibernate.LocalSessionFactoryBean;
+import org.everthrift.sql.hibernate.model.CustomTypesRegistry;
 import org.everthrift.sql.hibernate.model.MetaDataProvider;
+import org.everthrift.sql.hibernate.model.types.CustomUserType;
 import org.hibernate.SessionFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.support.PropertiesLoaderUtils;
+import org.springframework.core.type.filter.AssignableTypeFilter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.orm.hibernate5.HibernateTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.util.ClassUtils;
 
 import javax.sql.DataSource;
 import java.io.IOException;
+import java.lang.reflect.Modifier;
 import java.util.Properties;
 
 /**
@@ -100,6 +108,21 @@ public class SqlConfig {
 
     @Bean
     public MetaDataProvider metaDataProvider(DataSource dataSource) throws IOException {
+
+        final ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
+        scanner.addIncludeFilter(new AssignableTypeFilter(CustomUserType.class));
+
+        for (BeanDefinition b : scanner.findCandidateComponents("org.everthrift.sql.hibernate.model.types")) {
+            final Class cls = ClassUtils.resolveClassName(b.getBeanClassName(), ClassUtils.getDefaultClassLoader());
+            if (!Modifier.isAbstract(cls.getModifiers())) {
+                try {
+                    CustomTypesRegistry.getInstance().register((CustomUserType) cls.newInstance());
+                } catch (Exception e) {
+                    throw Throwables.propagate(e);
+                }
+            }
+        }
+
         final String config_file_location = "hiber_tables.properties";
         return new MetaDataProvider(dataSource, PropertiesLoaderUtils.loadAllProperties(config_file_location));
     }
