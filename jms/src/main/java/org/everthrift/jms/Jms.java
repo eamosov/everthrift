@@ -17,6 +17,7 @@ import org.springframework.jms.listener.DefaultMessageListenerContainer;
 import org.springframework.jms.listener.SessionAwareMessageListener;
 
 import javax.jms.ConnectionFactory;
+import java.util.List;
 
 @Configuration
 public class Jms {
@@ -55,8 +56,8 @@ public class Jms {
     }
 
     @Bean
-    public RpcJmsRegistry RpcJmsRegistry() {
-        return new RpcJmsRegistry();
+    public RpcJmsRegistry RpcJmsRegistry(@Qualifier("thriftControllersPath") List<String> basePath) {
+        return new RpcJmsRegistry(basePath);
     }
 
     @Bean

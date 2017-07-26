@@ -23,6 +23,7 @@ import org.jminix.console.servlet.MiniConsoleServlet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -36,7 +37,6 @@ import org.springframework.web.servlet.handler.AbstractHandlerMapping;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import javax.annotation.Resource;
 import javax.management.MBeanServer;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.http.HttpServletRequest;
@@ -69,7 +69,8 @@ public class JettyServer implements SmartLifecycle {
     @Autowired
     private RpsServlet rpsServlet;
 
-    @Resource
+    @Autowired(required = false)
+    @Qualifier("mbeanServer")
     private MBeanServer mbeanServer;
 
     private final Logger log = LoggerFactory.getLogger(JettyServer.class);
@@ -119,9 +120,11 @@ public class JettyServer implements SmartLifecycle {
 
         jettyServer = new Server(threadPool);
 
-        final MBeanContainer mbContainer = new MBeanContainer(mbeanServer);
-        jettyServer.addEventListener(mbContainer);
-        jettyServer.addBean(mbContainer);
+        if (mbeanServer != null) {
+            final MBeanContainer mbContainer = new MBeanContainer(mbeanServer);
+            jettyServer.addEventListener(mbContainer);
+            jettyServer.addBean(mbContainer);
+        }
 
         // Register loggers as MBeans
         jettyServer.addBean(Log.getLog());

@@ -31,13 +31,14 @@ public abstract class ThriftControllerRegistry implements InitializingBean {
 
     private Map<String, ThriftControllerInfo> map = Collections.synchronizedMap(new HashMap<String, ThriftControllerInfo>());
 
-    private List<Class<ConnectionStateHandler>> stateHandlers = new CopyOnWriteArrayList<Class<ConnectionStateHandler>>();
+    private List<Class<ConnectionStateHandler>> stateHandlers = new CopyOnWriteArrayList<>();
 
     private final Class<? extends Annotation> annotationType;
+    private final List<String> basePaths;
 
-    public ThriftControllerRegistry(Class<? extends Annotation> annotationType) {
-        // scanThriftControllers(annotationType);
+    public ThriftControllerRegistry(Class<? extends Annotation> annotationType, List<String> basePaths) {
         this.annotationType = annotationType;
+        this.basePaths = basePaths;
     }
 
     public Class<? extends Annotation> getType() {
@@ -50,9 +51,7 @@ public abstract class ThriftControllerRegistry implements InitializingBean {
 
         scanner.addIncludeFilter(new AnnotationTypeFilter(annotationType));
 
-        final List<String> l = applicationContext.getEnvironment().getProperty("thrift.scan", List.class);
-
-        for (String p : l) {
+        for (String p : basePaths) {
             scanThriftControllers(scanner, p);
         }
     }

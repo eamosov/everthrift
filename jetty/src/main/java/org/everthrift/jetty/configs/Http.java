@@ -17,18 +17,20 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportResource;
 import org.springframework.messaging.SubscribableChannel;
 
+import java.util.List;
+
 @Configuration
 @ImportResource("classpath:websocket-beans.xml")
 public class Http {
 
     @Bean
-    public RpcHttpRegistry rpcHttpRegistry() {
-        return new RpcHttpRegistry();
+    public RpcHttpRegistry rpcHttpRegistry(@Qualifier("thriftControllersPath") List<String> basePath) {
+        return new RpcHttpRegistry(basePath);
     }
 
     @Bean
-    public RpcWebsocketRegistry rpcWebsocketRegistry() {
-        return new RpcWebsocketRegistry();
+    public RpcWebsocketRegistry rpcWebsocketRegistry(@Qualifier("thriftControllersPath") List<String> basePath) {
+        return new RpcWebsocketRegistry(basePath);
     }
 
     @Bean

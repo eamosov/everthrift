@@ -5,14 +5,15 @@ import org.springframework.integration.ip.tcp.connection.AbstractServerConnectio
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
+import java.util.List;
 
 public class RpcAsyncTcpRegistry extends ThriftControllerRegistry {
 
     @Resource
     private AbstractServerConnectionFactory server;
 
-    public RpcAsyncTcpRegistry() {
-        super(RpcAsyncTcp.class);
+    public RpcAsyncTcpRegistry(final List<String> basePaths) {
+        super(RpcAsyncTcp.class, basePaths);
     }
 
     @PostConstruct

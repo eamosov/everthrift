@@ -26,9 +26,11 @@ import org.everthrift.appserver.configs.AppserverConfig;
 import org.everthrift.appserver.configs.AsyncTcpThrift;
 import org.everthrift.appserver.configs.EhConfig;
 import org.everthrift.appserver.configs.JGroups;
+import org.everthrift.appserver.configs.JmxConfig;
 import org.everthrift.appserver.configs.LoopbackJGroups;
 import org.everthrift.appserver.configs.TcpThrift;
 import org.everthrift.appserver.configs.ZooConfig;
+import org.everthrift.appserver.configs.ZooJmxConfig;
 import org.everthrift.thrift.MetaDataMapBuilder;
 import org.everthrift.utils.SocketUtils;
 import org.slf4j.Logger;
@@ -51,7 +53,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -78,7 +79,6 @@ public class AppserverApplication {
 
     public final ConfigurableEnvironment env;
 
-    private final List<String> thriftScanPathList = new ArrayList<String>();
 
     private boolean initialized = false;
 
@@ -93,7 +93,7 @@ public class AppserverApplication {
 
     private final List<PropertySource<?>> propertySourceList = new ArrayList<>();
 
-    private List<Class<?>> annotatedClasses = Lists.newArrayList(AppserverConfig.class);
+    private List<Class<?>> annotatedClasses = Lists.newArrayList();
 
     private AppserverApplication() {
 
@@ -102,8 +102,6 @@ public class AppserverApplication {
         context = new AnnotationConfigApplicationContext();
         context.registerShutdownHook();
         env = context.getEnvironment();
-
-        thriftScanPathList.add("org.everthrift.appserver");
     }
 
     private boolean isJettyEnabled() {
@@ -134,6 +132,29 @@ public class AppserverApplication {
         return !env.getProperty("rabbit", "false").equalsIgnoreCase("false");
     }
 
+    private boolean isJmxEnabled() {
+        return !env.getProperty("jmx", "true").equalsIgnoreCase("false");
+    }
+
+    private boolean isZookeeperEnabled() {
+        return env.getProperty("zookeeper.connection_string") != null &&
+            !env.getProperty("zookeeper", "false").equalsIgnoreCase("false");
+    }
+
+    public void disableNetAccess() {
+        try {
+            addProperty("thrift.async", "false");
+            addProperty("thrift", "false");
+            addProperty("jms", "false");
+            addProperty("jetty", "false");
+            addProperty("jgroups", "false");
+            addProperty("rabbit", "false");
+            addProperty("jmx", "false");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     public void init(String[] args) {
         try {
             _init(args);
@@ -159,8 +180,6 @@ public class AppserverApplication {
 
         final PropertySource sclps = new SimpleCommandLinePropertySource(args);
         env.getPropertySources().addFirst(sclps);
-        env.getPropertySources()
-           .addLast(new MapPropertySource("thriftScanPathList", Collections.singletonMap("thrift.scan", (Object) thriftScanPathList)));
 
         PropertySource lastAdded = null;
         final Pattern resourcePattern = Pattern.compile("(.+)\\.properties");
@@ -228,6 +247,12 @@ public class AppserverApplication {
             for (String root : env.getProperty("tbase.root").split(",")) {
                 mdb.build(root);
             }
+        }
+
+        context.register(AppserverConfig.class);
+
+        if (isJmxEnabled()) {
+            context.register(JmxConfig.class);
         }
 
         context.register(annotatedClasses.toArray(new Class[annotatedClasses.size()]));
@@ -301,8 +326,12 @@ public class AppserverApplication {
             context.register(EhConfig.class);
         }
 
-        if (env.getProperty("zookeeper.connection_string") != null) {
+        if (isZookeeperEnabled()) {
             context.register(ZooConfig.class);
+
+            if (isJmxEnabled()) {
+                context.register(ZooJmxConfig.class);
+            }
         }
 
         context.refresh();
@@ -316,12 +345,13 @@ public class AppserverApplication {
         initialized = true;
 
         //register ehcache JMX
-        try {
-            final CacheManager manager = context.getBean(CacheManager.class);
-            final MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
-            ManagementService.registerMBeans(manager, mBeanServer, true, true, true, true);
-        } catch (NoSuchBeanDefinitionException e) {
-
+        if (isJmxEnabled()) {
+            try {
+                final CacheManager manager = context.getBean(CacheManager.class);
+                final MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
+                ManagementService.registerMBeans(manager, mBeanServer, true, true, true, true);
+            } catch (NoSuchBeanDefinitionException e) {
+            }
         }
 
         //creating pid file
@@ -386,19 +416,6 @@ public class AppserverApplication {
     public synchronized void stop() {
 
         context.close();
-    }
-
-    /**
-     * Add path to thrift controllers scan path
-     *
-     * @param p
-     */
-    public synchronized void addThriftScanPath(String p) {
-        thriftScanPathList.add(p);
-    }
-
-    public synchronized List<String> getThriftScanPathList() {
-        return thriftScanPathList;
     }
 
     private synchronized void addPropertySource(PropertySource<?> ps) {

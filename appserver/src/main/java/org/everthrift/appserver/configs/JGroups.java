@@ -1,5 +1,6 @@
 package org.everthrift.appserver.configs;
 
+import com.google.common.collect.ImmutableList;
 import org.everthrift.appserver.jgroups.JGroupsThriftAdapter;
 import org.everthrift.appserver.jgroups.JgroupsThriftClientServerImpl;
 import org.everthrift.appserver.jgroups.RpcJGroupsRegistry;
@@ -9,6 +10,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportResource;
+
+import java.util.List;
 
 @Configuration
 @ImportResource("classpath:jgroups-beans.xml")
@@ -30,8 +33,8 @@ public class JGroups {
     }
 
     @Bean
-    public RpcJGroupsRegistry RpcJGroupsRegistry() {
-        return new RpcJGroupsRegistry();
+    public RpcJGroupsRegistry RpcJGroupsRegistry(@Qualifier("thriftControllersPath") List<String> basePath) {
+        return new RpcJGroupsRegistry(basePath);
     }
 
     @Bean

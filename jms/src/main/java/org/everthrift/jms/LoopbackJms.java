@@ -4,12 +4,14 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.List;
+
 @Configuration
 public class LoopbackJms {
 
     @Bean
-    public RpcJmsRegistry RpcJmsRegistry() {
-        return new RpcJmsRegistry();
+    public RpcJmsRegistry RpcJmsRegistry(@Qualifier("thriftControllersPath") List<String> basePath) {
+        return new RpcJmsRegistry(basePath);
     }
 
     @Bean
