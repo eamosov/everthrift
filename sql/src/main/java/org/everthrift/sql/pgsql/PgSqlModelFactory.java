@@ -27,7 +27,7 @@ public class PgSqlModelFactory<PK extends Serializable, ENTITY extends DaoEntity
     @Override
     public final ENTITY insertEntity(ENTITY e) throws UniqueException {
         final ENTITY ret = getDao().save(e).first;
-        _invalidateEhCache((PK) ret.getPk());
+        _invalidateEhCache((PK) ret.getPk(), InvalidateCause.INSERT);
 
         localEventBus.postEntityEvent(insertEntityEvent(ret));
 
@@ -35,7 +35,7 @@ public class PgSqlModelFactory<PK extends Serializable, ENTITY extends DaoEntity
     }
 
     @Override
-    public final ENTITY updateEntity(ENTITY e, ENTITY old) throws UniqueException {
+    public final ENTITY updateEntity(ENTITY e) throws UniqueException {
         final ENTITY before;
 
         final Session session = getDao().getCurrentSession();
@@ -52,7 +52,7 @@ public class PgSqlModelFactory<PK extends Serializable, ENTITY extends DaoEntity
             final Pair<ENTITY, Boolean> r = getDao().saveOrUpdate(e);
             tx.commit();
 
-            _invalidateEhCache((PK) r.first.getPk());
+            _invalidateEhCache((PK) r.first.getPk(), before != null ? InvalidateCause.UPDATE : InvalidateCause.INSERT);
 
             if (r.second) {
                 localEventBus.postEntityEvent(updateEntityEvent(before, r.first));
@@ -62,6 +62,20 @@ public class PgSqlModelFactory<PK extends Serializable, ENTITY extends DaoEntity
             tx.rollback();
             throw ex;
         }
+    }
+
+    @Override
+    public final void deleteEntity(ENTITY e) throws E {
+        final PK pk = (PK) e.getPk();
+        final ENTITY _e = fetchEntityById(pk);
+        if (_e == null) {
+            throw createNotFoundException(pk);
+        }
+
+        dao.delete(_e);
+        _invalidateEhCache(pk, InvalidateCause.DELETE);
+
+        localEventBus.postEntityEvent(deleteEntityEvent(_e));
     }
 
 }

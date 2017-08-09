@@ -200,8 +200,9 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
             for (int i = 0; i < ids.size(); i++) {
                 ret.put(ids.get(i), ee.get(i));
             }
-            if (log.isDebugEnabled())
+            if (log.isDebugEnabled()) {
                 log.debug("fetchEntityByIdAsMapAsync {}: {}", getEntityClass().getSimpleName(), ret);
+            }
             return ret;
         });
     }
@@ -222,8 +223,9 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
     @Override
     final protected ENTITY fetchEntityById(PK id) {
         final ENTITY e = mapper.get(extractCompaundPk(id));
-        if (log.isDebugEnabled())
+        if (log.isDebugEnabled()) {
             log.debug("fetchEntityById {}/{}:{}", getEntityClass().getSimpleName(), id, e);
+        }
         return e;
     }
 
@@ -354,13 +356,13 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
         return ret.isEmpty() ? null : ret.get(0);
     }
 
-    public void putEntity(ENTITY entity) {
-        putEntity(entity, true);
+    public void putEntity(ENTITY entity, InvalidateCause invalidateCause) {
+        putEntity(entity, true, invalidateCause);
     }
 
-    public void putEntity(ENTITY entity, boolean _noSaveNulls) {
+    public void putEntity(ENTITY entity, boolean _noSaveNulls, InvalidateCause invalidateCause) {
         try {
-            putEntityAsync(entity, _noSaveNulls).get();
+            putEntityAsync(entity, _noSaveNulls, invalidateCause).get();
         } catch (ExecutionException e) {
             throw Throwables.propagate(e.getCause());
         } catch (InterruptedException e) {
@@ -371,7 +373,7 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
     /*
      * save all not null fields without read Method not generates any events
      */
-    public CompletableFuture<Boolean> putEntityAsync(ENTITY entity, boolean _noSaveNulls) {
+    public CompletableFuture<Boolean> putEntityAsync(ENTITY entity, boolean _noSaveNulls, InvalidateCause invalidateCause) {
         if (entity.getPk() == null) {
             throw new IllegalArgumentException("pk is null");
         }
@@ -387,15 +389,15 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
             if (t != null) {
                 log.error("putEntityAsync", t);
             } else {
-                invalidate((PK) entity.getPk());
+                invalidate((PK) entity.getPk(), invalidateCause);
             }
         });
 
         return f;
     }
 
-    public void putEntityAsync(ENTITY entity) {
-        putEntityAsync(entity, true);
+    public void putEntityAsync(ENTITY entity, InvalidateCause invalidateCause) {
+        putEntityAsync(entity, true, invalidateCause);
     }
 
     public void fetchAll(final int batchSize, Consumer<List<ENTITY>> consumer) {
@@ -416,25 +418,23 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
     @Override
     public ENTITY insertEntity(ENTITY e) throws UniqueException {
         setCreatedAt(e);
-        putEntity(e, false);
+        putEntity(e, false, InvalidateCause.INSERT);
         localEventBus.postEntityEvent(insertEntityEvent(e));
         return e;
     }
 
     @Override
-    public ENTITY updateEntity(ENTITY e, ENTITY old) throws UniqueException {
-        if (!e.equals(old)) {
-            setUpdatedAt(e);
-            putEntity(e, true);
-            localEventBus.postEntityEvent(updateEntityEvent(old, e));
-        }
+    public ENTITY updateEntity(ENTITY e) throws UniqueException {
+        setUpdatedAt(e);
+        putEntity(e, true, InvalidateCause.UPDATE);
+        localEventBus.postEntityEvent(updateEntityEvent(null, e));
         return e;
     }
 
     @Override
     public void deleteEntity(ENTITY e) {
         mapper.delete(extractCompaundPk((PK) e.getPk()));
-        invalidate((PK) e.getPk());
+        invalidate((PK) e.getPk(), InvalidateCause.DELETE);
     }
 
     public ENTITY copy(ENTITY e) {

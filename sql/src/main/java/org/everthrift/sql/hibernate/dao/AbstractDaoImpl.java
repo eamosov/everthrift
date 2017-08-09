@@ -6,6 +6,7 @@ import org.everthrift.appserver.model.CreatedAtIF;
 import org.everthrift.appserver.model.DaoEntityIF;
 import org.everthrift.appserver.model.UniqueException;
 import org.everthrift.utils.Pair;
+import org.hibernate.CacheMode;
 import org.hibernate.Criteria;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
@@ -57,6 +58,8 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
 
     private static final Pattern p = Pattern.compile("^[^_]+_([^_]+)_[^_]+$");
 
+    private CacheMode cacheMode = CacheMode.NORMAL;
+
     public AbstractDaoImpl(Class<V> entityClass) {
         this.entityClass = entityClass;
     }
@@ -72,12 +75,22 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
         this.sessionFactory = sessionFactory;
     }
 
+    public CacheMode getCacheMode() {
+        return cacheMode;
+    }
+
+    public void setCacheMode(CacheMode cacheMode) {
+        this.cacheMode = cacheMode;
+    }
+
     @Override
     public Session getCurrentSession() {
         try {
             return sessionFactory.getCurrentSession();
         } catch (HibernateException e) {
-            return sessionFactory.openSession();
+            final Session s = sessionFactory.openSession();
+            s.setCacheMode(cacheMode);
+            return s;
         }
     }
 

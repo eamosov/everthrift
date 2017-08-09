@@ -11,11 +11,7 @@ public interface RwModelFactoryIF<PK extends Serializable, ENTITY extends DaoEnt
 
     ENTITY insertEntity(ENTITY e) throws UniqueException;
 
-    default ENTITY updateEntity(ENTITY e) throws UniqueException {
-        return updateEntity(e, null);
-    }
-
-    ENTITY updateEntity(ENTITY e, ENTITY old) throws UniqueException;
+    ENTITY updateEntity(ENTITY e) throws UniqueException;
 
     void deleteEntity(ENTITY e) throws E;
 

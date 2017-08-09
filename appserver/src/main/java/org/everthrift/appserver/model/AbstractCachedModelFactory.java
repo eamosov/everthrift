@@ -25,6 +25,14 @@ public abstract class AbstractCachedModelFactory<PK, ENTITY, E extends Exception
 
     protected final String cacheName;
 
+
+    public enum InvalidateCause{
+        INSERT,
+        DELETE,
+        UPDATE,
+        UNKNOWN
+    }
+
     private class CacheLoaderDecorator implements CacheLoader {
 
         private final CacheLoader orig;
@@ -204,21 +212,21 @@ public abstract class AbstractCachedModelFactory<PK, ENTITY, E extends Exception
         _afterPropertiesSet();
     }
 
-    public void invalidate(PK id) {
+    public void invalidate(PK id, InvalidateCause invalidateCause) {
         if (cache != null) {
             log.debug("invalidate {}/{}", getEntityClass().getSimpleName(), id);
             cache.remove(id);
         }
     }
 
-    public void invalidateLocal(PK id) {
+    public void invalidateLocal(PK id, InvalidateCause invalidateCause) {
         if (cache != null) {
             log.debug("invalidateLocal {}/{}", getEntityClass().getSimpleName(), id);
             cache.remove(id, true);
         }
     }
 
-    public void invalidate(Collection<PK> ids) {
+    public void invalidate(Collection<PK> ids, InvalidateCause invalidateCause) {
         if (cache != null) {
             log.debug("invalidateLocal {}/{}", getEntityClass().getSimpleName(), ids);
             cache.removeAll(ids);

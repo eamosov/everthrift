@@ -1,5 +1,7 @@
 package org.everthrift.appserver.model;
 
+import com.google.common.base.Throwables;
+import org.apache.commons.lang.NotImplementedException;
 import org.apache.thrift.TException;
 import org.everthrift.appserver.model.pgsql.OptimisticUpdateFailException;
 import org.everthrift.thrift.TFunction;
@@ -56,5 +58,20 @@ public interface OptimisticLockModelFactoryIF<PK extends Serializable, ENTITY ex
         }
 
         return updated;
+    }
+
+    @Override
+    default ENTITY updateEntity(ENTITY e) throws UniqueException {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    default ENTITY insertEntity(ENTITY e) throws UniqueException {
+        return this.optInsert(e).afterUpdate;
+    }
+
+    @Override
+    default void deleteEntity(ENTITY e) throws E {
+        delete((PK)e.getPk());
     }
 }

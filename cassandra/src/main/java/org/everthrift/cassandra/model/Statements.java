@@ -14,6 +14,7 @@ import com.google.common.util.concurrent.Futures;
 import net.javacrumbs.futureconverter.java8guava.FutureConverter;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.thrift.TException;
+import org.everthrift.appserver.model.AbstractCachedModelFactory;
 import org.everthrift.appserver.model.CreatedAtIF;
 import org.everthrift.appserver.model.DaoEntityIF;
 import org.everthrift.appserver.model.events.DeleteEntityEvent;
@@ -217,7 +218,7 @@ public class Statements {
                 log.error("Commit error", t);
             } else {
                 for (Map.Entry<CassandraModelFactory, Object> e : invalidates.entries()) {
-                    e.getKey().invalidate(e.getValue());
+                    e.getKey().invalidate(e.getValue(), AbstractCachedModelFactory.InvalidateCause.UNKNOWN);
                 }
 
                 callbacks.forEach(Runnable::run);
@@ -239,7 +240,7 @@ public class Statements {
         }
 
         for (Map.Entry<CassandraModelFactory, Object> e : invalidates.entries()) {
-            e.getKey().invalidate(e.getValue());
+            e.getKey().invalidate(e.getValue(), AbstractCachedModelFactory.InvalidateCause.UNKNOWN);
         }
 
         callbacks.forEach(Runnable::run);

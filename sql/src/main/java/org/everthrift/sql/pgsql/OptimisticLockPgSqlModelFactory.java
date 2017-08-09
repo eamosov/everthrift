@@ -1,9 +1,7 @@
 package org.everthrift.sql.pgsql;
 
 import com.google.common.base.Throwables;
-import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ListeningExecutorService;
-import net.sf.ehcache.Cache;
 import org.apache.thrift.TException;
 import org.everthrift.appserver.model.DaoEntityIF;
 import org.everthrift.appserver.model.EntityFactory;
@@ -13,25 +11,20 @@ import org.everthrift.appserver.model.OptResult;
 import org.everthrift.appserver.model.OptimisticLockModelFactoryIF;
 import org.everthrift.appserver.model.UniqueException;
 import org.everthrift.thrift.TFunction;
-import org.everthrift.utils.LongTimestamp;
 import org.everthrift.utils.Pair;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.StaleStateException;
 import org.hibernate.Transaction;
 import org.hibernate.annotations.OptimisticLocking;
-import org.hibernate.criterion.Restrictions;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.ConcurrencyFailureException;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 
 public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable, ENTITY extends DaoEntityIF, E extends TException>
     extends AbstractPgSqlModelFactory<PK, ENTITY, E> implements OptimisticLockModelFactoryIF<PK, ENTITY, E> {
@@ -101,9 +94,9 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable, E
             this.getDao().delete(e);
             tx.commit();
             return e;
-        }catch (Exception ex){
+        } catch (Exception ex) {
             tx.rollback();
-            throw  ex;
+            throw ex;
         }
     }
 
@@ -127,7 +120,7 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable, E
                 }
             });
 
-            final OptResult<ENTITY> r = OptResult.create(this, null, deleted, true);
+            final OptResult<ENTITY> r = OptResult.create(this, null, deleted, true, false);
             localEventBus.postEntityEvent(deleteEntityEvent(deleted));
             return r;
         } catch (EntityNotFoundException e) {
@@ -135,30 +128,19 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable, E
         } catch (TException e) {
             throw Throwables.propagate(e);
         } finally {
-            _invalidateEhCache(id);
-        }
-    }
-
-    @Override
-    public final ENTITY insertEntity(ENTITY e) {
-        try {
-            return this.optInsert(e).afterUpdate;
-        } catch (Exception e1) {
-            throw Throwables.propagate(e1);
+            _invalidateEhCache(id, InvalidateCause.DELETE);
         }
     }
 
     @Override
     public final OptResult<ENTITY> optInsert(final ENTITY e) {
 
-        final long now = LongTimestamp.now();
-
         setCreatedAt(e);
 
         final ENTITY inserted = getDao().save(e).first;
-        _invalidateEhCache((PK) inserted.getPk());
+        _invalidateEhCache((PK) inserted.getPk(), InvalidateCause.INSERT);
 
-        final OptResult<ENTITY> r = OptResult.create(this, inserted, null, true);
+        final OptResult<ENTITY> r = OptResult.create(this, inserted, null, true, true);
         localEventBus.postEntityEvent(insertEntityEvent(inserted));
         return r;
     }
@@ -168,11 +150,11 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable, E
         final Session session = getDao().getCurrentSession();
         final Transaction tx = session.beginTransaction();
 
-        try{
+        try {
             final ENTITY e = super.fetchEntityById(id);
             tx.commit();
             return e;
-        }catch (Exception ex){
+        } catch (Exception ex) {
             tx.rollback();
             throw ex;
         }
@@ -184,11 +166,11 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable, E
         final Session session = getDao().getCurrentSession();
         final Transaction tx = session.beginTransaction();
 
-        try{
-            final Map<PK, ENTITY>  e = super.fetchEntityByIdAsMap(ids);
+        try {
+            final Map<PK, ENTITY> e = super.fetchEntityByIdAsMap(ids);
             tx.commit();
             return e;
-        }catch (Exception ex){
+        } catch (Exception ex) {
             tx.rollback();
             throw ex;
         }
@@ -227,8 +209,7 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable, E
         });
 
         if (ret.isUpdated) {
-            _invalidateEhCache(id);
-
+            _invalidateEhCache(id, ret.isInserted ? InvalidateCause.INSERT : InvalidateCause.UPDATE);
             localEventBus.postEntityEvent(updateEntityEvent(ret.beforeUpdate, ret.afterUpdate));
         }
 
@@ -241,10 +222,12 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable, E
         final Session session = getDao().getCurrentSession();
         final Transaction tx = session.beginTransaction();
 
-        try{
+        try {
             try {
                 ENTITY e;
                 final ENTITY orig;
+
+                final boolean isInserted;
 
                 e = this.fetchEntityById(id);
                 if (e == null) {
@@ -254,10 +237,12 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable, E
 
                     orig = null;
                     e = factory.create(id);
+                    isInserted = true;
                     setCreatedAt(e);
 
                     getDao().persist(e);
                 } else {
+                    isInserted = false;
                     try {
                         orig = this.entityClass.getConstructor(this.entityClass).newInstance(e);
                     } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
@@ -269,10 +254,10 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable, E
                 if (mutator.apply(e)) {
                     final Pair<ENTITY, Boolean> r = getDao().saveOrUpdate(e);
                     tx.commit();
-                    return OptResult.create(this, r.first, orig, r.second);
+                    return OptResult.create(this, r.first, orig, r.second, isInserted);
                 } else {
                     tx.commit();
-                    return OptResult.create(this, e, e, false);
+                    return OptResult.create(this, e, e, false, false);
                 }
             } catch (EntityNotFoundException e) {
                 log.debug("tryOptimisticUpdate ends with exception of type {}", e.getClass().getSimpleName());
@@ -287,38 +272,9 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable, E
                 throw Throwables.propagate(e);
             }
 
-        }catch (Exception ex){
+        } catch (Exception ex) {
             tx.rollback();
             throw ex;
-        }
-    }
-
-    @Override
-    public final ENTITY updateEntity(ENTITY e, ENTITY old) throws UniqueException {
-
-        final Session session = getDao().getCurrentSession();
-        final Transaction tx = session.beginTransaction();
-
-        try {
-            final ENTITY before;
-            if (e.getPk() != null) {
-                before = getDao().findById((PK) e.getPk());
-            } else {
-                before = null;
-            }
-
-            final Pair<ENTITY, Boolean> r = getDao().saveOrUpdate(e);
-            tx.commit();
-
-            final OptResult<ENTITY> ret = new OptResult<>(this, r.first, before, true);
-
-            if (r.second) {
-                localEventBus.postEntityEvent(updateEntityEvent(before, r.first));
-            }
-            return r.first;
-        }catch (Exception ex){
-            tx.rollback();
-            throw  ex;
         }
     }
 }

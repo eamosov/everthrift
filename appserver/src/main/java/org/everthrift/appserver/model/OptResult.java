@@ -11,7 +11,7 @@ import java.util.List;
 
 public class OptResult<ENTITY extends DaoEntityIF> {
 
-    public static final OptResult CANCELED = OptResult.create(null, null, null, false);
+    public static final OptResult CANCELED = OptResult.create(null, null, null, false, false);
 
     public final OptimisticLockModelFactoryIF<?, ENTITY, ?> factory;
 
@@ -19,27 +19,32 @@ public class OptResult<ENTITY extends DaoEntityIF> {
 
     public final ENTITY beforeUpdate;
 
-    public final boolean isUpdated; // true, если произошло изменение объекта в
-    // БД
+    public final boolean isUpdated; // true, если произошло изменение объекта в БД
+
+    public final boolean isInserted;
 
     public List<OptResult> inner;
 
-    public OptResult(OptimisticLockModelFactoryIF<?, ENTITY, ?> factory, ENTITY afterUpdate, ENTITY beforeUpdate, boolean isUpdated) {
+    public OptResult(OptimisticLockModelFactoryIF<?, ENTITY, ?> factory, ENTITY afterUpdate, ENTITY beforeUpdate,
+                     boolean isUpdated, boolean isInserted) {
         super();
         this.afterUpdate = afterUpdate;
         this.beforeUpdate = beforeUpdate;
         this.isUpdated = isUpdated;
+        this.isInserted = isInserted;
         this.factory = factory;
     }
 
     public static <ENTITY extends DaoEntityIF> OptResult<ENTITY> notUpdated(OptimisticLockModelFactoryIF<?, ENTITY, ?> factory,
                                                                             ENTITY updated) {
-        return create(factory, updated, updated, false);
+        return create(factory, updated, updated, false, false);
     }
 
     public static <ENTITY extends DaoEntityIF> OptResult<ENTITY> create(OptimisticLockModelFactoryIF<?, ENTITY, ?> factory,
-                                                                        ENTITY afterUpdate, ENTITY beforeUpdate, boolean isUpdated) {
-        return new OptResult<ENTITY>(factory, afterUpdate, beforeUpdate, isUpdated);
+                                                                        ENTITY afterUpdate, ENTITY beforeUpdate,
+                                                                        boolean isUpdated, boolean isInserted) {
+
+        return new OptResult<ENTITY>(factory, afterUpdate, beforeUpdate, isUpdated, isInserted);
     }
 
     public boolean isCanceled() {

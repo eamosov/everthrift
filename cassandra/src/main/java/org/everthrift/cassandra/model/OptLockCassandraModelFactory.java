@@ -1,7 +1,6 @@
 package org.everthrift.cassandra.model;
 
 import net.sf.ehcache.Cache;
-import org.apache.commons.lang.NotImplementedException;
 import org.apache.thrift.TException;
 import org.everthrift.appserver.model.DaoEntityIF;
 import org.everthrift.appserver.model.EntityFactory;
@@ -52,11 +51,6 @@ public abstract class OptLockCassandraModelFactory<PK extends Serializable, ENTI
         } else if (mappingManager != null) {
             sequenceFactory = new SequenceFactory(mappingManager.getSession(), "sequences", sequenceName);
         }
-    }
-
-    @Override
-    public ENTITY insertEntity(ENTITY e) {
-        return optInsert(e).afterUpdate;
     }
 
     @Override
@@ -124,7 +118,7 @@ public abstract class OptLockCassandraModelFactory<PK extends Serializable, ENTI
 
                 final boolean needUpdate = mutator.apply(e);
                 if (needUpdate == false) {
-                    return OptResult.create(OptLockCassandraModelFactory.this, e, orig, false);
+                    return OptResult.create(OptLockCassandraModelFactory.this, e, orig, false, false);
                 }
 
                 // if (e instanceof UpdatedAtIF)
@@ -143,11 +137,11 @@ public abstract class OptLockCassandraModelFactory<PK extends Serializable, ENTI
                     }
 
                     if (saved) {
-                        invalidate(id);
-                        return OptResult.create(OptLockCassandraModelFactory.this, e, null, true);
+                        invalidate(id, InvalidateCause.INSERT);
+                        return OptResult.create(OptLockCassandraModelFactory.this, e, null, true, true);
                     } else {
                         if (count == 0) {
-                            invalidate(id);
+                            invalidate(id, InvalidateCause.UPDATE);
                         }
                         return null;
                     }
@@ -165,14 +159,14 @@ public abstract class OptLockCassandraModelFactory<PK extends Serializable, ENTI
                         }
 
                         if (updated) {
-                            invalidate(id);
+                            invalidate(id, InvalidateCause.UPDATE);
                         }
 
-                        return OptResult.create(OptLockCassandraModelFactory.this, e, orig, updated);
+                        return OptResult.create(OptLockCassandraModelFactory.this, e, orig, updated, false);
                     } catch (VersionException ve) {
 
                         if (count == 0) {
-                            invalidate(id);
+                            invalidate(id, InvalidateCause.UPDATE);
                         }
 
                         return null;
@@ -192,8 +186,8 @@ public abstract class OptLockCassandraModelFactory<PK extends Serializable, ENTI
 
     private OptResult<ENTITY> _delete(ENTITY e) {
         mapper.delete(e);
-        invalidate((PK) e.getPk());
-        final OptResult<ENTITY> r = OptResult.create(this, null, e, true);
+        invalidate((PK) e.getPk(), InvalidateCause.DELETE);
+        final OptResult<ENTITY> r = OptResult.create(this, null, e, true, false);
         localEventBus.postEntityEvent(deleteEntityEvent(e));
         return r;
     }
@@ -233,22 +227,17 @@ public abstract class OptLockCassandraModelFactory<PK extends Serializable, ENTI
             }
         }
 
-        invalidate((PK) e.getPk());
+        invalidate((PK) e.getPk(), InvalidateCause.INSERT);
 
         if (saved == false) {
             throw new UniqueException(null, true, null);
         }
 
-        final OptResult<ENTITY> r = OptResult.create(this, e, null, true);
+        final OptResult<ENTITY> r = OptResult.create(this, e, null, true, true);
 
         localEventBus.postEntityEvent(insertEntityEvent(e));
 
         return r;
-    }
-
-    @Override
-    public ENTITY updateEntity(ENTITY e) throws UniqueException {
-        throw new NotImplementedException();
     }
 
     /**
@@ -260,9 +249,8 @@ public abstract class OptLockCassandraModelFactory<PK extends Serializable, ENTI
      */
     public final OptResult<ENTITY> fastInsert(ENTITY e) {
         setCreatedAt(e);
-        putEntity(e, false);
-        final OptResult<ENTITY> r = OptResult.create(this, e, null, true);
-
+        putEntity(e, false, InvalidateCause.INSERT);
+        final OptResult<ENTITY> r = OptResult.create(this, e, null, true, true);
         localEventBus.postEntityEvent(insertEntityEvent(e));
         return r;
     }
