@@ -234,4 +234,84 @@ public abstract class BasicEsService {
     public void setIndexPrefix(String indexPrefix) {
         this.indexPrefix = indexPrefix;
     }
+
+
+    public <PK extends Serializable, ENTITY extends EsIndexableIF> ESearchResult<PK, ENTITY> searchQuery(EsProviderIF<PK, ENTITY> factory, SearchType searchType, boolean scroll, String query) throws ElasticsearchException {
+        return searchQuery(factory, searchType, scroll, null, query, false);
+    }
+
+    public <PK extends Serializable, ENTITY extends EsIndexableIF> ESearchResult<PK, ENTITY> searchQuery(EsProviderIF<PK, ENTITY> factory, SearchType searchType, boolean scroll, String query, boolean parseSource)
+        throws ElasticsearchException {
+        return searchQuery(factory, searchType, scroll, null, query, parseSource);
+    }
+
+    public <PK extends Serializable, ENTITY extends EsIndexableIF> ESearchResult<PK, ENTITY> searchQuery(EsProviderIF<PK, ENTITY> factory, SearchType searchType, boolean scroll, String innerName, String query,
+                                                                                                         boolean parseSource) throws ElasticsearchException {
+
+        try {
+            return searchQueryAsync(factory, searchType, scroll, innerName, query, parseSource).get();
+        } catch (ExecutionException e) {
+            Throwables.propagateIfPossible(e.getCause(), ElasticsearchException.class);
+            throw Throwables.propagate(e);
+        } catch (InterruptedException e) {
+            throw Throwables.propagate(e);
+        }
+
+    }
+
+
+    public <PK extends Serializable, ENTITY extends EsIndexableIF> CompletableFuture<ESearchResult<PK, ENTITY>> searchQueryAsync(EsProviderIF<PK, ENTITY> factory, SearchType searchType, boolean scroll, String innerName,
+                                                                                                                                 String query, boolean parseSource) throws ElasticsearchException {
+
+        log.trace("query: {}", query);
+
+        final SearchRequest sr = new SearchRequest();
+
+        sr.indices(indexPrefix + factory.getIndexName());
+        sr.indices(factory.getIndexName());
+        sr.types(factory.getMappingName());
+        sr.source(query);
+        sr.searchType(searchType);
+
+        if (scroll) {
+            sr.scroll(TimeValue.timeValueMinutes(1));
+        }
+
+        final CompletableFuture<ESearchResult<PK, ENTITY>> f = new CompletableFuture<>();
+
+        esClient.search(sr, new ActionListener<SearchResponse>() {
+
+            @Override
+            public void onResponse(SearchResponse response) {
+
+                log.trace("Response: {}", response);
+
+                final int total = (int) response.getHits().getTotalHits();
+
+                final ESearchResult<PK, ENTITY> ret = new ESearchResult<>(factory, response, total, Lists.newArrayList(), innerName == null ? null : Lists
+                    .newArrayList(),
+                                                                          parseSource ? Lists.newArrayList() : null);
+
+                if (total == 0) {
+                    f.complete(ret);
+                    return;
+                }
+
+                proccessHits(ret, response, innerName, parseSource ? factory.getEntityClass() : null);
+
+                if (scroll && response.getScrollId() != null) {
+                    scroll(ret, response.getScrollId(), innerName, parseSource ? factory.getEntityClass() : null).thenAccept(f::complete);
+                } else {
+                    f.complete(ret);
+                }
+            }
+
+            @Override
+            public void onFailure(Throwable e) {
+                f.completeExceptionally(e);
+            }
+        });
+
+        return f;
+    }
 }
