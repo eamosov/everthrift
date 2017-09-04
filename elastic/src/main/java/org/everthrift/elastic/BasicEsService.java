@@ -164,7 +164,7 @@ public abstract class BasicEsService {
             }
 
             @Override
-            public void onFailure(Exception e) {
+            public void onFailure(Throwable e) {
                 esClient.clearScroll(esClient.prepareClearScroll().addScrollId(scrollId).request());
                 f.completeExceptionally(e);
             }
@@ -219,7 +219,7 @@ public abstract class BasicEsService {
             }
 
             @Override
-            public void onFailure(Exception e) {
+            public void onFailure(Throwable e) {
                 f.completeExceptionally(e);
             }
         });

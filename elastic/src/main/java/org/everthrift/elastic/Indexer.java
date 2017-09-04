@@ -10,7 +10,6 @@ import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequestBuilder;
-import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.index.VersionType;
 import org.everthrift.appserver.model.LocalEventBus;
@@ -333,7 +332,7 @@ public abstract class Indexer implements InitializingBean, DisposableBean {
             }
         }
 
-        bulkRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.WAIT_UNTIL);
+        bulkRequest.setRefresh(true);
 
         final BulkResponse response = bulkRequest.get();
 
