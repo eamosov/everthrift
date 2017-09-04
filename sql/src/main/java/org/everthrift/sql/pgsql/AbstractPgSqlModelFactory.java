@@ -53,9 +53,9 @@ public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY 
 
         this.entityClass = entityClass;
         dao = new AbstractDaoImpl<>(this.entityClass);
-        if (cache != null) {
-            dao.setCacheMode(CacheMode.IGNORE);
-        }
+//        if (cache != null) {
+//            dao.setCacheMode(CacheMode.IGNORE);
+//        }
 
         this.listeningExecutorService = listeningExecutorService;
         this.localEventBus = localEventBus;
@@ -150,10 +150,10 @@ public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY 
             if (cachedKeys == null) {
                 final List<ENTITY> entities = getDao().findByCriteria(Restrictions.sqlRestriction("true"), null);
                 final List<Serializable> keys = new ArrayList<>();
-                for (ENTITY entity : entities) {
+                entities.forEach(entity -> {
                     keys.add(entity.getPk());
                     cache.put(new Element(entity.getPk(), entity), true);
-                }
+                });
                 cache.put(new Element(ALL_KEYS, keys), true);
                 return entities;
             } else {

@@ -1,6 +1,6 @@
-package org.everthrift.cassandra.scheduling;
+package org.everthrift.appserver.scheduling;
 
-import org.everthrift.cassandra.scheduling.context.SettableTriggerContext;
+import org.everthrift.appserver.scheduling.context.SettableTriggerContext;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.TriggerContext;
 

@@ -1,4 +1,4 @@
-package org.everthrift.cassandra.scheduling.context;
+package org.everthrift.appserver.scheduling.context;
 
 import java.io.Serializable;
 import java.util.Date;

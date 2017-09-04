@@ -1,8 +1,8 @@
-package org.everthrift.cassandra.scheduling;
+package org.everthrift.appserver.scheduling;
 
-import org.everthrift.cassandra.scheduling.annotation.DistributedScheduled;
-import org.everthrift.cassandra.scheduling.context.SettableTriggerContext;
-import org.everthrift.cassandra.scheduling.context.TriggerContextAccessor;
+import org.everthrift.appserver.scheduling.annotation.DistributedScheduled;
+import org.everthrift.appserver.scheduling.context.SettableTriggerContext;
+import org.everthrift.appserver.scheduling.context.TriggerContextAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.Trigger;

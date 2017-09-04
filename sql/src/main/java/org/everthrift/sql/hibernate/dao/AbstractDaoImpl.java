@@ -271,7 +271,7 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
         }
     }
 
-    private <R> R tx(Function<Session, R> r) {
+    public  <R> R tx(Function<Session, R> r) {
         final Session session = getCurrentSession();
         final TxWrap tx = beginTransaction(session);
         try {

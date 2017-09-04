@@ -1,12 +1,12 @@
-package org.everthrift.cassandra.scheduling.cassandra;
+package org.everthrift.cassandra.scheduling;
 
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.google.common.base.Throwables;
-import org.everthrift.cassandra.scheduling.ContextAccessError;
-import org.everthrift.cassandra.scheduling.context.SettableTriggerContext;
-import org.everthrift.cassandra.scheduling.context.SettableTriggerContextImpl;
-import org.everthrift.cassandra.scheduling.context.TriggerContextAccessor;
+import org.everthrift.appserver.scheduling.ContextAccessError;
+import org.everthrift.appserver.scheduling.context.SettableTriggerContext;
+import org.everthrift.appserver.scheduling.context.SettableTriggerContextImpl;
+import org.everthrift.appserver.scheduling.context.TriggerContextAccessor;
 import org.everthrift.utils.ClassUtils;
 
 import java.io.Serializable;
@@ -34,7 +34,7 @@ class TriggerContextAccessorImpl implements TriggerContextAccessor {
     private SettableTriggerContext _get() {
         final Row r = this.casTriggerContextAccessorFactory.getSession()
                                                            .execute(select().from(this.casTriggerContextAccessorFactory.getTableName())
-                                                                            .where(QueryBuilder.eq("id", taskName)))
+                                                                            .where(eq("id", taskName)))
                                                            .one();
         if (r == null) {
             return null;
@@ -104,7 +104,7 @@ class TriggerContextAccessorImpl implements TriggerContextAccessor {
                                                                              .and(set("cancelled", _ctx.isCancelled()))
                                                                              .and(set("period", _ctx.getPeriod()))
                                                                              .where(eq("id", taskName))
-                                                                             .onlyIf(QueryBuilder.eq("serial", _ctx
+                                                                             .onlyIf(eq("serial", _ctx
                                                                                  .getSerial())))
                                                         .wasApplied();
         } catch (Exception e) {

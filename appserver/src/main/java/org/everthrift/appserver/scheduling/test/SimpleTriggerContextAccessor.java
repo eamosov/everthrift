@@ -1,8 +1,8 @@
-package org.everthrift.cassandra.scheduling.test;
+package org.everthrift.appserver.scheduling.test;
 
-import org.everthrift.cassandra.scheduling.context.SettableTriggerContext;
-import org.everthrift.cassandra.scheduling.context.SettableTriggerContextImpl;
-import org.everthrift.cassandra.scheduling.context.TriggerContextAccessor;
+import org.everthrift.appserver.scheduling.context.SettableTriggerContext;
+import org.everthrift.appserver.scheduling.context.SettableTriggerContextImpl;
+import org.everthrift.appserver.scheduling.context.TriggerContextAccessor;
 import org.springframework.util.Assert;
 
 import java.util.Date;

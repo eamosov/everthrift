@@ -1,11 +1,11 @@
-package org.everthrift.cassandra.scheduling.cassandra;
+package org.everthrift.cassandra.scheduling;
 
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
-import org.everthrift.cassandra.scheduling.DuplicatedTaskException;
-import org.everthrift.cassandra.scheduling.context.TriggerContextAccessor;
-import org.everthrift.cassandra.scheduling.context.TriggerContextAccessorFactory;
+import org.everthrift.appserver.scheduling.DuplicatedTaskException;
+import org.everthrift.appserver.scheduling.context.TriggerContextAccessor;
+import org.everthrift.appserver.scheduling.context.TriggerContextAccessorFactory;
 import org.everthrift.utils.ClassUtils;
 import org.springframework.beans.factory.annotation.Value;
 

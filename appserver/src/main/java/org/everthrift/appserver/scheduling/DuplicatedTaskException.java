@@ -1,4 +1,4 @@
-package org.everthrift.cassandra.scheduling;
+package org.everthrift.appserver.scheduling;
 
 /**
  * Created by fluder on 25.10.16.

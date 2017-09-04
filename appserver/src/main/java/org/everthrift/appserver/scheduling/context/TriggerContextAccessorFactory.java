@@ -1,6 +1,6 @@
-package org.everthrift.cassandra.scheduling.context;
+package org.everthrift.appserver.scheduling.context;
 
-import org.everthrift.cassandra.scheduling.DuplicatedTaskException;
+import org.everthrift.appserver.scheduling.DuplicatedTaskException;
 
 import java.io.Serializable;
 import java.util.List;

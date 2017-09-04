@@ -1,7 +1,7 @@
-package org.everthrift.cassandra.scheduling.context;
+package org.everthrift.appserver.scheduling.context;
 
 
-import org.everthrift.cassandra.scheduling.ContextAccessError;
+import org.everthrift.appserver.scheduling.ContextAccessError;
 
 import java.util.Date;
 

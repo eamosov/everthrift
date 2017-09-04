@@ -24,6 +24,7 @@ import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.management.ManagementService;
 import org.everthrift.appserver.configs.AppserverConfig;
 import org.everthrift.appserver.configs.AsyncTcpThrift;
+import org.everthrift.appserver.configs.DistributedSchedulerConfig;
 import org.everthrift.appserver.configs.EhConfig;
 import org.everthrift.appserver.configs.JGroups;
 import org.everthrift.appserver.configs.JmxConfig;
@@ -333,6 +334,8 @@ public class AppserverApplication {
                 context.register(ZooJmxConfig.class);
             }
         }
+
+        context.register(DistributedSchedulerConfig.class);
 
         context.refresh();
 

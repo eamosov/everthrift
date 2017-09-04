@@ -133,7 +133,8 @@ public class SqlConfig {
                 setProperty("hibernate.hbm2ddl", "false");
                 setProperty("hibernate.show_sql", "false");
                 setProperty("hibernate.check_nullability", "false");
-                setProperty("hibernate.dialect", "org.hibernate.dialect.PostgreSQL82Dialect");
+                //setProperty("hibernate.dialect", "org.hibernate.dialect.PostgreSQL82Dialect");
+                setProperty("hibernate.dialect", "org.hibernate.spatial.dialect.postgis.PostgisDialect");
                 setProperty("hibernate.format_sql", "true");
                 setProperty("hibernate.cache.region.factory_class", "org.everthrift.sql.hibernate.HibernateCache");
                 setProperty("hibernate.cache.use_second_level_cache", "true");

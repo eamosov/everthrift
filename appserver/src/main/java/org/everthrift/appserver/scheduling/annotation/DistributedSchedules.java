@@ -1,4 +1,4 @@
-package org.everthrift.cassandra.scheduling.annotation;
+package org.everthrift.appserver.scheduling.annotation;
 
 /*
  * Copyright 2002-2016 the original author or authors.

@@ -1,4 +1,4 @@
-package org.everthrift.cassandra.scheduling.annotation;
+package org.everthrift.appserver.scheduling.annotation;
 
 import org.springframework.scheduling.TriggerContext;
 

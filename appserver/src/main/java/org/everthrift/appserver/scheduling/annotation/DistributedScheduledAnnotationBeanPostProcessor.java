@@ -1,6 +1,6 @@
-package org.everthrift.cassandra.scheduling.annotation;
+package org.everthrift.appserver.scheduling.annotation;
 
-import org.everthrift.cassandra.scheduling.DistributedTaskScheduler;
+import org.everthrift.appserver.scheduling.DistributedTaskScheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.aop.support.AopUtils;

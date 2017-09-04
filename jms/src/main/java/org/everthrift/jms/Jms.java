@@ -25,12 +25,12 @@ public class Jms {
     private static final Logger log = LoggerFactory.getLogger(Jms.class);
 
     @Bean(destroyMethod = "stop")
-    public PooledConnectionFactory jmsFactory(@Value("${activemq.url}") String activemqUrl,
-                                              @Value("${jms.redelivery.init.delay:5000}") long initialRedeliveryDelay,
-                                              @Value("${jms.redelivery.count:5}") int maximumRedeliveries,
-                                              @Value("${jms.prefetchCount:1}") int prefetchCount) {
+    public ConnectionFactory jmsFactory(@Value("${activemq.url}") String activemqUrl,
+                                        @Value("${jms.redelivery.init.delay:5000}") long initialRedeliveryDelay,
+                                        @Value("${jms.redelivery.count:5}") int maximumRedeliveries,
+                                        @Value("${jms.prefetchCount:1}") int prefetchCount
+    ) {
 
-        final PooledConnectionFactory factory = new PooledConnectionFactory();
         final ActiveMQConnectionFactory acf = new ActiveMQConnectionFactory();
 
         final RedeliveryPolicy rp = new RedeliveryPolicy();
@@ -44,12 +44,13 @@ public class Jms {
         activeMQPrefetchPolicy.setAll(prefetchCount);
         acf.setPrefetchPolicy(activeMQPrefetchPolicy);
 
+        final PooledConnectionFactory factory = new PooledConnectionFactory();
         factory.setConnectionFactory(acf);
         return factory;
     }
 
     @Bean
-    public JmsTemplate myJmsTemplate(@Qualifier("jmsFactory") ConnectionFactory connectionFactory){
+    public JmsTemplate myJmsTemplate(@Qualifier("jmsFactory") ConnectionFactory connectionFactory) {
         final JmsTemplate t = new JmsTemplate();
         t.setConnectionFactory(connectionFactory);
         return t;
@@ -75,7 +76,7 @@ public class Jms {
         container.setConnectionFactory(connectionFactory);
         container.setDestinationName(destination);
         container.setMessageListener(listener);
-        container.setSessionTransacted(true);
+        container.setSessionTransacted(false);
         container.start();
 
         return container;

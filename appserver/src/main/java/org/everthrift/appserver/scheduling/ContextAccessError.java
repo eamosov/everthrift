@@ -1,4 +1,4 @@
-package org.everthrift.cassandra.scheduling;
+package org.everthrift.appserver.scheduling;
 
 public class ContextAccessError extends Exception {
 

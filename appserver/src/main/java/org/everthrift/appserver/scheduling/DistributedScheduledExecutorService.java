@@ -1,12 +1,12 @@
-package org.everthrift.cassandra.scheduling;
+package org.everthrift.appserver.scheduling;
 
 import com.google.common.base.Throwables;
 import javaslang.control.Option;
 import javaslang.control.Try;
 import org.everthrift.appserver.model.LocalEventBus;
-import org.everthrift.cassandra.scheduling.context.SettableTriggerContext;
-import org.everthrift.cassandra.scheduling.context.TriggerContextAccessor;
-import org.everthrift.cassandra.scheduling.context.TriggerContextAccessorFactory;
+import org.everthrift.appserver.scheduling.context.SettableTriggerContext;
+import org.everthrift.appserver.scheduling.context.TriggerContextAccessor;
+import org.everthrift.appserver.scheduling.context.TriggerContextAccessorFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
