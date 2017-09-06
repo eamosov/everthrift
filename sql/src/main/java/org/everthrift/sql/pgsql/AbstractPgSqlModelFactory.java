@@ -1,6 +1,5 @@
 package org.everthrift.sql.pgsql;
 
-import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import net.sf.ehcache.Cache;
 import net.sf.ehcache.Element;
@@ -12,8 +11,12 @@ import org.everthrift.appserver.model.RwModelFactoryIF;
 import org.everthrift.sql.hibernate.dao.AbstractDao;
 import org.everthrift.sql.hibernate.dao.AbstractDaoImpl;
 import org.hibernate.CacheMode;
+import org.hibernate.ScrollMode;
+import org.hibernate.ScrollableResults;
 import org.hibernate.SessionFactory;
+import org.hibernate.StatelessSession;
 import org.hibernate.criterion.Restrictions;
+import org.hibernate.query.Query;
 import org.springframework.beans.factory.annotation.Qualifier;
 
 import javax.annotation.PostConstruct;
@@ -53,9 +56,9 @@ public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY 
 
         this.entityClass = entityClass;
         dao = new AbstractDaoImpl<>(this.entityClass);
-//        if (cache != null) {
-//            dao.setCacheMode(CacheMode.IGNORE);
-//        }
+        //        if (cache != null) {
+        //            dao.setCacheMode(CacheMode.IGNORE);
+        //        }
 
         this.listeningExecutorService = listeningExecutorService;
         this.localEventBus = localEventBus;
@@ -163,10 +166,30 @@ public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY 
     }
 
     public void fetchAll(final int batchSize, Consumer<List<ENTITY>> consumer) {
-        //TODO fetchAll можно переделать на курсор
-        final List<ENTITY> entities = listAll();
-        for (List<ENTITY> batch : Lists.partition(entities, batchSize)) {
-            consumer.accept(batch);
+
+        try (final StatelessSession ss = sessionFactory.openStatelessSession()) {
+            final Query<ENTITY> query = ss.createQuery("SELECT xx FROM " + entityClass.getSimpleName() + " xx");
+            query.setReadOnly(true);
+            query.setFetchSize(batchSize);
+            query.setCacheable(false);
+
+            try (ScrollableResults results = query.scroll(ScrollMode.FORWARD_ONLY)) {
+
+                final List<ENTITY> batch = new ArrayList<>(batchSize);
+
+                while (results.next()) {
+                    batch.add((ENTITY) results.get()[0]);
+
+                    if (batch.size() >= batchSize) {
+                        consumer.accept(batch);
+                        batch.clear();
+                    }
+                }
+
+                if (!batch.isEmpty()) {
+                    consumer.accept(batch);
+                }
+            }
         }
     }
 
