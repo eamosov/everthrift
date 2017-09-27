@@ -24,6 +24,7 @@ public class ZooJmxConfig {
         final ZPersistanceMbeanExporter e = new ZPersistanceMbeanExporter(curator, context, rootPath);
         e.setServer(mbeanServer);
         e.setRegistrationPolicy(RegistrationPolicy.REPLACE_EXISTING);
+        e.addExcludedBean("jmsContainerManager");
         return e;
     }
 

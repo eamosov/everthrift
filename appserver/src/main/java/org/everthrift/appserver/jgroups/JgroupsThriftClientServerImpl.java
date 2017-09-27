@@ -66,7 +66,9 @@ public class JgroupsThriftClientServerImpl extends AbstractJgroupsThriftClientIm
         log.debug("handle message: {}, {}", request, response);
 
         final MessageWrapper w = (MessageWrapper) request.getObject();
-        w.setAttribute(JGroupsThriftAdapter.HEADER_JRESPONSE, response);
+        if (response != null) {
+            w.setAttribute(JGroupsThriftAdapter.HEADER_JRESPONSE, response);
+        }
         w.setAttribute("src", request.getSrc());
 
         org.springframework.messaging.Message<MessageWrapper> m = MessageBuilder.<MessageWrapper>withPayload(w)

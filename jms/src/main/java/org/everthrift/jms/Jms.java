@@ -83,6 +83,12 @@ public class Jms {
     }
 
     @Bean
+    @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
+    public JmsContainerManager jmsContainerManager(DefaultMessageListenerContainer container, String name){
+        return new JmsContainerManager(container, name);
+    }
+
+    @Bean
     public JmsThriftClientServerImpl jmsThriftClientServerImpl(@Qualifier("jmsFactory") ConnectionFactory connectionFactory,
                                                                @Value("${activemq.queue.prefix:}") String queuePrefix,
                                                                @Value("${activemq.queue.suffix:}") String queueSuffix) {

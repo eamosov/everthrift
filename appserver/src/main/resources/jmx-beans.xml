@@ -20,7 +20,7 @@
         <property name="attributeSource" ref="jmxAttributeSource"/>
     </bean>
 
-    <bean id="exporter" class="org.springframework.jmx.export.annotation.AnnotationMBeanExporter">
+    <bean id="mbeanExporter" class="org.springframework.jmx.export.annotation.AnnotationMBeanExporter">
         <property name="server" ref="mbeanServer"/>
         <property name="registrationPolicy" value="IGNORE_EXISTING"/>
 
@@ -28,6 +28,11 @@
         <property name="assembler" ref="jmxAssembler"/>
         <property name="namingStrategy" ref="jmxNamingStrategy"/>
         <property name="ensureUniqueRuntimeObjectNames" value="false"/>
+        <property name="excludedBeans">
+            <list>
+                <value>jmsContainerManager</value>
+            </list>
+        </property>
     </bean>
 
     <bean id="jmxmpServerConnector" class="org.springframework.jmx.support.ConnectorServerFactoryBean">

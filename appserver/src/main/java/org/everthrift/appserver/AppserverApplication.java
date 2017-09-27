@@ -42,9 +42,11 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.MapPropertySource;
+import org.springframework.core.env.PropertiesPropertySource;
 import org.springframework.core.env.PropertySource;
 import org.springframework.core.env.SimpleCommandLinePropertySource;
 import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PropertiesLoaderUtils;
 import org.springframework.core.io.support.ResourcePropertySource;
 
 import javax.management.MBeanServer;
@@ -83,13 +85,14 @@ public class AppserverApplication {
 
     private boolean initialized = false;
 
-    private static class AppResourcePropertySource extends ResourcePropertySource {
+    private static class AppResourcePropertySource extends PropertiesPropertySource {
         private final String location;
 
         public AppResourcePropertySource(String location) throws IOException {
-            super(location);
+            super(location, PropertiesLoaderUtils.loadAllProperties(location.replace("classpath:", "")));
             this.location = location;
         }
+
     }
 
     private final List<PropertySource<?>> propertySourceList = new ArrayList<>();
@@ -199,7 +202,7 @@ public class AppserverApplication {
                     try {
                         final String profileResourceName = String.format("%s-%s.properties", m.group(1), profile);
                         env.getPropertySources().addBefore(lastAdded.getName(),
-                                                           (lastAdded = new ResourcePropertySource(profileResourceName)));
+                                                           (lastAdded = new AppResourcePropertySource(profileResourceName)));
                         log.info("Added property source: {}", profileResourceName);
                     } catch (IOException e) {
                     }

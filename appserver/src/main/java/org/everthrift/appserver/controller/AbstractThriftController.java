@@ -112,7 +112,8 @@ public abstract class AbstractThriftController<ArgsType extends TBase, ResultTyp
      */
     protected final Object handle(ArgsType args) {
 
-        log.debug("args:{}, attributes:{}", args, tps.getAttributes());
+        if (log.isDebugEnabled())
+            log.debug("args:{}, attributes:{}", args, tps.getAttributes());
 
         try {
             setup(args);

@@ -1,5 +1,6 @@
 package org.everthrift.jms;
 
+import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.thrift.TApplicationException;
@@ -17,16 +18,21 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
 import org.springframework.jms.listener.AbstractMessageListenerContainer;
 import org.springframework.jms.listener.DefaultMessageListenerContainer;
 import org.springframework.jms.listener.SessionAwareMessageListener;
+import org.springframework.jmx.export.MBeanExporter;
 
 import javax.jms.BytesMessage;
 import javax.jms.ConnectionFactory;
 import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.Session;
+import javax.management.MalformedObjectNameException;
+import javax.management.ObjectName;
+import java.util.Hashtable;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -42,6 +48,10 @@ public class JmsThriftClientServerImpl implements InitializingBean, DisposableBe
 
     @Autowired
     private RpcJmsRegistry rpcJmsRegistry;
+
+    @Autowired
+    @Qualifier("mbeanExporter")
+    private MBeanExporter exporter;
 
     private final JmsThriftClientImpl jmsThriftClient;
 
@@ -202,6 +212,18 @@ public class JmsThriftClientServerImpl implements InitializingBean, DisposableBe
                                                                                                     jmsConnectionFactory,
                                                                                                     listener,
                                                                                                     consumers);
+
+        try {
+            final Hashtable h = new Hashtable();
+            h.put("name", "JmsContainerManager");
+            h.put("service", serviceName);
+            h.put("queue", queueName);
+            exporter.registerManagedResource(context.getBean("jmsContainerManager", l, queueName), new ObjectName("JMS", h));
+        } catch (MalformedObjectNameException e) {
+            throw Throwables.propagate(e);
+        }
+
+
         listeners.add(l);
         return l;
     }

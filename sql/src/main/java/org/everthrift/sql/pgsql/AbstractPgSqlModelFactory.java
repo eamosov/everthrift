@@ -30,7 +30,7 @@ import java.util.function.Consumer;
 public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY extends DaoEntityIF, E extends TException>
     extends AbstractCachedModelFactory<PK, ENTITY, E> implements RwModelFactoryIF<PK, ENTITY, E> {
 
-    private final SessionFactory sessionFactory;
+    protected final SessionFactory sessionFactory;
 
     private final ListeningExecutorService listeningExecutorService;
 
