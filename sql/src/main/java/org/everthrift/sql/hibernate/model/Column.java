@@ -80,6 +80,8 @@ public class Column {
 
     protected String hibernateType;
 
+
+    //TODO нужно убрать customRead/Write, т.к. в случае NativeQuery преобразования не происходит и ResultSet некорректно преобразуется в объект
     protected String customRead;
 
     protected String customWrite;
@@ -354,10 +356,7 @@ public class Column {
 
                 hibernateType = StringListType.class.getCanonicalName();
             } else if (columnType.equals("_uuid")) {
-
                 hibernateType = UUIDStringListType.class.getCanonicalName();
-                customRead = columnName + "::text[]";
-                customWrite = "?::uuid[]";
             }
 
         } else if (java.util.Set.class.equals(javaClass)) {
@@ -517,6 +516,7 @@ public class Column {
         return Optional.ofNullable(doc)
                        .map(String::trim)
                        .filter(s -> !s.isEmpty())
-                       .map(s -> String.format("COMMENT ON COLUMN %s.%s.%s IS '%s';", table.getSchema(), table.getTableName(), columnName, s.replace("'", "''")));
+                       .map(s -> String.format("COMMENT ON COLUMN %s.%s.%s IS '%s';", table.getSchema(), table.getTableName(), columnName, s
+                           .replace("'", "''")));
     }
 }
