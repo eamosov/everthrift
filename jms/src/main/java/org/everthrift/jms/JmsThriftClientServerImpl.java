@@ -15,11 +15,10 @@ import org.everthrift.clustering.jms.JmsThriftClientIF;
 import org.everthrift.clustering.jms.JmsThriftClientImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.DisposableBean;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.SmartLifecycle;
 import org.springframework.jms.listener.AbstractMessageListenerContainer;
 import org.springframework.jms.listener.DefaultMessageListenerContainer;
 import org.springframework.jms.listener.SessionAwareMessageListener;
@@ -37,7 +36,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class JmsThriftClientServerImpl implements InitializingBean, DisposableBean, JmsThriftClientIF {
+public class JmsThriftClientServerImpl implements SmartLifecycle, JmsThriftClientIF {
 
     private final static Logger log = LoggerFactory.getLogger(JmsThriftClientServerImpl.class);
 
@@ -64,6 +63,8 @@ public class JmsThriftClientServerImpl implements InitializingBean, DisposableBe
     private final TProtocolFactory binaryProtocolFactory = new TBinaryProtocol.Factory();
 
     private List<AbstractMessageListenerContainer> listeners = Lists.newArrayList();
+
+    private boolean running = false;
 
     private SessionAwareMessageListener<Message> listener = new SessionAwareMessageListener<Message>() {
 
@@ -184,24 +185,6 @@ public class JmsThriftClientServerImpl implements InitializingBean, DisposableBe
         return je;
     }
 
-    @Override
-    public void afterPropertiesSet() throws Exception {
-
-        thriftProcessor = ThriftProcessor.create(context, rpcJmsRegistry);
-
-        final Set<String> services = Sets.newHashSet();
-        services.addAll(rpcJmsRegistry.getControllers()
-                                      .values()
-                                      .stream()
-                                      .map(ThriftControllerInfo::getServiceName)
-                                      .collect(Collectors.toList()));
-
-        for (String s : services) {
-            addJmsListener(getQueueName(s), s);
-        }
-
-    }
-
     private synchronized DefaultMessageListenerContainer addJmsListener(String queueName, String serviceName) {
 
         final int consumers = Integer.parseInt(context.getEnvironment()
@@ -226,15 +209,6 @@ public class JmsThriftClientServerImpl implements InitializingBean, DisposableBe
 
         listeners.add(l);
         return l;
-    }
-
-    @Override
-    public synchronized void destroy() throws Exception {
-        for (AbstractMessageListenerContainer l : listeners) {
-            l.stop();
-            l.destroy();
-        }
-        listeners.clear();
     }
 
     @Override
@@ -264,4 +238,52 @@ public class JmsThriftClientServerImpl implements InitializingBean, DisposableBe
         return queuePrefix + serviceName + queueSuffix;
     }
 
+
+    @Override
+    public boolean isAutoStartup() {
+        return true;
+    }
+
+    @Override
+    public void stop(Runnable callback) {
+        stop();
+        callback.run();
+    }
+
+    @Override
+    public void start() {
+        running = true;
+        thriftProcessor = ThriftProcessor.create(context, rpcJmsRegistry);
+
+        final Set<String> services = Sets.newHashSet();
+        services.addAll(rpcJmsRegistry.getControllers()
+                                      .values()
+                                      .stream()
+                                      .map(ThriftControllerInfo::getServiceName)
+                                      .collect(Collectors.toList()));
+
+        for (String s : services) {
+            addJmsListener(getQueueName(s), s);
+        }
+    }
+
+    @Override
+    public void stop() {
+        running = false;
+        for (AbstractMessageListenerContainer l : listeners) {
+            l.stop();
+            l.destroy();
+        }
+        listeners.clear();
+    }
+
+    @Override
+    public boolean isRunning() {
+        return running;
+    }
+
+    @Override
+    public int getPhase() {
+        return Integer.MAX_VALUE;
+    }
 }
