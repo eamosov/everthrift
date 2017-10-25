@@ -82,6 +82,14 @@ public class ThriftUtils {
         }
     }
 
+    public static void defaultBooleanFields(TBase src, TFieldIdEnum... fields) {
+        for (TFieldIdEnum id : fields) {
+            if (!src.isSet(id)) {
+                src.setFieldValue(id, false);
+            }
+        }
+    }
+
     public static TFieldIdEnum[] getFieldIds(TBase tBase) {
         Objects.requireNonNull(tBase);
         return getFieldIds(tBase.getClass());

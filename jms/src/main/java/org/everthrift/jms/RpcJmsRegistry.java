@@ -7,8 +7,8 @@ import java.util.List;
 
 public class RpcJmsRegistry extends ThriftControllerRegistry {
 
-    public RpcJmsRegistry(List<String> basePath) {
-        super(RpcJms.class, basePath);
+    public RpcJmsRegistry() {
+        super(RpcJms.class);
     }
 
 }

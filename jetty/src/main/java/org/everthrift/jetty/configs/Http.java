@@ -24,13 +24,13 @@ import java.util.List;
 public class Http {
 
     @Bean
-    public RpcHttpRegistry rpcHttpRegistry(@Qualifier("thriftControllersPath") List<String> basePath) {
-        return new RpcHttpRegistry(basePath);
+    public RpcHttpRegistry rpcHttpRegistry() {
+        return new RpcHttpRegistry();
     }
 
     @Bean
-    public RpcWebsocketRegistry rpcWebsocketRegistry(@Qualifier("thriftControllersPath") List<String> basePath) {
-        return new RpcWebsocketRegistry(basePath);
+    public RpcWebsocketRegistry rpcWebsocketRegistry() {
+        return new RpcWebsocketRegistry();
     }
 
     @Bean

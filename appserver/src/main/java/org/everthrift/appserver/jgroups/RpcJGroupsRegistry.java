@@ -8,8 +8,8 @@ import java.util.List;
 
 public class RpcJGroupsRegistry extends ThriftControllerRegistry {
 
-    public RpcJGroupsRegistry(final List<String> basePaths) {
-        super(RpcJGroups.class, basePaths);
+    public RpcJGroupsRegistry() {
+        super(RpcJGroups.class);
     }
 
     public Node getNodeConfiguration() {

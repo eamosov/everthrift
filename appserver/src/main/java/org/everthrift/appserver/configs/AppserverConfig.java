@@ -28,12 +28,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.Executor;
-
-import static com.google.common.collect.ImmutableList.of;
 
 @Configuration
 @ImportResource("classpath:app-context.xml")
@@ -41,8 +36,6 @@ import static com.google.common.collect.ImmutableList.of;
 @EnableScheduling
 @EnableAsync
 public class AppserverConfig implements SchedulingConfigurer, AsyncConfigurer {
-
-    private static final List<String> thriftControllersPath = Collections.synchronizedList(new ArrayList<>(of("org.everthrift.appserver")));
 
     public AppserverConfig() {
 
@@ -137,17 +130,5 @@ public class AppserverConfig implements SchedulingConfigurer, AsyncConfigurer {
     @Bean
     public Boolean testMode(@Value("${app.testMode:false}") String value) {
         return Boolean.parseBoolean(value);
-    }
-
-    @Bean
-    public List<String> thriftControllersPath() {
-        return thriftControllersPath;
-    }
-
-    /**
-     * Add path to thrift controllers scan path
-     */
-    public static void addThriftControllersPath(String p) {
-        thriftControllersPath.add(p);
     }
 }

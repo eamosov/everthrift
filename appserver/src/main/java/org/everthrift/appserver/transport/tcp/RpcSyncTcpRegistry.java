@@ -6,8 +6,8 @@ import java.util.List;
 
 public class RpcSyncTcpRegistry extends ThriftControllerRegistry {
 
-    public RpcSyncTcpRegistry(final List<String> basePaths) {
-        super(RpcSyncTcp.class, basePaths);
+    public RpcSyncTcpRegistry() {
+        super(RpcSyncTcp.class);
     }
 
 }

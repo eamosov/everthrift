@@ -10,4 +10,6 @@
     <context:property-placeholder/>
     <int:poller id="defaultPoller" default="true" receive-timeout="5000" fixed-rate="1"/>
 
+    <bean class="org.everthrift.appserver.BeanDefinitionHolder" />
+
 </beans>

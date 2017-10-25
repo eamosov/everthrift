@@ -6,8 +6,8 @@ import java.util.List;
 
 public class RpcRabbitRegistry extends ThriftControllerRegistry {
 
-    public RpcRabbitRegistry(List<String> basePath) {
-        super(RpcRabbit.class, basePath);
+    public RpcRabbitRegistry() {
+        super(RpcRabbit.class);
     }
 
 }

@@ -165,6 +165,16 @@ public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY 
         }
     }
 
+    public long countAll() {
+        try (final StatelessSession ss = sessionFactory.openStatelessSession()) {
+            final Query<Long> query = ss.createQuery("SELECT COUNT(*) FROM " + entityClass.getSimpleName());
+            query.setReadOnly(true);
+            query.setCacheable(false);
+
+            return query.list().get(0);
+        }
+    }
+
     public void fetchAll(final int batchSize, Consumer<List<ENTITY>> consumer) {
 
         try (final StatelessSession ss = sessionFactory.openStatelessSession()) {

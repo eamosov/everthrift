@@ -17,8 +17,8 @@ import java.util.List;
 public class RabbitConfig {
 
     @Bean
-    public RpcRabbitRegistry rpcRabbitRegistry(@Qualifier("thriftControllersPath") List<String> basePath) {
-        return new RpcRabbitRegistry(basePath);
+    public RpcRabbitRegistry rpcRabbitRegistry() {
+        return new RpcRabbitRegistry();
     }
 
     @Bean

@@ -57,8 +57,8 @@ public class Jms {
     }
 
     @Bean
-    public RpcJmsRegistry RpcJmsRegistry(@Qualifier("thriftControllersPath") List<String> basePath) {
-        return new RpcJmsRegistry(basePath);
+    public RpcJmsRegistry RpcJmsRegistry() {
+        return new RpcJmsRegistry();
     }
 
     @Bean

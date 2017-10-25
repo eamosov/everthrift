@@ -63,6 +63,10 @@ public abstract class AbstractThriftController<ArgsType extends TBase, ResultTyp
 
     protected boolean allowAsyncAnswer;
 
+    protected String serviceName;
+
+    protected String methodName;
+
     protected LazyLoadManager lazyLoadManager = new LazyLoadManager();
 
     @Autowired
@@ -84,7 +88,9 @@ public abstract class AbstractThriftController<ArgsType extends TBase, ResultTyp
     }
 
     public void setup(ArgsType args, ThriftControllerInfo info, ThriftProtocolSupportIF tps, LogEntry logEntry, int seqId,
-                      ThriftClient thriftClient, Class<? extends Annotation> registryAnn, boolean allowAsyncAnswer) {
+                      ThriftClient thriftClient, Class<? extends Annotation> registryAnn, boolean allowAsyncAnswer,
+                      String serviceName, String methodName) {
+
         this.args = args;
         this.info = info;
         this.logEntry = logEntry;
@@ -94,6 +100,8 @@ public abstract class AbstractThriftController<ArgsType extends TBase, ResultTyp
         this.tps = tps;
         this.startNanos = System.nanoTime();
         this.allowAsyncAnswer = allowAsyncAnswer;
+        this.serviceName = serviceName;
+        this.methodName = methodName;
 
         try {
             this.ds = context.getBean(DataSource.class);
@@ -112,8 +120,9 @@ public abstract class AbstractThriftController<ArgsType extends TBase, ResultTyp
      */
     protected final Object handle(ArgsType args) {
 
-        if (log.isDebugEnabled())
+        if (log.isDebugEnabled()) {
             log.debug("args:{}, attributes:{}", args, tps.getAttributes());
+        }
 
         try {
             setup(args);
@@ -134,12 +143,12 @@ public abstract class AbstractThriftController<ArgsType extends TBase, ResultTyp
                 return result;
             } else {
                 resultFuture.whenCompleteAsync((_answer, t) -> {
-                    if (t !=null){
+                    if (t != null) {
                         setResultSentFlag();
                         setEndNanos(System.nanoTime());
                         log.error("Uncought exception", t);
                         sendAnswerOrException(t);
-                    }else{
+                    } else {
                         final ResultType result = filterOutput(_answer);
                         setResultSentFlag();
                         setEndNanos(System.nanoTime());
@@ -206,7 +215,7 @@ public abstract class AbstractThriftController<ArgsType extends TBase, ResultTyp
 
         } else {
             lf.whenCompleteAsync((result, t) -> {
-                if (t !=null) {
+                if (t != null) {
                     if (t instanceof TException) {
                         sendException((TException) t);
                     } else if (t.getCause() instanceof TException) {
@@ -215,7 +224,7 @@ public abstract class AbstractThriftController<ArgsType extends TBase, ResultTyp
                         log.error("Exception", t);
                         sendException(new TApplicationException(t.getMessage()));
                     }
-                }else{
+                } else {
                     sendAnswer(result);
                 }
             }, executor);
@@ -234,7 +243,7 @@ public abstract class AbstractThriftController<ArgsType extends TBase, ResultTyp
         setResultSentFlag();
 
         loadLazyRelations(answer).handleAsync((_answer, t) -> {
-            if (t !=null) {
+            if (t != null) {
                 log.error("Uncought exception", t);
                 setEndNanos(System.nanoTime());
                 sendAnswerOrException(new TApplicationException(TApplicationException.INTERNAL_ERROR, t.getMessage()));

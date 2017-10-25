@@ -6,12 +6,14 @@ import org.hibernate.annotations.OptimisticLocking;
 import org.hibernate.annotations.SQLInsert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
 import org.springframework.jdbc.support.JdbcUtils;
 import org.springframework.jdbc.support.MetaDataAccessException;
 
 import javax.sql.DataSource;
 import java.beans.PropertyDescriptor;
-import java.sql.Types;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -20,8 +22,6 @@ import java.util.stream.Collectors;
 import static org.springframework.beans.BeanUtils.getPropertyDescriptor;
 
 public class MetaDataProvider {
-
-    public static final String TS_POSTFIX = "Ts";
 
     public static final String VIEW_POSTFIX = "_v";
 
@@ -110,22 +110,23 @@ public class MetaDataProvider {
         final String lowerCase = column.getColumnName().toLowerCase();
         final String camelCase = CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, lowerCase.toUpperCase());
 
-        String camelCaseTs = null;
-        switch (column.getJdbcType()) {
-            case Types.TIMESTAMP:
-            case Types.TIME:
-            case Types.DATE:
-                camelCaseTs = camelCase.concat(TS_POSTFIX);
-        }
 
-        final PropertyDescriptor property = (camelCaseTs != null
-            && getPropertyDescriptor(clazz, camelCaseTs) != null) ? getPropertyDescriptor(clazz, camelCaseTs)
-                                                                  : getPropertyDescriptor(clazz, camelCase) != null ?
-                                                                    getPropertyDescriptor(clazz, camelCase) :
-                                                                    getPropertyDescriptor(clazz, lowerCase);
+        final PropertyDescriptor property = getPropertyDescriptor(clazz, camelCase) != null ?
+                                            getPropertyDescriptor(clazz, camelCase) :
+                                            getPropertyDescriptor(clazz, lowerCase);
 
         if (property != null) {
-            column.setJavaClass(property.getPropertyType());
+
+            final Type propertyType = property.getReadMethod().getGenericReturnType();
+            if (propertyType instanceof ParameterizedType){
+                column.setJavaClassParameters(((ParameterizedType)propertyType).getActualTypeArguments());
+                column.setJavaClass((Class)((ParameterizedType)propertyType).getRawType());
+            }else if (propertyType instanceof Class){
+                column.setJavaClass((Class)propertyType);
+            }else {
+                throw new RuntimeException("Unknown type: " + propertyType.getClass().getCanonicalName());
+            }
+
             column.setPropertyName(property.getName());
 
             if (property.getValue("doc") != null) {

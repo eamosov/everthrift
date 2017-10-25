@@ -14,8 +14,8 @@ import java.util.List;
 public class TcpThrift {
 
     @Bean
-    public RpcSyncTcpRegistry rpcSyncTcpRegistry(@Qualifier("thriftControllersPath") List<String> basePath) {
-        return new RpcSyncTcpRegistry(basePath);
+    public RpcSyncTcpRegistry rpcSyncTcpRegistry() {
+        return new RpcSyncTcpRegistry();
     }
 
     @Bean

@@ -7,7 +7,7 @@ import java.util.List;
 
 public class RpcHttpRegistry extends ThriftControllerRegistry {
 
-    public RpcHttpRegistry(List<String> basePath) {
-        super(RpcHttp.class, basePath);
+    public RpcHttpRegistry() {
+        super(RpcHttp.class);
     }
 }

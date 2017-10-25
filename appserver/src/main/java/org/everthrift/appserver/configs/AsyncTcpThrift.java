@@ -20,7 +20,7 @@ public class AsyncTcpThrift {
     }
 
     @Bean
-    public RpcAsyncTcpRegistry rpcAsyncTcpRegistry(@Qualifier("thriftControllersPath") List<String> basePath) {
-        return new RpcAsyncTcpRegistry(basePath);
+    public RpcAsyncTcpRegistry rpcAsyncTcpRegistry() {
+        return new RpcAsyncTcpRegistry();
     }
 }

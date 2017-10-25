@@ -18,6 +18,7 @@ import org.everthrift.sql.hibernate.model.types.StringListType;
 import org.everthrift.sql.hibernate.model.types.StringSetType;
 import org.everthrift.sql.hibernate.model.types.StringUUIDType;
 import org.everthrift.sql.hibernate.model.types.TBaseType;
+import org.everthrift.sql.hibernate.model.types.TEnumListTypeFactory;
 import org.everthrift.sql.hibernate.model.types.TEnumTypeFactory;
 import org.everthrift.sql.hibernate.model.types.TLongLongHstoreType;
 import org.everthrift.sql.hibernate.model.types.UUIDStringListType;
@@ -44,6 +45,7 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.util.StringUtils;
 
+import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.ResultSet;
@@ -73,6 +75,8 @@ public class Column {
     protected Integer scale;
 
     protected Class javaClass;
+
+    protected Type javaClassParameters[];
 
     protected String propertyName;
 
@@ -146,6 +150,14 @@ public class Column {
 
     public void setJavaClass(Class javaClass) {
         this.javaClass = javaClass;
+    }
+
+    public Type[] getJavaClassParameters() {
+        return javaClassParameters;
+    }
+
+    public void setJavaClassParameters(Type javaClassParameters[]) {
+        this.javaClassParameters = javaClassParameters;
     }
 
     public String getColumnType() {
@@ -346,7 +358,13 @@ public class Column {
 
             } else if (columnType.contains("_int4")) {
 
-                hibernateType = IntegerListType.class.getCanonicalName();
+                if (Integer.class.isAssignableFrom((Class) javaClassParameters[0])) {
+                    hibernateType = IntegerListType.class.getCanonicalName();
+                } else if (TEnum.class.isAssignableFrom((Class) javaClassParameters[0])) {
+                    hibernateType = TEnumListTypeFactory.create((Class) javaClassParameters[0]).getCanonicalName();
+                } else {
+                    throw new RuntimeException("Don't know how to map list<" + javaClassParameters[0].getTypeName() + "> to _int4");
+                }
 
             } else if (columnType.contains("_short")) {
 

@@ -7,8 +7,8 @@ import java.util.List;
 
 public class RpcWebsocketRegistry extends ThriftControllerRegistry {
 
-    public RpcWebsocketRegistry(List<String> basePath) {
-        super(RpcWebsocket.class, basePath);
+    public RpcWebsocketRegistry() {
+        super(RpcWebsocket.class);
     }
 
 }

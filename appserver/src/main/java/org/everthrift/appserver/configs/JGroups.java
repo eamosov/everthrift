@@ -33,8 +33,8 @@ public class JGroups {
     }
 
     @Bean
-    public RpcJGroupsRegistry RpcJGroupsRegistry(@Qualifier("thriftControllersPath") List<String> basePath) {
-        return new RpcJGroupsRegistry(basePath);
+    public RpcJGroupsRegistry RpcJGroupsRegistry() {
+        return new RpcJGroupsRegistry();
     }
 
     @Bean

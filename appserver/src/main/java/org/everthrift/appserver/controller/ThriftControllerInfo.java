@@ -19,6 +19,8 @@ public class ThriftControllerInfo {
 
     private static final Logger log = LoggerFactory.getLogger(ThriftControllerInfo.class);
 
+    private final String beanName;
+
     private final Class<? extends ThriftController> controllerCls;
 
     private final String serviceName;
@@ -33,10 +35,11 @@ public class ThriftControllerInfo {
 
     private final ApplicationContext context;
 
-    public ThriftControllerInfo(ApplicationContext context, Class<? extends ThriftController> controllerCls, String serviceName,
+    public ThriftControllerInfo(ApplicationContext context, String beanName, Class<? extends ThriftController> controllerCls, String serviceName,
                                 String methodName, Class<? extends TBase> argCls, Class<? extends TBase> resultCls,
                                 Method findResultFieldByName) {
         super();
+        this.beanName = beanName;
         this.controllerCls = controllerCls;
         this.serviceName = serviceName;
         this.methodName = methodName;
@@ -66,7 +69,7 @@ public class ThriftControllerInfo {
         }
     }
 
-    public TBase makeResult(Object ret) throws TApplicationException{
+    public TBase makeResult(Object ret) throws TApplicationException {
 
         try {
 
@@ -74,7 +77,7 @@ public class ThriftControllerInfo {
 
             if (ret != null) {
                 if (ret instanceof TException) {
-                    try{
+                    try {
                         final Method setMethod = ClassUtils.getPropertyDescriptors(resultCls).entrySet().stream()
                                                            .filter(e -> e.getValue().getReadMethod() != null
                                                                && e.getValue().getWriteMethod() != null && e.getValue()
@@ -83,9 +86,12 @@ public class ThriftControllerInfo {
                                                                                                             .isAssignableFrom(ret.getClass()))
                                                            .findFirst().get().getValue().getWriteMethod();
                         setMethod.invoke(res, ret);
-                    }catch (NoSuchElementException e){
-                        log.error("Coudn't find Exception of type {} in {}", ret.getClass().getCanonicalName(), resultCls.getCanonicalName());
-                        throw new TApplicationException(TApplicationException.INTERNAL_ERROR, ret.getClass().getSimpleName() + ":" + ((TException) ret).getMessage());
+                    } catch (NoSuchElementException e) {
+                        log.error("Coudn't find Exception of type {} in {}", ret.getClass()
+                                                                                .getCanonicalName(), resultCls.getCanonicalName());
+                        throw new TApplicationException(TApplicationException.INTERNAL_ERROR, ret.getClass()
+                                                                                                 .getSimpleName() + ":" + ((TException) ret)
+                            .getMessage());
                     }
                 } else {
                     final TFieldIdEnum f = (TFieldIdEnum) findResultFieldByName.invoke(null, "success");
@@ -113,8 +119,9 @@ public class ThriftControllerInfo {
     public ThriftController makeController(TBase args, ThriftProtocolSupportIF tps, LogEntry logEntry, int seqId, ThriftClient thriftClient,
                                            Class<? extends Annotation> registryAnn, boolean allowAsyncAnswer) throws TException {
 
-        final ThriftController ctrl = context.getBean(controllerCls);
-        ctrl.setup(args, this, tps, logEntry, seqId, thriftClient, registryAnn, allowAsyncAnswer);
+        final ThriftController ctrl = context.getBean(beanName, ThriftController.class);
+        ctrl.setup(args, this, tps, logEntry, seqId, thriftClient, registryAnn, allowAsyncAnswer, serviceName, methodName);
+
         return ctrl;
     }
 
@@ -136,5 +143,9 @@ public class ThriftControllerInfo {
 
     public Class<? extends TBase> getArgCls() {
         return argCls;
+    }
+
+    public String getBeanName() {
+        return beanName;
     }
 }
