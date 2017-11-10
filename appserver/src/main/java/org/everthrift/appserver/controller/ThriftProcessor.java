@@ -296,7 +296,7 @@ public class ThriftProcessor implements TProcessor {
                     final TBase result;
                     try {
                         result = tInfo.makeResult(o);
-                    }catch (TApplicationException e){
+                    } catch (TApplicationException e) {
                         return result(e);
                     }
 

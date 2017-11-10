@@ -9,6 +9,7 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.ApplicationContext;
+import org.springframework.core.type.StandardMethodMetadata;
 import org.springframework.util.ClassUtils;
 
 import java.lang.annotation.Annotation;
@@ -53,17 +54,25 @@ public abstract class ThriftControllerRegistry implements InitializingBean {
             final BeanDefinition beanDefinition = beanDefinitionHolder.getBeanDefinitionRegistry()
                                                                       .getBeanDefinition(beanName);
 
-            if (beanDefinition.isPrototype() && beanDefinition.getBeanClassName() != null) {
+            if (beanDefinition.isPrototype()) {
 
+                Class beanCls = null;
+                if (beanDefinition.getBeanClassName() != null) {
+                    try {
+                        beanCls = Class.forName(beanDefinition.getBeanClassName());
+                    } catch (ClassNotFoundException e) {
+                    }
+                } else if (beanDefinition.getSource() instanceof StandardMethodMetadata) {
+                    beanCls = ((StandardMethodMetadata) beanDefinition.getSource()).getIntrospectedMethod()
+                                                                                   .getReturnType();
+                }
 
-                try {
-                    final Class beanCls = Class.forName(beanDefinition.getBeanClassName());
+                if (beanCls != null) {
                     if (ThriftController.class.isAssignableFrom(beanCls) && beanCls.getAnnotation(annotationType) != null) {
                         registerController(beanName, beanCls);
                     } else if (ConnectionStateHandler.class.isAssignableFrom(beanCls)) {
                         stateHandlers.add((Class<ConnectionStateHandler>) beanCls);
                     }
-                } catch (ClassNotFoundException e) {
                 }
             }
         }
@@ -92,7 +101,7 @@ public abstract class ThriftControllerRegistry implements InitializingBean {
 
     public ThriftControllerInfo registerController(String beanName, Class ctrlCls, Class argsCls) {
         final ThriftControllerInfo i = tryRegisterController(beanName, ctrlCls, argsCls);
-        log.debug("Find ThriftController: {}", i);
+        log.debug("registerController: {}", i.getBeanName());
         map.put(i.getName(), i);
         return i;
     }
