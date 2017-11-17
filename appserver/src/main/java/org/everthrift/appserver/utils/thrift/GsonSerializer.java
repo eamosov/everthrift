@@ -26,8 +26,10 @@ import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -147,7 +149,10 @@ public class GsonSerializer {
                 return new JsonObject();
             }
 
-            for (TFieldIdEnum f : map.keySet()) {
+            final List<TFieldIdEnum> keys = new ArrayList<>(map.keySet());
+            Collections.sort(keys, (a, b) -> a.getFieldName().compareTo(b.getFieldName()));
+
+            for (TFieldIdEnum f : keys) {
 
                 if (src.isSet(f) && !excludes.contains(f.getFieldName())) {
 

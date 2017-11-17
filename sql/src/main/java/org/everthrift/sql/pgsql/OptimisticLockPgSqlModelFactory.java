@@ -120,15 +120,20 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable, E
                 }
             });
 
+            _invalidateEhCache(id, InvalidateCause.DELETE);
+
             final OptResult<ENTITY> r = OptResult.create(this, null, deleted, true, false);
             localEventBus.postEntityEvent(deleteEntityEvent(deleted));
             return r;
         } catch (EntityNotFoundException e) {
+            _invalidateEhCache(id, InvalidateCause.DELETE);
             throw createNotFoundException(id);
         } catch (TException e) {
-            throw Throwables.propagate(e);
-        } finally {
             _invalidateEhCache(id, InvalidateCause.DELETE);
+            throw Throwables.propagate(e);
+        } catch (Throwable e) {
+            _invalidateEhCache(id, InvalidateCause.DELETE);
+            throw e;
         }
     }
 
