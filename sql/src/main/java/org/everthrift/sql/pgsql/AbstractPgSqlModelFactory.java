@@ -10,13 +10,13 @@ import org.everthrift.appserver.model.LocalEventBus;
 import org.everthrift.appserver.model.RwModelFactoryIF;
 import org.everthrift.sql.hibernate.dao.AbstractDao;
 import org.everthrift.sql.hibernate.dao.AbstractDaoImpl;
-import org.hibernate.CacheMode;
 import org.hibernate.ScrollMode;
 import org.hibernate.ScrollableResults;
 import org.hibernate.SessionFactory;
 import org.hibernate.StatelessSession;
 import org.hibernate.criterion.Restrictions;
 import org.hibernate.query.Query;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 
 import javax.annotation.PostConstruct;
@@ -30,11 +30,15 @@ import java.util.function.Consumer;
 public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY extends DaoEntityIF, E extends TException>
     extends AbstractCachedModelFactory<PK, ENTITY, E> implements RwModelFactoryIF<PK, ENTITY, E> {
 
-    protected final SessionFactory sessionFactory;
+    @Autowired
+    protected SessionFactory sessionFactory;
 
-    private final ListeningExecutorService listeningExecutorService;
+    @Autowired
+    @Qualifier("listeningCallerRunsBoundQueueExecutor")
+    private ListeningExecutorService listeningExecutorService;
 
-    protected final LocalEventBus localEventBus;
+    @Autowired
+    protected LocalEventBus localEventBus;
 
     protected final AbstractDaoImpl<PK, ENTITY> dao;
 
@@ -48,54 +52,25 @@ public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY 
         return (E) new TException("Entity with PK '" + id + "' not found");
     }
 
-    protected AbstractPgSqlModelFactory(Cache cache, Class<ENTITY> entityClass,
-                                        @Qualifier("listeningCallerRunsBoundQueueExecutor") ListeningExecutorService listeningExecutorService,
-                                        SessionFactory sessionFactory,
-                                        LocalEventBus localEventBus) {
+    protected AbstractPgSqlModelFactory(Cache cache, Class<ENTITY> entityClass) {
         super(cache);
 
         this.entityClass = entityClass;
         dao = new AbstractDaoImpl<>(this.entityClass);
-        //        if (cache != null) {
-        //            dao.setCacheMode(CacheMode.IGNORE);
-        //        }
-
-        this.listeningExecutorService = listeningExecutorService;
-        this.localEventBus = localEventBus;
-        this.sessionFactory = sessionFactory;
-        _afterPropertiesSet();
     }
 
-    protected AbstractPgSqlModelFactory(String cacheName, Class<ENTITY> entityClass,
-                                        @Qualifier("listeningCallerRunsBoundQueueExecutor") ListeningExecutorService listeningExecutorService,
-                                        SessionFactory sessionFactory,
-                                        LocalEventBus localEventBus) {
+    protected AbstractPgSqlModelFactory(String cacheName, Class<ENTITY> entityClass) {
         super(cacheName);
 
         this.entityClass = entityClass;
         dao = new AbstractDaoImpl<>(this.entityClass);
-
-        if (cacheName != null) {
-            dao.setCacheMode(CacheMode.IGNORE);
-        }
-
-        this.listeningExecutorService = listeningExecutorService;
-        this.localEventBus = localEventBus;
-        this.sessionFactory = sessionFactory;
-        _afterPropertiesSet();
-    }
-
-    private void _afterPropertiesSet() {
-
-        dao.setSessionFactory(sessionFactory);
-        dao.setExecutor(listeningExecutorService);
-
-        localEventBus.register(this);
     }
 
     @PostConstruct
     private void afterPropertiesSet() {
-        _afterPropertiesSet();
+        dao.setSessionFactory(sessionFactory);
+        dao.setExecutor(listeningExecutorService);
+        localEventBus.register(this);
     }
 
     protected final void _invalidateEhCache(PK id, InvalidateCause invalidateCause) {

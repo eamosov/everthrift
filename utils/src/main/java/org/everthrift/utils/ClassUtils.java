@@ -1,6 +1,8 @@
 package org.everthrift.utils;
 
 import com.google.common.collect.Maps;
+import org.apache.commons.lang3.Validate;
+import org.apache.commons.lang3.reflect.TypeUtils;
 import org.springframework.beans.BeanUtils;
 
 import java.beans.PropertyDescriptor;
@@ -11,7 +13,13 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.lang.reflect.Field;
+import java.lang.reflect.GenericArrayType;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
+import java.lang.reflect.WildcardType;
 import java.nio.ByteBuffer;
+import java.util.HashMap;
 import java.util.Map;
 
 
@@ -106,6 +114,5 @@ public class ClassUtils {
             }
         }
     }
-
 
 }

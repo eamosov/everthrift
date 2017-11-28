@@ -11,7 +11,7 @@ import java.util.List;
 
 public class OptResult<ENTITY extends DaoEntityIF> {
 
-    public static final OptResult CANCELED = OptResult.create(null, null, null, false, false);
+    public static final OptResult CANCELED = OptResult.create(null, null, null, false, false, 0);
 
     public final OptimisticLockModelFactoryIF<?, ENTITY, ?> factory;
 
@@ -23,28 +23,32 @@ public class OptResult<ENTITY extends DaoEntityIF> {
 
     public final boolean isInserted;
 
+    public final long timestamp; //updated timestamp in mks
+
     public List<OptResult> inner;
 
     public OptResult(OptimisticLockModelFactoryIF<?, ENTITY, ?> factory, ENTITY afterUpdate, ENTITY beforeUpdate,
-                     boolean isUpdated, boolean isInserted) {
+                     boolean isUpdated, boolean isInserted, long timestamp) {
         super();
         this.afterUpdate = afterUpdate;
         this.beforeUpdate = beforeUpdate;
         this.isUpdated = isUpdated;
         this.isInserted = isInserted;
         this.factory = factory;
+        this.timestamp = timestamp;
     }
 
     public static <ENTITY extends DaoEntityIF> OptResult<ENTITY> notUpdated(OptimisticLockModelFactoryIF<?, ENTITY, ?> factory,
-                                                                            ENTITY updated) {
-        return create(factory, updated, updated, false, false);
+                                                                            ENTITY updated, long timestamp) {
+        return create(factory, updated, updated, false, false, timestamp);
     }
 
     public static <ENTITY extends DaoEntityIF> OptResult<ENTITY> create(OptimisticLockModelFactoryIF<?, ENTITY, ?> factory,
                                                                         ENTITY afterUpdate, ENTITY beforeUpdate,
-                                                                        boolean isUpdated, boolean isInserted) {
+                                                                        boolean isUpdated, boolean isInserted,
+                                                                        long timestamp) {
 
-        return new OptResult<ENTITY>(factory, afterUpdate, beforeUpdate, isUpdated, isInserted);
+        return new OptResult<ENTITY>(factory, afterUpdate, beforeUpdate, isUpdated, isInserted, timestamp);
     }
 
     public boolean isCanceled() {

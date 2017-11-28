@@ -102,6 +102,7 @@ public class AppserverApplication {
     private AppserverApplication() {
 
         System.setProperty("jgroups.logging.log_factory_class", "org.everthrift.appserver.cluster.JGroupsLogFactory");
+        System.setProperty("net.sf.ehcache.sizeof.filter", "sizeof.filter");
 
         context = new AnnotationConfigApplicationContext();
         context.registerShutdownHook();

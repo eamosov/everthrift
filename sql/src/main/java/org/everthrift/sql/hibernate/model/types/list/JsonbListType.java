@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.everthrift.sql.hibernate.model.types.CustomUserType;
+import org.everthrift.utils.TypeUtils;
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.postgresql.util.PGobject;
@@ -28,7 +29,7 @@ public abstract class JsonbListType implements CustomUserType {
 
     protected abstract Type getListType();
 
-    protected Gson gson(){
+    protected Gson gson() {
         return gson;
     }
 
@@ -48,7 +49,7 @@ public abstract class JsonbListType implements CustomUserType {
             return false;
         }
 
-        return pd.getReadMethod().getGenericReturnType().toString().equals(getListType().toString());
+        return TypeUtils.isAssignable(getListType(), pd.getReadMethod().getGenericReturnType());
     }
 
 

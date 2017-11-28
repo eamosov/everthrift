@@ -30,8 +30,6 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.core.env.Environment;
 import org.springframework.web.context.support.XmlWebApplicationContext;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsProcessor;
 import org.springframework.web.servlet.DispatcherServlet;
 import org.springframework.web.servlet.handler.AbstractHandlerMapping;
 
@@ -39,8 +37,6 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.management.MBeanServer;
 import javax.servlet.MultipartConfigElement;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.KeyStore;
@@ -87,6 +83,9 @@ public class JettyServer implements SmartLifecycle {
 
     @Value("${jetty.host}")
     private String jettyHost;
+
+    @Value("${jetty.cors:false}")
+    private boolean jettyCors;
 
     @Value("${jetty.port}")
     private String jettyPort;
@@ -222,6 +221,8 @@ public class JettyServer implements SmartLifecycle {
         springWebApplicationContext.setConfigLocation(webContextXml);
 
         final DispatcherServlet dispatcherServlet = new DispatcherServlet(springWebApplicationContext);
+        dispatcherServlet.setDispatchOptionsRequest(true);
+
         final ServletHolder servletHolder = new ServletHolder(dispatcherServlet);
 
         servletHolder.getRegistration().setMultipartConfig(new MultipartConfigElement(
@@ -234,13 +235,13 @@ public class JettyServer implements SmartLifecycle {
         // hack for disable CORS
         for (AbstractHandlerMapping m : springWebApplicationContext.getBeansOfType(AbstractHandlerMapping.class)
                                                                    .values()) {
-            m.setCorsProcessor(new CorsProcessor() {
-
-                @Override
-                public boolean processRequest(CorsConfiguration configuration, HttpServletRequest request,
-                                              HttpServletResponse response) throws IOException {
-                    return true;
+            m.setCorsProcessor((configuration, request, response) -> {
+                if (jettyCors) {
+                    response.addHeader("Access-Control-Allow-Origin", "*");
+                    response.addHeader("Access-Control-Allow-Headers", "Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With, Content-Length, x-decompressed-content-length");
+                    response.addHeader("Access-Control-Expose-Headers", "Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With, Content-Length, x-decompressed-content-length");
                 }
+                return true;
             });
         }
 

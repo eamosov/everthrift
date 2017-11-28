@@ -1,7 +1,6 @@
 package org.everthrift.sql.pgsql;
 
 import com.google.common.collect.Maps;
-import com.google.common.util.concurrent.ListeningExecutorService;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import net.sf.ehcache.Cache;
 import net.sf.ehcache.CacheException;
@@ -12,15 +11,12 @@ import net.sf.ehcache.loader.CacheLoader;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.thrift.TException;
 import org.everthrift.appserver.model.DaoEntityIF;
-import org.everthrift.appserver.model.LocalEventBus;
 import org.everthrift.appserver.model.XAwareIF;
 import org.everthrift.appserver.utils.ehcache.AbstractCacheEventListener;
-import org.hibernate.SessionFactory;
 import org.hibernate.criterion.Order;
 import org.hibernate.criterion.Restrictions;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 
 import java.io.Serializable;
 import java.util.Collection;
@@ -70,16 +66,6 @@ public abstract class DictionaryModelFactory<ENTITY extends DaoEntityIF> impleme
 
     @Autowired
     protected CacheManager cacheManager;
-
-    @Autowired
-    @Qualifier("listeningCallerRunsBoundQueueExecutor")
-    private ListeningExecutorService listeningExecutorService;
-
-    @Autowired
-    private SessionFactory sessionFactory;
-
-    @Autowired
-    private LocalEventBus localEventBus;
 
     protected CacheLoader loader;
 
@@ -183,7 +169,7 @@ public abstract class DictionaryModelFactory<ENTITY extends DaoEntityIF> impleme
             throw new RuntimeException("Can't find cache: " + CACHE_NAME);
         }
 
-        factory = new PgSqlModelFactory<Integer, ENTITY, TException>(null, cls, listeningExecutorService, sessionFactory, localEventBus);
+        factory = new PgSqlModelFactory<Integer, ENTITY, TException>(null, cls);
 
         loader = new CacheLoader() {
 

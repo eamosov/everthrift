@@ -9,6 +9,8 @@ import org.everthrift.appserver.controller.ThriftControllerJmx;
 import org.everthrift.appserver.controller.ThriftControllerRegistry;
 import org.everthrift.appserver.controller.ThriftProcessor;
 import org.everthrift.appserver.model.LocalEventBus;
+import org.everthrift.utils.tg.AtomicMonotonicTimestampGenerator;
+import org.everthrift.utils.tg.TimestampGenerator;
 import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -125,6 +127,11 @@ public class AppserverConfig implements SchedulingConfigurer, AsyncConfigurer {
     @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
     public OnNodeConfigurationController getOnNodeConfigurationController() {
         return new OnNodeConfigurationController();
+    }
+
+    @Bean
+    public TimestampGenerator timestampGenerator(){
+        return new AtomicMonotonicTimestampGenerator();
     }
 
     @Bean

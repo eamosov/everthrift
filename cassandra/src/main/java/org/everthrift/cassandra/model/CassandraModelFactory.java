@@ -44,6 +44,7 @@ import org.everthrift.cassandra.com.datastax.driver.mapping.MappingManager;
 import org.everthrift.cassandra.com.datastax.driver.mapping.NotModifiedException;
 import org.everthrift.thrift.TFunction;
 import org.everthrift.utils.Pair;
+import org.everthrift.utils.tg.TimestampGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.CollectionUtils;
 
@@ -75,6 +76,9 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
 
     @Autowired
     protected LocalEventBus localEventBus;
+
+    @Autowired
+    protected TimestampGenerator timestampGenerator;
 
     protected Mapper<ENTITY> mapper;
 
@@ -417,7 +421,7 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
 
     @Override
     public ENTITY insertEntity(ENTITY e) throws UniqueException {
-        setCreatedAt(e);
+        setCreatedAt(e, timestampGenerator.next());
         putEntity(e, false, InvalidateCause.INSERT);
         localEventBus.postEntityEvent(insertEntityEvent(e));
         return e;
@@ -425,7 +429,7 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
 
     @Override
     public ENTITY updateEntity(ENTITY e) throws UniqueException {
-        setUpdatedAt(e);
+        setUpdatedAt(e, timestampGenerator.next());
         putEntity(e, true, InvalidateCause.UPDATE);
         localEventBus.postEntityEvent(updateEntityEvent(null, e));
         return e;

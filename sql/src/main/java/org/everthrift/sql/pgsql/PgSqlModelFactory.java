@@ -17,11 +17,8 @@ import java.io.Serializable;
 public class PgSqlModelFactory<PK extends Serializable, ENTITY extends DaoEntityIF, E extends TException>
     extends AbstractPgSqlModelFactory<PK, ENTITY, E> {
 
-    public PgSqlModelFactory(Cache cache, Class<ENTITY> entityClass,
-                             @Qualifier("listeningCallerRunsBoundQueueExecutor") ListeningExecutorService listeningExecutorService,
-                             SessionFactory sessionFactory,
-                             LocalEventBus localEventBus) {
-        super(cache, entityClass, listeningExecutorService, sessionFactory, localEventBus);
+    public PgSqlModelFactory(Cache cache, Class<ENTITY> entityClass) {
+        super(cache, entityClass);
     }
 
     @Override

@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 /**
  * Created by fluder on 10.04.17.
  */
-public abstract class ObjListType<T extends TBase> extends JsonbListType {
+public abstract class ObjListType<T> extends JsonbListType {
 
     protected abstract Class<T> getStructClass();
 

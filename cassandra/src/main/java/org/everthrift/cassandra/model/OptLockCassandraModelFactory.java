@@ -88,6 +88,8 @@ public abstract class OptLockCassandraModelFactory<PK extends Serializable, ENTI
         try {
             final OptResult<ENTITY> ret = OptimisticLockModelFactoryIF.optimisticUpdate((count) -> {
 
+                final long timestamp = timestampGenerator.next();
+
                 ENTITY e;
 
                 if (count == 0) {
@@ -105,7 +107,7 @@ public abstract class OptLockCassandraModelFactory<PK extends Serializable, ENTI
 
                     e = factory.create(id);
 
-                    setCreatedAt(e);
+                    setCreatedAt(e, timestamp);
 
                     orig = null;
                 } else {
@@ -118,7 +120,7 @@ public abstract class OptLockCassandraModelFactory<PK extends Serializable, ENTI
 
                 final boolean needUpdate = mutator.apply(e);
                 if (needUpdate == false) {
-                    return OptResult.create(OptLockCassandraModelFactory.this, e, orig, false, false);
+                    return OptResult.create(OptLockCassandraModelFactory.this, e, orig, false, false, timestamp);
                 }
 
                 // if (e instanceof UpdatedAtIF)
@@ -138,7 +140,7 @@ public abstract class OptLockCassandraModelFactory<PK extends Serializable, ENTI
 
                     if (saved) {
                         invalidate(id, InvalidateCause.INSERT);
-                        return OptResult.create(OptLockCassandraModelFactory.this, e, null, true, true);
+                        return OptResult.create(OptLockCassandraModelFactory.this, e, null, true, true, timestamp);
                     } else {
                         if (count == 0) {
                             invalidate(id, InvalidateCause.UPDATE);
@@ -162,7 +164,7 @@ public abstract class OptLockCassandraModelFactory<PK extends Serializable, ENTI
                             invalidate(id, InvalidateCause.UPDATE);
                         }
 
-                        return OptResult.create(OptLockCassandraModelFactory.this, e, orig, updated, false);
+                        return OptResult.create(OptLockCassandraModelFactory.this, e, orig, updated, false, timestamp);
                     } catch (VersionException ve) {
 
                         if (count == 0) {
@@ -185,9 +187,10 @@ public abstract class OptLockCassandraModelFactory<PK extends Serializable, ENTI
     }
 
     private OptResult<ENTITY> _delete(ENTITY e) {
+        final long timestamp = timestampGenerator.next();
         mapper.delete(e);
         invalidate((PK) e.getPk(), InvalidateCause.DELETE);
-        final OptResult<ENTITY> r = OptResult.create(this, null, e, true, false);
+        final OptResult<ENTITY> r = OptResult.create(this, null, e, true, false, timestamp);
         localEventBus.postEntityEvent(deleteEntityEvent(e));
         return r;
     }
@@ -215,7 +218,8 @@ public abstract class OptLockCassandraModelFactory<PK extends Serializable, ENTI
             }
         }
 
-        setCreatedAt(e);
+        final long timestamp = timestampGenerator.next();
+        setCreatedAt(e, timestamp);
 
         final DLock lock = this.assertUnique(null, e);
         final boolean saved;
@@ -233,7 +237,7 @@ public abstract class OptLockCassandraModelFactory<PK extends Serializable, ENTI
             throw new UniqueException(null, true, null);
         }
 
-        final OptResult<ENTITY> r = OptResult.create(this, e, null, true, true);
+        final OptResult<ENTITY> r = OptResult.create(this, e, null, true, true, timestamp);
 
         localEventBus.postEntityEvent(insertEntityEvent(e));
 
@@ -248,9 +252,10 @@ public abstract class OptLockCassandraModelFactory<PK extends Serializable, ENTI
      * @return
      */
     public final OptResult<ENTITY> fastInsert(ENTITY e) {
-        setCreatedAt(e);
+        final long timestamp = timestampGenerator.next();
+        setCreatedAt(e, timestamp);
         putEntity(e, false, InvalidateCause.INSERT);
-        final OptResult<ENTITY> r = OptResult.create(this, e, null, true, true);
+        final OptResult<ENTITY> r = OptResult.create(this, e, null, true, true, timestamp);
         localEventBus.postEntityEvent(insertEntityEvent(e));
         return r;
     }

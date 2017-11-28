@@ -290,12 +290,12 @@ public abstract class AbstractCachedModelFactory<PK, ENTITY, E extends Exception
         _afterPropertiesSet();
     }
 
-    protected void setCreatedAt(ENTITY e) {
-        CreatedAtIF.setCreatedAt(e);
+    protected void setCreatedAt(ENTITY e, long timestamp_mcs) {
+        CreatedAtIF.setCreatedAt(e, timestamp_mcs / 1000);
     }
 
-    protected void setUpdatedAt(ENTITY e) {
-        UpdatedAtIF.setUpdatedAt(e);
+    protected void setUpdatedAt(ENTITY e, long timestamp_mcs) {
+        UpdatedAtIF.setUpdatedAt(e, timestamp_mcs / 1000);
     }
 
 }
