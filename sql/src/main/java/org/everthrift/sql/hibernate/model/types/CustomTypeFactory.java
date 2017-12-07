@@ -7,6 +7,7 @@ import javassist.CtClass;
 import javassist.CtMethod;
 import javassist.NotFoundException;
 import org.hibernate.usertype.UserType;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
 
@@ -15,7 +16,7 @@ public class CustomTypeFactory {
 
     private static final Map<Class, Class<? extends UserType>> map = Maps.newIdentityHashMap();
 
-    public static synchronized Class<? extends UserType> create(Class javaType, Class<? extends UserType> prototype) {
+    public static synchronized Class<? extends UserType> create(@NotNull Class javaType, @NotNull Class<? extends UserType> prototype) {
 
         Class<? extends UserType> cls = map.get(javaType);
         if (cls != null) {
@@ -28,7 +29,7 @@ public class CustomTypeFactory {
     }
 
     @SuppressWarnings("unchecked")
-    private static Class<? extends UserType> compile(Class javaType, Class<? extends UserType> prototype) {
+    private static Class<? extends UserType> compile(@NotNull Class javaType, @NotNull Class<? extends UserType> prototype) {
         final ClassPool pool = ClassPool.getDefault();
         final CtClass cc = pool.makeClass(javaType.getCanonicalName() + "HibernateType");
         try {
@@ -37,7 +38,7 @@ public class CustomTypeFactory {
                                            + javaType.getName() + "\")); } catch (ClassNotFoundException e) {throw new RuntimeException(e);}}",
                                        cc));
             return cc.toClass();
-        } catch (CannotCompileException | NotFoundException e) {
+        } catch (@NotNull CannotCompileException | NotFoundException e) {
             throw new RuntimeException(e);
         }
     }

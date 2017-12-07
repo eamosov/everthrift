@@ -3,6 +3,8 @@ package org.everthrift.appserver.controller;
 import com.google.common.collect.ImmutableSet;
 import org.apache.thrift.TBase;
 import org.everthrift.appserver.BeanDefinitionHolder;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
@@ -33,8 +35,10 @@ public abstract class ThriftControllerRegistry implements InitializingBean {
     @Autowired
     private BeanDefinitionHolder beanDefinitionHolder;
 
+    @NotNull
     private Map<String, ThriftControllerInfo> map = Collections.synchronizedMap(new HashMap<String, ThriftControllerInfo>());
 
+    @NotNull
     private List<Class<ConnectionStateHandler>> stateHandlers = new CopyOnWriteArrayList<>();
 
     private final Class<? extends Annotation> annotationType;
@@ -47,7 +51,7 @@ public abstract class ThriftControllerRegistry implements InitializingBean {
         return annotationType;
     }
 
-    private void scanThriftControllers(Class<? extends Annotation> annotationType) {
+    private void scanThriftControllers(@NotNull Class<? extends Annotation> annotationType) {
 
         for (String beanName : ImmutableSet.copyOf(beanDefinitionHolder.getBeanDefinitionRegistry()
                                                                        .getBeanDefinitionNames())) {
@@ -78,7 +82,7 @@ public abstract class ThriftControllerRegistry implements InitializingBean {
         }
     }
 
-    private Class getArgsCls(Class cls) {
+    private Class getArgsCls(@NotNull Class cls) {
         for (Method m : cls.getMethods()) {
             if (m.getName().equals("setup") && m.getParameterTypes().length == 1 && !m.isBridge()) {
                 return m.getParameterTypes()[0];
@@ -87,7 +91,7 @@ public abstract class ThriftControllerRegistry implements InitializingBean {
         return null;
     }
 
-    private ThriftControllerInfo registerController(String beanName, Class cls) {
+    private ThriftControllerInfo registerController(String beanName, @NotNull Class cls) {
 
         final Class argsCls = getArgsCls(cls);
 
@@ -99,7 +103,8 @@ public abstract class ThriftControllerRegistry implements InitializingBean {
         return registerController(beanName, cls, argsCls);
     }
 
-    public ThriftControllerInfo registerController(String beanName, Class ctrlCls, Class argsCls) {
+    @Nullable
+    public ThriftControllerInfo registerController(String beanName, @NotNull Class ctrlCls, @NotNull Class argsCls) {
         final ThriftControllerInfo i = tryRegisterController(beanName, ctrlCls, argsCls);
         log.debug("registerController: {}", i.getBeanName());
         map.put(i.getName(), i);
@@ -110,15 +115,18 @@ public abstract class ThriftControllerRegistry implements InitializingBean {
         return map.get(name);
     }
 
+    @NotNull
     public Set<String> getContollerNames() {
         return map.keySet();
     }
 
+    @NotNull
     public Map<String, ThriftControllerInfo> getControllers() {
         return map;
     }
 
-    private ThriftControllerInfo tryRegisterController(final String beanName, final Class cls, Class argument) {
+    @Nullable
+    private ThriftControllerInfo tryRegisterController(@Nullable final String beanName, @NotNull final Class cls, @NotNull Class argument) {
 
         if (!TBase.class.isAssignableFrom(argument)) {
             log.debug("Result class {} is not TBase", argument.getSimpleName());
@@ -177,6 +185,7 @@ public abstract class ThriftControllerRegistry implements InitializingBean {
         scanThriftControllers(annotationType);
     }
 
+    @NotNull
     public List<Class<ConnectionStateHandler>> getStateHandlers() {
         return stateHandlers;
     }

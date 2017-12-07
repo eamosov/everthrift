@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableList;
 import org.everthrift.appserver.jgroups.JGroupsThriftAdapter;
 import org.everthrift.appserver.jgroups.JgroupsThriftClientServerImpl;
 import org.everthrift.appserver.jgroups.RpcJGroupsRegistry;
+import org.jetbrains.annotations.NotNull;
 import org.jgroups.JChannel;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,9 +18,10 @@ import java.util.List;
 @ImportResource("classpath:jgroups-beans.xml")
 public class JGroups {
 
+    @NotNull
     @Bean
-    public JChannel yocluster(@Value("${jgroups.multicast.bind_addr:127.0.0.1}") String bindAddr,
-                              @Value("${jgroups.udp.mcast_port:45588}") String mcastPort) throws Exception {
+    public JChannel yocluster(@NotNull @Value("${jgroups.multicast.bind_addr:127.0.0.1}") String bindAddr,
+                              @NotNull @Value("${jgroups.udp.mcast_port:45588}") String mcastPort) throws Exception {
 
         System.setProperty("jgroups.multicast.bind_addr", bindAddr);
         System.setProperty("jgroups.udp.mcast_port", mcastPort);
@@ -27,16 +29,19 @@ public class JGroups {
         return new JChannel("jgroups.xml");
     }
 
+    @NotNull
     @Bean
     public JgroupsThriftClientServerImpl jgroupsThriftClientServerImpl(@Qualifier("yocluster") JChannel cluster) {
         return new JgroupsThriftClientServerImpl(cluster);
     }
 
+    @NotNull
     @Bean
     public RpcJGroupsRegistry RpcJGroupsRegistry() {
         return new RpcJGroupsRegistry();
     }
 
+    @NotNull
     @Bean
     public JGroupsThriftAdapter jGroupsThriftAdapter() {
         return new JGroupsThriftAdapter();

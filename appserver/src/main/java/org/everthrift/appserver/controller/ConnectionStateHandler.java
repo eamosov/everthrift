@@ -2,6 +2,7 @@ package org.everthrift.appserver.controller;
 
 import org.everthrift.appserver.utils.thrift.ThriftClient;
 import org.everthrift.clustering.MessageWrapper;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
@@ -17,6 +18,7 @@ public abstract class ConnectionStateHandler {
 
     protected ThriftControllerInfo info;
 
+    @Nullable
     protected DataSource ds;
 
     protected ThriftClient thriftClient;

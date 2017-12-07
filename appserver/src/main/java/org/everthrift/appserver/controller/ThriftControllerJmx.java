@@ -1,5 +1,6 @@
 package org.everthrift.appserver.controller;
 
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jmx.export.annotation.ManagedOperation;
@@ -10,6 +11,7 @@ public class ThriftControllerJmx {
 
     private static final Logger log = LoggerFactory.getLogger(ThriftControllerJmx.class);
 
+    @NotNull
     @ManagedOperation(description = "getExecutionLog")
     public String getExecutionLog() {
         return AbstractThriftController.getExecutionLog();

@@ -1,6 +1,7 @@
 package org.everthrift.appserver.scheduling;
 
 import org.everthrift.appserver.scheduling.context.SettableTriggerContext;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.TriggerContext;
 
@@ -13,6 +14,7 @@ public class DistributedPeriodicDynamicTrigger implements Trigger {
 
     }
 
+    @NotNull
     @Override
     public Date nextExecutionTime(TriggerContext triggerContext) {
         if (!(triggerContext instanceof SettableTriggerContext)) {

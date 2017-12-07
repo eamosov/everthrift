@@ -5,6 +5,8 @@ import org.apache.thrift.TEnum;
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.usertype.UserType;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
@@ -20,6 +22,7 @@ import java.util.stream.Collectors;
 
 public abstract class TEnumListType<T extends TEnum> implements UserType {
 
+    @NotNull
     protected abstract Class<T> getTEnumClass();
 
     private final Method findByValue;
@@ -27,23 +30,25 @@ public abstract class TEnumListType<T extends TEnum> implements UserType {
     public TEnumListType() {
         try {
             findByValue = getTEnumClass().getMethod("findByValue", Integer.TYPE);
-        } catch (NoSuchMethodException | SecurityException e) {
+        } catch (@NotNull NoSuchMethodException | SecurityException e) {
             throw new RuntimeException(e);
         }
     }
 
+    @NotNull
     @Override
     public int[] sqlTypes() {
         return new int[]{Types.ARRAY};
     }
 
+    @NotNull
     @Override
     public Class returnedClass() {
         return List.class;
     }
 
     @Override
-    public boolean equals(Object x, Object y) throws HibernateException {
+    public boolean equals(@Nullable Object x, @Nullable Object y) throws HibernateException {
         if (x == null && y == null) {
             return true;
         }
@@ -56,7 +61,7 @@ public abstract class TEnumListType<T extends TEnum> implements UserType {
     }
 
     @Override
-    public int hashCode(Object x) throws HibernateException {
+    public int hashCode(@Nullable Object x) throws HibernateException {
         if (x == null) {
             return 0;
         }
@@ -64,8 +69,9 @@ public abstract class TEnumListType<T extends TEnum> implements UserType {
         return x.hashCode();
     }
 
+    @Nullable
     @Override
-    public Object nullSafeGet(ResultSet rs, String[] names, SharedSessionContractImplementor session,
+    public Object nullSafeGet(@NotNull ResultSet rs, String[] names, SharedSessionContractImplementor session,
                               Object owner) throws HibernateException, SQLException {
 
         final Array sqlArr = rs.getArray(names[0]);
@@ -73,7 +79,7 @@ public abstract class TEnumListType<T extends TEnum> implements UserType {
                                                           .map(v -> {
                                                               try {
                                                                   return findByValue.invoke(null, v.intValue());
-                                                              } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+                                                              } catch (@NotNull IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
                                                                   throw new RuntimeException(e);
                                                               }
                                                           })
@@ -83,7 +89,7 @@ public abstract class TEnumListType<T extends TEnum> implements UserType {
     }
 
     @Override
-    public void nullSafeSet(PreparedStatement st, Object value, int index,
+    public void nullSafeSet(@NotNull PreparedStatement st, @Nullable Object value, int index,
                             SharedSessionContractImplementor session) throws HibernateException, SQLException {
 
         st.setArray(index, value == null ? null : st.getConnection()
@@ -92,18 +98,21 @@ public abstract class TEnumListType<T extends TEnum> implements UserType {
                                                                                                    .toArray()));
     }
 
+    @Nullable
     @Override
     public Object assemble(final Serializable cached, final Object owner) throws HibernateException {
         return deepCopy(cached);
     }
 
+    @NotNull
     @Override
     public Serializable disassemble(final Object o) throws HibernateException {
         return (Serializable) deepCopy(o);
     }
 
+    @Nullable
     @Override
-    public Object deepCopy(Object o) throws HibernateException {
+    public Object deepCopy(@Nullable Object o) throws HibernateException {
         return o == null ? null : Lists.newArrayList((List) o);
     }
 
@@ -112,8 +121,9 @@ public abstract class TEnumListType<T extends TEnum> implements UserType {
         return true;
     }
 
+    @Nullable
     @Override
-    public Object replace(final Object original, final Object target, final Object owner) throws HibernateException {
+    public Object replace(@Nullable final Object original, final Object target, final Object owner) throws HibernateException {
         return original == null ? null : deepCopy(original);
     }
 

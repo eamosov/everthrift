@@ -3,6 +3,8 @@ package org.everthrift.sql.hibernate.model.types;
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.usertype.UserType;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.BeanUtils;
 
 import java.beans.PropertyDescriptor;
@@ -30,6 +32,7 @@ public abstract class PointType implements UserType {
 
     private final static Pattern pointPattern = Pattern.compile("POINT\\(([0-9.-]+) ([0-9.-]+)\\)");
 
+    @NotNull
     @Override
     public int[] sqlTypes() {
         return new int[]{Types.OTHER};
@@ -45,11 +48,12 @@ public abstract class PointType implements UserType {
         y = BeanUtils.getPropertyDescriptor(returnedClass(), "y");
     }
 
-    public static boolean isCompatible(final Class cls) {
+    public static boolean isCompatible(@NotNull final Class cls) {
 
         try {
             final PointType d = new PointType() {
 
+                @NotNull
                 @Override
                 public Class returnedClass() {
                     return cls;
@@ -66,7 +70,7 @@ public abstract class PointType implements UserType {
     }
 
     @Override
-    public boolean equals(Object x, Object y) throws HibernateException {
+    public boolean equals(@Nullable Object x, @Nullable Object y) throws HibernateException {
         if (x == null && y == null) {
             return true;
         }
@@ -79,7 +83,7 @@ public abstract class PointType implements UserType {
     }
 
     @Override
-    public int hashCode(Object x) throws HibernateException {
+    public int hashCode(@Nullable Object x) throws HibernateException {
         if (x == null) {
             return 0;
         }
@@ -87,8 +91,9 @@ public abstract class PointType implements UserType {
         return x.hashCode();
     }
 
+    @Nullable
     @Override
-    public Object nullSafeGet(ResultSet rs, String[] names, SharedSessionContractImplementor session,
+    public Object nullSafeGet(@NotNull ResultSet rs, String[] names, SharedSessionContractImplementor session,
                               Object owner) throws HibernateException, SQLException {
 
         final Object value = rs.getObject(names[0]);
@@ -107,7 +112,7 @@ public abstract class PointType implements UserType {
             ret = create.newInstance();
             x.getWriteMethod().invoke(ret, Double.parseDouble(m.group(1)));
             y.getWriteMethod().invoke(ret, Double.parseDouble(m.group(2)));
-        } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+        } catch (@NotNull InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
             throw new SQLException(e);
         }
 
@@ -115,7 +120,7 @@ public abstract class PointType implements UserType {
     }
 
     @Override
-    public void nullSafeSet(PreparedStatement st, Object value, int index,
+    public void nullSafeSet(@NotNull PreparedStatement st, @Nullable Object value, int index,
                             SharedSessionContractImplementor session) throws HibernateException, SQLException {
 
         if (value == null) {
@@ -128,13 +133,14 @@ public abstract class PointType implements UserType {
             final Double _y = (Double) y.getReadMethod().invoke(value);
 
             st.setString(index, String.format(Locale.ENGLISH, "SRID=4326;POINT(%f %f)", _x, _y));
-        } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+        } catch (@NotNull IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
             throw new HibernateException(e);
         }
     }
 
+    @Nullable
     @Override
-    public Object deepCopy(Object value) throws HibernateException {
+    public Object deepCopy(@Nullable Object value) throws HibernateException {
 
         if (value == null) {
             return null;
@@ -142,7 +148,7 @@ public abstract class PointType implements UserType {
 
         try {
             return copy.newInstance(value);
-        } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+        } catch (@NotNull InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
             return new HibernateException(e);
         }
     }
@@ -152,18 +158,21 @@ public abstract class PointType implements UserType {
         return true;
     }
 
+    @Nullable
     @Override
     public Serializable disassemble(Object value) throws HibernateException {
         return (Serializable) deepCopy(value);
     }
 
+    @Nullable
     @Override
     public Object assemble(Serializable cached, Object owner) throws HibernateException {
         return deepCopy(cached);
     }
 
+    @Nullable
     @Override
-    public Object replace(Object original, Object target, Object owner) throws HibernateException {
+    public Object replace(@Nullable Object original, Object target, Object owner) throws HibernateException {
         return original == null ? null : deepCopy(original);
     }
 

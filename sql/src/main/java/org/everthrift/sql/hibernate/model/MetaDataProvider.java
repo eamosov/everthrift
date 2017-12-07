@@ -4,6 +4,7 @@ import com.google.common.base.CaseFormat;
 import org.apache.thrift.TDoc;
 import org.hibernate.annotations.OptimisticLocking;
 import org.hibernate.annotations.SQLInsert;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -54,7 +55,7 @@ public class MetaDataProvider {
         }
     }
 
-    private void addTable(final String schemaTable, final String modelName) {
+    private void addTable(@NotNull final String schemaTable, final String modelName) {
 
         LOG.info("Building HBM mapping: {} <-> {}", schemaTable, modelName);
 
@@ -90,8 +91,9 @@ public class MetaDataProvider {
         }
     }
 
+    @NotNull
     @SuppressWarnings({"unchecked"})
-    private List<Column> readColumns(final Table table, Class clazz) throws MetaDataAccessException {
+    private List<Column> readColumns(@NotNull final Table table, Class clazz) throws MetaDataAccessException {
         List<Column> columns = (List<Column>) JdbcUtils.extractDatabaseMetaData(dataSource, dbmd -> {
             List<Column> columns1 = new Column.ColumnExtractor(table).extractData(dbmd.getColumns(null, null,
                                                                                                   table.getTableName()
@@ -106,7 +108,7 @@ public class MetaDataProvider {
         return columns;
     }
 
-    private void setColProperiesDetails(Column column, Class clazz) {
+    private void setColProperiesDetails(@NotNull Column column, Class clazz) {
         final String lowerCase = column.getColumnName().toLowerCase();
         final String camelCase = CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, lowerCase.toUpperCase());
 
@@ -141,7 +143,8 @@ public class MetaDataProvider {
 
     }
 
-    private PrimaryKey readPK(final String tableName) throws MetaDataAccessException {
+    @NotNull
+    private PrimaryKey readPK(@NotNull final String tableName) throws MetaDataAccessException {
         PrimaryKey primaryKey = (PrimaryKey) JdbcUtils.extractDatabaseMetaData(dataSource,
                                                                                dbmd -> new PrimaryKey
                                                                                    .PKExtractor()
@@ -156,6 +159,7 @@ public class MetaDataProvider {
         return primaryKey;
     }
 
+    @NotNull
     public String toHbmXml() {
         final StringBuilder sb = new StringBuilder();
         sb.append("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");

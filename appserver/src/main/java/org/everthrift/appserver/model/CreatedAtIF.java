@@ -1,11 +1,13 @@
 package org.everthrift.appserver.model;
 
+import org.jetbrains.annotations.NotNull;
+
 public interface CreatedAtIF {
     void setCreatedAt(long value);
 
     long getCreatedAt();
 
-    static void setCreatedAt(Object e, long now) {
+    static void setCreatedAt(@NotNull Object e, long now) {
         if (e instanceof CreatedAtIF && (((CreatedAtIF) e).getCreatedAt() == 0)) {
             ((CreatedAtIF) e).setCreatedAt(now);
         }
@@ -15,7 +17,7 @@ public interface CreatedAtIF {
         }
     }
 
-    static void setCreatedAt(Object e) {
+    static void setCreatedAt(@NotNull Object e) {
         setCreatedAt(e, System.currentTimeMillis());
     }
 

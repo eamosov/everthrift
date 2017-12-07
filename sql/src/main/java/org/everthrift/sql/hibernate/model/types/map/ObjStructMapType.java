@@ -8,6 +8,8 @@ import org.apache.thrift.TBase;
 import org.everthrift.appserver.utils.thrift.GsonSerializer;
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.postgresql.util.PGobject;
 
 import java.lang.reflect.Constructor;
@@ -24,6 +26,7 @@ import java.util.stream.Collectors;
  */
 public abstract class ObjStructMapType<T extends TBase> extends JsonbMapType {
 
+    @NotNull
     protected abstract Class<T> getStructClass();
 
     private final Constructor<T> copyConstructor;
@@ -40,8 +43,9 @@ public abstract class ObjStructMapType<T extends TBase> extends JsonbMapType {
         }
     }
 
+    @Nullable
     @Override
-    public Object nullSafeGet(ResultSet rs, String[] names, SharedSessionContractImplementor session, Object owner) throws HibernateException, SQLException {
+    public Object nullSafeGet(@NotNull ResultSet rs, String[] names, SharedSessionContractImplementor session, Object owner) throws HibernateException, SQLException {
         final PGobject value = (PGobject) rs.getObject(names[0]);
 
         if (value == null) {
@@ -52,7 +56,7 @@ public abstract class ObjStructMapType<T extends TBase> extends JsonbMapType {
     }
 
     @Override
-    public void nullSafeSet(PreparedStatement st, Object value, int index, SharedSessionContractImplementor session) throws HibernateException, SQLException {
+    public void nullSafeSet(@NotNull PreparedStatement st, @Nullable Object value, int index, SharedSessionContractImplementor session) throws HibernateException, SQLException {
         if (value == null) {
             st.setNull(index, Types.OTHER);
             return;
@@ -65,8 +69,9 @@ public abstract class ObjStructMapType<T extends TBase> extends JsonbMapType {
     }
 
 
+    @Nullable
     @Override
-    public Object deepCopy(Object value) throws HibernateException {
+    public Object deepCopy(@Nullable Object value) throws HibernateException {
 
         if (value == null) {
             return null;
@@ -77,7 +82,7 @@ public abstract class ObjStructMapType<T extends TBase> extends JsonbMapType {
                                   .collect(Collectors.toMap(Map.Entry::getKey, e -> {
                                       try {
                                           return copyConstructor.newInstance(e.getValue());
-                                      } catch (InstantiationException | IllegalAccessException | InvocationTargetException e1) {
+                                      } catch (@NotNull InstantiationException | IllegalAccessException | InvocationTargetException e1) {
                                           throw Throwables.propagate(e1);
                                       }
                                   }));

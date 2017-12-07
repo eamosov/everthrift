@@ -4,6 +4,7 @@ import com.google.common.eventbus.AsyncEventBus;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.SubscriberExceptionContext;
 import com.google.common.eventbus.SubscriberExceptionHandler;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
@@ -55,12 +56,12 @@ public class LocalEventBus implements InitializingBean {
         });
     }
 
-    public void register(Object object) {
+    public void register(@NotNull Object object) {
         eventBus.register(object);
         asyncEventBus.register(object);
     }
 
-    public void postEntityEvent(Object event) {
+    public void postEntityEvent(@NotNull Object event) {
         if (testMode) {
             post(event);
         } else {
@@ -68,15 +69,15 @@ public class LocalEventBus implements InitializingBean {
         }
     }
 
-    public void post(Object event) {
+    public void post(@NotNull Object event) {
         eventBus.post(event);
     }
 
-    public void postAsync(Object event) {
+    public void postAsync(@NotNull Object event) {
         asyncEventBus.post(event);
     }
 
-    public void postAsyncIfNotTest(Object event) {
+    public void postAsyncIfNotTest(@NotNull Object event) {
         if (testMode)
             post(event);
         else

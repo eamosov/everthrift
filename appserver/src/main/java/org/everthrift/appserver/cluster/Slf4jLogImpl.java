@@ -1,5 +1,6 @@
 package org.everthrift.appserver.cluster;
 
+import org.jetbrains.annotations.NotNull;
 import org.jgroups.logging.Log;
 import org.slf4j.Logger;
 
@@ -48,7 +49,7 @@ public class Slf4jLogImpl implements Log {
     }
 
     @Override
-    public void fatal(String msg, Object... args) {
+    public void fatal(@NotNull String msg, Object... args) {
         log.error(msg.replace("%s", "{}").replace("%d", "{}"), args);
     }
 
@@ -63,7 +64,7 @@ public class Slf4jLogImpl implements Log {
     }
 
     @Override
-    public void error(String format, Object... args) {
+    public void error(@NotNull String format, Object... args) {
         log.error(format.replace("%s", "{}").replace("%d", "{}"), args);
     }
 
@@ -78,7 +79,7 @@ public class Slf4jLogImpl implements Log {
     }
 
     @Override
-    public void warn(String format, Object... args) {
+    public void warn(@NotNull String format, Object... args) {
         log.error(format.replace("%s", "{}").replace("%d", "{}"), args);
     }
 
@@ -93,7 +94,7 @@ public class Slf4jLogImpl implements Log {
     }
 
     @Override
-    public void info(String format, Object... args) {
+    public void info(@NotNull String format, Object... args) {
         log.error(format.replace("%s", "{}").replace("%d", "{}"), args);
     }
 
@@ -103,7 +104,7 @@ public class Slf4jLogImpl implements Log {
     }
 
     @Override
-    public void debug(String format, Object... args) {
+    public void debug(@NotNull String format, Object... args) {
         log.error(format.replace("%s", "{}").replace("%d", "{}"), args);
     }
 
@@ -123,7 +124,7 @@ public class Slf4jLogImpl implements Log {
     }
 
     @Override
-    public void trace(String msg, Object... args) {
+    public void trace(@NotNull String msg, Object... args) {
         log.trace(msg.replace("%s", "{}").replace("%d", "{}"), args);
     }
 
@@ -137,6 +138,7 @@ public class Slf4jLogImpl implements Log {
 
     }
 
+    @NotNull
     @Override
     public String getLevel() {
         return "info";

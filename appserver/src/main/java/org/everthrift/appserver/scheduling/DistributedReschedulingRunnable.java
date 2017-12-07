@@ -3,6 +3,8 @@ package org.everthrift.appserver.scheduling;
 import org.everthrift.appserver.scheduling.annotation.DistributedScheduled;
 import org.everthrift.appserver.scheduling.context.SettableTriggerContext;
 import org.everthrift.appserver.scheduling.context.TriggerContextAccessor;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.Trigger;
@@ -33,7 +35,7 @@ class DistributedReschedulingRunnable extends DelegatingErrorHandlingRunnable im
 
     private final long errorDelay;
 
-    DistributedReschedulingRunnable(TriggerContextAccessor ctxh, Runnable delegate, Trigger trigger, ScheduledExecutorService executor, ErrorHandler errorHandler, long errorDelay) {
+    DistributedReschedulingRunnable(TriggerContextAccessor ctxh, @NotNull Runnable delegate, Trigger trigger, ScheduledExecutorService executor, @NotNull ErrorHandler errorHandler, long errorDelay) {
         super(delegate, errorHandler);
         this.ctxh = ctxh;
         this.trigger = trigger;
@@ -42,6 +44,7 @@ class DistributedReschedulingRunnable extends DelegatingErrorHandlingRunnable im
     }
 
 
+    @Nullable
     ScheduledFuture<?> schedule() throws ContextAccessError {
 
         while (true) {
@@ -78,7 +81,8 @@ class DistributedReschedulingRunnable extends DelegatingErrorHandlingRunnable im
         }
     }
 
-    private ScheduledFuture<?> schedule(Date next) {
+    @Nullable
+    private ScheduledFuture<?> schedule(@Nullable Date next) {
         if (next == null) {
             return null;
         }

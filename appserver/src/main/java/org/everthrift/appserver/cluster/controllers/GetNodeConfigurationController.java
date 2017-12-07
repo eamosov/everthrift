@@ -7,6 +7,7 @@ import org.everthrift.appserver.jgroups.RpcJGroupsRegistry;
 import org.everthrift.services.thrift.cluster.ClusterService;
 import org.everthrift.services.thrift.cluster.ClusterService.getNodeConfiguration_args;
 import org.everthrift.services.thrift.cluster.Node;
+import org.jetbrains.annotations.NotNull;
 
 @RpcJGroups
 public class GetNodeConfigurationController extends ThriftController<ClusterService.getNodeConfiguration_args, Node> {
@@ -16,6 +17,7 @@ public class GetNodeConfigurationController extends ThriftController<ClusterServ
         this.noProfile = true;
     }
 
+    @NotNull
     @Override
     protected Node handle() throws TException {
         final RpcJGroupsRegistry r = context.getBean(RpcJGroupsRegistry.class);

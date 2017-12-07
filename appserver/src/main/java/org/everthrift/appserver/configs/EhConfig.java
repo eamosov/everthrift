@@ -4,6 +4,7 @@ import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.config.CacheConfiguration;
 import net.sf.ehcache.config.ConfigurationFactory;
 import org.everthrift.appserver.AppserverApplication;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -19,9 +20,9 @@ import java.io.InputStream;
 public class EhConfig {
 
     @Bean
-    public CacheManager ehCache(ApplicationContext context,
-                                @Value("${ehcache.name}") String cacheName,
-                                @Value("${ehcache.maxBytesLocalHeap}") String maxBytesLocalHeap,
+    public CacheManager ehCache(@NotNull ApplicationContext context,
+                                @NotNull @Value("${ehcache.name}") String cacheName,
+                                @NotNull @Value("${ehcache.maxBytesLocalHeap}") String maxBytesLocalHeap,
                                 @Value("${ehcache.jgroups.multicast.bind_addr}") String bindAddr,
                                 @Value("${ehcache.jgroups.udp.mcast_port}") String mcastPort) throws IOException {
 

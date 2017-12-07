@@ -7,6 +7,8 @@ import org.everthrift.appserver.model.LocalEventBus;
 import org.everthrift.appserver.scheduling.context.SettableTriggerContext;
 import org.everthrift.appserver.scheduling.context.TriggerContextAccessor;
 import org.everthrift.appserver.scheduling.context.TriggerContextAccessorFactory;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
@@ -46,6 +48,7 @@ public class DistributedScheduledExecutorService implements DistributedTaskSched
 
     private ApplicationContext applicationContext;
 
+    @NotNull
     private static String DEFAULT_SCHEDULER_NAME = "scheduler";
 
     private boolean running = false;
@@ -90,7 +93,8 @@ public class DistributedScheduledExecutorService implements DistributedTaskSched
         this.errorHandler = errorHandler;
     }
 
-    public ScheduledFuture<?> schedule(TriggerContextAccessor ctxh, Runnable task, Trigger trigger) {
+    @Nullable
+    public ScheduledFuture<?> schedule(TriggerContextAccessor ctxh, @NotNull Runnable task, Trigger trigger) {
         final ScheduledExecutorService executor = getScheduledExecutor();
         try {
             final ErrorHandler errorHandler = (this.errorHandler != null ? this.errorHandler : TaskUtils.getDefaultErrorHandler(true));
@@ -102,14 +106,16 @@ public class DistributedScheduledExecutorService implements DistributedTaskSched
         }
     }
 
-    public ScheduledFuture<?> scheduleAtFixedRate(TriggerContextAccessor ctxh, Runnable task, long period) {
+    @Nullable
+    public ScheduledFuture<?> scheduleAtFixedRate(TriggerContextAccessor ctxh, @NotNull Runnable task, long period) {
 
         final DistributedPeriodicTrigger trigger = new DistributedPeriodicTrigger(period);
         trigger.setFixedRate(true);
         return schedule(ctxh, task, trigger);
     }
 
-    public ScheduledFuture<?> scheduleAtFixedRate(TriggerContextAccessor ctxh, Runnable task, Date startTime, long period) {
+    @Nullable
+    public ScheduledFuture<?> scheduleAtFixedRate(TriggerContextAccessor ctxh, @NotNull Runnable task, @NotNull Date startTime, long period) {
         final DistributedPeriodicTrigger trigger = new DistributedPeriodicTrigger(period);
         trigger.setFixedRate(true);
         trigger.setInitialDelay(startTime.getTime() - System.currentTimeMillis());
@@ -125,38 +131,45 @@ public class DistributedScheduledExecutorService implements DistributedTaskSched
         return triggerContextAccessorFactory;
     }
 
+    @Nullable
     @Override
-    public ScheduledFuture<?> schedule(String taskName, Runnable task, Trigger trigger) {
+    public ScheduledFuture<?> schedule(String taskName, @NotNull Runnable task, Trigger trigger) {
         return schedule(getTriggerContextAccessorFactory().get(taskName, false), task, trigger);
     }
 
+    @Nullable
     @Override
-    public ScheduledFuture<?> scheduleAtFixedRate(String taskName, Runnable task, long period) {
+    public ScheduledFuture<?> scheduleAtFixedRate(String taskName, @NotNull Runnable task, long period) {
         return scheduleAtFixedRate(getTriggerContextAccessorFactory().get(taskName, false), task, period);
     }
 
+    @Nullable
     @Override
-    public ScheduledFuture<?> scheduleAtFixedRate(String taskName, Runnable task, Date startTime, long period) {
+    public ScheduledFuture<?> scheduleAtFixedRate(String taskName, @NotNull Runnable task, @NotNull Date startTime, long period) {
         return scheduleAtFixedRate(getTriggerContextAccessorFactory().get(taskName, false), task, startTime, period);
     }
 
-    public ScheduledFuture<?> scheduleWithFixedDelay(TriggerContextAccessor ctxh, Runnable task, Date startTime, long delay) {
+    @Nullable
+    public ScheduledFuture<?> scheduleWithFixedDelay(TriggerContextAccessor ctxh, @NotNull Runnable task, @NotNull Date startTime, long delay) {
         final DistributedPeriodicTrigger trigger = new DistributedPeriodicTrigger(delay);
         trigger.setInitialDelay(startTime.getTime() - System.currentTimeMillis());
         return schedule(ctxh, task, trigger);
     }
 
+    @Nullable
     @Override
-    public ScheduledFuture<?> scheduleWithFixedDelay(String taskName, Runnable task, Date startTime, long delay) {
+    public ScheduledFuture<?> scheduleWithFixedDelay(String taskName, @NotNull Runnable task, @NotNull Date startTime, long delay) {
         return scheduleWithFixedDelay(getTriggerContextAccessorFactory().get(taskName, false), task, startTime, delay);
     }
 
-    public ScheduledFuture<?> scheduleWithFixedDelay(TriggerContextAccessor ctxh, Runnable task, long delay) {
+    @Nullable
+    public ScheduledFuture<?> scheduleWithFixedDelay(TriggerContextAccessor ctxh, @NotNull Runnable task, long delay) {
         return schedule(ctxh, task, new DistributedPeriodicTrigger(delay));
     }
 
+    @Nullable
     @Override
-    public ScheduledFuture<?> scheduleWithFixedDelay(String taskName, Runnable task, long delay) {
+    public ScheduledFuture<?> scheduleWithFixedDelay(String taskName, @NotNull Runnable task, long delay) {
         return scheduleWithFixedDelay(getTriggerContextAccessorFactory().get(taskName, false), task, delay);
     }
 
@@ -178,6 +191,7 @@ public class DistributedScheduledExecutorService implements DistributedTaskSched
      *  для одной и той же задачи. Хотя к ошибкам это и не приведет, нужно устранить такую возможность, т.к. она может
      *  создать лишний контеншн
     */
+    @Nullable
     public ScheduledFuture reScheduleDynamic(final String taskName) {
         final TriggerContextAccessor ctxh = getTriggerContextAccessorFactory().get(taskName, true);
 
@@ -216,8 +230,9 @@ public class DistributedScheduledExecutorService implements DistributedTaskSched
         return schedule(ctxh, () -> r.runTask(taskName, tx.getArg()), new DistributedPeriodicDynamicTrigger());
     }
 
+    @Nullable
     @Override
-    public ScheduledFuture<?> scheduleAtFixedRate(String taskName, String beanName, Serializable arg, Date startTime, long period) throws DuplicatedTaskException {
+    public ScheduledFuture<?> scheduleAtFixedRate(String taskName, String beanName, Serializable arg, @NotNull Date startTime, long period) throws DuplicatedTaskException {
         getTriggerContextAccessorFactory().createDynamic(taskName, period, startTime.getTime(), beanName, arg);
 
         if (localEventBus != null) {
@@ -288,7 +303,7 @@ public class DistributedScheduledExecutorService implements DistributedTaskSched
     }
 
     @Override
-    public void stop(Runnable callback) {
+    public void stop(@NotNull Runnable callback) {
         stop();
         callback.run();
     }
@@ -325,7 +340,7 @@ public class DistributedScheduledExecutorService implements DistributedTaskSched
     }
 
     @Override
-    public void onDynamicTaskEvent(DynamicTaskEvent e) {
+    public void onDynamicTaskEvent(@NotNull DynamicTaskEvent e) {
         reScheduleDynamic(e.getTaskName());
     }
 }

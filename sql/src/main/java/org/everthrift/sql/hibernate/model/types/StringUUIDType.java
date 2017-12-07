@@ -4,6 +4,8 @@ import org.everthrift.utils.UUID;
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.usertype.UserType;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -20,11 +22,13 @@ public class StringUUIDType implements UserType, Externalizable {
 
     private static final long serialVersionUID = 1L;
 
+    @NotNull
     @Override
     public int[] sqlTypes() {
         return new int[]{Types.OTHER};
     }
 
+    @NotNull
     @Override
     public Class returnedClass() {
         return String.class;
@@ -36,12 +40,13 @@ public class StringUUIDType implements UserType, Externalizable {
     }
 
     @Override
-    public int hashCode(Object x) throws HibernateException {
+    public int hashCode(@Nullable Object x) throws HibernateException {
         return x == null ? 0 : x.hashCode();
     }
 
+    @Nullable
     @Override
-    public Object nullSafeGet(ResultSet rs, String[] names, SharedSessionContractImplementor session,
+    public Object nullSafeGet(@NotNull ResultSet rs, String[] names, SharedSessionContractImplementor session,
                               Object owner) throws HibernateException, SQLException {
 
         final UUID uuid = UUID.fromJdkUUID((java.util.UUID) rs.getObject(names[0]));
@@ -54,7 +59,7 @@ public class StringUUIDType implements UserType, Externalizable {
     }
 
     @Override
-    public void nullSafeSet(PreparedStatement st, Object value, int index,
+    public void nullSafeSet(@NotNull PreparedStatement st, @Nullable Object value, int index,
                             SharedSessionContractImplementor session) throws HibernateException, SQLException {
 
         if (value == null) {
@@ -74,8 +79,9 @@ public class StringUUIDType implements UserType, Externalizable {
         return false;
     }
 
+    @NotNull
     @Override
-    public Serializable disassemble(Object value) throws HibernateException {
+    public Serializable disassemble(@NotNull Object value) throws HibernateException {
         return (Serializable) value;
     }
 

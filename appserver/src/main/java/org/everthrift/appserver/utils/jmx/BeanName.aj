@@ -1,10 +1,12 @@
 package org.everthrift.appserver.utils.jmx;
 
+import org.jetbrains.annotations.Nullable;
+
 public aspect BeanName {
 
-    private String BeanNameHolder.beanName = null;
+    @Nullable private String BeanNameHolder.beanName = null;
 
-    public String BeanNameHolder.getBeanName() {
+    @Nullable public String BeanNameHolder.getBeanName() {
         return beanName;
     }
 

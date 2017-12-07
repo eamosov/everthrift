@@ -11,6 +11,7 @@ import org.apache.thrift.transport.TMemoryBuffer;
 import org.everthrift.appserver.controller.ThriftProcessor;
 import org.everthrift.clustering.jgroups.ClusterThriftClientImpl;
 import org.everthrift.clustering.thrift.InvocationInfo;
+import org.jetbrains.annotations.NotNull;
 import org.jgroups.Address;
 import org.jgroups.JChannel;
 import org.slf4j.Logger;
@@ -47,9 +48,10 @@ public class LoopbackThriftClientServerImpl extends ClusterThriftClientImpl {
         log.info("Using {} as MulticastThriftTransport", this.getClass().getSimpleName());
     }
 
+    @NotNull
     @Override
     public <T> CompletableFuture<Map<Address, Reply<T>>> call(Collection<Address> dest, Collection<Address> exclusionList,
-                                                              InvocationInfo tInfo, Options... options) throws TException {
+                                                              @NotNull InvocationInfo tInfo, Options... options) throws TException {
 
         if (isLoopback(options) == false) {
             return CompletableFuture.completedFuture(Collections.emptyMap());
@@ -104,6 +106,7 @@ public class LoopbackThriftClientServerImpl extends ClusterThriftClientImpl {
         this.thriftProcessor = thriftProcessor;
     }
 
+    @NotNull
     @Override
     public JChannel getCluster() {
         throw new NotImplementedException();

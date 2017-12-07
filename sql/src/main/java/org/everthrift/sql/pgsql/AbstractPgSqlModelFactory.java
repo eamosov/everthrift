@@ -16,6 +16,8 @@ import org.hibernate.SessionFactory;
 import org.hibernate.StatelessSession;
 import org.hibernate.criterion.Restrictions;
 import org.hibernate.query.Query;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 
@@ -40,6 +42,7 @@ public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY 
     @Autowired
     protected LocalEventBus localEventBus;
 
+    @NotNull
     protected final AbstractDaoImpl<PK, ENTITY> dao;
 
     protected final Class<ENTITY> entityClass;
@@ -47,6 +50,7 @@ public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY 
 
     private final String ALL_KEYS = "__all__keys__";
 
+    @NotNull
     @Override
     public E createNotFoundException(PK id) {
         return (E) new TException("Entity with PK '" + id + "' not found");
@@ -73,7 +77,7 @@ public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY 
         localEventBus.register(this);
     }
 
-    protected final void _invalidateEhCache(PK id, InvalidateCause invalidateCause) {
+    protected final void _invalidateEhCache(@NotNull PK id, @NotNull InvalidateCause invalidateCause) {
         super.invalidate(id, invalidateCause);
         if (getCache() != null &&
             (invalidateCause == InvalidateCause.UNKNOWN ||
@@ -95,11 +99,13 @@ public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY 
         getDao().evict(id);
     }
 
+    @Nullable
     @Override
     protected ENTITY fetchEntityById(PK id) {
         return dao.findById(id);
     }
 
+    @NotNull
     @Override
     protected Map<PK, ENTITY> fetchEntityByIdAsMap(Collection<PK> ids) {
 
@@ -110,10 +116,12 @@ public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY 
         return dao.findByIdsAsMap(ids);
     }
 
+    @NotNull
     public final AbstractDao<PK, ENTITY> getDao() {
         return dao;
     }
 
+    @NotNull
     @Override
     public final Class<ENTITY> getEntityClass() {
         return this.entityClass;
@@ -150,7 +158,7 @@ public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY 
         }
     }
 
-    public void fetchAll(final int batchSize, Consumer<List<ENTITY>> consumer) {
+    public void fetchAll(final int batchSize, @NotNull Consumer<List<ENTITY>> consumer) {
 
         try (final StatelessSession ss = sessionFactory.openStatelessSession()) {
             final Query<ENTITY> query = ss.createQuery("SELECT xx FROM " + entityClass.getSimpleName() + " xx");

@@ -7,6 +7,7 @@ import org.everthrift.sql.hibernate.dao.AbstractDao;
 import org.hibernate.criterion.Criterion;
 import org.hibernate.criterion.Order;
 import org.hibernate.criterion.Projections;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -34,14 +35,19 @@ public abstract class DaoCachedIndexModelFactory<K, V> extends CachedIndexModelF
                                   null, Collections.singletonList(getOrder()), null, null);
     }
 
+    @NotNull
     protected abstract Criterion getCriterion(Collection<K> keys);
 
+    @NotNull
     protected abstract String getPkProperty();
 
+    @NotNull
     protected abstract String getIndexedProperty();
 
+    @NotNull
     protected abstract Order getOrder();
 
+    @NotNull
     @Override
     public Class<List<V>> getEntityClass() {
         return dao.getEntityClass();

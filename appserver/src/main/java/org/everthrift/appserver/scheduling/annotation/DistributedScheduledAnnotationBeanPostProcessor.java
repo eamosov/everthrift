@@ -1,6 +1,7 @@
 package org.everthrift.appserver.scheduling.annotation;
 
 import org.everthrift.appserver.scheduling.DistributedTaskScheduler;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.aop.support.AopUtils;
@@ -68,8 +69,9 @@ public class DistributedScheduledAnnotationBeanPostProcessor implements Destruct
         return bean;
     }
 
+    @NotNull
     @Override
-    public Object postProcessAfterInitialization(final Object bean, String beanName) {
+    public Object postProcessAfterInitialization(@NotNull final Object bean, String beanName) {
 
         Assert.notNull(scheduler, "DistributedTaskScheduler must be set");
 
@@ -78,7 +80,7 @@ public class DistributedScheduledAnnotationBeanPostProcessor implements Destruct
             final Set<Method> annotatedMethods = new LinkedHashSet<Method>(1);
             ReflectionUtils.doWithMethods(targetClass, new MethodCallback() {
                 @Override
-                public void doWith(Method method) throws IllegalArgumentException, IllegalAccessException {
+                public void doWith(@NotNull Method method) throws IllegalArgumentException, IllegalAccessException {
                     for (DistributedScheduled scheduled :
                         AnnotationUtils.getRepeatableAnnotation(method, DistributedSchedules.class, DistributedScheduled.class)) {
                         processScheduled(scheduled, method, bean, beanName);
@@ -102,7 +104,7 @@ public class DistributedScheduledAnnotationBeanPostProcessor implements Destruct
         return bean;
     }
 
-    protected void processScheduled(DistributedScheduled scheduled, Method method, Object bean, String beanName) {
+    protected void processScheduled(@NotNull DistributedScheduled scheduled, @NotNull Method method, @NotNull Object bean, String beanName) {
         try {
             Assert.isTrue(method.getParameterTypes().length == 0, "Only no-arg methods may be annotated with @DistributedScheduled");
 

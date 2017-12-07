@@ -1,5 +1,6 @@
 package org.everthrift.appserver.scheduling;
 
+import org.jetbrains.annotations.NotNull;
 import org.springframework.scheduling.TriggerContext;
 import org.springframework.scheduling.support.PeriodicTrigger;
 
@@ -20,6 +21,7 @@ public class DistributedPeriodicTrigger extends PeriodicTrigger {
         this.period = period;
     }
 
+    @NotNull
     @Override
     public Date nextExecutionTime(TriggerContext triggerContext) {
         //Мы не хотим, чтобы планировались пропущенные задачи в любом из режимов fixedDelay или fixedRate,

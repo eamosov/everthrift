@@ -3,6 +3,8 @@ package org.everthrift.sql.hibernate.model.types;
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.usertype.UserType;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.postgresql.util.PGobject;
 
 import java.io.Serializable;
@@ -17,18 +19,20 @@ public class LongIntervalType implements UserType {
 
     }
 
+    @NotNull
     @Override
     public int[] sqlTypes() {
         return new int[]{Types.OTHER};
     }
 
+    @NotNull
     @Override
     public Class returnedClass() {
         return Long.class;
     }
 
     @Override
-    public boolean equals(Object x, Object y) throws HibernateException {
+    public boolean equals(@Nullable Object x, @Nullable Object y) throws HibernateException {
         if (x == null && y == null) {
             return true;
         }
@@ -41,18 +45,19 @@ public class LongIntervalType implements UserType {
     }
 
     @Override
-    public int hashCode(Object x) throws HibernateException {
+    public int hashCode(@NotNull Object x) throws HibernateException {
         return x.hashCode();
     }
 
+    @NotNull
     @Override
-    public Object nullSafeGet(ResultSet rs, String[] names, SharedSessionContractImplementor session,
+    public Object nullSafeGet(@NotNull ResultSet rs, String[] names, SharedSessionContractImplementor session,
                               Object owner) throws HibernateException, SQLException {
         return rs.getLong(names[0]) * 1000;
     }
 
     @Override
-    public void nullSafeSet(PreparedStatement st, Object value, int index,
+    public void nullSafeSet(@NotNull PreparedStatement st, @Nullable Object value, int index,
                             SharedSessionContractImplementor session) throws HibernateException, SQLException {
 
         final PGobject o = new PGobject();
@@ -71,8 +76,9 @@ public class LongIntervalType implements UserType {
         return false;
     }
 
+    @NotNull
     @Override
-    public Serializable disassemble(Object value) throws HibernateException {
+    public Serializable disassemble(@NotNull Object value) throws HibernateException {
         return (Serializable) value;
     }
 

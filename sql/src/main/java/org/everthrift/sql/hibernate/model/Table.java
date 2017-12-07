@@ -6,6 +6,7 @@ import org.apache.thrift.TDoc;
 import org.hibernate.annotations.OptimisticLockType;
 import org.hibernate.annotations.ResultCheckStyle;
 import org.hibernate.annotations.SQLInsert;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,10 +38,10 @@ public class Table {
         this.javaClass = javaClass;
     }
 
-    public void setColumns(List<Column> columns) {
+    public void setColumns(@NotNull List<Column> columns) {
         columnsByName = Maps.uniqueIndex(columns, new Function<Column, String>() {
             @Override
-            public String apply(Column input) {
+            public String apply(@NotNull Column input) {
                 return input.getColumnName();
             }
         });
@@ -58,7 +59,7 @@ public class Table {
         return columnsByName;
     }
 
-    public void addColumns(List<Column> columns) {
+    public void addColumns(@NotNull List<Column> columns) {
         for (Column col : columns) {
             columnsByName.put(col.getColumnName(), col);
         }
@@ -93,7 +94,7 @@ public class Table {
         this.optimisticLockType = optimisticLockType;
     }
 
-    private String toXmlValue(ResultCheckStyle s) {
+    private String toXmlValue(@NotNull ResultCheckStyle s) {
         switch (s) {
             case NONE:
                 return "none";
@@ -105,6 +106,7 @@ public class Table {
         return null;
     }
 
+    @NotNull
     public String toHbmXml() {
         final StringBuilder sb = new StringBuilder();
 
@@ -179,11 +181,13 @@ public class Table {
         return sb.toString();
     }
 
+    @NotNull
     @Override
     public String toString() {
         return schema + "." + tableName;
     }
 
+    @NotNull
     public List<String> getComments() {
         final List<String> list = new ArrayList<>();
         Optional.ofNullable((TDoc) javaClass.getAnnotation(TDoc.class))

@@ -3,6 +3,8 @@ package org.everthrift.sql.hibernate.model.types;
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.usertype.UserType;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.BeanUtils;
 
 import java.beans.PropertyDescriptor;
@@ -19,6 +21,7 @@ import java.util.Calendar;
 @SuppressWarnings("rawtypes")
 public abstract class DateType implements UserType {
 
+    @NotNull
     @Override
     public abstract Class returnedClass();
 
@@ -38,7 +41,7 @@ public abstract class DateType implements UserType {
 
         try {
             copy = returnedClass().getConstructor(returnedClass());
-        } catch (NoSuchMethodException | SecurityException e) {
+        } catch (@NotNull NoSuchMethodException | SecurityException e) {
             throw new RuntimeException(e);
         }
 
@@ -47,11 +50,12 @@ public abstract class DateType implements UserType {
         }
     }
 
-    public static boolean isCompatible(final Class cls) {
+    public static boolean isCompatible(@NotNull final Class cls) {
 
         try {
             final DateType d = new DateType() {
 
+                @NotNull
                 @Override
                 public Class returnedClass() {
                     return cls;
@@ -70,13 +74,14 @@ public abstract class DateType implements UserType {
         }
     }
 
+    @NotNull
     @Override
     public int[] sqlTypes() {
         return new int[]{Types.DATE};
     }
 
     @Override
-    public boolean equals(Object x, Object y) throws HibernateException {
+    public boolean equals(@Nullable Object x, @Nullable Object y) throws HibernateException {
         if (x == null && y == null) {
             return true;
         }
@@ -89,7 +94,7 @@ public abstract class DateType implements UserType {
     }
 
     @Override
-    public int hashCode(Object x) throws HibernateException {
+    public int hashCode(@Nullable Object x) throws HibernateException {
         if (x == null) {
             return 0;
         }
@@ -97,8 +102,9 @@ public abstract class DateType implements UserType {
         return x.hashCode();
     }
 
+    @Nullable
     @Override
-    public Object nullSafeGet(ResultSet rs, String[] names, SharedSessionContractImplementor session,
+    public Object nullSafeGet(@NotNull ResultSet rs, String[] names, SharedSessionContractImplementor session,
                               Object owner) throws HibernateException, SQLException {
 
         final Date value = rs.getDate(names[0]);
@@ -110,7 +116,7 @@ public abstract class DateType implements UserType {
         Object ret;
         try {
             ret = returnedClass().newInstance();
-        } catch (InstantiationException | IllegalAccessException e) {
+        } catch (@NotNull InstantiationException | IllegalAccessException e) {
             throw new SQLException(e);
         }
 
@@ -123,7 +129,7 @@ public abstract class DateType implements UserType {
                                           cld.get(Calendar.MONTH)); /* 0-11 */
             date.getWriteMethod().invoke(ret,
                                          cld.get(Calendar.DATE)); /* 1-31 */
-        } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+        } catch (@NotNull IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
             throw new HibernateException(e);
         }
 
@@ -131,7 +137,7 @@ public abstract class DateType implements UserType {
     }
 
     @Override
-    public void nullSafeSet(PreparedStatement st, Object value, int index,
+    public void nullSafeSet(@NotNull PreparedStatement st, @Nullable Object value, int index,
                             SharedSessionContractImplementor session) throws HibernateException, SQLException {
 
         if (value == null) {
@@ -161,13 +167,14 @@ public abstract class DateType implements UserType {
             final Date date = new Date(cld.getTimeInMillis());
             st.setDate(index, date);
 
-        } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+        } catch (@NotNull IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
             throw new HibernateException(e);
         }
     }
 
+    @Nullable
     @Override
-    public Object deepCopy(Object value) throws HibernateException {
+    public Object deepCopy(@Nullable Object value) throws HibernateException {
 
         if (value == null) {
             return null;
@@ -175,7 +182,7 @@ public abstract class DateType implements UserType {
 
         try {
             return copy.newInstance(value);
-        } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+        } catch (@NotNull InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
             throw new HibernateException(e);
         }
     }
@@ -185,18 +192,21 @@ public abstract class DateType implements UserType {
         return true;
     }
 
+    @Nullable
     @Override
     public Serializable disassemble(Object value) throws HibernateException {
         return (Serializable) deepCopy(value);
     }
 
+    @Nullable
     @Override
     public Object assemble(Serializable cached, Object owner) throws HibernateException {
         return deepCopy(cached);
     }
 
+    @Nullable
     @Override
-    public Object replace(Object original, Object target, Object owner) throws HibernateException {
+    public Object replace(@Nullable Object original, Object target, Object owner) throws HibernateException {
         return original == null ? null : deepCopy(original);
     }
 

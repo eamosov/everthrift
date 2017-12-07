@@ -3,6 +3,7 @@ package org.everthrift.appserver.scheduling.test;
 import org.everthrift.appserver.scheduling.context.SettableTriggerContext;
 import org.everthrift.appserver.scheduling.context.SettableTriggerContextImpl;
 import org.everthrift.appserver.scheduling.context.TriggerContextAccessor;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.util.Assert;
 
 import java.util.Date;
@@ -29,6 +30,7 @@ public class SimpleTriggerContextAccessor implements TriggerContextAccessor {
         this.lastCompletionTime = lastCompletionTime;
     }
 
+    @NotNull
     @Override
     public synchronized SettableTriggerContext get() {
         return new SettableTriggerContextImpl(serial, lastScheduledExecutionTime, lastActualExecutionTime, lastCompletionTime,
@@ -52,7 +54,7 @@ public class SimpleTriggerContextAccessor implements TriggerContextAccessor {
     }
 
     @Override
-    public synchronized void updateLastCompletionTime(Date time) {
+    public synchronized void updateLastCompletionTime(@NotNull Date time) {
 
         if (lastCompletionTime == null || lastCompletionTime.before(time)) {
             lastCompletionTime = time;

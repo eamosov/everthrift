@@ -19,6 +19,8 @@ import org.apache.thrift.TBase;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.everthrift.appserver.utils.thrift.GsonSerializer;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -34,12 +36,15 @@ class ZPersistMBeanInterceptor implements MethodInterceptor {
 
     private static final Logger log = LoggerFactory.getLogger(ZPersistMBeanInterceptor.class);
 
+    @NotNull
     private final NodeCache nodeCache;
 
     private final Object bean;
 
+    @NotNull
     private final CuratorFramework curator;
 
+    @NotNull
     private final String zooPath;
 
     private static final String SET_ATTRIBUTE = "setAttribute";
@@ -51,7 +56,7 @@ class ZPersistMBeanInterceptor implements MethodInterceptor {
                                                       .create();
 
 
-    ZPersistMBeanInterceptor(Object bean, final String rootPath, final String persistName, CuratorFramework curator, ApplicationContext context) throws Exception {
+    ZPersistMBeanInterceptor(Object bean, final String rootPath, final String persistName, @NotNull CuratorFramework curator, @NotNull ApplicationContext context) throws Exception {
         this.bean = bean;
         this.zooPath = rootPath + "/beans/" + persistName;
         this.curator = curator;
@@ -85,7 +90,7 @@ class ZPersistMBeanInterceptor implements MethodInterceptor {
     }
 
     @Override
-    public Object invoke(MethodInvocation invocation) throws Throwable {
+    public Object invoke(@NotNull MethodInvocation invocation) throws Throwable {
         String method = invocation.getMethod().getName();
         Object[] args = invocation.getArguments();
 
@@ -131,7 +136,7 @@ class ZPersistMBeanInterceptor implements MethodInterceptor {
                 try {
                     final Object v = pd.getReadMethod().invoke(parsed);
                     pd.getWriteMethod().invoke(bean, v);
-                } catch (IllegalAccessException | InvocationTargetException e) {
+                } catch (@NotNull IllegalAccessException | InvocationTargetException e) {
                     throw new RuntimeException(e);
                 }
             }
@@ -178,7 +183,7 @@ class ZPersistMBeanInterceptor implements MethodInterceptor {
         store(name, value);
     }
 
-    private void store(String name, Object value) throws Exception {
+    private void store(@NotNull String name, @Nullable Object value) throws Exception {
 
         boolean badVersion;
 

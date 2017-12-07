@@ -28,6 +28,8 @@ import org.everthrift.appserver.utils.thrift.SessionIF;
 import org.everthrift.appserver.utils.thrift.ThriftClient;
 import org.everthrift.clustering.MessageWrapper;
 import org.everthrift.clustering.thrift.InvocationInfo;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -67,7 +69,7 @@ public class ThriftProcessor implements TProcessor {
     @Autowired(required = false)
     private RpsServletIF rpsServlet;
 
-    public static ThriftProcessor create(ApplicationContext context, ThriftControllerRegistry registry) {
+    public static ThriftProcessor create(@NotNull ApplicationContext context, ThriftControllerRegistry registry) {
         return context.getBean(ThriftProcessor.class, registry);
     }
 
@@ -105,7 +107,8 @@ public class ThriftProcessor implements TProcessor {
         }
     }
 
-    public <T> T process(ThriftProtocolSupportIF<T> tps, ThriftClient thriftClient) throws TException {
+    @Nullable
+    public <T> T process(@NotNull ThriftProtocolSupportIF<T> tps, ThriftClient thriftClient) throws TException {
 
         try {
             stat();
@@ -162,7 +165,7 @@ public class ThriftProcessor implements TProcessor {
     }
 
     @Override
-    public boolean process(TProtocol inp, TProtocol out) throws TException {
+    public boolean process(@NotNull TProtocol inp, @NotNull TProtocol out) throws TException {
         try {
             process(inp, out, Collections.emptyMap());
         } catch (RuntimeException e) {
@@ -178,7 +181,8 @@ public class ThriftProcessor implements TProcessor {
      * @return Controller result (success or Exception)
      * @throws TException
      */
-    public Object process(final TProtocol inp, TProtocol out, final Map<String, Object> attributes) throws TException {
+    @Nullable
+    public Object process(@NotNull final TProtocol inp, @NotNull TProtocol out, @Nullable final Map<String, Object> attributes) throws TException {
 
         final TMessage msg = inp.readMessageBegin();
 
@@ -217,7 +221,7 @@ public class ThriftProcessor implements TProcessor {
                         if (inT instanceof TSocket) {
                             return ((TSocket) inT).getSocket().getRemoteSocketAddress().toString();
                         }
-                    } catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
+                    } catch (@NotNull NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
                         log.warn("cound't get remote address for transport of type {}", inT.getClass().getSimpleName());
                     }
                 }
@@ -228,6 +232,7 @@ public class ThriftProcessor implements TProcessor {
             public void addCloseCallback(FutureCallback<Void> callback) {
             }
 
+            @NotNull
             @Override
             protected CompletableFuture thriftCall(Object sessionId, int timeout, InvocationInfo tInfo) throws TException {
                 throw new NotImplementedException();
@@ -251,13 +256,15 @@ public class ThriftProcessor implements TProcessor {
                 return msg;
             }
 
+            @Nullable
             @Override
             public Map<String, Object> getAttributes() {
                 return attributes;
             }
 
+            @NotNull
             @Override
-            public <T extends TBase> T readArgs(final ThriftControllerInfo tInfo) throws TException {
+            public <T extends TBase> T readArgs(@NotNull final ThriftControllerInfo tInfo) throws TException {
                 final TBase args = tInfo.makeArgument();
                 args.read(inp);
                 inp.readMessageEnd();
@@ -270,7 +277,8 @@ public class ThriftProcessor implements TProcessor {
                 inp.readMessageEnd();
             }
 
-            private Object result(TApplicationException o) {
+            @NotNull
+            private Object result(@NotNull TApplicationException o) {
                 try {
                     out.writeMessageBegin(new TMessage(msg.name, TMessageType.EXCEPTION, msg.seqid));
                     ((TApplicationException) o).write(out);
@@ -284,7 +292,7 @@ public class ThriftProcessor implements TProcessor {
             }
 
             @Override
-            public Object result(final Object o, final ThriftControllerInfo tInfo) {
+            public Object result(final Object o, @NotNull final ThriftControllerInfo tInfo) {
 
                 if (o instanceof TApplicationException) {
                     return result((TApplicationException) o);
@@ -327,7 +335,7 @@ public class ThriftProcessor implements TProcessor {
         return process(s, thriftClient);
     }
 
-    private static void logStart(Logger l, ThriftClient thriftClient, String method, String correlationId, Object args) {
+    private static void logStart(@NotNull Logger l, @Nullable ThriftClient thriftClient, String method, String correlationId, @Nullable Object args) {
         if (l.isDebugEnabled() || logControllerStart.isDebugEnabled()) {
             final Logger _l = l.isDebugEnabled() ? l : logControllerStart;
             final String data = args == null ? null : args.toString();
@@ -345,7 +353,7 @@ public class ThriftProcessor implements TProcessor {
         }
     }
 
-    private static void logNoController(ThriftClient thriftClient, String method, String correlationId) {
+    private static void logNoController(@Nullable ThriftClient thriftClient, String method, String correlationId) {
         if (log.isWarnEnabled() || logControllerStart.isWarnEnabled()) {
             final Logger _l = log.isWarnEnabled() ? log : logControllerStart;
             final SessionIF session = thriftClient != null ? thriftClient.getSession() : null;
@@ -354,7 +362,7 @@ public class ThriftProcessor implements TProcessor {
         }
     }
 
-    public static void logEnd(Logger l, AbstractThriftController c, String method, String correlationId, Object ret) {
+    public static void logEnd(@NotNull Logger l, @NotNull AbstractThriftController c, String method, String correlationId, @Nullable Object ret) {
 
         if (l.isDebugEnabled() || logControllerEnd.isDebugEnabled()
             || (c.getExecutionMcs() > c.getWarnExecutionMcsLimit() && (l.isWarnEnabled() || logControllerEnd.isWarnEnabled()))) {

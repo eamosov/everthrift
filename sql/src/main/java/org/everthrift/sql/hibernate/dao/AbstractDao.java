@@ -13,6 +13,8 @@ import org.hibernate.criterion.Order;
 import org.hibernate.criterion.Projection;
 import org.hibernate.transform.ResultTransformer;
 import org.hibernate.type.Type;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.List;
@@ -35,6 +37,7 @@ public interface AbstractDao<K, V extends DaoEntityIF> {
      * @param id
      * @return
      */
+    @NotNull
     public Map<K, V> findByIdsAsMap(Collection<K> id);
 
     public void persist(V e) throws UniqueException;
@@ -53,6 +56,7 @@ public interface AbstractDao<K, V extends DaoEntityIF> {
 
     public Object uniqueResult(Criterion criterion, Projection... projections);
 
+    @NotNull
     public List<K> findPkByCriteria(Criterion criterion, Order order);
 
     public List<V> findByCriteria(Criterion criterion, Order order);
@@ -60,10 +64,13 @@ public interface AbstractDao<K, V extends DaoEntityIF> {
     public List<V> findByCriteria(Criterion criterion, Projection proj, LockMode lockMode, List<Order> order, Integer limit,
                                   Integer offset);
 
+    @NotNull
     public CompletableFuture<List<V>> findByCriteriaAsync(Criterion criterion, Order order);
 
+    @Nullable
     public V findFirstByCriteria(Criterion criterion, Order order);
 
+    @NotNull
     public CompletableFuture<V> findFirstByCriteriaAsync(Criterion criterion, Order order);
 
     public <R> R withSession(Function<Session, R> r);
@@ -80,5 +87,6 @@ public interface AbstractDao<K, V extends DaoEntityIF> {
 
     public void setExecutor(Executor executor);
 
+    @NotNull
     public AbstractDao<K, V> with(SessionFactory sessionFactory);
 }

@@ -13,6 +13,8 @@ import org.apache.thrift.meta_data.ListMetaData;
 import org.apache.thrift.meta_data.MapMetaData;
 import org.apache.thrift.meta_data.SetMetaData;
 import org.apache.thrift.meta_data.StructMetaData;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,10 +32,12 @@ public class ThriftTraversal {
 
     private static final Logger log = LoggerFactory.getLogger(ThriftTraversal.class);
 
+    @NotNull
     private static Reference2ObjectMap<Class<? extends TBase>, ThriftTraversal> nodes = new Reference2ObjectOpenHashMap<Class<? extends TBase>, ThriftTraversal>();
 
     private final Class<? extends TBase> cls;
 
+    @NotNull
     private final Map<TFieldIdEnum, FieldMetaData> fields;
 
     private final Reference2ObjectMap<Class<? extends TBase>, List<TFieldIdEnum>> routing = new Reference2ObjectOpenHashMap<Class<? extends TBase>, List<TFieldIdEnum>>();
@@ -58,15 +62,16 @@ public class ThriftTraversal {
         }
     }
 
-    public static <T extends TBase> Set<T> visitChildsOfType(final Object obj, final Class<T> type, final Function<T, Void> visitHandler) {
+    @NotNull
+    public static <T extends TBase> Set<T> visitChildsOfType(final Object obj, @NotNull final Class<T> type, @NotNull final Function<T, Void> visitHandler) {
         final Set<T> visited = new ReferenceOpenHashSet<T>();
         visitChildsOfType(visited, obj, type, ThriftUtils.getRootThriftClass(type).first, visitHandler);
         return visited;
     }
 
-    private static <T extends TBase> void visitChildsOfType(Set<T> visited, final Object obj, final Class<T> type,
-                                                            final Class<? extends TBase> thriftBaseType,
-                                                            final Function<T, Void> visitHandler) {
+    private static <T extends TBase> void visitChildsOfType(@NotNull Set<T> visited, @Nullable final Object obj, @NotNull final Class<T> type,
+                                                            @NotNull final Class<? extends TBase> thriftBaseType,
+                                                            @NotNull final Function<T, Void> visitHandler) {
 
         if (obj == null) {
             return;
@@ -77,7 +82,7 @@ public class ThriftTraversal {
             try {
                 Method m = obj.getClass().getMethod("getId");
                 id = m.invoke(obj).toString();
-            } catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException
+            } catch (@NotNull NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException
                 | InvocationTargetException e) {
                 id = "<unknown>";
             }

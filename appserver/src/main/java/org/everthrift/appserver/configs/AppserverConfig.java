@@ -11,6 +11,8 @@ import org.everthrift.appserver.controller.ThriftProcessor;
 import org.everthrift.appserver.model.LocalEventBus;
 import org.everthrift.utils.tg.AtomicMonotonicTimestampGenerator;
 import org.everthrift.utils.tg.TimestampGenerator;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -52,7 +54,7 @@ public class AppserverConfig implements SchedulingConfigurer, AsyncConfigurer {
     private ThreadPoolTaskExecutor callerRunsBoundQueueExecutor;
 
     @Override
-    public void configureTasks(ScheduledTaskRegistrar taskRegistrar) {
+    public void configureTasks(@NotNull ScheduledTaskRegistrar taskRegistrar) {
         taskRegistrar.setTaskScheduler(myScheduler);
     }
 
@@ -61,11 +63,13 @@ public class AppserverConfig implements SchedulingConfigurer, AsyncConfigurer {
         return callerRunsBoundQueueExecutor;
     }
 
+    @Nullable
     @Override
     public AsyncUncaughtExceptionHandler getAsyncUncaughtExceptionHandler() {
         return null;
     }
 
+    @NotNull
     @Bean
     public ThreadPoolTaskExecutor callerRunsBoundQueueExecutor() {
         final ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
@@ -76,6 +80,7 @@ public class AppserverConfig implements SchedulingConfigurer, AsyncConfigurer {
         return executor;
     }
 
+    @NotNull
     @Bean
     public ThreadPoolTaskExecutor unboundQueueExecutor() {
         final ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
@@ -84,6 +89,7 @@ public class AppserverConfig implements SchedulingConfigurer, AsyncConfigurer {
         return executor;
     }
 
+    @NotNull
     @Bean
     public ThreadPoolTaskScheduler myScheduler() {
         final ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
@@ -92,43 +98,49 @@ public class AppserverConfig implements SchedulingConfigurer, AsyncConfigurer {
     }
 
     @Bean
-    public ListeningExecutorService listeningCallerRunsBoundQueueExecutor(@Qualifier("callerRunsBoundQueueExecutor") ThreadPoolTaskExecutor executor) {
+    public ListeningExecutorService listeningCallerRunsBoundQueueExecutor(@NotNull @Qualifier("callerRunsBoundQueueExecutor") ThreadPoolTaskExecutor executor) {
         return MoreExecutors.listeningDecorator(executor.getThreadPoolExecutor());
     }
 
     @Bean
-    public ListeningScheduledExecutorService listeningScheduledExecutorService(@Qualifier("myScheduler") ThreadPoolTaskScheduler scheduler) {
+    public ListeningScheduledExecutorService listeningScheduledExecutorService(@NotNull @Qualifier("myScheduler") ThreadPoolTaskScheduler scheduler) {
         return MoreExecutors.listeningDecorator(scheduler.getScheduledThreadPoolExecutor());
     }
 
+    @NotNull
     @Bean
     @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
     public ThriftProcessor thriftProcessor(ThriftControllerRegistry registry) {
         return new ThriftProcessor(registry);
     }
 
+    @NotNull
     @Bean
     public LocalEventBus LocalEventBus() {
         return new LocalEventBus();
     }
 
+    @NotNull
     @Bean
     public ThriftControllerJmx ThriftControllerJmx() {
         return new ThriftControllerJmx();
     }
 
+    @NotNull
     @Bean
     @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
     public GetNodeConfigurationController getNodeConfigurationController() {
         return new GetNodeConfigurationController();
     }
 
+    @NotNull
     @Bean
     @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
     public OnNodeConfigurationController getOnNodeConfigurationController() {
         return new OnNodeConfigurationController();
     }
 
+    @NotNull
     @Bean
     public TimestampGenerator timestampGenerator(){
         return new AtomicMonotonicTimestampGenerator();

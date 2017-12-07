@@ -1,6 +1,7 @@
 package org.everthrift.appserver.model.lazy;
 
 import com.google.common.base.Throwables;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -19,5 +20,6 @@ public interface AsyncLazyLoader<K> extends LazyLoader<K> {
         }
     }
 
+    @NotNull
     CompletableFuture<Integer> processAsync(List<K> entities);
 }

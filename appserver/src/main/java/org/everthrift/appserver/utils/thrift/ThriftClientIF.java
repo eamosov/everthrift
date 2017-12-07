@@ -3,6 +3,7 @@ package org.everthrift.appserver.utils.thrift;
 import com.google.common.util.concurrent.FutureCallback;
 import org.apache.thrift.TException;
 import org.everthrift.clustering.thrift.InvocationInfo;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
@@ -22,8 +23,10 @@ public interface ThriftClientIF {
 
     SessionIF getSession();
 
+    @Nullable
     String getSessionId();
 
+    @Nullable
     String getClientIp();
 
     void addCloseCallback(FutureCallback<Void> callback);

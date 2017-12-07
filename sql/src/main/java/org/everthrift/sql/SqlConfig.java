@@ -13,6 +13,8 @@ import org.everthrift.sql.hibernate.model.CustomTypesRegistry;
 import org.everthrift.sql.hibernate.model.MetaDataProvider;
 import org.everthrift.sql.hibernate.model.types.CustomUserType;
 import org.hibernate.SessionFactory;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -37,12 +39,13 @@ import java.util.Properties;
 @Configuration
 public class SqlConfig {
 
+    @NotNull
     @Bean
     public LocalSessionFactoryBean defaultSessionFactory(DataSource dataSource,
                                                          MetaDataProvider metaDataProvider,
                                                          @Value("${hibernate.dumphbm:false}") boolean dumpHbm,
-                                                         @Value("${hibernate.statichbm:}") String staticHbm,
-                                                         @Value("${hibernate.scan:}") String scan) throws IOException {
+                                                         @NotNull @Value("${hibernate.statichbm:}") String staticHbm,
+                                                         @NotNull @Value("${hibernate.scan:}") String scan) throws IOException {
 
         final LocalSessionFactoryBean sessionFactory = new LocalSessionFactoryBean(dumpHbm);
         sessionFactory.setDataSource(dataSource);
@@ -60,6 +63,7 @@ public class SqlConfig {
         return sessionFactory;
     }
 
+    @NotNull
     @Bean
     public PlatformTransactionManager transactionManager(@Qualifier("defaultSessionFactory") SessionFactory sessionFactory) {
         final HibernateTransactionManager txManager = new HibernateTransactionManager();
@@ -67,6 +71,7 @@ public class SqlConfig {
         return txManager;
     }
 
+    @NotNull
     @Bean
     public DataSource dataSource(@Value("${db.host}") String host,
                                  @Value("${db.name}") String db,
@@ -75,11 +80,13 @@ public class SqlConfig {
         return new DataSourceSpy(setupPgDataSource(host, db, user, pass));
     }
 
+    @NotNull
     @Bean
     public JdbcTemplate jdbcTemplate(DataSource dataSource) {
         return new JdbcTemplate(dataSource);
     }
 
+    @Nullable
     private DataSource setupPgDataSource(String host, String db, String user, String pass) {
         try {
             Class.forName("org.postgresql.Driver");
@@ -89,6 +96,7 @@ public class SqlConfig {
         return setupDataSource(String.format("jdbc:postgresql://%s/%s?user=%s&password=%s", host, db, user, pass));
     }
 
+    @Nullable
     private DataSource setupDataSource(String connectURI) {
 
         final ConnectionFactory connectionFactory = new DriverManagerConnectionFactory(connectURI, null);
@@ -106,6 +114,7 @@ public class SqlConfig {
         return dataSource;
     }
 
+    @NotNull
     @Bean
     public MetaDataProvider metaDataProvider(DataSource dataSource) throws IOException {
 
@@ -127,6 +136,7 @@ public class SqlConfig {
         return new MetaDataProvider(dataSource, PropertiesLoaderUtils.loadAllProperties(config_file_location));
     }
 
+    @NotNull
     private Properties hibernateProperties() {
         return new Properties() {
             {

@@ -7,6 +7,8 @@ import org.everthrift.sql.hibernate.model.types.CustomUserType;
 import org.everthrift.utils.TypeUtils;
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.postgresql.util.PGobject;
 import org.springframework.beans.BeanUtils;
 
@@ -27,6 +29,7 @@ public abstract class JsonbListType implements CustomUserType {
 
     final private Gson gson = new GsonBuilder().create();
 
+    @NotNull
     protected abstract Type getListType();
 
     protected Gson gson() {
@@ -34,7 +37,7 @@ public abstract class JsonbListType implements CustomUserType {
     }
 
     @Override
-    public boolean accept(Class entityClass, Class propertyClass, String propertyName, int jdbcTypeId, String jdbcColumnType, String columnName) {
+    public boolean accept(Class entityClass, @NotNull Class propertyClass, String propertyName, int jdbcTypeId, @NotNull String jdbcColumnType, String columnName) {
 
         if (!List.class.isAssignableFrom(propertyClass)) {
             return false;
@@ -53,11 +56,13 @@ public abstract class JsonbListType implements CustomUserType {
     }
 
 
+    @NotNull
     @Override
     public int[] sqlTypes() {
         return new int[]{Types.OTHER};
     }
 
+    @NotNull
     @Override
     public Class returnedClass() {
         return List.class;
@@ -69,15 +74,16 @@ public abstract class JsonbListType implements CustomUserType {
     }
 
     @Override
-    public int hashCode(Object x) throws HibernateException {
+    public int hashCode(@Nullable Object x) throws HibernateException {
         if (x == null) {
             return 0;
         }
         return x.hashCode();
     }
 
+    @Nullable
     @Override
-    public Object nullSafeGet(ResultSet rs, String[] names, SharedSessionContractImplementor session, Object owner) throws HibernateException, SQLException {
+    public Object nullSafeGet(@NotNull ResultSet rs, String[] names, SharedSessionContractImplementor session, Object owner) throws HibernateException, SQLException {
         final PGobject value = (PGobject) rs.getObject(names[0]);
 
         if (value == null) {
@@ -88,7 +94,7 @@ public abstract class JsonbListType implements CustomUserType {
     }
 
     @Override
-    public void nullSafeSet(PreparedStatement st, Object value, int index, SharedSessionContractImplementor session) throws HibernateException, SQLException {
+    public void nullSafeSet(@NotNull PreparedStatement st, @Nullable Object value, int index, SharedSessionContractImplementor session) throws HibernateException, SQLException {
         if (value == null) {
             st.setNull(index, Types.OTHER);
             return;
@@ -100,8 +106,9 @@ public abstract class JsonbListType implements CustomUserType {
         st.setObject(index, o, Types.OTHER);
     }
 
+    @Nullable
     @Override
-    public Object deepCopy(Object value) throws HibernateException {
+    public Object deepCopy(@Nullable Object value) throws HibernateException {
 
         if (value == null) {
             return null;
@@ -115,18 +122,21 @@ public abstract class JsonbListType implements CustomUserType {
         return true;
     }
 
+    @Nullable
     @Override
     public Serializable disassemble(Object value) throws HibernateException {
         return (Serializable) deepCopy(value);
     }
 
+    @Nullable
     @Override
     public Object assemble(Serializable cached, Object owner) throws HibernateException {
         return deepCopy(cached);
     }
 
+    @Nullable
     @Override
-    public Object replace(Object original, Object target, Object owner) throws HibernateException {
+    public Object replace(@Nullable Object original, Object target, Object owner) throws HibernateException {
         return original == null ? null : deepCopy(original);
     }
 }

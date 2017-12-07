@@ -1,5 +1,6 @@
 package org.everthrift.appserver.utils.jmx;
 
+import org.jetbrains.annotations.NotNull;
 import org.springframework.jmx.export.naming.MetadataNamingStrategy;
 
 import javax.management.MalformedObjectNameException;
@@ -35,7 +36,7 @@ public class RuntimeMetadataNamingStrategy extends MetadataNamingStrategy {
      * Construct our object name by calling the methods in
      * {@link RuntimeJmxNames}.
      */
-    private ObjectName buildObjectName(RuntimeJmxNames namedObject, String domainName) throws MalformedObjectNameException {
+    private ObjectName buildObjectName(@NotNull RuntimeJmxNames namedObject, String domainName) throws MalformedObjectNameException {
 
         String[] typeNames = namedObject.getJmxPath();
         if (typeNames == null) {

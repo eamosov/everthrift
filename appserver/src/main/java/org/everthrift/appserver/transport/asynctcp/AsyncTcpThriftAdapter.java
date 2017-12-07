@@ -6,6 +6,8 @@ import org.apache.thrift.transport.TMemoryInputTransport;
 import org.everthrift.appserver.controller.DefaultTProtocolSupport;
 import org.everthrift.appserver.controller.ThriftProcessor;
 import org.everthrift.clustering.MessageWrapper;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
@@ -39,7 +41,8 @@ public class AsyncTcpThriftAdapter implements InitializingBean, ChannelIntercept
         this.protocolFactory = protocolFactory;
     }
 
-    public Object handle(Message m) {
+    @Nullable
+    public Object handle(@NotNull Message m) {
 
         log.debug("{}, adapter={}, processor={}", new Object[]{m, this, tp});
 
@@ -61,7 +64,7 @@ public class AsyncTcpThriftAdapter implements InitializingBean, ChannelIntercept
     }
 
     @Override
-    public Message<?> preSend(Message<?> message, MessageChannel channel) {
+    public Message<?> preSend(@NotNull Message<?> message, MessageChannel channel) {
         return MessageBuilder.withPayload(((TMemoryBuffer) ((MessageWrapper) message.getPayload()).getTTransport()).toByteArray())
                              .copyHeaders(message.getHeaders()).build();
     }

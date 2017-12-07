@@ -6,6 +6,8 @@ import org.everthrift.thrift.TBaseModel;
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.usertype.UserType;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,21 +29,23 @@ public abstract class TBaseType implements UserType {
 
         try {
             init = returnedClass().getConstructor();
-        } catch (NoSuchMethodException | SecurityException e) {
+        } catch (@NotNull NoSuchMethodException | SecurityException e) {
             throw Throwables.propagate(e);
         }
     }
 
+    @NotNull
     @Override
     public int[] sqlTypes() {
         return new int[]{Types.BINARY};
     }
 
+    @NotNull
     @Override
     public abstract Class returnedClass();
 
     @Override
-    public boolean equals(Object x, Object y) throws HibernateException {
+    public boolean equals(@Nullable Object x, @Nullable Object y) throws HibernateException {
 
         if (x == null && y == null) {
             return true;
@@ -55,7 +59,7 @@ public abstract class TBaseType implements UserType {
     }
 
     @Override
-    public int hashCode(Object x) throws HibernateException {
+    public int hashCode(@Nullable Object x) throws HibernateException {
 
         if (x == null) {
             return 0;
@@ -64,8 +68,9 @@ public abstract class TBaseType implements UserType {
         return x.hashCode();
     }
 
+    @Nullable
     @Override
-    public Object nullSafeGet(ResultSet rs, String[] names, SharedSessionContractImplementor session,
+    public Object nullSafeGet(@NotNull ResultSet rs, String[] names, SharedSessionContractImplementor session,
                               Object owner) throws HibernateException, SQLException {
 
         final byte[] bytes = rs.getBytes(names[0]);
@@ -92,7 +97,7 @@ public abstract class TBaseType implements UserType {
     }
 
     @Override
-    public void nullSafeSet(PreparedStatement st, Object value, int index,
+    public void nullSafeSet(@NotNull PreparedStatement st, @Nullable Object value, int index,
                             SharedSessionContractImplementor session) throws HibernateException, SQLException {
 
         if (value == null) {
@@ -102,8 +107,9 @@ public abstract class TBaseType implements UserType {
         }
     }
 
+    @Nullable
     @Override
-    public Object deepCopy(Object value) throws HibernateException {
+    public Object deepCopy(@Nullable Object value) throws HibernateException {
         return value == null ? null : ((TBaseModel) value).deepCopy();
     }
 
@@ -112,8 +118,9 @@ public abstract class TBaseType implements UserType {
         return true;
     }
 
+    @Nullable
     @Override
-    public Serializable disassemble(Object value) throws HibernateException {
+    public Serializable disassemble(@Nullable Object value) throws HibernateException {
 
         if (value == null) {
             return null;
@@ -122,8 +129,9 @@ public abstract class TBaseType implements UserType {
         return (value instanceof TBaseLazyModel) ? ((TBaseLazyModel) value).write() : (Serializable) deepCopy(value);
     }
 
+    @Nullable
     @Override
-    public Object assemble(Serializable cached, Object owner) throws HibernateException {
+    public Object assemble(@Nullable Serializable cached, Object owner) throws HibernateException {
 
         if (cached == null) {
             return null;
@@ -134,7 +142,7 @@ public abstract class TBaseType implements UserType {
                 final TBaseModel o = init.newInstance();
                 o.read((byte[]) cached, 0);
                 return o;
-            } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+            } catch (@NotNull InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
                 throw new HibernateException(e);
             }
         } else {
@@ -142,8 +150,9 @@ public abstract class TBaseType implements UserType {
         }
     }
 
+    @Nullable
     @Override
-    public Object replace(Object original, Object target, Object owner) throws HibernateException {
+    public Object replace(@Nullable Object original, Object target, Object owner) throws HibernateException {
         return original == null ? null : deepCopy(original);
     }
 

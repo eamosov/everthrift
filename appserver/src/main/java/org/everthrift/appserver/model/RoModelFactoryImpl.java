@@ -1,6 +1,5 @@
 package org.everthrift.appserver.model;
 
-import com.google.common.base.Function;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
@@ -9,6 +8,7 @@ import com.google.common.collect.Sets;
 import org.everthrift.appserver.model.lazy.LazyLoader;
 import org.everthrift.appserver.model.lazy.Registry;
 import org.everthrift.appserver.model.lazy.UniqKey;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.CollectionUtils;
@@ -20,7 +20,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.RandomAccess;
 import java.util.Set;
-import java.util.function.BiFunction;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public abstract class RoModelFactoryImpl<PK, ENTITY, E extends Exception> implements RoModelFactoryIF<PK, ENTITY, E> {
@@ -31,13 +32,15 @@ public abstract class RoModelFactoryImpl<PK, ENTITY, E extends Exception> implem
 
     protected static interface MultiLoader<K, V> {
 
+        @NotNull
         public Map<K, V> findByIds(Collection<K> ids);
     }
 
     protected final Logger log = LoggerFactory.getLogger(this.getClass());
 
+    @NotNull
     @Override
-    final public Collection<ENTITY> findEntityById(Collection<PK> ids) {
+    final public Collection<ENTITY> findEntityById(@NotNull Collection<PK> ids) {
 
         if (CollectionUtils.isEmpty(ids)) {
             return Collections.emptyList();
@@ -46,8 +49,9 @@ public abstract class RoModelFactoryImpl<PK, ENTITY, E extends Exception> implem
         return Collections2.filter(findEntityByIdAsMap(ids).values(), Predicates.notNull());
     }
 
+    @NotNull
     @Override
-    final public List<ENTITY> findEntityByIdsInOrder(Collection<PK> ids) {
+    final public List<ENTITY> findEntityByIdsInOrder(@NotNull Collection<PK> ids) {
 
         if (CollectionUtils.isEmpty(ids)) {
             return Collections.emptyList();
@@ -64,8 +68,9 @@ public abstract class RoModelFactoryImpl<PK, ENTITY, E extends Exception> implem
         return ret;
     }
 
+    @NotNull
     @Override
-    public Map<List<PK>, List<ENTITY>> findEntityByCollectionIds(Collection<List<PK>> listCollection) {
+    public Map<List<PK>, List<ENTITY>> findEntityByCollectionIds(@NotNull Collection<List<PK>> listCollection) {
 
         if (CollectionUtils.isEmpty(listCollection)) {
             return Collections.emptyMap();
@@ -89,63 +94,51 @@ public abstract class RoModelFactoryImpl<PK, ENTITY, E extends Exception> implem
         return result;
     }
 
-    protected final LazyLoader<XAwareIF<PK, ENTITY>> lazyLoader = entities -> _load(entities);
+    protected final LazyLoader<XAwareIF<PK, ENTITY>> lazyLoader = this::_load;
 
-    protected final LazyLoader<XAwareIF<List<PK>, List<ENTITY>>> lazyListLoader = entities -> _loadList(entities);
+    protected final LazyLoader<XAwareIF<List<PK>, List<ENTITY>>> lazyListLoader = this::_loadList;
 
-    public boolean lazyLoad(Registry r, XAwareIF<PK, ENTITY> m) {
-        if (m.isSetId()) {
-            return r.add(lazyLoader, m);
-        } else {
-            return false;
-        }
+    public boolean lazyLoad(@NotNull Registry r, @NotNull XAwareIF<PK, ENTITY> m) {
+        return m.isSetId() && r.add(lazyLoader, m);
     }
 
-    public boolean lazyLoad(Registry r, XAwareIF<PK, ENTITY> m, Object entity, String propertyName) {
-        if (m.isSetId()) {
-            return r.addWithUnique(lazyLoader, m, new UniqKey(entity, propertyName));
-        } else {
-            return false;
-        }
+    public boolean lazyLoad(@NotNull Registry r, @NotNull XAwareIF<PK, ENTITY> m, Object entity, String propertyName) {
+        return m.isSetId() && r.addWithUnique(lazyLoader, m, new UniqKey(entity, propertyName));
     }
 
-    public boolean lazyLoad(Registry r, XAwareIF<PK, ENTITY> m, Object uniqueKey) {
-        if (m.isSetId()) {
-            return r.addWithUnique(lazyLoader, m, uniqueKey);
-        } else {
-            return false;
-        }
+    public boolean lazyLoad(@NotNull Registry r, @NotNull XAwareIF<PK, ENTITY> m, Object uniqueKey) {
+        return m.isSetId() && r.addWithUnique(lazyLoader, m, uniqueKey);
     }
 
-    public void lazyListLoad(Registry r, XAwareIF<List<PK>, List<ENTITY>> m) {
+    public void lazyListLoad(@NotNull Registry r, @NotNull XAwareIF<List<PK>, List<ENTITY>> m) {
         if (m.isSetId()) {
             r.add(lazyListLoader, m);
         }
     }
 
-    public void lazyListLoad(Registry r, XAwareIF<List<PK>, List<ENTITY>> m, Object uniqueKey) {
+    public void lazyListLoad(@NotNull Registry r, @NotNull XAwareIF<List<PK>, List<ENTITY>> m, Object uniqueKey) {
         if (m.isSetId()) {
             r.addWithUnique(lazyListLoader, m, uniqueKey);
         }
     }
 
-    public void lazyListLoad(Registry r, XAwareIF<List<PK>, List<ENTITY>> m, Object entity, String propertyName) {
+    public void lazyListLoad(@NotNull Registry r, @NotNull XAwareIF<List<PK>, List<ENTITY>> m, Object entity, String propertyName) {
         if (m.isSetId()) {
             r.addWithUnique(lazyListLoader, m, new UniqKey(entity, propertyName));
         }
     }
 
-    protected int _loadList(Iterable<? extends XAwareIF<List<PK>, List<ENTITY>>> s) {
-        return joinByIds(s,
-                         input -> input.isSetId() ? input.getId() : null,
-                         (input1, input2) -> {
-                             input1.set(input2.stream().filter(i -> i!=null).collect(Collectors.toList()));
-                             return null;
-                         },
-                         ids -> RoModelFactoryImpl.this.findEntityByCollectionIds(ids));
+    protected int _loadList(@NotNull Iterable<XAwareIF<List<PK>, List<ENTITY>>> s) {
+        return RoModelFactoryImpl.joinByIds(s,
+                                            input -> input.isSetId() ? input.getId() : null,
+                                            (input1, input2) -> input1.set(input2.stream()
+                                                                                 .filter(i -> i != null)
+                                                                                 .collect(Collectors.toList())),
+                                            RoModelFactoryImpl.this::findEntityByCollectionIds);
     }
 
-    protected int _load(Iterable<? extends XAwareIF<PK, ENTITY>> s) {
+    @SuppressWarnings("unchecked")
+    protected int _load(@NotNull Iterable<? extends XAwareIF<PK, ENTITY>> s) {
 
         if (log.isDebugEnabled()) {
             int i = 0;
@@ -159,7 +152,9 @@ public abstract class RoModelFactoryImpl<PK, ENTITY, E extends Exception> implem
                          input -> input.isSetId() ? input.getId() : null,
                          (input1, input2) -> {
                              if (input2 instanceof List) {
-                                 input1.set((ENTITY)(((List)input2).stream().filter(_i -> _i!=null).collect(Collectors.toList())));
+                                 input1.set((ENTITY) (((List) input2).stream()
+                                                                     .filter(_i -> _i != null)
+                                                                     .collect(Collectors.toList())));
                              } else if (input2 instanceof Set) {
                                  input1.set((ENTITY) Sets.filter((Set) input2, Predicates.notNull()));
                              } else if (input2 instanceof Collection) {
@@ -167,12 +162,11 @@ public abstract class RoModelFactoryImpl<PK, ENTITY, E extends Exception> implem
                              } else {
                                  input1.set(input2);
                              }
-                             return null;
                          });
     }
 
-    public <T> int joinByIds(Iterable<? extends T> s, Function<T, PK> getEntityId, BiFunction<T, ENTITY, Void> setEntity) {
-        return joinByIds(s, getEntityId, setEntity, ids -> findEntityByIdAsMap(ids));
+    public <T> int joinByIds(Iterable<? extends T> s, @NotNull Function<T, PK> getEntityId, @NotNull BiConsumer<T, ENTITY> setEntity) {
+        return joinByIds(s, getEntityId, setEntity, this::findEntityByIdAsMap);
     }
 
     /**
@@ -184,8 +178,9 @@ public abstract class RoModelFactoryImpl<PK, ENTITY, E extends Exception> implem
      * @param setEntity   - функция присвоения связи
      * @param loader      - загрузчик объектов для связи(U) по их ключам (K)
      */
-    public static <K, U, T> int joinByIds(final Iterable<? extends T> s, Function<T, K> getEntityId, BiFunction<T, U, Void> setEntity,
-                                          MultiLoader<K, U> loader) {
+    @SuppressWarnings("unchecked")
+    public static <K, U, T> int joinByIds(@NotNull final Iterable<? extends T> s, @NotNull Function<T, K> getEntityId, @NotNull BiConsumer<T, U> setEntity,
+                                          @NotNull MultiLoader<K, U> loader) {
 
         if (s instanceof Collection && ((Collection) s).size() == 0) {
             return 0;
@@ -228,7 +223,7 @@ public abstract class RoModelFactoryImpl<PK, ENTITY, E extends Exception> implem
                 if (u != null) {
                     k++;
                 }
-                setEntity.apply(i, u);
+                setEntity.accept(i, u);
             }
         } else {
             for (T i : s) {
@@ -241,7 +236,7 @@ public abstract class RoModelFactoryImpl<PK, ENTITY, E extends Exception> implem
                 if (u != null) {
                     k++;
                 }
-                setEntity.apply(i, u);
+                setEntity.accept(i, u);
             }
         }
         return k;

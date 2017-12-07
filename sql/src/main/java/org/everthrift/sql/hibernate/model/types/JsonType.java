@@ -8,6 +8,8 @@ import org.everthrift.appserver.utils.thrift.GsonSerializer.TBaseSerializer;
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.usertype.UserType;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.postgresql.util.PGobject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +30,7 @@ public abstract class JsonType implements UserType {
     private final Gson gson = new GsonBuilder().registerTypeHierarchyAdapter(TBase.class, new TBaseSerializer())
                                                .create();
 
+    @NotNull
     @Override
     public int[] sqlTypes() {
         return new int[]{Types.OTHER};
@@ -39,7 +42,7 @@ public abstract class JsonType implements UserType {
     }
 
     @Override
-    public int hashCode(Object x) throws HibernateException {
+    public int hashCode(@Nullable Object x) throws HibernateException {
 
         if (x == null) {
             return 0;
@@ -48,8 +51,9 @@ public abstract class JsonType implements UserType {
         return x.hashCode();
     }
 
+    @Nullable
     @Override
-    public Object nullSafeGet(ResultSet rs, String[] names, SharedSessionContractImplementor session,
+    public Object nullSafeGet(@NotNull ResultSet rs, String[] names, SharedSessionContractImplementor session,
                               Object owner) throws HibernateException, SQLException {
 
         final PGobject json = (PGobject) rs.getObject(names[0]);
@@ -67,7 +71,7 @@ public abstract class JsonType implements UserType {
     }
 
     @Override
-    public void nullSafeSet(PreparedStatement st, Object value, int index,
+    public void nullSafeSet(@NotNull PreparedStatement st, @Nullable Object value, int index,
                             SharedSessionContractImplementor session) throws HibernateException, SQLException {
 
         final PGobject json = new PGobject();
@@ -76,11 +80,12 @@ public abstract class JsonType implements UserType {
         st.setObject(index, json);
     }
 
+    @Nullable
     @Override
-    public Object deepCopy(Object value) throws HibernateException {
+    public Object deepCopy(@Nullable Object value) throws HibernateException {
         try {
             return value == null ? null : value.getClass().getConstructor(value.getClass()).newInstance(value);
-        } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
+        } catch (@NotNull InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
             | NoSuchMethodException | SecurityException e) {
             throw new HibernateException(e);
         }
@@ -91,18 +96,21 @@ public abstract class JsonType implements UserType {
         return true;
     }
 
+    @Nullable
     @Override
     public Object assemble(final Serializable cached, final Object owner) throws HibernateException {
         return deepCopy(cached);
     }
 
+    @Nullable
     @Override
     public Serializable disassemble(final Object o) throws HibernateException {
         return (Serializable) deepCopy(o);
     }
 
+    @Nullable
     @Override
-    public Object replace(Object original, Object target, Object owner) throws HibernateException {
+    public Object replace(@Nullable Object original, Object target, Object owner) throws HibernateException {
         return original == null ? null : deepCopy(original);
     }
 

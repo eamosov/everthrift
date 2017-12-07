@@ -1,6 +1,6 @@
 package org.everthrift.sql.hibernate.model.types;
 
-import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.usertype.UserType;
@@ -9,33 +9,41 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.Serializable;
 import java.sql.Array;
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
-import java.util.List;
+import java.util.Arrays;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
-public abstract class HibernateListType<T> implements UserType {
+public class UUIDStringSetType implements UserType {
 
     @NotNull
     @Override
-    public Class<List> returnedClass() {
-        return List.class;
+    public Class<Set> returnedClass() {
+        return Set.class;
     }
 
     @Override
     public void nullSafeSet(@NotNull final PreparedStatement statement, @Nullable final Object object, final int i,
                             final SharedSessionContractImplementor sessionImplementor) throws HibernateException, SQLException {
-        statement.setArray(i, object == null ? null : createArray((List<T>) object, statement.getConnection()));
+
+        statement.setArray(i, object == null ? null : statement.getConnection()
+                                                               .createArrayOf("uuid", ((Set<String>) object).stream()
+                                                                                                            .map(UUID::fromString)
+                                                                                                            .toArray()));
     }
 
     @Nullable
     @Override
     public Object nullSafeGet(@NotNull ResultSet rs, String[] names, SharedSessionContractImplementor session,
                               Object owner) throws HibernateException, SQLException {
-        Array sqlArr = rs.getArray(names[0]);
-        final List result = sqlArr == null ? null : Lists.newArrayList((Object[]) sqlArr.getArray());
+        final Array sqlArr = rs.getArray(names[0]);
+        final Set result = sqlArr == null ? null : Arrays.stream((Object[]) sqlArr.getArray())
+                                                         .map(Object::toString)
+                                                         .collect(Collectors.toSet());
         return result;
     }
 
@@ -58,13 +66,13 @@ public abstract class HibernateListType<T> implements UserType {
 
     @Override
     public int hashCode(@NotNull final Object o) throws HibernateException {
-        return ((List) o).hashCode();
+        return o.hashCode();
     }
 
     @Nullable
     @Override
     public Object deepCopy(@Nullable Object o) throws HibernateException {
-        return o == null ? null : Lists.newArrayList((List) o);
+        return o == null ? null : Sets.newHashSet((Set) o);
     }
 
     @Override
@@ -77,8 +85,6 @@ public abstract class HibernateListType<T> implements UserType {
     public Object replace(@Nullable final Object original, final Object target, final Object owner) throws HibernateException {
         return original == null ? null : deepCopy(original);
     }
-
-    public abstract Array createArray(final List<T> object, Connection connection) throws SQLException;
 
     @NotNull
     @Override

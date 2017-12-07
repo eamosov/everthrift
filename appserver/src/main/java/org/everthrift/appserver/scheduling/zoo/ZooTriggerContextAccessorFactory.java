@@ -10,6 +10,8 @@ import org.everthrift.appserver.scheduling.context.TriggerContextAccessor;
 import org.everthrift.appserver.scheduling.context.TriggerContextAccessorFactory;
 import org.everthrift.utils.ClassUtils;
 import org.everthrift.utils.Pair;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
@@ -35,17 +37,20 @@ public class ZooTriggerContextAccessorFactory implements TriggerContextAccessorF
     @Value("${distributed_scheduler.zoo.prefix:}")
     String prefix;
 
+    @NotNull
     @Override
     public TriggerContextAccessor get(String taskName, boolean isDynamic) {
         return new ZooTriggerContextAccessorImpl(this, taskName, isDynamic);
     }
 
+    @NotNull
     String path(String taskName) {
         return prefix + "/scheduler/" + taskName;
     }
 
+    @NotNull
     @Override
-    public TriggerContextAccessor createDynamic(String taskName, long period, long lastScheduledExecutionTime, String beanName, Serializable arg) throws DuplicatedTaskException {
+    public TriggerContextAccessor createDynamic(String taskName, long period, long lastScheduledExecutionTime, String beanName, @Nullable Serializable arg) throws DuplicatedTaskException {
 
         final ZooData zooData = new ZooData();
 

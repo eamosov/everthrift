@@ -2,6 +2,7 @@ package org.everthrift.appserver.configs;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.everthrift.appserver.utils.zooprops.ZPersistanceMbeanExporter;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -16,6 +17,7 @@ import javax.management.MBeanServer;
 @Configuration
 public class ZooJmxConfig {
 
+    @NotNull
     @Bean
     public ZPersistanceMbeanExporter persistanceMbeanExporter(CuratorFramework curator,
                                                               ApplicationContext context,

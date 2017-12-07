@@ -4,6 +4,8 @@ import org.apache.thrift.TBase;
 import org.everthrift.appserver.utils.thrift.scanner.TBaseScanHandler;
 import org.everthrift.appserver.utils.thrift.scanner.TBaseScanner;
 import org.everthrift.appserver.utils.thrift.scanner.TBaseScannerFactory;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.ClassUtils;
@@ -16,6 +18,7 @@ public class RecursiveWalker implements WalkerIF {
 
     private static final Logger log = LoggerFactory.getLogger(RecursiveWalker.class);
 
+    @NotNull
     public static String SCENARIO_DEFAULT = "default";
 
     private final static TBaseScannerFactory scannerFactory = new TBaseScannerFactory();
@@ -26,10 +29,11 @@ public class RecursiveWalker implements WalkerIF {
 
     private final String scenario;
 
+    @Nullable
     private final TBaseScanHandler tBaseScanHandler = new TBaseScanHandler() {
 
         @Override
-        public void apply(Object parent, Object o) {
+        public void apply(Object parent, @Nullable Object o) {
 
             if (o == null) {
                 return;
@@ -63,7 +67,7 @@ public class RecursiveWalker implements WalkerIF {
         recursive(o);
     }
 
-    private void recursive(final Object o) {
+    private void recursive(@Nullable final Object o) {
 
         if (o == null) {
             return;

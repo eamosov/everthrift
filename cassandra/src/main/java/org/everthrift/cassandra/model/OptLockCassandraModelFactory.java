@@ -13,6 +13,7 @@ import org.everthrift.cassandra.SequenceFactory;
 import org.everthrift.cassandra.com.datastax.driver.mapping.Mapper.Option;
 import org.everthrift.cassandra.com.datastax.driver.mapping.VersionException;
 import org.everthrift.thrift.TFunction;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;
 
@@ -54,7 +55,7 @@ public abstract class OptLockCassandraModelFactory<PK extends Serializable, ENTI
     }
 
     @Override
-    public final void deleteEntity(ENTITY e) {
+    public final void deleteEntity(@NotNull ENTITY e) {
         _delete(e);
     }
 

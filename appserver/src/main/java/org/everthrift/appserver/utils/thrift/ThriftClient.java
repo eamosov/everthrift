@@ -1,5 +1,7 @@
 package org.everthrift.appserver.utils.thrift;
 
+import org.jetbrains.annotations.Nullable;
+
 public abstract class ThriftClient<S> implements ThriftClientIF {
 
     protected final S sessionId;
@@ -17,7 +19,7 @@ public abstract class ThriftClient<S> implements ThriftClientIF {
     }
 
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(@Nullable Object obj) {
         if (this == obj) {
             return true;
         }

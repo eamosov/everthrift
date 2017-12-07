@@ -4,6 +4,8 @@ import org.everthrift.utils.LongTimestamp;
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.usertype.UserType;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.Serializable;
 import java.sql.PreparedStatement;
@@ -17,18 +19,20 @@ public class LongTimestampType implements UserType, Serializable {
 
     }
 
+    @NotNull
     @Override
     public int[] sqlTypes() {
         return new int[]{Types.TIMESTAMP};
     }
 
+    @NotNull
     @Override
     public Class returnedClass() {
         return Long.class;
     }
 
     @Override
-    public boolean equals(Object x, Object y) throws HibernateException {
+    public boolean equals(@Nullable Object x, @Nullable Object y) throws HibernateException {
         if (x == null && y == null) {
             return true;
         }
@@ -41,12 +45,13 @@ public class LongTimestampType implements UserType, Serializable {
     }
 
     @Override
-    public int hashCode(Object x) throws HibernateException {
+    public int hashCode(@NotNull Object x) throws HibernateException {
         return x.hashCode();
     }
 
+    @Nullable
     @Override
-    public Object nullSafeGet(ResultSet rs, String[] names, SharedSessionContractImplementor session,
+    public Object nullSafeGet(@NotNull ResultSet rs, String[] names, SharedSessionContractImplementor session,
                               Object owner) throws HibernateException, SQLException {
 
         final java.sql.Timestamp value = (java.sql.Timestamp) rs.getObject(names[0]);
@@ -59,7 +64,7 @@ public class LongTimestampType implements UserType, Serializable {
     }
 
     @Override
-    public void nullSafeSet(PreparedStatement st, Object value, int index,
+    public void nullSafeSet(@NotNull PreparedStatement st, @Nullable Object value, int index,
                             SharedSessionContractImplementor session) throws HibernateException, SQLException {
 
         if (value == null) {
@@ -79,8 +84,9 @@ public class LongTimestampType implements UserType, Serializable {
         return false;
     }
 
+    @NotNull
     @Override
-    public Serializable disassemble(Object value) throws HibernateException {
+    public Serializable disassemble(@NotNull Object value) throws HibernateException {
         return (Serializable) value;
     }
 

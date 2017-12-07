@@ -12,6 +12,7 @@ import org.apache.thrift.protocol.TProtocolUtil;
 import org.apache.thrift.protocol.TType;
 import org.apache.thrift.transport.TMemoryBuffer;
 import org.everthrift.clustering.MessageWrapper;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.support.GenericMessage;
@@ -20,15 +21,17 @@ import java.util.Map;
 
 public class DefaultTProtocolSupport implements ThriftProtocolSupportIF<MessageWrapper> {
 
+    @NotNull
     private final MessageWrapper in;
 
+    @NotNull
     private final TProtocolFactory protocolFactory;
 
     private final TProtocol inp;
 
     private final TMessage msg;
 
-    public DefaultTProtocolSupport(MessageWrapper in, TProtocolFactory protocolFactory) throws TException {
+    public DefaultTProtocolSupport(@NotNull MessageWrapper in, @NotNull TProtocolFactory protocolFactory) throws TException {
         this.in = in;
         this.protocolFactory = protocolFactory;
 
@@ -46,8 +49,9 @@ public class DefaultTProtocolSupport implements ThriftProtocolSupportIF<MessageW
         return msg;
     }
 
+    @NotNull
     @Override
-    public <T extends TBase> T readArgs(final ThriftControllerInfo tInfo) throws TException {
+    public <T extends TBase> T readArgs(@NotNull final ThriftControllerInfo tInfo) throws TException {
         final TBase args = tInfo.makeArgument();
         args.read(inp);
         inp.readMessageEnd();
@@ -60,7 +64,7 @@ public class DefaultTProtocolSupport implements ThriftProtocolSupportIF<MessageW
         inp.readMessageEnd();
     }
 
-    private MessageWrapper result(TApplicationException o) {
+    private MessageWrapper result(@NotNull TApplicationException o) {
         final TMemoryBuffer outT = new TMemoryBuffer(1024);
         final TProtocol out = protocolFactory.getProtocol(outT);
         try {
@@ -75,7 +79,7 @@ public class DefaultTProtocolSupport implements ThriftProtocolSupportIF<MessageW
     }
 
     @Override
-    public MessageWrapper result(final Object o, final ThriftControllerInfo tInfo) {
+    public MessageWrapper result(final Object o, @NotNull final ThriftControllerInfo tInfo) {
 
         if (o instanceof TApplicationException) {
             return result((TApplicationException) o);
@@ -109,7 +113,7 @@ public class DefaultTProtocolSupport implements ThriftProtocolSupportIF<MessageW
     }
 
     @Override
-    public void asyncResult(final Object o, final AbstractThriftController controller) {
+    public void asyncResult(final Object o, @NotNull final AbstractThriftController controller) {
 
         final MessageWrapper mw = result(o, controller.getInfo());
 

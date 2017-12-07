@@ -22,6 +22,7 @@ import org.everthrift.sql.hibernate.model.types.TEnumListTypeFactory;
 import org.everthrift.sql.hibernate.model.types.TEnumTypeFactory;
 import org.everthrift.sql.hibernate.model.types.TLongLongHstoreType;
 import org.everthrift.sql.hibernate.model.types.UUIDStringListType;
+import org.everthrift.sql.hibernate.model.types.UUIDStringSetType;
 import org.everthrift.thrift.TBaseHasModel;
 import org.everthrift.thrift.TBaseModel;
 import org.hibernate.type.BigDecimalType;
@@ -39,6 +40,8 @@ import org.hibernate.type.ShortType;
 import org.hibernate.type.StringType;
 import org.hibernate.type.TimeType;
 import org.hibernate.type.TimestampType;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
@@ -82,6 +85,7 @@ public class Column {
 
     protected boolean isAutoincrement;
 
+    @Nullable
     protected String hibernateType;
 
 
@@ -189,8 +193,9 @@ public class Column {
             this.table = table;
         }
 
+        @NotNull
         @Override
-        public List<Column> extractData(ResultSet rs) throws SQLException, DataAccessException {
+        public List<Column> extractData(@NotNull ResultSet rs) throws SQLException, DataAccessException {
             List<Column> columns = new ArrayList<>();
             while (rs.next()) {
                 Column column = new Column(table);
@@ -222,6 +227,7 @@ public class Column {
         this.isAutoincrement = isAutoincrement;
     }
 
+    @NotNull
     @Override
     public String toString() {
         return "Column [columnName=" + columnName + ", jdbcType=" + jdbcType + ", columnType=" + columnType + ", nullable=" + nullable
@@ -381,6 +387,8 @@ public class Column {
 
             if (columnType.contains("_varchar") || columnType.contains("_text")) {
                 hibernateType = StringSetType.class.getCanonicalName();
+            } else if (columnType.equals("_uuid")) {
+                hibernateType = UUIDStringSetType.class.getCanonicalName();
             }
 
         } else if (Map.class.equals(javaClass)) {
@@ -445,6 +453,7 @@ public class Column {
         return true;
     }
 
+    @Nullable
     public String toHbmXmlVersion() {
         if (!this.isValid()) {
             return null;
@@ -458,6 +467,7 @@ public class Column {
         return sb.toString();
     }
 
+    @Nullable
     public String toHbmXmlKeyProperty() {
         if (!this.isValid()) {
             return null;
@@ -465,6 +475,7 @@ public class Column {
         return String.format("<key-property name=\"%s\" column=\"%s\" type=\"%s\"/>", propertyName, columnName, hibernateType);
     }
 
+    @Nullable
     public String toHbmXmlPk() {
         if (!this.isValid()) {
             return null;
@@ -499,6 +510,7 @@ public class Column {
         return sb.toString();
     }
 
+    @Nullable
     public String toHbmXml() {
         if (!this.isValid()) {
             return null;

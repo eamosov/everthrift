@@ -7,6 +7,7 @@ import javassist.CtClass;
 import javassist.CtMethod;
 import javassist.NotFoundException;
 import org.apache.thrift.TEnum;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
 
@@ -15,7 +16,7 @@ public class TEnumListTypeFactory {
 
     private static final Map<Class<? extends TEnum>, Class<? extends TEnumType>> map = Maps.newIdentityHashMap();
 
-    public static synchronized Class<? extends TEnumType> create(Class<? extends TEnum> enumType) {
+    public static synchronized Class<? extends TEnumType> create(@NotNull Class<? extends TEnum> enumType) {
 
         Class<? extends TEnumType> cls = map.get(enumType);
         if (cls != null) {
@@ -28,7 +29,7 @@ public class TEnumListTypeFactory {
     }
 
     @SuppressWarnings("unchecked")
-    private static Class<? extends TEnumType> getTEnumListType(Class<? extends TEnum> enumType) {
+    private static Class<? extends TEnumType> getTEnumListType(@NotNull Class<? extends TEnum> enumType) {
         final ClassPool pool = ClassPool.getDefault();
         final CtClass cc = pool.makeClass("org.everthrift.hibernate.model.types.generated." + enumType.getSimpleName() + "EnumListType");
         try {
@@ -37,7 +38,7 @@ public class TEnumListTypeFactory {
                                            + enumType.getName() + "\")); } catch (ClassNotFoundException e) {throw new RuntimeException(e);}}",
                                        cc));
             return cc.toClass();
-        } catch (CannotCompileException | NotFoundException e) {
+        } catch (@NotNull CannotCompileException | NotFoundException e) {
             throw new RuntimeException(e);
         }
     }

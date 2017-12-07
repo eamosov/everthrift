@@ -3,6 +3,7 @@ package org.everthrift.appserver.model;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import net.sf.ehcache.Cache;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.util.CollectionUtils;
 
 import java.util.Collection;
@@ -42,6 +43,7 @@ public abstract class CachedIndexModelFactory<PK, ENTITY, E extends Exception> e
         return ret;
     }
 
+    @NotNull
     @Override
     public Map<PK, List<ENTITY>> fetchEntityByIdAsMap(Collection<PK> ids) {
 

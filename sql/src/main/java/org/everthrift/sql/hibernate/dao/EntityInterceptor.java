@@ -9,6 +9,7 @@ import org.everthrift.utils.Pair;
 import org.hibernate.EmptyInterceptor;
 import org.hibernate.Transaction;
 import org.hibernate.type.Type;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,12 +47,12 @@ public class EntityInterceptor extends EmptyInterceptor {
         dirty.get().clear();
     }
 
-    public boolean isDirty(Object entity) {
+    public boolean isDirty(@NotNull Object entity) {
         return dirty.get().contains(Pair.create(entity.getClass().getName(), ((DaoEntityIF) entity).getPk()));
     }
 
     @Override
-    public boolean onFlushDirty(Object entity, Serializable id, Object[] currentState, Object[] previousState, String[] propertyNames,
+    public boolean onFlushDirty(@NotNull Object entity, Serializable id, Object[] currentState, Object[] previousState, String[] propertyNames,
                                 Type[] types) {
 
         if (log.isDebugEnabled()) {

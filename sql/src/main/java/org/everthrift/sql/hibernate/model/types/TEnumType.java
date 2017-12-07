@@ -4,6 +4,8 @@ import org.apache.thrift.TEnum;
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.usertype.UserType;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
@@ -15,6 +17,7 @@ import java.sql.Types;
 
 public abstract class TEnumType<T extends TEnum> implements UserType {
 
+    @NotNull
     protected abstract Class<T> getTEnumClass();
 
     private final Method findByValue;
@@ -22,23 +25,25 @@ public abstract class TEnumType<T extends TEnum> implements UserType {
     public TEnumType() {
         try {
             findByValue = getTEnumClass().getMethod("findByValue", Integer.TYPE);
-        } catch (NoSuchMethodException | SecurityException e) {
+        } catch (@NotNull NoSuchMethodException | SecurityException e) {
             throw new RuntimeException(e);
         }
     }
 
+    @NotNull
     @Override
     public int[] sqlTypes() {
         return new int[]{Types.INTEGER};
     }
 
+    @NotNull
     @Override
     public Class returnedClass() {
         return getTEnumClass();
     }
 
     @Override
-    public boolean equals(Object x, Object y) throws HibernateException {
+    public boolean equals(@Nullable Object x, @Nullable Object y) throws HibernateException {
         if (x == null && y == null) {
             return true;
         }
@@ -51,7 +56,7 @@ public abstract class TEnumType<T extends TEnum> implements UserType {
     }
 
     @Override
-    public int hashCode(Object x) throws HibernateException {
+    public int hashCode(@Nullable Object x) throws HibernateException {
         if (x == null) {
             return 0;
         }
@@ -59,8 +64,9 @@ public abstract class TEnumType<T extends TEnum> implements UserType {
         return x.hashCode();
     }
 
+    @Nullable
     @Override
-    public Object nullSafeGet(ResultSet rs, String[] names, SharedSessionContractImplementor session,
+    public Object nullSafeGet(@NotNull ResultSet rs, String[] names, SharedSessionContractImplementor session,
                               Object owner) throws HibernateException, SQLException {
 
         final Integer value = (Integer) rs.getObject(names[0]);
@@ -71,13 +77,13 @@ public abstract class TEnumType<T extends TEnum> implements UserType {
 
         try {
             return findByValue.invoke(null, value.intValue());
-        } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+        } catch (@NotNull IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
             throw new SQLException(e);
         }
     }
 
     @Override
-    public void nullSafeSet(PreparedStatement st, Object value, int index,
+    public void nullSafeSet(@NotNull PreparedStatement st, @Nullable Object value, int index,
                             SharedSessionContractImplementor session) throws HibernateException, SQLException {
         if (value == null) {
             st.setNull(index, java.sql.Types.INTEGER);
@@ -96,8 +102,9 @@ public abstract class TEnumType<T extends TEnum> implements UserType {
         return false;
     }
 
+    @NotNull
     @Override
-    public Serializable disassemble(Object value) throws HibernateException {
+    public Serializable disassemble(@NotNull Object value) throws HibernateException {
         return (Serializable) value;
     }
 

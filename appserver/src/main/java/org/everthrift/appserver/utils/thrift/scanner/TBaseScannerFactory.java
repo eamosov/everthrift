@@ -22,6 +22,7 @@ import org.everthrift.appserver.model.lazy.LazyAccessor;
 import org.everthrift.appserver.model.lazy.LazyMethod;
 import org.everthrift.appserver.model.lazy.Registry;
 import org.everthrift.appserver.utils.thrift.ThriftUtils;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +36,7 @@ public class TBaseScannerFactory {
 
     private static final Logger log = LoggerFactory.getLogger(TBaseScannerFactory.class);
 
+    @NotNull
     private volatile Int2ReferenceMap<TBaseScanner> scanners = new Int2ReferenceOpenHashMap<TBaseScanner>();
 
     static enum ReturnType {
@@ -61,7 +63,8 @@ public class TBaseScannerFactory {
 
         boolean needPassThis;
 
-        String javaType(ReturnType rt) {
+        @NotNull
+        String javaType(@NotNull ReturnType rt) {
             switch (rt) {
                 case OBJECT:
                 case RUNTIME:
@@ -75,7 +78,7 @@ public class TBaseScannerFactory {
             }
         }
 
-        private String indent(int c, String input) {
+        private String indent(int c, @NotNull String input) {
             StringBuilder sb = new StringBuilder();
             for (int i = 0; i < c; i++) {
                 sb.append("\t");
@@ -84,6 +87,7 @@ public class TBaseScannerFactory {
             return input.replaceAll("(?m)^", sb.toString());
         }
 
+        @NotNull
         String listApply(final String varName) {
             final StringBuilder sb = new StringBuilder();
             sb.append(String.format("if (%s.size() !=0) {\n", varName));
@@ -101,6 +105,7 @@ public class TBaseScannerFactory {
             return sb.toString();
         }
 
+        @NotNull
         String setApply(final String varName) {
             final StringBuilder sb = new StringBuilder();
             sb.append(String.format("if (%s.size() !=0) {\n", varName));
@@ -112,6 +117,7 @@ public class TBaseScannerFactory {
             return sb.toString();
         }
 
+        @NotNull
         String mapApply(final String varName) {
             final StringBuilder sb = new StringBuilder();
 
@@ -150,6 +156,7 @@ public class TBaseScannerFactory {
             // return String.format("h.apply(_obj, %s);", varName);
         }
 
+        @NotNull
         String code() {
             final StringBuilder sb = new StringBuilder();
 
@@ -203,7 +210,7 @@ public class TBaseScannerFactory {
     public TBaseScannerFactory() {
     }
 
-    public TBaseScanner create(Class tModel, String scenario) {
+    public TBaseScanner create(@NotNull Class tModel, @NotNull String scenario) {
 
         int key = 1;
         key = 31 * key + scenario.hashCode();
@@ -217,7 +224,7 @@ public class TBaseScannerFactory {
         return _create(key, tModel, scenario);
     }
 
-    private synchronized TBaseScanner _create(final int key, Class tModel, String scenario) {
+    private synchronized TBaseScanner _create(final int key, @NotNull Class tModel, String scenario) {
 
         TBaseScanner s = scanners.get(key);
         if (s != null) {
@@ -244,13 +251,13 @@ public class TBaseScannerFactory {
             _scanners.put(key, s);
             scanners = _scanners;
             return s;
-        } catch (CannotCompileException | NotFoundException | InstantiationException | IllegalAccessException | IOException e) {
+        } catch (@NotNull CannotCompileException | NotFoundException | InstantiationException | IllegalAccessException | IOException e) {
             log.error("Exception", e);
             throw new RuntimeException(e);
         }
     }
 
-    private String indent(int c, String input) {
+    private String indent(int c, @NotNull String input) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < c; i++) {
             sb.append("\t");
@@ -259,7 +266,7 @@ public class TBaseScannerFactory {
         return input.replaceAll("(?m)^", sb.toString());
     }
 
-    private boolean hasScenario(String[] value, String scenario) {
+    private boolean hasScenario(@NotNull String[] value, String scenario) {
 
         if (Arrays.equals(value, new String[]{""})) {
             return true;
@@ -273,15 +280,15 @@ public class TBaseScannerFactory {
         return false;
     }
 
-    private Method getMethod(Class cls, String name, Class... parameterTypes) {
+    private Method getMethod(@NotNull Class cls, @NotNull String name, Class... parameterTypes) {
         try {
             return cls.getMethod(name, parameterTypes);
-        } catch (NoSuchMethodException | SecurityException e) {
+        } catch (@NotNull NoSuchMethodException | SecurityException e) {
             return null;
         }
     }
 
-    private String buildScannerCode(String methodName, Class cls, String scenario) throws IOException {
+    private String buildScannerCode(String methodName, @NotNull Class cls, String scenario) throws IOException {
 
         final StringBuilder code = new StringBuilder();
         code.append(String.format("public void %s(Object parent, Object _obj, org.everthrift.appserver.utils.thrift.scanner.TBaseScanHandler h, org.everthrift.appserver.model.lazy.Registry r){\n",
@@ -383,7 +390,7 @@ public class TBaseScannerFactory {
                         if (isSetMethod.getReturnType() == Boolean.TYPE) {
                             pi.isSetName = isSetMethod.getName();
                         }
-                    } catch (NoSuchMethodException | SecurityException e) {
+                    } catch (@NotNull NoSuchMethodException | SecurityException e) {
                     }
 
                     pi.loaderName = m.getName();

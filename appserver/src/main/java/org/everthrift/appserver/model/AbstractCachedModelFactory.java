@@ -7,6 +7,8 @@ import net.sf.ehcache.Ehcache;
 import net.sf.ehcache.Element;
 import net.sf.ehcache.Status;
 import net.sf.ehcache.loader.CacheLoader;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.CollectionUtils;
 
@@ -21,12 +23,14 @@ public abstract class AbstractCachedModelFactory<PK, ENTITY, E extends Exception
     @Autowired(required = false)
     private CacheManager cm;
 
+    @Nullable
     private Cache cache;
 
+    @Nullable
     protected final String cacheName;
 
 
-    public enum InvalidateCause{
+    public enum InvalidateCause {
         INSERT,
         DELETE,
         UPDATE,
@@ -42,6 +46,7 @@ public abstract class AbstractCachedModelFactory<PK, ENTITY, E extends Exception
             this.orig = orig;
         }
 
+        @NotNull
         @Override
         public CacheLoader clone(Ehcache arg0) throws CloneNotSupportedException {
             throw new CloneNotSupportedException();
@@ -51,6 +56,7 @@ public abstract class AbstractCachedModelFactory<PK, ENTITY, E extends Exception
         public void dispose() throws CacheException {
         }
 
+        @NotNull
         @Override
         public String getName() {
             return cacheName + "Loader";
@@ -75,7 +81,7 @@ public abstract class AbstractCachedModelFactory<PK, ENTITY, E extends Exception
         }
 
         @Override
-        public Object load(Object arg0, Object arg1) {
+        public Object load(Object arg0, @NotNull Object arg1) {
             return ((CacheLoader) arg1).load(arg0);
         }
 
@@ -89,12 +95,14 @@ public abstract class AbstractCachedModelFactory<PK, ENTITY, E extends Exception
         }
 
         @Override
-        public Map loadAll(Collection arg0, Object arg1) {
+        public Map loadAll(Collection arg0, @NotNull Object arg1) {
             return ((CacheLoader) arg1).loadAll(arg0);
         }
     }
 
+    @NotNull
     private CacheLoader _loader = new CacheLoader() {
+        @NotNull
         @Override
         public CacheLoader clone(Ehcache arg0) throws CloneNotSupportedException {
             throw new CloneNotSupportedException();
@@ -105,6 +113,7 @@ public abstract class AbstractCachedModelFactory<PK, ENTITY, E extends Exception
 
         }
 
+        @NotNull
         @Override
         public String getName() {
             return this.getClass().getCanonicalName() + ".Loader";
@@ -120,23 +129,27 @@ public abstract class AbstractCachedModelFactory<PK, ENTITY, E extends Exception
 
         }
 
+        @Nullable
         @Override
         public Object load(Object arg0, Object arg1) {
             return load(arg0);
         }
 
+        @Nullable
         @Override
         public Object load(Object arg0) throws CacheException {
             return fetchEntityById((PK) arg0);
         }
 
+        @NotNull
         @Override
-        public Map loadAll(Collection arg0, Object arg1) {
+        public Map loadAll(@NotNull Collection arg0, Object arg1) {
             return loadAll(arg0);
         }
 
+        @NotNull
         @Override
-        public Map loadAll(Collection keys) {
+        public Map loadAll(@NotNull Collection keys) {
 
             if (CollectionUtils.isEmpty(keys)) {
                 return Collections.emptyMap();
@@ -154,7 +167,7 @@ public abstract class AbstractCachedModelFactory<PK, ENTITY, E extends Exception
     /**
      * Конструктор создания фабрики не как Spring-bean
      */
-    public AbstractCachedModelFactory(Cache cache) {
+    public AbstractCachedModelFactory(@Nullable Cache cache) {
         super();
 
         if (cache != null) {
@@ -172,7 +185,7 @@ public abstract class AbstractCachedModelFactory<PK, ENTITY, E extends Exception
      *
      * @param cacheName
      */
-    public AbstractCachedModelFactory(String cacheName) {
+    public AbstractCachedModelFactory(@Nullable String cacheName) {
         super();
         this.cacheName = cacheName;
     }
@@ -212,39 +225,41 @@ public abstract class AbstractCachedModelFactory<PK, ENTITY, E extends Exception
         _afterPropertiesSet();
     }
 
-    public void invalidate(PK id, InvalidateCause invalidateCause) {
+    public void invalidate(@NotNull PK id, @NotNull InvalidateCause invalidateCause) {
         if (cache != null) {
             log.debug("invalidate {}/{}", getEntityClass().getSimpleName(), id);
             cache.remove(id);
         }
     }
 
-    public void invalidateLocal(PK id, InvalidateCause invalidateCause) {
+    public void invalidateLocal(@NotNull PK id, @NotNull InvalidateCause invalidateCause) {
         if (cache != null) {
             log.debug("invalidateLocal {}/{}", getEntityClass().getSimpleName(), id);
             cache.remove(id, true);
         }
     }
 
-    public void invalidate(Collection<PK> ids, InvalidateCause invalidateCause) {
+    public void invalidate(@NotNull Collection<PK> ids, @NotNull InvalidateCause invalidateCause) {
         if (cache != null) {
             log.debug("invalidateLocal {}/{}", getEntityClass().getSimpleName(), ids);
             cache.removeAll(ids);
         }
     }
 
-    protected abstract Map<PK, ENTITY> fetchEntityByIdAsMap(Collection<PK> ids);
+    @NotNull
+    protected abstract Map<PK, ENTITY> fetchEntityByIdAsMap(@NotNull Collection<PK> ids);
 
-    protected abstract ENTITY fetchEntityById(PK id);
+    @Nullable
+    protected abstract ENTITY fetchEntityById(@NotNull PK id);
 
     @Override
-    final public ENTITY findEntityById(PK id) {
+    final public ENTITY findEntityById(@NotNull PK id) {
         if (id == null) {
             return null;
         }
 
         if (cache == null) {
-            return (ENTITY) fetchEntityById(id);
+            return fetchEntityById(id);
         }
 
         final Element e = cache.getWithLoader(id, null, _loader);
@@ -255,8 +270,9 @@ public abstract class AbstractCachedModelFactory<PK, ENTITY, E extends Exception
         return (ENTITY) e.getObjectValue();
     }
 
+    @NotNull
     @Override
-    final public Map<PK, ENTITY> findEntityByIdAsMap(Collection<PK> ids) {
+    final public Map<PK, ENTITY> findEntityByIdAsMap(@NotNull Collection<PK> ids) {
         if (CollectionUtils.isEmpty(ids)) {
             return Collections.emptyMap();
         }
@@ -281,6 +297,7 @@ public abstract class AbstractCachedModelFactory<PK, ENTITY, E extends Exception
         this.cm = cm;
     }
 
+    @Nullable
     final public Cache getCache() {
         return cache;
     }
@@ -290,11 +307,11 @@ public abstract class AbstractCachedModelFactory<PK, ENTITY, E extends Exception
         _afterPropertiesSet();
     }
 
-    protected void setCreatedAt(ENTITY e, long timestamp_mcs) {
+    protected void setCreatedAt(@NotNull ENTITY e, long timestamp_mcs) {
         CreatedAtIF.setCreatedAt(e, timestamp_mcs / 1000);
     }
 
-    protected void setUpdatedAt(ENTITY e, long timestamp_mcs) {
+    protected void setUpdatedAt(@NotNull ENTITY e, long timestamp_mcs) {
         UpdatedAtIF.setUpdatedAt(e, timestamp_mcs / 1000);
     }
 

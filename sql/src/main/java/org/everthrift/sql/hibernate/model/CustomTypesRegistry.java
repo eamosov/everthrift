@@ -1,6 +1,8 @@
 package org.everthrift.sql.hibernate.model;
 
 import org.everthrift.sql.hibernate.model.types.CustomUserType;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,6 +16,7 @@ public class CustomTypesRegistry {
 
     private final List<CustomUserType> userTypes = new ArrayList<>();
 
+    @NotNull
     public static CustomTypesRegistry getInstance(){
         return INSTANCE;
     }
@@ -26,6 +29,7 @@ public class CustomTypesRegistry {
         userTypes.add(userType);
     }
 
+    @Nullable
     public synchronized String get(Class entityClass, Class propertyClass, String propertyName, int jdbcTypeId, String jdbcColumnType, String columnName){
 
         for (CustomUserType c: userTypes){

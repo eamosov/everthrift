@@ -4,6 +4,8 @@ import org.everthrift.utils.SqlUtils;
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.usertype.UserType;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.Serializable;
 import java.sql.PreparedStatement;
@@ -16,18 +18,20 @@ import java.util.Map;
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class HstoreType implements UserType {
 
+    @NotNull
     @Override
     public int[] sqlTypes() {
         return new int[]{Types.OTHER};
     }
 
+    @NotNull
     @Override
     public Class returnedClass() {
         return Map.class;
     }
 
     @Override
-    public boolean equals(Object x, Object y) throws HibernateException {
+    public boolean equals(@Nullable Object x, @Nullable Object y) throws HibernateException {
 
         if (x == null && y == null) {
             return true;
@@ -41,7 +45,7 @@ public class HstoreType implements UserType {
     }
 
     @Override
-    public int hashCode(Object x) throws HibernateException {
+    public int hashCode(@Nullable Object x) throws HibernateException {
 
         if (x == null || ((Map) x).size() == 0) {
             return 0;
@@ -50,8 +54,9 @@ public class HstoreType implements UserType {
         return ((Map) x).hashCode();
     }
 
+    @Nullable
     @Override
-    public Object nullSafeGet(ResultSet rs, String[] names, SharedSessionContractImplementor session,
+    public Object nullSafeGet(@NotNull ResultSet rs, String[] names, SharedSessionContractImplementor session,
                               Object owner) throws HibernateException, SQLException {
 
         final Map<String, String> hstore = (Map<String, String>) rs.getObject(names[0]);
@@ -68,13 +73,14 @@ public class HstoreType implements UserType {
     }
 
     @Override
-    public void nullSafeSet(PreparedStatement st, Object value, int index,
+    public void nullSafeSet(@NotNull PreparedStatement st, @Nullable Object value, int index,
                             SharedSessionContractImplementor session) throws HibernateException, SQLException {
         st.setString(index, value == null ? null : (String) SqlUtils.toSqlParam((Map) value));
     }
 
+    @Nullable
     @Override
-    public Object deepCopy(Object value) throws HibernateException {
+    public Object deepCopy(@Nullable Object value) throws HibernateException {
         return value == null ? null : new HashMap((Map) value);
     }
 
@@ -83,18 +89,21 @@ public class HstoreType implements UserType {
         return true;
     }
 
+    @Nullable
     @Override
     public Object assemble(final Serializable cached, final Object owner) throws HibernateException {
         return deepCopy(cached);
     }
 
+    @Nullable
     @Override
     public Serializable disassemble(final Object o) throws HibernateException {
         return (Serializable) deepCopy(o);
     }
 
+    @Nullable
     @Override
-    public Object replace(Object original, Object target, Object owner) throws HibernateException {
+    public Object replace(@Nullable Object original, Object target, Object owner) throws HibernateException {
         return original == null ? null : deepCopy(original);
     }
 

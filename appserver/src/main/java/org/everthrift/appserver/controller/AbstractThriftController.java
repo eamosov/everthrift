@@ -11,6 +11,8 @@ import org.everthrift.clustering.MessageWrapper;
 import org.everthrift.thrift.TFunction;
 import org.everthrift.utils.ExecutionStats;
 import org.everthrift.utils.Pair;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
@@ -42,6 +44,7 @@ public abstract class AbstractThriftController<ArgsType extends TBase, ResultTyp
 
     protected int seqId;
 
+    @Nullable
     protected DataSource ds;
 
     protected ThriftClient thriftClient;
@@ -67,6 +70,7 @@ public abstract class AbstractThriftController<ArgsType extends TBase, ResultTyp
 
     protected String methodName;
 
+    @NotNull
     protected LazyLoadManager lazyLoadManager = new LazyLoadManager();
 
     @Autowired
@@ -83,6 +87,7 @@ public abstract class AbstractThriftController<ArgsType extends TBase, ResultTyp
 
     public abstract void setup(ArgsType args);
 
+    @NotNull
     public String ctrlLog() {
         return "";
     }
@@ -112,6 +117,7 @@ public abstract class AbstractThriftController<ArgsType extends TBase, ResultTyp
         rpcControllesStats.putIfAbsent(this.getClass().getSimpleName(), new ExecutionStats());
     }
 
+    @Nullable
     protected abstract ResultType handle() throws TException;
 
     /**
@@ -132,7 +138,7 @@ public abstract class AbstractThriftController<ArgsType extends TBase, ResultTyp
                 ResultType result;
                 try {
                     result = filterOutput(resultFuture.get());
-                } catch (InterruptedException | ExecutionException e) {
+                } catch (@NotNull InterruptedException | ExecutionException e) {
                     setResultSentFlag();
                     setEndNanos(System.nanoTime());
                     log.error("Uncought exception", e);
@@ -163,6 +169,7 @@ public abstract class AbstractThriftController<ArgsType extends TBase, ResultTyp
         }
     }
 
+    @NotNull
     protected ResultType waitForAnswer() {
         throw new AsyncAnswer();
     }
@@ -178,7 +185,8 @@ public abstract class AbstractThriftController<ArgsType extends TBase, ResultTyp
         }
     }
 
-    protected <F, T> Function<F, T> unchecked(TFunction<F, T> f) {
+    @Nullable
+    protected <F, T> Function<F, T> unchecked(@NotNull TFunction<F, T> f) {
         return new Function<F, T>() {
 
             @Override
@@ -193,7 +201,7 @@ public abstract class AbstractThriftController<ArgsType extends TBase, ResultTyp
         };
     }
 
-    protected ResultType waitForAnswer(CompletableFuture<? extends ResultType> lf) throws TException {
+    protected ResultType waitForAnswer(@NotNull CompletableFuture<? extends ResultType> lf) throws TException {
 
         if (!allowAsyncAnswer) {
             try {
@@ -327,7 +335,7 @@ public abstract class AbstractThriftController<ArgsType extends TBase, ResultTyp
         Collections.sort(list, new Comparator<Pair<String, ExecutionStats>>() {
 
             @Override
-            public int compare(Pair<String, ExecutionStats> o1, Pair<String, ExecutionStats> o2) {
+            public int compare(@NotNull Pair<String, ExecutionStats> o1, @NotNull Pair<String, ExecutionStats> o2) {
                 return Long.signum(o2.second.getSummaryTime() - o1.second.getSummaryTime());
             }
         });
@@ -340,14 +348,17 @@ public abstract class AbstractThriftController<ArgsType extends TBase, ResultTyp
         return result;
     }
 
+    @NotNull
     protected CompletableFuture<ResultType> loadLazyRelations(ResultType result) {
         return loadLazyRelations ? lazyLoadManager.load(LazyLoadManager.SCENARIO_DEFAULT, result) : CompletableFuture.completedFuture(result);
     }
 
+    @NotNull
     protected Map<String, String[]> getHttpRequestParams() {
         return ((Map<String, String[]>) tps.getAttributes().get(MessageWrapper.HTTP_REQUEST_PARAMS));
     }
 
+    @NotNull
     protected Map<String, String> getHttpHeaders() {
         return (Map<String, String>) tps.getAttributes().get(MessageWrapper.HTTP_HEADERS);
     }

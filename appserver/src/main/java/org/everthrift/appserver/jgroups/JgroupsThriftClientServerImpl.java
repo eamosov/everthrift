@@ -7,6 +7,8 @@ import org.everthrift.clustering.jgroups.ClusterThriftClientIF;
 import org.everthrift.clustering.thrift.InvocationInfoThreadHolder;
 import org.everthrift.clustering.thrift.ThriftProxyFactory;
 import org.everthrift.services.thrift.cluster.ClusterService;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.jgroups.Address;
 import org.jgroups.JChannel;
 import org.jgroups.MembershipListener;
@@ -43,8 +45,10 @@ public class JgroupsThriftClientServerImpl extends AbstractJgroupsThriftClientIm
     @Autowired
     private RpcJGroupsRegistry rpcJGroupsRegistry;
 
+    @Nullable
     private MessageDispatcher disp;
 
+    @NotNull
     private List<MembershipListener> membershipListeners = new ArrayList<MembershipListener>();
 
     @Resource
@@ -55,6 +59,7 @@ public class JgroupsThriftClientServerImpl extends AbstractJgroupsThriftClientIm
         this.cluster = cluster;
     }
 
+    @NotNull
     @Override
     public Object handle(Message msg) throws Exception {
         log.error("NotImplemented");
@@ -62,7 +67,7 @@ public class JgroupsThriftClientServerImpl extends AbstractJgroupsThriftClientIm
     }
 
     @Override
-    public void handle(Message request, org.jgroups.blocks.Response response) throws Exception {
+    public void handle(@NotNull Message request, @Nullable org.jgroups.blocks.Response response) throws Exception {
         log.debug("handle message: {}, {}", request, response);
 
         final MessageWrapper w = (MessageWrapper) request.getObject();
@@ -101,6 +106,7 @@ public class JgroupsThriftClientServerImpl extends AbstractJgroupsThriftClientIm
         cluster.connect(applicationContext.getEnvironment().getProperty("jgroups.cluster.name"));
     }
 
+    @Nullable
     @Override
     public MessageDispatcher getMessageDispatcher() {
         return disp;
@@ -112,7 +118,7 @@ public class JgroupsThriftClientServerImpl extends AbstractJgroupsThriftClientIm
     }
 
     @Override
-    public synchronized void viewAccepted(View new_view) {
+    public synchronized void viewAccepted(@NotNull View new_view) {
 
         if (!this.viewAccepted.isDone()) {
             this.viewAccepted.complete(null);

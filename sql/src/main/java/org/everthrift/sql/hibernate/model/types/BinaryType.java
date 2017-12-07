@@ -5,6 +5,8 @@ import org.hibernate.type.AbstractSingleColumnStandardBasicType;
 import org.hibernate.type.VersionType;
 import org.hibernate.type.descriptor.java.PrimitiveByteArrayTypeDescriptor;
 import org.hibernate.type.descriptor.sql.BinaryTypeDescriptor;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Comparator;
 
@@ -19,6 +21,7 @@ public class BinaryType extends AbstractSingleColumnStandardBasicType<byte[]> im
 
     public static final BinaryType INSTANCE = new BinaryType();
 
+    @NotNull
     @Override
     public String getName() {
         return "binary";
@@ -28,11 +31,13 @@ public class BinaryType extends AbstractSingleColumnStandardBasicType<byte[]> im
         super(BinaryTypeDescriptor.INSTANCE, PrimitiveByteArrayTypeDescriptor.INSTANCE);
     }
 
+    @NotNull
     @Override
     public String[] getRegistrationKeys() {
         return new String[]{getName(), "byte[]", byte[].class.getName()};
     }
 
+    @Nullable
     @Override
     public byte[] seed(SharedSessionContractImplementor session) {
         // Note : simply returns null for seed() and next() as the only known

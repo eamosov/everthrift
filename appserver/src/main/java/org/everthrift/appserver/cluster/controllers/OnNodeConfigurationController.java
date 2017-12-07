@@ -6,6 +6,7 @@ import org.everthrift.appserver.jgroups.RpcJGroups;
 import org.everthrift.clustering.jgroups.ClusterThriftClientImpl;
 import org.everthrift.services.thrift.cluster.ClusterService;
 import org.everthrift.services.thrift.cluster.ClusterService.onNodeConfiguration_args;
+import org.jetbrains.annotations.Nullable;
 import org.jgroups.Address;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -20,6 +21,7 @@ public class OnNodeConfigurationController extends ThriftController<ClusterServi
         this.noProfile = true;
     }
 
+    @Nullable
     @Override
     protected Void handle() throws TException {
         client.setNode((Address) tps.getAttributes().get("src"), args.getNode());

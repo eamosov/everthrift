@@ -8,6 +8,8 @@ import org.hibernate.property.access.spi.Getter;
 import org.hibernate.property.access.spi.PropertyAccess;
 import org.hibernate.property.access.spi.PropertyAccessStrategy;
 import org.hibernate.property.access.spi.Setter;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.BeanUtils;
 
 import java.beans.PropertyDescriptor;
@@ -21,7 +23,7 @@ public class ThriftPropertyAccess implements PropertyAccess {
     public static class ThriftSetter implements Setter {
         private final Method writeMethod;
 
-        private ThriftSetter(PropertyDescriptor pd) {
+        private ThriftSetter(@NotNull PropertyDescriptor pd) {
             this.writeMethod = pd.getWriteMethod();
         }
 
@@ -29,21 +31,24 @@ public class ThriftPropertyAccess implements PropertyAccess {
         public void set(Object target, Object value, SessionFactoryImplementor factory) throws HibernateException {
             try {
                 writeMethod.invoke(target, value);
-            } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+            } catch (@NotNull IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
                 throw new HibernateException(e);
             }
         }
 
+        @Nullable
         @Override
         public Method getMethod() {
             return null;
         }
 
+        @Nullable
         @Override
         public String getMethodName() {
             return null;
         }
 
+        @NotNull
         @Override
         public String toString() {
             return "ThriftSetter(" + writeMethod.getName() + ')';
@@ -53,7 +58,7 @@ public class ThriftPropertyAccess implements PropertyAccess {
     public static final class ThriftGetter implements Getter {
         private final Method readMethod;
 
-        private ThriftGetter(PropertyDescriptor pd) {
+        private ThriftGetter(@NotNull PropertyDescriptor pd) {
             this.readMethod = pd.getReadMethod();
         }
 
@@ -64,7 +69,7 @@ public class ThriftPropertyAccess implements PropertyAccess {
         public Object get(Object target) throws HibernateException {
             try {
                 return readMethod.invoke(target);
-            } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+            } catch (@NotNull IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
                 throw new HibernateException(e);
             }
         }
@@ -109,6 +114,7 @@ public class ThriftPropertyAccess implements PropertyAccess {
             return null;
         }
 
+        @NotNull
         @Override
         public String toString() {
             return "BasicGetter(" + readMethod.getName() + ')';
@@ -116,13 +122,15 @@ public class ThriftPropertyAccess implements PropertyAccess {
 
     }
 
+    @NotNull
     private final Setter setter;
 
+    @NotNull
     private final Getter getter;
 
     private PropertyAccessStrategy strategy;
 
-    public ThriftPropertyAccess(PropertyAccessStrategy strategy, Class theClass, String propertyName) {
+    public ThriftPropertyAccess(PropertyAccessStrategy strategy, @NotNull Class theClass, String propertyName) {
         super();
         this.strategy = strategy;
 
@@ -135,11 +143,13 @@ public class ThriftPropertyAccess implements PropertyAccess {
         this.getter = new ThriftGetter(pd);
     }
 
+    @NotNull
     @Override
     public Setter getSetter() throws PropertyNotFoundException {
         return setter;
     }
 
+    @NotNull
     @Override
     public Getter getGetter() throws PropertyNotFoundException {
         return getter;

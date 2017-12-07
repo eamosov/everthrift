@@ -2,6 +2,7 @@ package org.everthrift.appserver.model;
 
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.util.CollectionUtils;
 
 import java.io.Serializable;
@@ -38,11 +39,13 @@ public class OptResult<ENTITY extends DaoEntityIF> {
         this.timestamp = timestamp;
     }
 
+    @NotNull
     public static <ENTITY extends DaoEntityIF> OptResult<ENTITY> notUpdated(OptimisticLockModelFactoryIF<?, ENTITY, ?> factory,
                                                                             ENTITY updated, long timestamp) {
         return create(factory, updated, updated, false, false, timestamp);
     }
 
+    @NotNull
     public static <ENTITY extends DaoEntityIF> OptResult<ENTITY> create(OptimisticLockModelFactoryIF<?, ENTITY, ?> factory,
                                                                         ENTITY afterUpdate, ENTITY beforeUpdate,
                                                                         boolean isUpdated, boolean isInserted,
@@ -75,7 +78,8 @@ public class OptResult<ENTITY extends DaoEntityIF> {
         return Collections2.filter(inner, r -> (r.factory == factory));
     }
 
-    public <PK extends Serializable, T extends DaoEntityIF> T getInnerUpdated(OptimisticLockModelFactoryIF<PK, T, ?> factory, T defaultValue) {
+    @NotNull
+    public <PK extends Serializable, T extends DaoEntityIF> T getInnerUpdated(OptimisticLockModelFactoryIF<PK, T, ?> factory, @NotNull T defaultValue) {
 
         if (CollectionUtils.isEmpty(inner)) {
             return defaultValue;
@@ -89,6 +93,7 @@ public class OptResult<ENTITY extends DaoEntityIF> {
         return defaultValue;
     }
 
+    @NotNull
     @Override
     public String toString() {
         return "OptResult [factory=" + factory + ", afterUpdate=" + afterUpdate + ", beforeUpdate=" + beforeUpdate + ", isUpdated="

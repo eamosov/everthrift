@@ -6,6 +6,8 @@ import org.apache.thrift.TException;
 import org.apache.thrift.TFieldIdEnum;
 import org.everthrift.appserver.utils.thrift.ThriftClient;
 import org.everthrift.utils.ClassUtils;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
@@ -49,10 +51,12 @@ public class ThriftControllerInfo {
         this.context = context;
     }
 
+    @NotNull
     public String getName() {
         return this.serviceName + ":" + this.methodName;
     }
 
+    @NotNull
     @Override
     public String toString() {
         return "ThriftControllerInfo [controllerCls=" + controllerCls + ", serviceName=" + serviceName + ", methodName=" + methodName
@@ -69,7 +73,7 @@ public class ThriftControllerInfo {
         }
     }
 
-    public TBase makeResult(Object ret) throws TApplicationException {
+    public TBase makeResult(@Nullable Object ret) throws TApplicationException {
 
         try {
 

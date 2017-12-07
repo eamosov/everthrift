@@ -4,6 +4,7 @@ import org.apache.thrift.TException;
 import org.apache.thrift.transport.TTransportException;
 import org.everthrift.clustering.thrift.InvocationInfo;
 import org.everthrift.clustering.thrift.InvocationInfoThreadHolder;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
@@ -15,7 +16,7 @@ public abstract class AbstractThriftClient<S> extends ThriftClient<S> {
     }
 
     @Override
-    public <T> CompletableFuture<T> thriftCall(int timeout, T methodCall, BiConsumer<? super T, ? super Throwable> callback) throws TException {
+    public <T> CompletableFuture<T> thriftCall(int timeout, T methodCall, @NotNull BiConsumer<? super T, ? super Throwable> callback) throws TException {
         final CompletableFuture<T> lf = thriftCall(timeout, methodCall);
         lf.whenComplete(callback);
         return lf;

@@ -26,6 +26,8 @@ import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.query.NativeQuery;
 import org.hibernate.transform.ResultTransformer;
 import org.hibernate.type.Type;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.CollectionUtils;
@@ -95,14 +97,16 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
     }
 
     private static class TxWrap {
+        @NotNull
         private final Transaction tx;
         private final boolean isActive;
 
-        TxWrap(Transaction tx) {
+        TxWrap(@NotNull Transaction tx) {
             this.tx = tx;
             this.isActive = tx.isActive();
         }
 
+        @NotNull
         TxWrap begin() {
             if (!isActive) {
                 tx.begin();
@@ -121,7 +125,8 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
         }
     }
 
-    private TxWrap beginTransaction(Session session) {
+    @NotNull
+    private TxWrap beginTransaction(@NotNull Session session) {
         return new TxWrap(session.getTransaction()).begin();
     }
 
@@ -148,11 +153,12 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
     }
 
     @Override
-    public Collection<V> findByIds(Collection<K> ids) {
+    public Collection<V> findByIds(@NotNull Collection<K> ids) {
         return this.findByCriteria(Restrictions.in("id", ids), null);
     }
 
-    private UniqueException uniqueException(ConstraintViolationException e) {
+    @Nullable
+    private UniqueException uniqueException(@NotNull ConstraintViolationException e) {
 
         final String fieldName;
         final boolean isPrimaryKey;
@@ -196,7 +202,7 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
     }
 
     @Override
-    public Pair<V, Boolean> saveOrUpdate(V e) throws UniqueException {
+    public Pair<V, Boolean> saveOrUpdate(@NotNull V e) throws UniqueException {
 
         try {
             if (log.isDebugEnabled()) {
@@ -227,7 +233,7 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
     }
 
     @Override
-    public Pair<V, Boolean> save(V e) throws UniqueException {
+    public Pair<V, Boolean> save(@NotNull V e) throws UniqueException {
 
         try {
             if (log.isDebugEnabled()) {
@@ -259,7 +265,7 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
         }
     }
 
-    private void tx(Consumer<Session> r) {
+    private void tx(@NotNull Consumer<Session> r) {
         final Session session = getCurrentSession();
         final TxWrap tx = beginTransaction(session);
         try {
@@ -271,7 +277,7 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
         }
     }
 
-    public  <R> R tx(Function<Session, R> r) {
+    public  <R> R tx(@NotNull Function<Session, R> r) {
         final Session session = getCurrentSession();
         final TxWrap tx = beginTransaction(session);
         try {
@@ -321,7 +327,7 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
     }
 
     @Override
-    public Object uniqueResult(Criterion criterion, Projection... projections) {
+    public Object uniqueResult(Criterion criterion, @NotNull Projection... projections) {
         return tx(session -> {
             final Criteria criteria = session.createCriteria(entityClass);
 
@@ -335,21 +341,22 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
         });
     }
 
+    @NotNull
     @Override
-    public List<K> findPkByCriteria(Criterion criterion, Order order) {
+    public List<K> findPkByCriteria(Criterion criterion, @Nullable Order order) {
         return (List) findByCriteria(criterion, Projections.property("id"), null, order != null ? Collections.singletonList(order) : null,
                                      null, null);
     }
 
     @Override
-    public List<V> findByCriteria(Criterion criterion, Order order) {
+    public List<V> findByCriteria(Criterion criterion, @Nullable Order order) {
         return findByCriteria(criterion, null, null, order != null ? Collections.singletonList(order) : null, null, null);
     }
 
     @SuppressWarnings("unchecked")
     @Override
-    public List<V> findByCriteria(Criterion criterion, Projection proj, LockMode lockMode, List<Order> order, Integer limit,
-                                  Integer offset) {
+    public List<V> findByCriteria(Criterion criterion, @Nullable Projection proj, @Nullable LockMode lockMode, @NotNull List<Order> order, @Nullable Integer limit,
+                                  @Nullable Integer offset) {
 
         return tx(session -> {
             final Criteria criteria = session.createCriteria(entityClass);
@@ -385,7 +392,7 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
     }
 
     @Override
-    public <R> R withSession(Function<Session, R> r) {
+    public <R> R withSession(@NotNull Function<Session, R> r) {
         try {
             return tx(r);
         } catch (Exception e) {
@@ -404,7 +411,7 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
      * mapping то будет использоваться маппер и трансформер класса entityClass
      */
     @Override
-    public <X> List<X> findBySQLQuery(String query, Map<String, Type> mapping, ResultTransformer resultTransformer, Object... params) {
+    public <X> List<X> findBySQLQuery(String query, @Nullable Map<String, Type> mapping, @Nullable ResultTransformer resultTransformer, @NotNull Object... params) {
 
         return tx(session -> {
             final NativeQuery<X> q = session.createSQLQuery(query);
@@ -433,12 +440,13 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
     }
 
     @Override
-    public int executeCustomUpdate(K evictId, String query, final Object... params) {
+    public int executeCustomUpdate(K evictId, String query, @NotNull final Object... params) {
 
         return executeCustomUpdate(evictId, query, new Function<SQLQuery, Query>() {
 
+            @NotNull
             @Override
-            public Query apply(SQLQuery q) {
+            public Query apply(@NotNull SQLQuery q) {
 
                 for (int i = 0; i < params.length; i++) {
                     q.setParameter(i, params[i]);
@@ -449,6 +457,7 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
         });
     }
 
+    @NotNull
     private RuntimeException convert(Exception e) {
         if (e instanceof ConstraintViolationException) {
             throw uniqueException((ConstraintViolationException) e);
@@ -460,7 +469,7 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
     }
 
     @Override
-    public int executeCustomUpdate(K evictId, String query, Function<SQLQuery, Query> bindFunction) {
+    public int executeCustomUpdate(@Nullable K evictId, String query, @NotNull Function<SQLQuery, Query> bindFunction) {
         try {
 
             return tx(session -> {
@@ -486,14 +495,15 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
         }
     }
 
-    private void propogateIfAbsentMessage(Throwable e, String message) {
+    private void propogateIfAbsentMessage(@NotNull Throwable e, String message) {
         if (!e.getMessage().equals(message)) {
             throw Throwables.propagate(e);
         }
     }
 
+    @NotNull
     @Override
-    public Map<K, V> findByIdsAsMap(Collection<K> id) {
+    public Map<K, V> findByIdsAsMap(@NotNull Collection<K> id) {
         final Map<K, V> ret = new HashMap<K, V>();
         final Collection<V> rs = findByIds(id);
         for (V r : rs) {
@@ -507,22 +517,26 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
         return ret;
     }
 
+    @Nullable
     @Override
     public V findFirstByCriteria(Criterion criterion, Order order) {
         final List<V> ret = findByCriteria(criterion, order);
         return ret == null || ret.isEmpty() ? null : ret.get(0);
     }
 
+    @NotNull
     @Override
     public CompletableFuture<List<V>> findByCriteriaAsync(final Criterion criterion, final Order order) {
         return CompletableFuture.supplyAsync(() -> findByCriteria(criterion, order), executor);
     }
 
+    @NotNull
     @Override
     public CompletableFuture<V> findFirstByCriteriaAsync(final Criterion criterion, final Order order) {
         return CompletableFuture.supplyAsync(() -> findFirstByCriteria(criterion, order), executor);
     }
 
+    @NotNull
     @Override
     public AbstractDao<K, V> with(final SessionFactory sessionFactory) {
         return new AbstractDaoImpl<>(sessionFactory, this.entityClass, this.executor);

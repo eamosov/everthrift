@@ -1,5 +1,7 @@
 package org.everthrift.appserver.model.lazy;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,6 +30,7 @@ public class LazyLoadManager {
     private static final Executor loadExecutor = Executors.newCachedThreadPool(new ThreadFactory() {
         private final AtomicInteger threadNumber = new AtomicInteger(1);
 
+        @NotNull
         @Override
         public Thread newThread(Runnable r) {
             final Thread t = new Thread(r);
@@ -42,8 +45,8 @@ public class LazyLoadManager {
         }
     });
 
-    public static void nextLap(CompletableFuture<Integer> result, AtomicInteger lap, AtomicInteger nAllLoaded, int maxIterations, Object o,
-                               Registry r, WalkerIF walker) {
+    public static void nextLap(@NotNull CompletableFuture<Integer> result, @NotNull AtomicInteger lap, @NotNull AtomicInteger nAllLoaded, int maxIterations, Object o,
+                               @NotNull Registry r, @NotNull WalkerIF walker) {
 
         log.debug("Starting load iteration: {}", lap);
         final long st = System.nanoTime();
@@ -74,7 +77,8 @@ public class LazyLoadManager {
         } , loadExecutor);
     }
 
-    public static CompletableFuture<Integer> load(int maxIterations, Object o, Registry r, WalkerIF walker) {
+    @NotNull
+    public static CompletableFuture<Integer> load(int maxIterations, @NotNull Object o, @NotNull Registry r, @NotNull WalkerIF walker) {
 
         log.debug("load, maxIterations={}, o.class={}", maxIterations, o.getClass().getSimpleName());
 
@@ -91,7 +95,7 @@ public class LazyLoadManager {
         return load(scenario, maxIterations, o, new Object[]{});
     }
 
-    public <T> CompletableFuture<T> load(final String scenario, int maxIterations, final T o, Object... args) {
+    public <T> CompletableFuture<T> load(final String scenario, int maxIterations, @Nullable final T o, Object... args) {
 
         if (o == null || (o instanceof Collection && ((Collection) o).isEmpty()) || (o instanceof Map && ((Map) o).isEmpty())) {
             return CompletableFuture.completedFuture(o);

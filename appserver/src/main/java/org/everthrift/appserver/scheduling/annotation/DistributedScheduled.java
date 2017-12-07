@@ -1,5 +1,6 @@
 package org.everthrift.appserver.scheduling.annotation;
 
+import org.jetbrains.annotations.NotNull;
 import org.springframework.scheduling.TriggerContext;
 
 import java.lang.annotation.Documented;
@@ -37,7 +38,7 @@ import java.lang.annotation.Target;
 @Repeatable(DistributedSchedules.class)
 public @interface DistributedScheduled {
 
-    String name() default "";
+    @NotNull String name() default "";
 
     /**
      * A cron-like expression, extending the usual UN*X definition to include
@@ -48,7 +49,7 @@ public @interface DistributedScheduled {
      * @return an expression that can be parsed to a cron schedule
      * @see org.springframework.scheduling.support.CronSequenceGenerator
      */
-    String cron() default "";
+    @NotNull String cron() default "";
 
     /**
      * A time zone for which the cron expression will be resolved. By default, this
@@ -59,7 +60,7 @@ public @interface DistributedScheduled {
      * @see org.springframework.scheduling.support.CronTrigger#CronTrigger(String, java.util.TimeZone)
      * @see java.util.TimeZone
      */
-    String zone() default "";
+    @NotNull String zone() default "";
 
     /**
      * Execute the annotated method with a fixed period in milliseconds between the
@@ -78,7 +79,7 @@ public @interface DistributedScheduled {
      *
      * @return the delay in milliseconds as a String value, e.g. a placeholder
      */
-    String fixedDelayString() default "";
+    @NotNull String fixedDelayString() default "";
 
     /**
      * Execute the annotated method with a fixed period in milliseconds between
@@ -96,7 +97,7 @@ public @interface DistributedScheduled {
      *
      * @return the period in milliseconds as a String value, e.g. a placeholder
      */
-    String fixedRateString() default "";
+    @NotNull String fixedRateString() default "";
 
     /**
      * Number of milliseconds to delay before the first execution of a
@@ -112,7 +113,7 @@ public @interface DistributedScheduled {
      *
      * @return the initial delay in milliseconds as a String value, e.g. a placeholder
      */
-    String initialDelayString() default "";
+    @NotNull String initialDelayString() default "";
 
     /**
      * For accessing TriggerContext from Runnable tasks

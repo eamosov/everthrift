@@ -1,5 +1,7 @@
 package org.everthrift.appserver.controller;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.List;
 
 public class LogEntry {
@@ -24,6 +26,7 @@ public class LogEntry {
         this.runMcs = endMcs;
     }
 
+    @NotNull
     @Override
     public String toString() {
         if (endMcs > 0) {
@@ -35,7 +38,7 @@ public class LogEntry {
         }
     }
 
-    static String toString(List<LogEntry> logs) {
+    static String toString(@NotNull List<LogEntry> logs) {
         synchronized (logs) {
             final StringBuilder sb = new StringBuilder();
 

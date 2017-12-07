@@ -18,6 +18,7 @@ import org.apache.thrift.TFieldIdEnum;
 import org.apache.thrift.meta_data.FieldMetaData;
 import org.everthrift.thrift.TBaseHasModel;
 import org.everthrift.utils.ClassUtils;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -60,12 +61,13 @@ public class GsonSerializer {
             this.allBeanProperties = allBeanProperties;
         }
 
+        @NotNull
         @Override
-        public JsonElement serialize(T src, Type typeOfSrc, JsonSerializationContext context) {
+        public JsonElement serialize(@NotNull T src, Type typeOfSrc, @NotNull JsonSerializationContext context) {
             return serialize(src, typeOfSrc, context, Collections.emptySet());
         }
 
-        private void serialize(JsonSerializationContext context, JsonObject jo, String fieldName, Object v) {
+        private void serialize(@NotNull JsonSerializationContext context, @NotNull JsonObject jo, @NotNull String fieldName, Object v) {
             if (v instanceof TBase) {
 
                 jo.add(fieldName, context.serialize(v));
@@ -85,7 +87,8 @@ public class GsonSerializer {
             }
         }
 
-        private JsonElement serializeAll(T src, Type typeOfSrc, JsonSerializationContext context, final Set<String> excludes) {
+        @NotNull
+        private JsonElement serializeAll(@NotNull T src, Type typeOfSrc, @NotNull JsonSerializationContext context, @NotNull final Set<String> excludes) {
 
             final JsonObject jo = new JsonObject();
 
@@ -117,7 +120,7 @@ public class GsonSerializer {
                     final Object value;
                     try {
                         value = pd.getReadMethod().invoke(src);
-                    } catch (IllegalAccessException | InvocationTargetException e) {
+                    } catch (@NotNull IllegalAccessException | InvocationTargetException e) {
                         throw Throwables.propagate(e);
                     }
 
@@ -132,12 +135,8 @@ public class GsonSerializer {
             return jo;
         }
 
-        private JsonElement serializeTBaseOnly(T src, Type typeOfSrc, JsonSerializationContext context, final Set<String> excludes) {
-
-            if (!(src instanceof TBase)) {
-                log.error("coudn't serialize class {}", src.getClass());
-                return new JsonObject();
-            }
+        @NotNull
+        private JsonElement serializeTBaseOnly(@NotNull T src, Type typeOfSrc, @NotNull JsonSerializationContext context, @NotNull final Set<String> excludes) {
 
             final JsonObject jo = new JsonObject();
             final Class<TBase> classOfSrc = (Class) src.getClass();
@@ -161,7 +160,7 @@ public class GsonSerializer {
                     if (namingStrategy != FieldNamingPolicy.IDENTITY) {
                         try {
                             fieldName = namingStrategy.translateName(ClassUtils.getDeclaredField(classOfSrc, f.getFieldName()));
-                        } catch (SecurityException | NoSuchFieldException e1) {
+                        } catch (@NotNull SecurityException | NoSuchFieldException e1) {
                             throw new JsonParseException("class " + ((Class) classOfSrc).getSimpleName(), e1);
                         }
                     } else {
@@ -175,13 +174,15 @@ public class GsonSerializer {
             return jo;
         }
 
-        public JsonElement serialize(T src, Type typeOfSrc, JsonSerializationContext context, final Set<String> excludes) {
+        @NotNull
+        public JsonElement serialize(@NotNull T src, Type typeOfSrc, @NotNull JsonSerializationContext context, @NotNull final Set<String> excludes) {
 
             return allBeanProperties ? serializeAll(src, typeOfSrc, context, excludes) : serializeTBaseOnly(src, typeOfSrc, context, excludes);
         }
 
+        @NotNull
         @Override
-        public T deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+        public T deserialize(@NotNull JsonElement json, Type typeOfT, @NotNull JsonDeserializationContext context) throws JsonParseException {
 
             final Object o;
             Class objCls;
@@ -192,7 +193,7 @@ public class GsonSerializer {
                 }
 
                 o = objCls.newInstance();
-            } catch (InstantiationException | IllegalAccessException e1) {
+            } catch (@NotNull InstantiationException | IllegalAccessException e1) {
                 throw new JsonParseException(e1);
             }
 
@@ -214,14 +215,14 @@ public class GsonSerializer {
 
                     try {
                         f = ClassUtils.getDeclaredField((Class) objCls, pd.getName());
-                    } catch (SecurityException | NoSuchFieldException e1) {
+                    } catch (@NotNull SecurityException | NoSuchFieldException e1) {
                         throw new JsonParseException("class " + ((Class) objCls).getSimpleName(), e1);
                     }
                 } else {
 
                     try {
                         f = ClassUtils.getDeclaredField((Class) objCls, pd.getName());
-                    } catch (SecurityException | NoSuchFieldException e1) {
+                    } catch (@NotNull SecurityException | NoSuchFieldException e1) {
                         continue;
                     }
 
@@ -234,7 +235,7 @@ public class GsonSerializer {
 
                 try {
                     pd.getWriteMethod().invoke(o, new Object[]{context.deserialize(value, f.getGenericType())});
-                } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e1) {
+                } catch (@NotNull IllegalAccessException | IllegalArgumentException | InvocationTargetException e1) {
                     throw new RuntimeException(e1);
                 }
             }

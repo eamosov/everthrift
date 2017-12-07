@@ -34,6 +34,7 @@ import org.everthrift.appserver.configs.ZooConfig;
 import org.everthrift.appserver.configs.ZooJmxConfig;
 import org.everthrift.thrift.MetaDataMapBuilder;
 import org.everthrift.utils.SocketUtils;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
@@ -78,6 +79,7 @@ public class AppserverApplication {
 
     public final static AppserverApplication INSTANCE = new AppserverApplication();
 
+    @NotNull
     public final AnnotationConfigApplicationContext context;
 
     public final ConfigurableEnvironment env;
@@ -86,9 +88,10 @@ public class AppserverApplication {
     private boolean initialized = false;
 
     private static class AppResourcePropertySource extends PropertiesPropertySource {
+        @NotNull
         private final String location;
 
-        public AppResourcePropertySource(String location) throws IOException {
+        public AppResourcePropertySource(@NotNull String location) throws IOException {
             super(location, PropertiesLoaderUtils.loadAllProperties(location.replace("classpath:", "")));
             this.location = location;
         }
@@ -97,6 +100,7 @@ public class AppserverApplication {
 
     private final List<PropertySource<?>> propertySourceList = new ArrayList<>();
 
+    @NotNull
     private List<Class<?>> annotatedClasses = Lists.newArrayList();
 
     private AppserverApplication() {
@@ -121,7 +125,7 @@ public class AppserverApplication {
         return !env.getProperty("thrift.async", "false").equalsIgnoreCase("false");
     }
 
-    public static boolean isJGroupsEnabled(Environment env) {
+    public static boolean isJGroupsEnabled(@NotNull Environment env) {
         return !env.getProperty("jgroups", "false").equalsIgnoreCase("false");
     }
 
@@ -377,7 +381,7 @@ public class AppserverApplication {
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
-    private void runInContext(String xmlConfig, String className, String method) throws Exception {
+    private void runInContext(String xmlConfig, String className, @NotNull String method) throws Exception {
 
         final Class<Callable> proc = (Class) Class.forName(className);
 
@@ -433,7 +437,7 @@ public class AppserverApplication {
         }
     }
 
-    public synchronized boolean addPropertySource(String resourceName, boolean ignoreNotExisting) throws IOException {
+    public synchronized boolean addPropertySource(@NotNull String resourceName, boolean ignoreNotExisting) throws IOException {
         try {
             addPropertySource(new AppResourcePropertySource(resourceName));
             log.info("Added property source: {}", resourceName);
@@ -448,14 +452,14 @@ public class AppserverApplication {
         }
     }
 
-    public void registerAnnotatedClasses(Class<?>... annotatedClasses) {
+    public void registerAnnotatedClasses(@NotNull Class<?>... annotatedClasses) {
         for (Class cls : annotatedClasses) {
             this.annotatedClasses.add(cls);
         }
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public synchronized void addProperties(String name, Object... key_value) throws IOException {
+    public synchronized void addProperties(String name, @NotNull Object... key_value) throws IOException {
 
         if (key_value.length % 2 != 0) {
             throw new IllegalArgumentException();

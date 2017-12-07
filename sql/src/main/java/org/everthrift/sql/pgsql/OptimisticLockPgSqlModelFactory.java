@@ -15,6 +15,8 @@ import org.hibernate.Session;
 import org.hibernate.StaleStateException;
 import org.hibernate.Transaction;
 import org.hibernate.annotations.OptimisticLocking;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.ConcurrencyFailureException;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -37,7 +39,7 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable, E
      * @param cacheName
      * @param entityClass
      */
-    public OptimisticLockPgSqlModelFactory(String cacheName, Class<ENTITY> entityClass) {
+    public OptimisticLockPgSqlModelFactory(String cacheName, @NotNull Class<ENTITY> entityClass) {
         super(cacheName, entityClass);
 
         if (entityClass.getAnnotation(OptimisticLocking.class) == null) {
@@ -46,7 +48,8 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable, E
     }
 
     @Override
-    public final OptResult<ENTITY> updateUnchecked(PK id, TFunction<ENTITY, Boolean> mutator) {
+    @NotNull
+    public final OptResult<ENTITY> updateUnchecked(@NotNull PK id, @NotNull TFunction<ENTITY, Boolean> mutator) {
         try {
             return update(id, mutator);
         } catch (Exception e) {
@@ -55,7 +58,8 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable, E
     }
 
     @Override
-    public final OptResult<ENTITY> updateUnchecked(PK id, TFunction<ENTITY, Boolean> mutator, final EntityFactory<PK, ENTITY> factory) {
+    @NotNull
+    public final OptResult<ENTITY> updateUnchecked(@NotNull PK id, @NotNull TFunction<ENTITY, Boolean> mutator, final EntityFactory<PK, ENTITY> factory) {
         try {
             return update(id, mutator, factory);
         } catch (Exception e) {
@@ -64,12 +68,13 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable, E
     }
 
     @Override
-    public final OptResult<ENTITY> update(PK id, TFunction<ENTITY, Boolean> mutator) throws TException, E {
+    public final OptResult<ENTITY> update(@NotNull PK id, @NotNull TFunction<ENTITY, Boolean> mutator) throws TException, E {
         return update(id, mutator, null);
     }
 
+    @NotNull
     @Override
-    public final OptResult<ENTITY> update(PK id, TFunction<ENTITY, Boolean> mutator,
+    public final OptResult<ENTITY> update(@NotNull PK id, @NotNull TFunction<ENTITY, Boolean> mutator,
                                           final EntityFactory<PK, ENTITY> factory) throws TException, E {
         try {
             return optimisticUpdate(id, mutator, factory);
@@ -78,7 +83,7 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable, E
         }
     }
 
-    private Pair<ENTITY, Long> tryOptimisticDelete(PK id) throws EntityNotFoundException {
+    private Pair<ENTITY, Long> tryOptimisticDelete(@NotNull PK id) throws EntityNotFoundException {
 
         final Session session = getDao().getCurrentSession();
         final Transaction tx = session.beginTransaction();
@@ -99,8 +104,9 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable, E
         }
     }
 
+    @NotNull
     @Override
-    public final OptResult<ENTITY> delete(final PK id) throws E {
+    public final OptResult<ENTITY> delete(@NotNull final PK id) throws E {
 
         if (TransactionSynchronizationManager.isActualTransactionActive()) {
             throw new RuntimeException("Can't correctly do optimistic update within transaction");
@@ -110,7 +116,7 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable, E
             final Pair<ENTITY, Long> deleted = OptimisticLockModelFactoryIF.optimisticUpdate((count) -> {
                 try {
                     return tryOptimisticDelete(id);
-                } catch (StaleStateException | ConcurrencyFailureException e) {
+                } catch (@NotNull StaleStateException | ConcurrencyFailureException e) {
                     if (TransactionSynchronizationManager.isActualTransactionActive()) {
                         throw e;
                     }
@@ -136,8 +142,9 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable, E
         }
     }
 
+    @NotNull
     @Override
-    public final OptResult<ENTITY> optInsert(final ENTITY e) {
+    public final OptResult<ENTITY> optInsert(@NotNull final ENTITY e) {
 
         final long timestamp = timestampGenerator.next();
         setCreatedAt(e, timestamp);
@@ -165,6 +172,7 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable, E
         }
     }
 
+    @NotNull
     @Override
     protected final Map<PK, ENTITY> fetchEntityByIdAsMap(Collection<PK> ids) {
 
@@ -188,7 +196,8 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable, E
      * @return <new, old>
      * @throws Exception
      */
-    private OptResult<ENTITY> optimisticUpdate(final PK id, final TFunction<ENTITY, Boolean> mutator,
+    @NotNull
+    private OptResult<ENTITY> optimisticUpdate(@NotNull final PK id, @NotNull final TFunction<ENTITY, Boolean> mutator,
                                                final EntityFactory<PK, ENTITY> factory) throws TException, EntityNotFoundException, StaleStateException, ConcurrencyFailureException {
 
         if (TransactionSynchronizationManager.isActualTransactionActive()) {
@@ -204,7 +213,7 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable, E
                 } else {
                     throw Throwables.propagate(e);
                 }
-            } catch (StaleStateException | ConcurrencyFailureException e) {
+            } catch (@NotNull StaleStateException | ConcurrencyFailureException e) {
                 if (TransactionSynchronizationManager.isActualTransactionActive()) {
                     throw e;
                 }
@@ -221,8 +230,9 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable, E
         return ret;
     }
 
-    private OptResult<ENTITY> tryOptimisticUpdate(PK id, TFunction<ENTITY, Boolean> mutator,
-                                                  final EntityFactory<PK, ENTITY> factory) throws TException, EntityNotFoundException, StaleStateException, ConcurrencyFailureException {
+    @NotNull
+    private OptResult<ENTITY> tryOptimisticUpdate(@NotNull PK id, @NotNull TFunction<ENTITY, Boolean> mutator,
+                                                  @Nullable final EntityFactory<PK, ENTITY> factory) throws TException, EntityNotFoundException, StaleStateException, ConcurrencyFailureException {
 
         final Session session = getDao().getCurrentSession();
         final Transaction tx = session.beginTransaction();
@@ -251,7 +261,7 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable, E
                     isInserted = false;
                     try {
                         orig = this.entityClass.getConstructor(this.entityClass).newInstance(e);
-                    } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
+                    } catch (@NotNull InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
                         | NoSuchMethodException | SecurityException e1) {
                         throw Throwables.propagate(e1);
                     }
@@ -272,7 +282,7 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable, E
             } catch (TException e) {
                 log.warn("tryOptimisticUpdate ends with exception of type {}", e.getClass().getSimpleName());
                 throw e;
-            } catch (StaleStateException | ConcurrencyFailureException e) {
+            } catch (@NotNull StaleStateException | ConcurrencyFailureException e) {
                 throw e;
             } catch (Exception e) {
                 log.warn("tryOptimisticUpdate ends with exception of type {}", e.getClass().getSimpleName());

@@ -20,6 +20,8 @@ import org.apache.thrift.meta_data.StructMetaData;
 import org.apache.thrift.protocol.TType;
 import org.everthrift.appserver.controller.ThriftControllerInfo;
 import org.everthrift.utils.Pair;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.BeanUtils;
 
 import java.lang.reflect.Method;
@@ -43,17 +45,18 @@ public class ThriftFormatter {
         this.basePath = basePath;
     }
 
-    private final List<TFieldIdEnum> sortedKeys(Map<? extends TFieldIdEnum, FieldMetaData> map) {
+    private final List<TFieldIdEnum> sortedKeys(@NotNull Map<? extends TFieldIdEnum, FieldMetaData> map) {
         return map.keySet().stream().sorted(new Comparator<TFieldIdEnum>() {
 
             @Override
-            public int compare(TFieldIdEnum o1, TFieldIdEnum o2) {
+            public int compare(@NotNull TFieldIdEnum o1, @NotNull TFieldIdEnum o2) {
                 return Shorts.compare(o1.getThriftFieldId(), o2.getThriftFieldId());
             }
         }).collect(Collectors.toList());
     }
 
-    public String formatServices(Collection<ThriftControllerInfo> cInfo) {
+    @NotNull
+    public String formatServices(@NotNull Collection<ThriftControllerInfo> cInfo) {
 
         Multimap<String, ThriftControllerInfo> mm = Multimaps.index(cInfo, ThriftControllerInfo::getServiceName);
 
@@ -66,7 +69,8 @@ public class ThriftFormatter {
         return sb.toString();
     }
 
-    public String formatService(String serviceName, Collection<ThriftControllerInfo> cInfos) {
+    @NotNull
+    public String formatService(String serviceName, @NotNull Collection<ThriftControllerInfo> cInfos) {
         final StringBuilder sb = new StringBuilder();
 
         sb.append("<div class=\"service\" style=\"padding-bottom:10px;\">\n");
@@ -84,7 +88,7 @@ public class ThriftFormatter {
         return sb.toString();
     }
 
-    public String getTDocMethodComment(Class methodArgCls) {
+    public String getTDocMethodComment(@NotNull Class methodArgCls) {
         final Pattern pattern = Pattern.compile("(^.+)\\.([^\\.]+)_args$");
         final Matcher matcher = pattern.matcher(methodArgCls.getCanonicalName());
 
@@ -105,6 +109,7 @@ public class ThriftFormatter {
         return "";
     }
 
+    @NotNull
     public String formatMethod(String name, Class<? extends TBase> argsCls, Class<? extends TBase> resultCls) {
         final Pair<Class<? extends TBase>, Map<? extends TFieldIdEnum, FieldMetaData>> resultMap = ThriftUtils.getRootThriftClass(resultCls);
 
@@ -164,6 +169,7 @@ public class ThriftFormatter {
         return sb.toString();
     }
 
+    @NotNull
     public String head() {
         return "<head>\n" +
             "  <meta charset=\"utf-8\">\n" +
@@ -171,6 +177,7 @@ public class ThriftFormatter {
             " </head>";
     }
 
+    @NotNull
     public String style() {
         final StringBuilder sb = new StringBuilder();
         sb.append("<style>\n");
@@ -183,7 +190,8 @@ public class ThriftFormatter {
         return sb.toString();
     }
 
-    public String formatClass(Class<? extends TBase> cls) throws ClassNotFoundException {
+    @NotNull
+    public String formatClass(@NotNull Class<? extends TBase> cls) throws ClassNotFoundException {
 
         if (!TBase.class.isAssignableFrom(cls)) {
             throw new ClassNotFoundException(cls.getCanonicalName());
@@ -232,7 +240,8 @@ public class ThriftFormatter {
         return sb.toString();
     }
 
-    public String formatTEnum(Class<? extends TEnum> cls) throws ClassNotFoundException {
+    @NotNull
+    public String formatTEnum(@NotNull Class<? extends TEnum> cls) throws ClassNotFoundException {
 
         if (!TEnum.class.isAssignableFrom(cls)) {
             throw new ClassNotFoundException(cls.getCanonicalName());
@@ -274,7 +283,7 @@ public class ThriftFormatter {
         return sb.toString();
     }
 
-    private String linkClass(Class cls, boolean span) {
+    private String linkClass(@NotNull Class cls, boolean span) {
         final String format;
         if (span) {
             format = "<a href=\"%s\"><span class=\"pl-en\">%s</span></a>";
@@ -284,7 +293,7 @@ public class ThriftFormatter {
         return String.format(format, basePath + "struct/" + URLEncoder.encode(cls.getCanonicalName()) + "/", cls.getSimpleName());
     }
 
-    private String linkEnum(Class cls, boolean span) {
+    private String linkEnum(@NotNull Class cls, boolean span) {
         final String format;
         if (span) {
             format = "<a href=\"%s\"><span class=\"pl-en\">%s</span></a>";
@@ -306,7 +315,7 @@ public class ThriftFormatter {
         return "";
     }
 
-    public String formatTypeName(FieldValueMetaData vmd, boolean span) {
+    public String formatTypeName(@Nullable FieldValueMetaData vmd, boolean span) {
 
         if (vmd == null) {
             return "void";

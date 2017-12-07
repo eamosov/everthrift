@@ -3,6 +3,7 @@ package org.everthrift.appserver.utils.zooprops;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
 import org.apache.curator.framework.CuratorFramework;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.ListableBeanFactory;
@@ -40,8 +41,9 @@ public class ZPersistanceMbeanExporter extends AnnotationMBeanExporter {
         super.setBeanFactory(bf);
     }
 
+    @NotNull
     @Override
-    synchronized protected ModelMBean createAndConfigureMBean(Object managedResource, String beanKey) throws MBeanExportException {
+    synchronized protected ModelMBean createAndConfigureMBean(@NotNull Object managedResource, String beanKey) throws MBeanExportException {
         try {
             return getProxy(super.createAndConfigureMBean(managedResource, beanKey), managedResource);
         } catch (Exception e) {
@@ -50,7 +52,8 @@ public class ZPersistanceMbeanExporter extends AnnotationMBeanExporter {
         }
     }
 
-    private ModelMBean getProxy(ModelMBean modelMbean, Object managedResource) throws Exception {
+    @NotNull
+    private ModelMBean getProxy(@NotNull ModelMBean modelMbean, @NotNull Object managedResource) throws Exception {
         final String name = getBeanName(managedResource);
         if (name == null) {
             return modelMbean;
@@ -73,7 +76,7 @@ public class ZPersistanceMbeanExporter extends AnnotationMBeanExporter {
         return interceptors.get(managedResource);
     }
 
-    public void store(Object managedResource, String propertyName){
+    public void store(@NotNull Object managedResource, String propertyName){
         final ZPersistMBeanInterceptor i = getInterceptor(managedResource);
         if ( i == null)
             throw new RuntimeException("Coudn't find interceptor for bean:" + managedResource.toString());
@@ -85,7 +88,7 @@ public class ZPersistanceMbeanExporter extends AnnotationMBeanExporter {
         }
     }
 
-    private String getBeanName(Object target) {
+    private String getBeanName(@NotNull Object target) {
         if (beanFactory != null) {
             for (Object o : beanFactory.getBeansOfType(target.getClass()).entrySet()) {
                 Map.Entry entry = (Map.Entry) (o);

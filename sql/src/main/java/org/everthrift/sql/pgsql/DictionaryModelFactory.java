@@ -15,6 +15,8 @@ import org.everthrift.appserver.model.XAwareIF;
 import org.everthrift.appserver.utils.ehcache.AbstractCacheEventListener;
 import org.hibernate.criterion.Order;
 import org.hibernate.criterion.Restrictions;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -25,10 +27,12 @@ import java.util.Map;
 
 public abstract class DictionaryModelFactory<ENTITY extends DaoEntityIF> implements InitializingBean {
 
+    @Nullable
     private PgSqlModelFactory<Integer, ENTITY, TException> factory;
 
     protected final String REMOVE_BY_ID;
 
+    @NotNull
     protected final String KEY;
 
     protected final Order orderBy;
@@ -56,6 +60,7 @@ public abstract class DictionaryModelFactory<ENTITY extends DaoEntityIF> impleme
         }
     }
 
+    @Nullable
     private volatile EntitiesHolder<ENTITY> entities;
 
     private final static long refreshInterval = 10 * 1000;
@@ -67,6 +72,7 @@ public abstract class DictionaryModelFactory<ENTITY extends DaoEntityIF> impleme
     @Autowired
     protected CacheManager cacheManager;
 
+    @Nullable
     protected CacheLoader loader;
 
     protected DictionaryModelFactory(Class<ENTITY> cls, String tableName) {
@@ -90,7 +96,8 @@ public abstract class DictionaryModelFactory<ENTITY extends DaoEntityIF> impleme
         return getFullTable().get(id);
     }
 
-    public Map<Integer, ENTITY> findByIds(Collection<Integer> ids) {
+    @NotNull
+    public Map<Integer, ENTITY> findByIds(@NotNull Collection<Integer> ids) {
         final TIntObjectHashMap<ENTITY> map = getFullTable();
         final Map<Integer, ENTITY> ret = Maps.newHashMap();
         for (Integer i : ids) {
@@ -104,6 +111,7 @@ public abstract class DictionaryModelFactory<ENTITY extends DaoEntityIF> impleme
         return _getFullTable().list;
     }
 
+    @NotNull
     protected XAwareIF<Integer, ENTITY> getAwareAdapter(Void m) {
         throw new NotImplementedException();
     }
@@ -112,6 +120,7 @@ public abstract class DictionaryModelFactory<ENTITY extends DaoEntityIF> impleme
         return _getFullTable().map;
     }
 
+    @Nullable
     @SuppressWarnings("unchecked")
     protected EntitiesHolder<ENTITY> _getFullTable() {
         if (entities == null || needRefresh(System.currentTimeMillis())) {
@@ -138,6 +147,7 @@ public abstract class DictionaryModelFactory<ENTITY extends DaoEntityIF> impleme
         entities = null;
     }
 
+    @Nullable
     public ENTITY delete(Integer id) {
         if (!hasKey(id)) {
             return null;
@@ -151,12 +161,14 @@ public abstract class DictionaryModelFactory<ENTITY extends DaoEntityIF> impleme
         return result;
     }
 
-    public ENTITY update(ENTITY entity) {
+    @NotNull
+    public ENTITY update(@NotNull ENTITY entity) {
         final ENTITY result = factory.updateEntity(entity);
         invalidateCache();
         return result;
     }
 
+    @Nullable
     protected EntitiesHolder<ENTITY> createEntitiesHolder(TIntObjectHashMap<ENTITY> map, List<ENTITY> list) {
         return new EntitiesHolder<ENTITY>(map, list, null);
     }
@@ -173,6 +185,7 @@ public abstract class DictionaryModelFactory<ENTITY extends DaoEntityIF> impleme
 
         loader = new CacheLoader() {
 
+            @NotNull
             @Override
             public CacheLoader clone(Ehcache arg0) throws CloneNotSupportedException {
                 throw new CloneNotSupportedException();
@@ -182,6 +195,7 @@ public abstract class DictionaryModelFactory<ENTITY extends DaoEntityIF> impleme
             public void dispose() throws CacheException {
             }
 
+            @NotNull
             @Override
             public String getName() {
                 return CACHE_NAME + "Loader";
@@ -196,11 +210,13 @@ public abstract class DictionaryModelFactory<ENTITY extends DaoEntityIF> impleme
             public void init() {
             }
 
+            @Nullable
             @Override
             public Object load(Object arg0) throws CacheException {
                 return load(arg0, null);
             }
 
+            @Nullable
             @Override
             public Object load(Object arg0, Object arg1) {
                 final List<ENTITY> list = factory.getDao().findByCriteria(Restrictions.sqlRestriction("true"),
@@ -214,11 +230,13 @@ public abstract class DictionaryModelFactory<ENTITY extends DaoEntityIF> impleme
                 return createEntitiesHolder(tmap, list);
             }
 
+            @NotNull
             @Override
             public Map loadAll(Collection arg0) {
                 throw new RuntimeException("not implemented");
             }
 
+            @NotNull
             @Override
             public Map loadAll(Collection arg0, Object arg1) {
                 throw new RuntimeException("not implemented");

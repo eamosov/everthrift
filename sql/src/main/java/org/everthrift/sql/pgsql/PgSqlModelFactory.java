@@ -10,6 +10,7 @@ import org.everthrift.utils.Pair;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Qualifier;
 
 import java.io.Serializable;
@@ -21,8 +22,9 @@ public class PgSqlModelFactory<PK extends Serializable, ENTITY extends DaoEntity
         super(cache, entityClass);
     }
 
+    @NotNull
     @Override
-    public final ENTITY insertEntity(ENTITY e) throws UniqueException {
+    public final ENTITY insertEntity(@NotNull ENTITY e) throws UniqueException {
         final ENTITY ret = getDao().save(e).first;
         _invalidateEhCache((PK) ret.getPk(), InvalidateCause.INSERT);
 
@@ -31,8 +33,9 @@ public class PgSqlModelFactory<PK extends Serializable, ENTITY extends DaoEntity
         return ret;
     }
 
+    @NotNull
     @Override
-    public final ENTITY updateEntity(ENTITY e) throws UniqueException {
+    public final ENTITY updateEntity(@NotNull ENTITY e) throws UniqueException {
         final ENTITY before;
 
         final Session session = getDao().getCurrentSession();
@@ -62,7 +65,7 @@ public class PgSqlModelFactory<PK extends Serializable, ENTITY extends DaoEntity
     }
 
     @Override
-    public final void deleteEntity(ENTITY e) throws E {
+    public final void deleteEntity(@NotNull ENTITY e) throws E {
         final PK pk = (PK) e.getPk();
         final ENTITY _e = fetchEntityById(pk);
         if (_e == null) {

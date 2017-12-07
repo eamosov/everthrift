@@ -5,6 +5,8 @@ import org.apache.thrift.protocol.TProtocolFactory;
 import org.everthrift.appserver.controller.DefaultTProtocolSupport;
 import org.everthrift.appserver.controller.ThriftProcessor;
 import org.everthrift.clustering.MessageWrapper;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.jgroups.blocks.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +32,8 @@ public class JGroupsThriftAdapter implements InitializingBean {
 
     private ThriftProcessor thriftProcessor;
 
-    public Object handleIn(Message<MessageWrapper> m) {
+    @Nullable
+    public Object handleIn(@NotNull Message<MessageWrapper> m) {
 
         log.debug("handleIn: {}, adapter={}, processor={}", new Object[]{m, this, thriftProcessor});
 
@@ -51,7 +54,8 @@ public class JGroupsThriftAdapter implements InitializingBean {
         }
     }
 
-    public Object handleOut(Message<MessageWrapper> m) throws Exception {
+    @Nullable
+    public Object handleOut(@NotNull Message<MessageWrapper> m) throws Exception {
 
         log.debug("handleOut: {}, adapter={}, processor={}", new Object[]{m, this, thriftProcessor});
 

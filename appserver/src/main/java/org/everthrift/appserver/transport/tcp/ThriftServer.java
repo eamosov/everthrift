@@ -8,6 +8,8 @@ import org.apache.thrift.transport.TFramedTransport;
 import org.apache.thrift.transport.TServerSocket;
 import org.apache.thrift.transport.TTransportException;
 import org.everthrift.appserver.controller.ThriftProcessor;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -40,6 +42,7 @@ public class ThriftServer implements SmartLifecycle {
 
     private TServerSocket trans;
 
+    @Nullable
     private Thread thread;
 
     public ThriftServer(ApplicationContext context, TProtocolFactory protocolFactory, RpcSyncTcpRegistry registry) {
@@ -130,7 +133,7 @@ public class ThriftServer implements SmartLifecycle {
     }
 
     @Override
-    public void stop(Runnable callback) {
+    public void stop(@NotNull Runnable callback) {
         stop();
         callback.run();
     }

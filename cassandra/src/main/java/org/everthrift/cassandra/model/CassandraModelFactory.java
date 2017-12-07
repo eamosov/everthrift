@@ -45,6 +45,7 @@ import org.everthrift.cassandra.com.datastax.driver.mapping.NotModifiedException
 import org.everthrift.thrift.TFunction;
 import org.everthrift.utils.Pair;
 import org.everthrift.utils.tg.TimestampGenerator;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.CollectionUtils;
 
@@ -173,6 +174,7 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
         }
     }
 
+    @NotNull
     @Override
     public final Class<ENTITY> getEntityClass() {
         return entityClass;
@@ -419,16 +421,18 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
         return mapper.toString();
     }
 
+    @NotNull
     @Override
-    public ENTITY insertEntity(ENTITY e) throws UniqueException {
+    public ENTITY insertEntity(@NotNull ENTITY e) throws UniqueException {
         setCreatedAt(e, timestampGenerator.next());
         putEntity(e, false, InvalidateCause.INSERT);
         localEventBus.postEntityEvent(insertEntityEvent(e));
         return e;
     }
 
+    @NotNull
     @Override
-    public ENTITY updateEntity(ENTITY e) throws UniqueException {
+    public ENTITY updateEntity(@NotNull ENTITY e) throws UniqueException {
         setUpdatedAt(e, timestampGenerator.next());
         putEntity(e, true, InvalidateCause.UPDATE);
         localEventBus.postEntityEvent(updateEntityEvent(null, e));
@@ -436,7 +440,7 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
     }
 
     @Override
-    public void deleteEntity(ENTITY e) {
+    public void deleteEntity(@NotNull ENTITY e) {
         mapper.delete(extractCompaundPk((PK) e.getPk()));
         invalidate((PK) e.getPk(), InvalidateCause.DELETE);
     }
@@ -557,7 +561,7 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
     }
 
     @Override
-    public boolean lazyLoad(Registry r, XAwareIF<PK, ENTITY> m) {
+    public boolean lazyLoad(@NotNull Registry r, @NotNull XAwareIF<PK, ENTITY> m) {
         if (m.isSetId()) {
             return r.add(asyncLazyLoader, m);
         } else {
@@ -566,7 +570,7 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
     }
 
     @Override
-    public boolean lazyLoad(Registry r, XAwareIF<PK, ENTITY> m, Object entity, String propertyName) {
+    public boolean lazyLoad(@NotNull Registry r, @NotNull XAwareIF<PK, ENTITY> m, Object entity, String propertyName) {
         if (m.isSetId()) {
             return r.addWithUnique(asyncLazyLoader, m, new UniqKey(entity, propertyName));
         } else {
@@ -575,7 +579,7 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
     }
 
     @Override
-    public boolean lazyLoad(Registry r, XAwareIF<PK, ENTITY> m, Object uniqueKey) {
+    public boolean lazyLoad(@NotNull Registry r, @NotNull XAwareIF<PK, ENTITY> m, Object uniqueKey) {
         if (m.isSetId()) {
             return r.addWithUnique(asyncLazyLoader, m, uniqueKey);
         } else {

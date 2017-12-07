@@ -8,6 +8,8 @@ import org.everthrift.appserver.scheduling.context.SettableTriggerContext;
 import org.everthrift.appserver.scheduling.context.SettableTriggerContextImpl;
 import org.everthrift.appserver.scheduling.context.TriggerContextAccessor;
 import org.everthrift.utils.ClassUtils;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -77,6 +79,7 @@ public class ZooTriggerContextAccessorImpl implements TriggerContextAccessor {
         }
     }
 
+    @Nullable
     @Override
     public SettableTriggerContext get() throws ContextAccessError {
         if (isDynamic) {
@@ -95,7 +98,7 @@ public class ZooTriggerContextAccessorImpl implements TriggerContextAccessor {
     }
 
     @Override
-    public boolean update(SettableTriggerContext ctx) throws ContextAccessError {
+    public boolean update(@NotNull SettableTriggerContext ctx) throws ContextAccessError {
 
         final ZooData zooData = new ZooData();
         zooData.lastScheduledExecutionTime = ctx.lastScheduledExecutionTime();
@@ -109,7 +112,7 @@ public class ZooTriggerContextAccessorImpl implements TriggerContextAccessor {
                            .withVersion((int) ((SettableTriggerContextImpl) ctx).getSerial())
                            .forPath(factory.path(taskName), factory.gson.toJson(zooData).getBytes());
             return true;
-        } catch (KeeperException.BadVersionException | KeeperException.NoNodeException e) {
+        } catch (@NotNull KeeperException.BadVersionException | KeeperException.NoNodeException e) {
             return false;
         } catch (Exception e) {
             throw new ContextAccessError(e);
@@ -117,7 +120,7 @@ public class ZooTriggerContextAccessorImpl implements TriggerContextAccessor {
     }
 
     @Override
-    public void updateLastCompletionTime(Date time) throws ContextAccessError {
+    public void updateLastCompletionTime(@NotNull Date time) throws ContextAccessError {
 
 
         boolean badVersion;

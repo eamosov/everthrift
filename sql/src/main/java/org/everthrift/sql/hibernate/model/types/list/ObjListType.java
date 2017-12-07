@@ -7,6 +7,8 @@ import com.google.gson.GsonBuilder;
 import org.apache.thrift.TBase;
 import org.everthrift.appserver.utils.thrift.GsonSerializer;
 import org.hibernate.HibernateException;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -18,6 +20,7 @@ import java.util.stream.Collectors;
  */
 public abstract class ObjListType<T> extends JsonbListType {
 
+    @NotNull
     protected abstract Class<T> getStructClass();
 
     private final Constructor<T> copyConstructor;
@@ -38,8 +41,9 @@ public abstract class ObjListType<T> extends JsonbListType {
         }
     }
 
+    @Nullable
     @Override
-    public Object deepCopy(Object value) throws HibernateException {
+    public Object deepCopy(@Nullable Object value) throws HibernateException {
 
         if (value == null) {
             return null;
@@ -48,7 +52,7 @@ public abstract class ObjListType<T> extends JsonbListType {
         return ((List<T>) value).stream().map(i -> {
             try {
                 return copyConstructor.newInstance(i);
-            } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+            } catch (@NotNull InstantiationException | IllegalAccessException | InvocationTargetException e) {
                 throw Throwables.propagate(e);
             }
         }).collect(Collectors.toList());

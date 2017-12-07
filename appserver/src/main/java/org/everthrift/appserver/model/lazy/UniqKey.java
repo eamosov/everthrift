@@ -1,5 +1,7 @@
 package org.everthrift.appserver.model.lazy;
 
+import org.jetbrains.annotations.Nullable;
+
 /**
  * Created by fluder on 30.08.16.
  */
@@ -24,7 +26,7 @@ public class UniqKey {
     }
 
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(@Nullable Object obj) {
         if (this == obj) {
             return true;
         }
