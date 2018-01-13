@@ -4,6 +4,7 @@ import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.everthrift.sql.hibernate.model.types.CustomUserType;
+import org.everthrift.utils.TypeUtils;
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.jetbrains.annotations.NotNull;
@@ -46,7 +47,7 @@ public abstract class JsonbMapType implements CustomUserType {
             return false;
         }
 
-        return pd.getReadMethod().getGenericReturnType().toString().equals(getMapType().toString());
+        return TypeUtils.isAssignable(getMapType(), pd.getReadMethod().getGenericReturnType());
     }
 
 

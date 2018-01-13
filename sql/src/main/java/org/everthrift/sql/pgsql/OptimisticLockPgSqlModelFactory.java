@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.ConcurrencyFailureException;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import javax.persistence.OptimisticLockException;
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
@@ -116,7 +117,7 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable, E
             final Pair<ENTITY, Long> deleted = OptimisticLockModelFactoryIF.optimisticUpdate((count) -> {
                 try {
                     return tryOptimisticDelete(id);
-                } catch (@NotNull StaleStateException | ConcurrencyFailureException e) {
+                } catch (@NotNull StaleStateException | ConcurrencyFailureException | OptimisticLockException e) {
                     if (TransactionSynchronizationManager.isActualTransactionActive()) {
                         throw e;
                     }
@@ -282,10 +283,10 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable, E
             } catch (TException e) {
                 log.warn("tryOptimisticUpdate ends with exception of type {}", e.getClass().getSimpleName());
                 throw e;
-            } catch (@NotNull StaleStateException | ConcurrencyFailureException e) {
+            } catch (@NotNull StaleStateException | ConcurrencyFailureException | OptimisticLockException e) {
                 throw e;
             } catch (Exception e) {
-                log.warn("tryOptimisticUpdate ends with exception of type {}", e.getClass().getSimpleName());
+                log.error("tryOptimisticUpdate ends with exception", e);
                 throw Throwables.propagate(e);
             }
 

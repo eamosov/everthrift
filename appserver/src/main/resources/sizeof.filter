@@ -31,6 +31,5 @@ org.hibernate.cache.internal.CacheKeyImplementation.entityMode
 org.terracotta.cache.serialization.SerializedEntry.tcClazz
 com.tc.object.TCObjectSelfImpl.tcClazz
 
-
-
+ru.intterra.thrift.types.TPolygon
 

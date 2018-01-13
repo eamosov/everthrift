@@ -12,7 +12,6 @@ import org.everthrift.sql.hibernate.model.types.LongDateType;
 import org.everthrift.sql.hibernate.model.types.LongIntervalType;
 import org.everthrift.sql.hibernate.model.types.LongListType;
 import org.everthrift.sql.hibernate.model.types.LongTimestampType;
-import org.everthrift.sql.hibernate.model.types.PointType;
 import org.everthrift.sql.hibernate.model.types.ShortListType;
 import org.everthrift.sql.hibernate.model.types.StringListType;
 import org.everthrift.sql.hibernate.model.types.StringSetType;
@@ -419,12 +418,6 @@ public class Column {
         } else if (jdbcType == Types.OTHER && columnType.contains("box2d") && BoxType.isCompatible(javaClass)) {
 
             hibernateType = CustomTypeFactory.create(javaClass, BoxType.class).getCanonicalName();
-
-        } else if (jdbcType == Types.OTHER && columnType.contains("geometry") && PointType.isCompatible(javaClass)) {
-
-            hibernateType = CustomTypeFactory.create(javaClass, PointType.class).getCanonicalName();
-            customRead = "st_astext(" + columnName + ")";
-            customWrite = "?::geometry";
 
         } else if (jdbcType == Types.OTHER && columnType.contains("jsonb")) {
 

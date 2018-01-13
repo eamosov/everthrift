@@ -8,6 +8,7 @@ import org.everthrift.appserver.model.UniqueException;
 import org.everthrift.utils.Pair;
 import org.hibernate.CacheMode;
 import org.hibernate.Criteria;
+import org.hibernate.FlushMode;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.Query;
@@ -99,17 +100,23 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
     private static class TxWrap {
         @NotNull
         private final Transaction tx;
+        private final Session session;
         private final boolean isActive;
 
-        TxWrap(@NotNull Transaction tx) {
-            this.tx = tx;
+        TxWrap(@NotNull Session session) {
+            this.session = session;
+            this.tx = session.getTransaction();
             this.isActive = tx.isActive();
         }
 
         @NotNull
-        TxWrap begin() {
+        TxWrap begin(boolean readOnly) {
             if (!isActive) {
                 tx.begin();
+                if (readOnly) {
+                    session.setDefaultReadOnly(true);
+                    session.setHibernateFlushMode(FlushMode.MANUAL);
+                }
             }
             return this;
         }
@@ -126,8 +133,8 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
     }
 
     @NotNull
-    private TxWrap beginTransaction(@NotNull Session session) {
-        return new TxWrap(session.getTransaction()).begin();
+    private TxWrap beginTransaction(@NotNull Session session, boolean readOnly) {
+        return new TxWrap(session).begin(readOnly);
     }
 
     public Executor getExecutor() {
@@ -194,7 +201,7 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
 
             tx(session -> {
                 session.persist(e);
-            });
+            }, false);
 
         } catch (Exception e1) {
             throw convert(e1);
@@ -226,7 +233,7 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
                     }
                     return Pair.create(ret, EntityInterceptor.INSTANCE.isDirty(e));
                 }
-            });
+            }, false);
         } catch (Exception e1) {
             throw convert(e1);
         }
@@ -259,15 +266,15 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
                     }
                     return Pair.create(ret, EntityInterceptor.INSTANCE.isDirty(e));
                 }
-            });
+            }, false);
         } catch (Exception e1) {
             throw convert(e1);
         }
     }
 
-    private void tx(@NotNull Consumer<Session> r) {
+    private void tx(@NotNull Consumer<Session> r, boolean readOnly) {
         final Session session = getCurrentSession();
-        final TxWrap tx = beginTransaction(session);
+        final TxWrap tx = beginTransaction(session, readOnly);
         try {
             r.accept(session);
             tx.commit();
@@ -277,9 +284,9 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
         }
     }
 
-    public  <R> R tx(@NotNull Function<Session, R> r) {
+    public <R> R tx(@NotNull Function<Session, R> r, boolean readOnly) {
         final Session session = getCurrentSession();
-        final TxWrap tx = beginTransaction(session);
+        final TxWrap tx = beginTransaction(session, readOnly);
         try {
             final R result = r.apply(session);
             tx.commit();
@@ -299,7 +306,7 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
             }
 
             session.delete(e);
-        });
+        }, false);
     }
 
     @Override
@@ -309,7 +316,7 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
             session.createQuery(
                 "DELETE FROM " + ((AbstractEntityPersister) sessionFactory.getClassMetadata(entityClass)).getEntityName())
                    .executeUpdate();
-        });
+        }, false);
     }
 
     public int deleteByCriteria(Criterion criterion) {
@@ -323,7 +330,7 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
             }
 
             return 0;
-        });
+        }, false);
     }
 
     @Override
@@ -338,7 +345,7 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
             }
             criteria.setProjection(projectionList);
             return criteria.uniqueResult();
-        });
+        }, true);
     }
 
     @NotNull
@@ -388,13 +395,13 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
             }
 
             return Lists.newArrayList(criteria.list());
-        });
+        }, true);
     }
 
     @Override
-    public <R> R withSession(@NotNull Function<Session, R> r) {
+    public <R> R withSession(@NotNull Function<Session, R> r, boolean readOnly) {
         try {
-            return tx(r);
+            return tx(r, readOnly);
         } catch (Exception e) {
             throw convert(e);
         }
@@ -436,7 +443,7 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
             }
 
             return q.list();
-        });
+        }, true);
     }
 
     @Override
@@ -489,7 +496,7 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
                         sessionFactory.getCache().evictEntity(entityClass, evictId);
                     }
                 }
-            });
+            }, false);
         } catch (Exception e) {
             throw convert(e);
         }

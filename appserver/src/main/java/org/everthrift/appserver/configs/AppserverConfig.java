@@ -13,6 +13,8 @@ import org.everthrift.utils.tg.AtomicMonotonicTimestampGenerator;
 import org.everthrift.utils.tg.TimestampGenerator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -40,6 +42,8 @@ import java.util.concurrent.Executor;
 @EnableScheduling
 @EnableAsync
 public class AppserverConfig implements SchedulingConfigurer, AsyncConfigurer {
+
+    private static final Logger log = LoggerFactory.getLogger(AppserverConfig.class);
 
     public AppserverConfig() {
 
@@ -72,7 +76,16 @@ public class AppserverConfig implements SchedulingConfigurer, AsyncConfigurer {
     @NotNull
     @Bean
     public ThreadPoolTaskExecutor callerRunsBoundQueueExecutor() {
-        final ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        final ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor(){
+            @Override
+            public Thread createThread(Runnable runnable) {
+                final Thread thread = super.createThread(runnable);
+                thread.setUncaughtExceptionHandler((t, e) -> {
+                    log.error("UncaughtException", e);
+                });
+                return thread;
+            }
+        };
         executor.setCorePoolSize(5);
         executor.setMaxPoolSize(20);
         executor.setKeepAliveSeconds(5);
@@ -83,7 +96,16 @@ public class AppserverConfig implements SchedulingConfigurer, AsyncConfigurer {
     @NotNull
     @Bean
     public ThreadPoolTaskExecutor unboundQueueExecutor() {
-        final ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        final ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor(){
+            @Override
+            public Thread createThread(Runnable runnable) {
+                final Thread thread = super.createThread(runnable);
+                thread.setUncaughtExceptionHandler((t, e) -> {
+                    log.error("UncaughtException", e);
+                });
+                return thread;
+            }
+        };
         executor.setCorePoolSize(10);
         executor.setMaxPoolSize(10);
         return executor;
@@ -92,7 +114,16 @@ public class AppserverConfig implements SchedulingConfigurer, AsyncConfigurer {
     @NotNull
     @Bean
     public ThreadPoolTaskScheduler myScheduler() {
-        final ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
+        final ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler(){
+            @Override
+            public Thread createThread(Runnable runnable) {
+                final Thread thread = super.createThread(runnable);
+                thread.setUncaughtExceptionHandler((t, e) -> {
+                    log.error("UncaughtException", e);
+                });
+                return thread;
+            }
+        };
         scheduler.setPoolSize(10);
         return scheduler;
     }

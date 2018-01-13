@@ -227,7 +227,9 @@ public abstract class AbstractCachedModelFactory<PK, ENTITY, E extends Exception
 
     public void invalidate(@NotNull PK id, @NotNull InvalidateCause invalidateCause) {
         if (cache != null) {
-            log.debug("invalidate {}/{}", getEntityClass().getSimpleName(), id);
+            if (log.isTraceEnabled()) {
+                log.trace("invalidate {}/{}", getEntityClass().getSimpleName(), id);
+            }
             cache.remove(id);
         }
     }

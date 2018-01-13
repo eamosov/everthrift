@@ -73,7 +73,7 @@ public interface AbstractDao<K, V extends DaoEntityIF> {
     @NotNull
     public CompletableFuture<V> findFirstByCriteriaAsync(Criterion criterion, Order order);
 
-    public <R> R withSession(Function<Session, R> r);
+    public <R> R withSession(Function<Session, R> r, boolean readOnly);
 
     public <X> List<X> findBySQLQuery(String query, Map<String, Type> mapping, ResultTransformer resultTransformer, Object... params);
 
