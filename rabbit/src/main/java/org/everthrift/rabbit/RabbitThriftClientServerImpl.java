@@ -117,6 +117,7 @@ public class RabbitThriftClientServerImpl implements RabbitThriftClientIF {
         this.rabbitThriftClient = new RabbitThriftClientImpl(cf);
         this.admin = new RabbitAdmin(cf);
         // this.admin.setIgnoreDeclarationExceptions(true);
+
     }
 
     @PostConstruct
@@ -136,6 +137,7 @@ public class RabbitThriftClientServerImpl implements RabbitThriftClientIF {
 
     @PreDestroy
     public synchronized void destroy() throws Exception {
+
         for (SimpleMessageListenerContainer l : listeners) {
             l.stop();
             l.destroy();
@@ -144,6 +146,8 @@ public class RabbitThriftClientServerImpl implements RabbitThriftClientIF {
     }
 
     private synchronized SimpleMessageListenerContainer addListener(final String serviceName) {
+
+        log.debug("addListener ({})", serviceName);
 
         final String exchangeName = rabbitThriftClient.getExchangeName(serviceName);
         final String queueName = getQueueName(serviceName);
@@ -161,8 +165,12 @@ public class RabbitThriftClientServerImpl implements RabbitThriftClientIF {
             log.debug("Exchange '{}' has been allready existed");
         }
 
+        final int consumers = Integer.parseInt(context.getEnvironment()
+                                                      .getProperty("rabbit." + serviceName + ".consumers", "1"));
+
+
         final SimpleMessageListenerContainer l = (SimpleMessageListenerContainer) context.getBean("thriftRabbitMessageListener",
-                                                                                                  queue.getName(), cf, listener);
+                                                                                                  queue.getName(), cf, listener, consumers);
         listeners.add(l);
         return l;
     }

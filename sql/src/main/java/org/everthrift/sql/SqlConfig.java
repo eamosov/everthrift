@@ -107,7 +107,7 @@ public class SqlConfig {
 
         final GenericObjectPool<PoolableConnection> connectionPool = new GenericObjectPool<>(poolableConnectionFactory);
         connectionPool.setTestOnBorrow(true);
-        connectionPool.setMaxTotal(16);
+        connectionPool.setMaxTotal(30);
         connectionPool.setMaxWaitMillis(5000);
         poolableConnectionFactory.setPool(connectionPool);
         PoolingDataSource<PoolableConnection> dataSource = new PoolingDataSource<>(connectionPool);

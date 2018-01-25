@@ -14,12 +14,17 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.support.converter.MessageConverter;
+import org.springframework.jms.core.JmsTemplate;
 
 import java.lang.reflect.Proxy;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class RabbitThriftClientImpl implements RabbitThriftClientIF {
 
     private RabbitTemplate rabbitTemplate;
+
+    private static ExecutorService sendExecutor = Executors.newSingleThreadExecutor();
 
     private TProtocolFactory protocolFactory = new TBinaryProtocol.Factory();
 
@@ -63,7 +68,9 @@ public class RabbitThriftClientImpl implements RabbitThriftClientIF {
 
         return (T) Proxy.newProxyInstance(ThriftProxyFactory.class.getClassLoader(), new Class[]{cls},
                                           new ServiceIfaceProxy(cls, ii -> {
-                                              rabbitTemplate.convertAndSend(getExchangeName(ii.serviceName), ii.methodName, ii);
+                                              sendExecutor.execute(() -> {
+                                                  rabbitTemplate.convertAndSend(getExchangeName(ii.serviceName), ii.methodName, ii);
+                                              });
                                               throw new NullResult();
                                           }));
     }

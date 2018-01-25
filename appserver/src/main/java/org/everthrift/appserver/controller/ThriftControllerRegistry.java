@@ -53,6 +53,8 @@ public abstract class ThriftControllerRegistry implements InitializingBean {
 
     private void scanThriftControllers(@NotNull Class<? extends Annotation> annotationType) {
 
+        log.debug("scanThriftControllers ({})", annotationType.getSimpleName());
+
         for (String beanName : ImmutableSet.copyOf(beanDefinitionHolder.getBeanDefinitionRegistry()
                                                                        .getBeanDefinitionNames())) {
             final BeanDefinition beanDefinition = beanDefinitionHolder.getBeanDefinitionRegistry()
