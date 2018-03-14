@@ -150,7 +150,7 @@ public class ThriftProcessor implements TProcessor {
                 }
             } catch (AsyncAnswer e) {
                 return null;
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 log.error("Exception while handle thrift request", e);
                 try {
                     return tps.result(e, controllerInfo);
@@ -298,8 +298,8 @@ public class ThriftProcessor implements TProcessor {
                     return result((TApplicationException) o);
                 } else if (o instanceof TProtocolException) {
                     return result(new TApplicationException(TApplicationException.PROTOCOL_ERROR, ((Exception) o).getMessage()));
-                } else if (o instanceof Exception && !(o instanceof TException)) {
-                    return result(new TApplicationException(TApplicationException.INTERNAL_ERROR, ((Exception) o).getMessage()));
+                } else if (o instanceof Throwable && !(o instanceof TException)) {
+                    return result(new TApplicationException(TApplicationException.INTERNAL_ERROR, ((Throwable) o).getMessage()));
                 } else {
                     final TBase result;
                     try {

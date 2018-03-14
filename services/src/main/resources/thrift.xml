@@ -34,13 +34,13 @@
         </exec>
 
         <exec executable="${thrift.binary}" dir="src/main" failonerror="true">
-            <arg line="-nowarn --gen swift:async_clients -I thrift-includes/META-INF/thrift/ -I thrift"/>
+            <arg line="-nowarn --gen js:ws -I thrift-includes/META-INF/thrift/ -I thrift"/>
             <arg line="-o ."/>
             <arg line="${file}"/>
         </exec>
 
         <exec executable="${thrift.binary}" dir="src/main" failonerror="true">
-            <arg line="-nowarn --gen js:ws -I thrift-includes/META-INF/thrift/ -I thrift"/>
+            <arg line="-nowarn --gen cocoarealm:knock_async -I thrift-includes/META-INF/thrift/ -I thrift"/>
             <arg line="-o ."/>
             <arg line="${file}"/>
         </exec>

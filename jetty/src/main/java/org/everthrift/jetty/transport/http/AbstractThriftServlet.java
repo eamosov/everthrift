@@ -260,8 +260,8 @@ public abstract class AbstractThriftServlet extends HttpServlet implements Initi
                         return result((TApplicationException) o);
                     } else if (o instanceof TProtocolException) {
                         return result(new TApplicationException(TApplicationException.PROTOCOL_ERROR, ((Exception) o).getMessage()));
-                    } else if (o instanceof Exception && !(o instanceof TException)) {
-                        return result(new TApplicationException(TApplicationException.INTERNAL_ERROR, ((Exception) o).getMessage()));
+                    } else if (o instanceof Throwable && !(o instanceof TException)) {
+                        return result(new TApplicationException(TApplicationException.INTERNAL_ERROR, ((Throwable) o).getMessage()));
                     } else {
                         final TBase result;
                         try {

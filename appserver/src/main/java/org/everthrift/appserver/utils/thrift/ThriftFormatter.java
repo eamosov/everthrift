@@ -1,10 +1,13 @@
 package org.everthrift.appserver.utils.thrift;
 
+import com.google.common.base.CaseFormat;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Shorts;
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.thrift.TBase;
 import org.apache.thrift.TDoc;
 import org.apache.thrift.TEnum;
@@ -69,14 +72,48 @@ public class ThriftFormatter {
         return sb.toString();
     }
 
+    public static class MethodNameComparator implements Comparator<String> {
+
+        private static final Pattern pat = Pattern.compile("^((get)|(list)|(save)|(delete)|(undelete)|(set))(.+)$");
+
+        private static final Map<String, Integer> orders = Maps.newHashMap();
+
+        static {
+            orders.put("list", 1);
+            orders.put("get", 2);
+            orders.put("save", 3);
+            orders.put("delete", 4);
+        }
+
+        private String transform(String input) {
+            final Matcher m = pat.matcher(input);
+            if (m.matches()) {
+                final String type = m.group(1).equals("list") ? m.group(8).replaceAll("((s)|(es))$", "") : m.group(8);
+                return type + orders.getOrDefault(m.group(1), 9);
+            } else {
+                return input;
+            }
+        }
+
+        @Override
+        public int compare(String o1, String o2) {
+            return transform(o1).compareTo(transform(o2));
+        }
+    }
+
     @NotNull
     public String formatService(String serviceName, @NotNull Collection<ThriftControllerInfo> cInfos) {
         final StringBuilder sb = new StringBuilder();
 
+        final List<ThriftControllerInfo> sorted = Lists.newArrayList(cInfos);
+
+        Collections.sort(sorted, Comparator.comparing(ThriftControllerInfo::getMethodName, new MethodNameComparator()));
+
         sb.append("<div class=\"service\" style=\"padding-bottom:10px;\">\n");
         sb.append(String.format("<span><span class=\"pl-k\">service</span> <span class=\"pl-en\">%s</span> {</span>\n", serviceName));
         sb.append("<div class=\"methods\" style=\"padding: 5px 0px 0px 20px;\">\n");
-        for (ThriftControllerInfo i : cInfos) {
+
+        for (ThriftControllerInfo i : sorted) {
             sb.append("<div class=\"method\" style=\"padding-bottom: 5px;\">\n");
             sb.append("<div class=\"pl-c\">" + getTDocMethodComment(i.getArgCls()) + "</div>\n");
             sb.append(formatMethod(i.getMethodName(), i.getArgCls(), i.getResultCls()));
@@ -241,6 +278,44 @@ public class ThriftFormatter {
     }
 
     @NotNull
+    public String formatTEnumCsv(@NotNull Class<? extends TEnum> cls) throws ClassNotFoundException {
+        if (!TEnum.class.isAssignableFrom(cls)) {
+            throw new ClassNotFoundException(cls.getCanonicalName());
+        }
+
+        final List<TEnum> values = Lists.newArrayList(cls.getEnumConstants());
+        Collections.sort(values, (o1, o2) -> (Ints.compare(o1.getValue(), o2.getValue())));
+        final StringBuilder sb = new StringBuilder();
+
+        sb.append("\"Asset ID\",\"Russian (Russia), ru-RU\",\"English, en\"\n");
+
+        for (TEnum e : values) {
+
+            try {
+                final String id = CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, e.getClass()
+                                                                                          .getSimpleName()) + "_" + ((Enum) e)
+                    .name() + "_LABEL";
+
+                final String doc = Optional
+                    .ofNullable(cls.getField(((Enum) e).name()).getAnnotation(TDoc.class))
+                    .map(TDoc::value)
+                    .orElse("");
+
+                sb.append("\"");
+                sb.append(StringEscapeUtils.escapeCsv(id));
+                sb.append("\",\"");
+                sb.append(StringEscapeUtils.escapeCsv(doc.replaceAll("\\r|\\n", "").trim()));
+                sb.append("\",\"\"\n");
+
+            } catch (NoSuchFieldException e1) {
+                e1.printStackTrace();
+            }
+        }
+
+        return sb.toString();
+    }
+
+    @NotNull
     public String formatTEnum(@NotNull Class<? extends TEnum> cls) throws ClassNotFoundException {
 
         if (!TEnum.class.isAssignableFrom(cls)) {
@@ -335,7 +410,7 @@ public class ThriftFormatter {
         }
 
         if (vmd instanceof SetMetaData) {
-            return "list&lt;" + formatTypeName(((SetMetaData) vmd).elemMetaData, span) + "&gt;";
+            return "set&lt;" + formatTypeName(((SetMetaData) vmd).elemMetaData, span) + "&gt;";
         }
 
         if (vmd instanceof StructMetaData) {

@@ -195,7 +195,7 @@ public class PlainJsonThriftServlet extends HttpServlet {
                     } else if (o instanceof TProtocolException) {
                         return result(TApplicationException.PROTOCOL_ERROR, ((Exception) o).getMessage(), 400);
 
-                    } else if (o instanceof Exception) {
+                    } else if (o instanceof Throwable) {
 
                         final Map<String, PropertyDescriptor> props = ClassUtils.getPropertyDescriptors(o.getClass());
 
@@ -219,7 +219,7 @@ public class PlainJsonThriftServlet extends HttpServlet {
                         }
 
                         if (!(o instanceof TException)) {
-                            return result(code, ((Exception) o).getMessage(), httpCode);
+                            return result(code, ((Throwable) o).getMessage(), httpCode);
                         }
                     }
 

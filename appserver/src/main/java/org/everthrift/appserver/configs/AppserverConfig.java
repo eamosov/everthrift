@@ -179,6 +179,7 @@ public class AppserverConfig implements SchedulingConfigurer, AsyncConfigurer {
 
     @Bean
     public Boolean testMode(@Value("${app.testMode:false}") String value) {
+        log.info("Setting testMode: {}", value);
         return Boolean.parseBoolean(value);
     }
 }

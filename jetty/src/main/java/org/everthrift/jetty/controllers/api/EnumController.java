@@ -36,9 +36,18 @@ public class EnumController {
         try {
             final Class cls = Class.forName(enumClassName, false, EnumController.class.getClassLoader());
 
-            final byte[] services = new ThriftFormatter("/api/").formatTEnum(cls).getBytes(StandardCharsets.UTF_8);
+            final ThriftFormatter tf = new ThriftFormatter("/api/");
 
-            response.setContentType("text/html");
+            final byte[] services;
+
+            if (request.getParameterMap().containsKey("csv")) {
+                services = tf.formatTEnumCsv(cls).getBytes(StandardCharsets.UTF_8);
+                response.setContentType("text/csv");
+            } else {
+                services = tf.formatTEnum(cls).getBytes(StandardCharsets.UTF_8);
+                response.setContentType("text/html");
+            }
+
             response.setContentLength(services.length);
             response.getOutputStream().write(services);
             response.flushBuffer();
