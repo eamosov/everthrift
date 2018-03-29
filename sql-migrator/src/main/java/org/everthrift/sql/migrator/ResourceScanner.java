@@ -6,6 +6,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Set;
@@ -43,7 +45,7 @@ public class ResourceScanner {
         Enumeration<URL> en = classLoader.getResources(rootResourcePath);
 
         if (!en.hasMoreElements()) {
-            throw new IllegalArgumentException("No resources on path \"" + rootResourcePath + "\" were found");
+            return Collections.emptyList();
         }
 
         while (en.hasMoreElements()) {

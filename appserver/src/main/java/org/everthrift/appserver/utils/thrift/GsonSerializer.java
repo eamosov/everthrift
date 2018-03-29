@@ -79,7 +79,7 @@ public class GsonSerializer {
 
             } else if (v instanceof String) {
 
-                jo.add(fieldName, context.serialize(((String) v).replace("%", "%25")));
+                jo.add(fieldName, context.serialize(((String) v)));
 
             } else {
 

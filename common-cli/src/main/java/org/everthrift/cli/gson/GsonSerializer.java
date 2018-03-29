@@ -68,7 +68,7 @@ public class GsonSerializer {
                         && ((Collection) v).iterator().next() instanceof TBase) {
                         jo.add(f.getFieldName(), context.serialize(v, tBaseCollection));
                     } else if (v instanceof String) {
-                        jo.add(f.getFieldName(), context.serialize(((String) v).replace("%", "%25")));
+                        jo.add(f.getFieldName(), context.serialize(((String) v)));
                     } else {
                         jo.add(f.getFieldName(), context.serialize(v));
                     }
