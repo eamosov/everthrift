@@ -63,13 +63,19 @@ public class ThriftTraversal {
     }
 
     @NotNull
-    public static <T extends TBase> Set<T> visitChildsOfType(final Object obj, @NotNull final Class<T> type, @NotNull final Function<T, Void> visitHandler) {
+    public static <T extends TBase> Set<T> visitChildsOfType(final Object obj,
+                                                             @NotNull final Class<T> type,
+                                                             final boolean deep,
+                                                             @NotNull final Function<T, Void> visitHandler) {
         final Set<T> visited = new ReferenceOpenHashSet<T>();
-        visitChildsOfType(visited, obj, type, ThriftUtils.getRootThriftClass(type).first, visitHandler);
+        visitChildsOfType(visited, obj, type, deep, ThriftUtils.getRootThriftClass(type).first, visitHandler);
         return visited;
     }
 
-    private static <T extends TBase> void visitChildsOfType(@NotNull Set<T> visited, @Nullable final Object obj, @NotNull final Class<T> type,
+    private static <T extends TBase> void visitChildsOfType(@NotNull Set<T> visited,
+                                                            @Nullable final Object obj,
+                                                            @NotNull final Class<T> type,
+                                                            final boolean deep,
                                                             @NotNull final Class<? extends TBase> thriftBaseType,
                                                             @NotNull final Function<T, Void> visitHandler) {
 
@@ -99,7 +105,10 @@ public class ThriftTraversal {
                                                                                                                 .getSimpleName(),
                           type.getSimpleName(), thriftBaseType.getSimpleName());
             }
-            return;
+
+            if (!deep) {
+                return;
+            }
         }
 
         if (obj instanceof TBase) {
@@ -115,7 +124,7 @@ public class ThriftTraversal {
                     log.debug("visit field {} of class {}", f, obj.getClass());
                 }
 
-                visitChildsOfType(visited, ((TBase) obj).getFieldValue(f), type, thriftBaseType, visitHandler);
+                visitChildsOfType(visited, ((TBase) obj).getFieldValue(f), type, deep, thriftBaseType, visitHandler);
             }
 
             return;
@@ -129,11 +138,11 @@ public class ThriftTraversal {
             if (obj instanceof RandomAccess) {
                 final List _l = (List) obj;
                 for (int i = 0; i < _l.size(); i++) {
-                    visitChildsOfType(visited, _l.get(i), type, thriftBaseType, visitHandler);
+                    visitChildsOfType(visited, _l.get(i), type, deep, thriftBaseType, visitHandler);
                 }
             } else {
                 for (Object i : ((Collection) obj)) {
-                    visitChildsOfType(visited, i, type, thriftBaseType, visitHandler);
+                    visitChildsOfType(visited, i, type, deep, thriftBaseType, visitHandler);
                 }
             }
 
@@ -144,8 +153,8 @@ public class ThriftTraversal {
             }
 
             for (Map.Entry e : ((Map<?, ?>) obj).entrySet()) {
-                visitChildsOfType(visited, e.getKey(), type, thriftBaseType, visitHandler);
-                visitChildsOfType(visited, e.getValue(), type, thriftBaseType, visitHandler);
+                visitChildsOfType(visited, e.getKey(), type, deep, thriftBaseType, visitHandler);
+                visitChildsOfType(visited, e.getValue(), type, deep, thriftBaseType, visitHandler);
             }
 
             return;
@@ -158,7 +167,7 @@ public class ThriftTraversal {
 
         if (valueMetaData instanceof StructMetaData) {
 
-            if (((StructMetaData) valueMetaData).structClass == type) {
+            if (type.isAssignableFrom(((StructMetaData) valueMetaData).structClass)) {
                 return true;
             }
 

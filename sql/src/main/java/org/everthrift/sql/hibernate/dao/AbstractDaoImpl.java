@@ -362,7 +362,7 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
 
     @SuppressWarnings("unchecked")
     @Override
-    public List<V> findByCriteria(Criterion criterion, @Nullable Projection proj, @Nullable LockMode lockMode, @NotNull List<Order> order, @Nullable Integer limit,
+    public List<V> findByCriteria(Criterion criterion, @Nullable Projection proj, @Nullable LockMode lockMode, @Nullable List<Order> order, @Nullable Integer limit,
                                   @Nullable Integer offset) {
 
         return tx(session -> {

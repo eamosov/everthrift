@@ -8,7 +8,9 @@ import org.apache.thrift.TFieldIdEnum;
 import org.apache.thrift.meta_data.FieldMetaData;
 import org.everthrift.utils.Pair;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
@@ -24,6 +26,9 @@ public class ThriftUtils {
     @SuppressWarnings({"rawtypes", "unchecked"})
     @NotNull
     public static Pair<Class<? extends TBase>, Map<? extends TFieldIdEnum, FieldMetaData>> getRootThriftClass(Class<? extends TBase> cls) {
+
+        if (cls.equals(TBase.class))
+            return Pair.create(TBase.class, Collections.emptyMap());
 
         Reference2ObjectMap<Class, Object> _classes = classes.get();
         Object p = _classes.get(cls);
@@ -107,7 +112,7 @@ public class ThriftUtils {
         }
     }
 
-    @NotNull
+    @Nullable
     public static TFieldIdEnum getFieldId(@NotNull Class<? extends TBase> cls, String name) {
         try {
             return (TFieldIdEnum) Class.forName(cls.getCanonicalName() + "$_Fields")
