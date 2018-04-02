@@ -3,6 +3,7 @@ package org.everthrift.appserver.transport.asynctcp;
 import org.apache.thrift.protocol.TProtocolFactory;
 import org.apache.thrift.transport.TMemoryBuffer;
 import org.apache.thrift.transport.TMemoryInputTransport;
+import org.everthrift.appserver.controller.AbstractThriftController;
 import org.everthrift.appserver.controller.DefaultTProtocolSupport;
 import org.everthrift.appserver.controller.ThriftProcessor;
 import org.everthrift.clustering.MessageWrapper;
@@ -10,57 +11,55 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.InitializingBean;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
 import org.springframework.integration.support.MessageBuilder;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.support.ChannelInterceptor;
+import org.springframework.messaging.support.GenericMessage;
 
 import javax.annotation.Resource;
 
-public class AsyncTcpThriftAdapter implements InitializingBean, ChannelInterceptor {
+public class AsyncTcpThriftAdapter implements ChannelInterceptor {
 
     public static Logger log = LoggerFactory.getLogger(AsyncTcpThriftAdapter.class);
-
-    @Autowired
-    private ApplicationContext context;
-
-    @Autowired
-    private RpcAsyncTcpRegistry registry;
 
     @Resource
     private MessageChannel outChannel;
 
-    private ThriftProcessor tp;
+    private final ThriftProcessor thriftProcessor;
 
     private final TProtocolFactory protocolFactory;
 
-    public AsyncTcpThriftAdapter(TProtocolFactory protocolFactory) {
+    public AsyncTcpThriftAdapter(TProtocolFactory protocolFactory, ThriftProcessor thriftProcessor) {
         this.protocolFactory = protocolFactory;
+        this.thriftProcessor = thriftProcessor;
     }
 
     @Nullable
     public Object handle(@NotNull Message m) {
 
-        log.debug("{}, adapter={}, processor={}", new Object[]{m, this, tp});
+        log.debug("{}, adapter={}, processor={}", new Object[]{m, this, thriftProcessor});
 
         try {
-            return tp.process(new DefaultTProtocolSupport(new MessageWrapper(new TMemoryInputTransport((byte[]) m.getPayload()))
-                                                              .setMessageHeaders(m.getHeaders())
-                                                              .setOutChannel(outChannel),
-                                                          protocolFactory),
-                              null);
+            return thriftProcessor.process(new DefaultTProtocolSupport(new MessageWrapper(new TMemoryInputTransport((byte[]) m
+                                               .getPayload()))
+                                                                           .setMessageHeaders(m.getHeaders()),
+                                                                       protocolFactory) {
+                                               @Override
+                                               public void asyncResult(final Object o, @NotNull final AbstractThriftController controller) {
+
+                                                   final MessageWrapper mw = result(o, controller.getInfo());
+                                                   final GenericMessage<MessageWrapper> s = new GenericMessage<MessageWrapper>(mw, m.getHeaders());
+                                                   outChannel.send(s);
+
+                                                   ThriftProcessor.logEnd(ThriftProcessor.log, controller, msg.name, null, o);
+                                               }
+                                           },
+                                           null);
         } catch (Exception e) {
             log.error("Exception while execution thrift processor:", e);
             return null;
         }
-    }
-
-    @Override
-    public void afterPropertiesSet() throws Exception {
-        tp = ThriftProcessor.create(context, registry);
     }
 
     @Override

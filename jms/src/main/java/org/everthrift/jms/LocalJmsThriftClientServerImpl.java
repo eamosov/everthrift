@@ -104,11 +104,6 @@ public class LocalJmsThriftClientServerImpl implements JmsThriftClientIF {
                                           }));
     }
 
-    @PostConstruct
-    private void postConstruct() {
-        thriftProcessor = ThriftProcessor.create(applicationContext, rpcJmsRegistry);
-    }
-
     @PreDestroy
     private void onDestroy() {
         executor.shutdown();

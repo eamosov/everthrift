@@ -31,8 +31,6 @@ import org.everthrift.utils.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
@@ -55,27 +53,21 @@ import java.util.stream.Collectors;
 import java.util.zip.CRC32;
 import java.util.zip.Checksum;
 
-public abstract class AbstractThriftServlet extends HttpServlet implements InitializingBean {
+public abstract class AbstractThriftServlet extends HttpServlet {
 
     private static final long serialVersionUID = 1L;
 
     private static final Logger log = LoggerFactory.getLogger(AbstractThriftServlet.class);
 
-    @Autowired
-    private ApplicationContext context;
-
-    @Autowired
-    private RpcHttpRegistry registry;
-
-    private ThriftProcessor tp;
+    private final ThriftProcessor thriftProcessor;
 
     protected abstract String getContentType();
 
     protected abstract TProtocolFactory getProtocolFactory();
 
-    //    protected void service(HttpServletRequest req, HttpServletResponse resp)  throws ServletException, IOException {
-    //
-    //    }
+    public AbstractThriftServlet(ThriftProcessor thriftProcessor) {
+        this.thriftProcessor = thriftProcessor;
+    }
 
     @Override
     protected void doOptions(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException {
@@ -84,7 +76,7 @@ public abstract class AbstractThriftServlet extends HttpServlet implements Initi
         super.doOptions(req, response);
     }
 
-    static void out(AsyncContext asyncContext, HttpServletResponse response,  int status, String contentType, byte buf[]) throws IOException {
+    static void out(AsyncContext asyncContext, HttpServletResponse response, int status, String contentType, byte buf[]) throws IOException {
         out(asyncContext, response, status, contentType, buf, buf.length);
     }
 
@@ -104,10 +96,10 @@ public abstract class AbstractThriftServlet extends HttpServlet implements Initi
         final ByteArrayInputStream contentBA;
         final ByteBuffer contentBB;
 
-        if (out instanceof HttpOutput){
+        if (out instanceof HttpOutput) {
             contentBB = ByteBuffer.wrap(buf, 0, length);
             contentBA = null;
-        }else{
+        } else {
             contentBA = new ByteArrayInputStream(buf, 0, length);
             contentBB = null;
         }
@@ -116,42 +108,41 @@ public abstract class AbstractThriftServlet extends HttpServlet implements Initi
             @Override
             public void onWritePossible() throws IOException {
 
-                if (log.isDebugEnabled())
+                if (log.isDebugEnabled()) {
                     log.debug("onWritePossible, out.class={}", out.getClass().getSimpleName());
+                }
 
-                if (contentBB !=null){
-                    while(out.isReady())
-                    {
-                        if (!contentBB.hasRemaining())
-                        {
+                if (contentBB != null) {
+                    while (out.isReady()) {
+                        if (!contentBB.hasRemaining()) {
                             asyncContext.complete();
                             return;
                         }
-                        ((HttpOutput)out).write(contentBB);
+                        ((HttpOutput) out).write(contentBB);
                     }
-                }else{
+                } else {
                     final byte[] buffer = new byte[1024 * 4];
 
-                    while(out.isReady()){
+                    while (out.isReady()) {
                         // read some content into the copy buffer
-                        final int len=contentBA.read(buffer);
+                        final int len = contentBA.read(buffer);
 
                         // If we are at EOF then complete
-                        if (len < 0)    {
+                        if (len < 0) {
                             log.debug("complete");
                             asyncContext.complete();
                             return;
                         }
 
                         // write out the copy buffer. 
-                        out.write(buffer,0,len);
+                        out.write(buffer, 0, len);
                     }
                 }
             }
 
             @Override
             public void onError(Throwable t) {
-                log.debug("Async Error",t);
+                log.debug("Async Error", t);
                 asyncContext.complete();
             }
         });
@@ -197,7 +188,7 @@ public abstract class AbstractThriftServlet extends HttpServlet implements Initi
         }
 
         try {
-            final TMemoryBuffer mw = tp.process(new ThriftProtocolSupportIF<TMemoryBuffer>() {
+            final TMemoryBuffer mw = thriftProcessor.process(new ThriftProtocolSupportIF<TMemoryBuffer>() {
 
                 @Override
                 public String getSessionId() {
@@ -352,11 +343,6 @@ public abstract class AbstractThriftServlet extends HttpServlet implements Initi
         } catch (Exception e) {
             out(asyncContext, response, 500, "text/plain", e.getMessage().getBytes(StandardCharsets.UTF_8));
         }
-    }
-
-    @Override
-    public void afterPropertiesSet() throws Exception {
-        tp = ThriftProcessor.create(context, registry);
     }
 
 }

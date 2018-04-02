@@ -14,10 +14,7 @@ import org.everthrift.clustering.thrift.NullResult;
 import org.everthrift.clustering.thrift.ServiceIfaceProxy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.lang.reflect.Proxy;
 import java.util.concurrent.ExecutionException;
@@ -34,13 +31,7 @@ public class LocalRabbitThriftClientServerImpl implements RabbitThriftClientIF {
 
     private static final Logger log = LoggerFactory.getLogger(LocalRabbitThriftClientServerImpl.class);
 
-    @Autowired
-    private ApplicationContext applicationContext;
-
-    @Autowired
-    private RpcRabbitRegistry rpcRabbitRegistry;
-
-    private TProcessor thriftProcessor;
+    private final TProcessor thriftProcessor;
 
     private final TProtocolFactory binary = new TBinaryProtocol.Factory();
 
@@ -48,9 +39,10 @@ public class LocalRabbitThriftClientServerImpl implements RabbitThriftClientIF {
 
     private boolean block = false;
 
-    public LocalRabbitThriftClientServerImpl(boolean block) {
+    public LocalRabbitThriftClientServerImpl(boolean block, ThriftProcessor thriftProcessor) {
 
         this.block = block;
+        this.thriftProcessor = thriftProcessor;
 
         final ThreadFactory tf = new ThreadFactory() {
 
@@ -112,11 +104,6 @@ public class LocalRabbitThriftClientServerImpl implements RabbitThriftClientIF {
                                           }));
     }
 
-    @PostConstruct
-    private void postConstruct() {
-        thriftProcessor = ThriftProcessor.create(applicationContext, rpcRabbitRegistry);
-    }
-
     @PreDestroy
     private void onDestroy() {
         executor.shutdown();
@@ -124,10 +111,6 @@ public class LocalRabbitThriftClientServerImpl implements RabbitThriftClientIF {
 
     public TProcessor getThriftProcessor() {
         return thriftProcessor;
-    }
-
-    public void setThriftProcessor(TProcessor thriftProcessor) {
-        this.thriftProcessor = thriftProcessor;
     }
 
     public boolean isBlock() {

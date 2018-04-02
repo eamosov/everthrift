@@ -1,5 +1,6 @@
 package org.everthrift.appserver.controller;
 
+import com.google.common.collect.Maps;
 import org.apache.thrift.TApplicationException;
 import org.apache.thrift.TBase;
 import org.apache.thrift.TException;
@@ -19,7 +20,7 @@ import org.springframework.messaging.support.GenericMessage;
 
 import java.util.Map;
 
-public class DefaultTProtocolSupport implements ThriftProtocolSupportIF<MessageWrapper> {
+abstract public class DefaultTProtocolSupport implements ThriftProtocolSupportIF<MessageWrapper> {
 
     @NotNull
     private final MessageWrapper in;
@@ -29,10 +30,13 @@ public class DefaultTProtocolSupport implements ThriftProtocolSupportIF<MessageW
 
     private final TProtocol inp;
 
-    private final TMessage msg;
+    protected final TMessage msg;
+
+    private Map<String, Object> attributes;
 
     public DefaultTProtocolSupport(@NotNull MessageWrapper in, @NotNull TProtocolFactory protocolFactory) throws TException {
         this.in = in;
+        this.attributes = Maps.newHashMap(in.getAttributes());
         this.protocolFactory = protocolFactory;
 
         inp = protocolFactory.getProtocol(in.getTTransport());
@@ -92,7 +96,7 @@ public class DefaultTProtocolSupport implements ThriftProtocolSupportIF<MessageW
             final TBase result;
             try {
                 result = tInfo.makeResult(o);
-            }catch (TApplicationException e){
+            } catch (TApplicationException e) {
                 return result(e);
             }
 
@@ -112,23 +116,23 @@ public class DefaultTProtocolSupport implements ThriftProtocolSupportIF<MessageW
         }
     }
 
-    @Override
-    public void asyncResult(final Object o, @NotNull final AbstractThriftController controller) {
-
-        final MessageWrapper mw = result(o, controller.getInfo());
-
-        final MessageChannel outChannel = in.getOutChannel();
-        final MessageHeaders inHeaders = in.getMessageHeaders();
-
-        final GenericMessage<MessageWrapper> s = new GenericMessage<MessageWrapper>(mw, inHeaders);
-        outChannel.send(s);
-
-        ThriftProcessor.logEnd(ThriftProcessor.log, controller, msg.name, in.getSessionId(), o);
-    }
+//    @Override
+//    public void asyncResult(final Object o, @NotNull final AbstractThriftController controller) {
+//
+//        final MessageWrapper mw = result(o, controller.getInfo());
+//
+//        final MessageChannel outChannel = in.getOutChannel();
+//        final MessageHeaders inHeaders = in.getMessageHeaders();
+//
+//        final GenericMessage<MessageWrapper> s = new GenericMessage<MessageWrapper>(mw, inHeaders);
+//        outChannel.send(s);
+//
+//        ThriftProcessor.logEnd(ThriftProcessor.log, controller, msg.name, in.getSessionId(), o);
+//    }
 
     @Override
     public Map<String, Object> getAttributes() {
-        return in.getAttributes();
+        return attributes;
     }
 
     @Override

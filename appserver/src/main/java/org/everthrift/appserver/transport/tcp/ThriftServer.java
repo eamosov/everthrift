@@ -32,23 +32,20 @@ public class ThriftServer implements SmartLifecycle {
     @Value("${thrift.host}")
     private String host;
 
-    private final RpcSyncTcpRegistry registry;
-
     private final TProtocolFactory protocolFactory;
-
-    private final ApplicationContext context;
 
     private TServer server;
 
     private TServerSocket trans;
 
+    private ThriftProcessor thriftProcessor;
+
     @Nullable
     private Thread thread;
 
-    public ThriftServer(ApplicationContext context, TProtocolFactory protocolFactory, RpcSyncTcpRegistry registry) {
+    public ThriftServer(TProtocolFactory protocolFactory, ThriftProcessor thriftProcessor) {
         this.protocolFactory = protocolFactory;
-        this.registry = registry;
-        this.context = context;
+        this.thriftProcessor = thriftProcessor;
     }
 
     @Override
@@ -95,8 +92,7 @@ public class ThriftServer implements SmartLifecycle {
         final TThreadPoolServer.Args args = new TThreadPoolServer.Args(trans).executorService(es);
         args.transportFactory(new TFramedTransport.Factory());
         args.protocolFactory(protocolFactory);
-        final ThriftProcessor tp = ThriftProcessor.create(context, registry);
-        args.processor(tp);
+        args.processor(thriftProcessor);
         server = new TThreadPoolServer(args);
         server.serve();
     }

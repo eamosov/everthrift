@@ -33,13 +33,11 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
-import org.springframework.core.task.AsyncTaskExecutor;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
@@ -59,20 +57,12 @@ public class ThriftProcessor implements TProcessor {
 
     private final ThriftControllerRegistry registry;
 
-    @Qualifier("callerRunsBoundQueueExecutor")
-    @Autowired
-    private AsyncTaskExecutor executor;
-
-    @Autowired
-    protected ApplicationContext applicationContext;
-
     @Autowired(required = false)
     private RpsServletIF rpsServlet;
 
-    public static ThriftProcessor create(@NotNull ApplicationContext context, ThriftControllerRegistry registry) {
-        return context.getBean(ThriftProcessor.class, registry);
-    }
-
+    @Autowired
+    private ApplicationContext applicationContext;
+    
     public ThriftProcessor(ThriftControllerRegistry registry) {
         this.registry = registry;
     }
@@ -167,7 +157,7 @@ public class ThriftProcessor implements TProcessor {
     @Override
     public boolean process(@NotNull TProtocol inp, @NotNull TProtocol out) throws TException {
         try {
-            process(inp, out, Collections.emptyMap());
+            process(inp, out, new HashMap<>());
         } catch (RuntimeException e) {
         }
 

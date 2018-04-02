@@ -45,16 +45,15 @@ public class RabbitThriftClientServerImpl implements RabbitThriftClientIF {
     @Autowired
     private ApplicationContext context;
 
-    @Autowired
-    private RpcRabbitRegistry rpcRabbitRegistry;
-
     private List<SimpleMessageListenerContainer> listeners = Lists.newArrayList();
 
     private final TProtocolFactory binaryProtocolFactory = new TBinaryProtocol.Factory();
 
-    private ThriftProcessor thriftProcessor;
+    private final ThriftProcessor thriftProcessor;
 
     private final RabbitThriftClientImpl rabbitThriftClient;
+
+    private final RpcRabbitRegistry rpcRabbitRegistry;
 
     private final RabbitAdmin admin;
 
@@ -112,18 +111,20 @@ public class RabbitThriftClientServerImpl implements RabbitThriftClientIF {
 
     };
 
-    public RabbitThriftClientServerImpl(ConnectionFactory connectionFactory) {
+    public RabbitThriftClientServerImpl(ConnectionFactory connectionFactory,
+                                        RpcRabbitRegistry rpcRabbitRegistry,
+                                        ThriftProcessor thriftProcessor) {
         this.cf = connectionFactory;
         this.rabbitThriftClient = new RabbitThriftClientImpl(cf);
         this.admin = new RabbitAdmin(cf);
+        this.rpcRabbitRegistry = rpcRabbitRegistry;
+        this.thriftProcessor = thriftProcessor;
         // this.admin.setIgnoreDeclarationExceptions(true);
 
     }
 
     @PostConstruct
     public void attachListeners() throws Exception {
-
-        thriftProcessor = ThriftProcessor.create(context, rpcRabbitRegistry);
 
         final Set<String> services = Sets.newHashSet();
         for (ThriftControllerInfo i : rpcRabbitRegistry.getControllers().values()) {

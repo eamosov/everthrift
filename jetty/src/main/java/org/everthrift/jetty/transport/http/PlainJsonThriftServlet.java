@@ -32,10 +32,7 @@ import org.everthrift.utils.ClassUtils;
 import org.everthrift.utils.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
 
-import javax.annotation.PostConstruct;
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
@@ -60,22 +57,16 @@ public class PlainJsonThriftServlet extends HttpServlet {
 
     private static final Logger log = LoggerFactory.getLogger(PlainJsonThriftServlet.class);
 
-    private ThriftProcessor tp;
+    private ThriftProcessor thriftProcessor;
 
-    @Autowired
-    private ApplicationContext context;
-
-    @Autowired
-    private RpcHttpRegistry registry;
 
     private static final Gson gson = new GsonBuilder().setPrettyPrinting()
                                                       .disableHtmlEscaping()
                                                       .registerTypeHierarchyAdapter(TBase.class, new TBaseSerializer())
                                                       .create();
 
-    @PostConstruct
-    public void afterPropertiesSet() throws Exception {
-        tp = ThriftProcessor.create(context, registry);
+    public PlainJsonThriftServlet(ThriftProcessor thriftProcessor) {
+        this.thriftProcessor = thriftProcessor;
     }
 
     @Override
@@ -108,7 +99,7 @@ public class PlainJsonThriftServlet extends HttpServlet {
                                   .collect(Collectors.toMap(Pair::getFirst, Pair::getSecond)));
 
         try {
-            final Pair<TMemoryBuffer, Integer> mw = tp.process(new ThriftProtocolSupportIF<Pair<TMemoryBuffer, Integer>>() {
+            final Pair<TMemoryBuffer, Integer> mw = thriftProcessor.process(new ThriftProtocolSupportIF<Pair<TMemoryBuffer, Integer>>() {
 
                 @Override
                 public String getSessionId() {

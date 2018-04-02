@@ -14,6 +14,8 @@ import org.hibernate.ScrollMode;
 import org.hibernate.ScrollableResults;
 import org.hibernate.SessionFactory;
 import org.hibernate.StatelessSession;
+import org.hibernate.criterion.Criterion;
+import org.hibernate.criterion.Projections;
 import org.hibernate.criterion.Restrictions;
 import org.hibernate.query.Query;
 import org.jetbrains.annotations.NotNull;
@@ -28,6 +30,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY extends DaoEntityIF, E extends TException>
     extends AbstractCachedModelFactory<PK, ENTITY, E> implements RwModelFactoryIF<PK, ENTITY, E> {
@@ -129,12 +132,12 @@ public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY 
 
     public List<ENTITY> listAll() {
         if (getCache() == null) {
-            return getDao().findByCriteria(Restrictions.sqlRestriction("true"), null);
+            return getDao().findByCriteria(Restrictions.sqlRestriction("true"));
         } else {
             final Cache cache = getCache();
             final Element cachedKeys = cache.get(ALL_KEYS);
             if (cachedKeys == null) {
-                final List<ENTITY> entities = getDao().findByCriteria(Restrictions.sqlRestriction("true"), null);
+                final List<ENTITY> entities = getDao().findByCriteria(Restrictions.sqlRestriction("true"));
                 final List<Serializable> keys = new ArrayList<>();
                 entities.forEach(entity -> {
                     keys.add(entity.getPk());
@@ -186,4 +189,21 @@ public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY 
         }
     }
 
+    @NotNull
+    public List<ENTITY> list(@NotNull List<Criterion> criterions) {
+        return list(Restrictions.and(criterions.toArray(new Criterion[criterions.size()])));
+    }
+
+    @NotNull
+    public List<ENTITY> list(@NotNull Criterion criterion) {
+
+        final List<PK> ids = (List) dao.findByCriteria(criterion,
+                                                       Projections.id(),
+                                                       null,
+                                                       null,
+                                                       null,
+                                                       null);
+
+        return findEntityByIdAsMap(ids).values().stream().filter(f -> f != null).collect(Collectors.toList());
+    }
 }

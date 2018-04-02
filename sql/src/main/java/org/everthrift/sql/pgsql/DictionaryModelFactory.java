@@ -35,8 +35,6 @@ public abstract class DictionaryModelFactory<ENTITY extends DaoEntityIF> impleme
     @NotNull
     protected final String KEY;
 
-    protected final Order orderBy;
-
     private final String CACHE_NAME;
 
     private final Class<ENTITY> cls;
@@ -76,16 +74,11 @@ public abstract class DictionaryModelFactory<ENTITY extends DaoEntityIF> impleme
     protected CacheLoader loader;
 
     protected DictionaryModelFactory(Class<ENTITY> cls, String tableName) {
-        this(cls, tableName, Order.asc("id"));
-    }
-
-    protected DictionaryModelFactory(Class<ENTITY> cls, String tableName, Order orderBy) {
 
         this.REMOVE_BY_ID = String.format("DELETE FROM %s WHERE ID=?", tableName);
         this.KEY = tableName + "_models;";
         this.CACHE_NAME = tableName;
         this.cls = cls;
-        this.orderBy = orderBy;
     }
 
     private boolean needRefresh(final long currentTs) {
@@ -219,8 +212,7 @@ public abstract class DictionaryModelFactory<ENTITY extends DaoEntityIF> impleme
             @Nullable
             @Override
             public Object load(Object arg0, Object arg1) {
-                final List<ENTITY> list = factory.getDao().findByCriteria(Restrictions.sqlRestriction("true"),
-                                                                          DictionaryModelFactory.this.orderBy);
+                final List<ENTITY> list = factory.getDao().findByCriteria(Restrictions.sqlRestriction("true"));
                 final TIntObjectHashMap<ENTITY> tmap = new TIntObjectHashMap<>(list.size());
 
                 for (ENTITY e : list) {

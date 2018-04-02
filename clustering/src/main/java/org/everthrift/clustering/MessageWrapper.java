@@ -26,7 +26,7 @@ public class MessageWrapper implements Serializable {
 
     public static String WS_CONTENT_TYPE = "WS_CONTENT_TYPE";
 
-    public static String OUT_CHANNEL = "OUT_CHANNEL";
+    //public static String OUT_CHANNEL = "OUT_CHANNEL";
 
     public static String MESSAGE_HEADERS = "MESSAGE_HEADERS";
 
@@ -58,10 +58,10 @@ public class MessageWrapper implements Serializable {
         return "MessageWrapper [tTransport=" + tTransport + ", attributes=" + attributes + "]";
     }
 
-    public synchronized MessageWrapper copySerializeableAttributes(MessageWrapper old) {
-        for (Entry<String, Object> e : old.attributes.entrySet()) {
+    public synchronized MessageWrapper copySerializeableAttributes(Map<String, Object> attributes) {
+        for (Entry<String, Object> e : attributes.entrySet()) {
             if (e.getValue() instanceof Serializable) {
-                attributes.put(e.getKey(), e.getValue());
+                this.attributes.put(e.getKey(), e.getValue());
             }
         }
         return this;
@@ -95,14 +95,14 @@ public class MessageWrapper implements Serializable {
         return (WebsocketContentType) attributes.get(WS_CONTENT_TYPE);
     }
 
-    public synchronized MessageWrapper setOutChannel(MessageChannel outChannel) {
-        attributes.put(OUT_CHANNEL, outChannel);
-        return this;
-    }
-
-    public synchronized MessageChannel getOutChannel() {
-        return (MessageChannel) attributes.get(OUT_CHANNEL);
-    }
+//    public synchronized MessageWrapper setOutChannel(MessageChannel outChannel) {
+//        attributes.put(OUT_CHANNEL, outChannel);
+//        return this;
+//    }
+//
+//    public synchronized MessageChannel getOutChannel() {
+//        return (MessageChannel) attributes.get(OUT_CHANNEL);
+//    }
 
     public synchronized MessageWrapper setMessageHeaders(MessageHeaders messageHeaders) {
         attributes.put(MESSAGE_HEADERS, messageHeaders);
@@ -115,12 +115,12 @@ public class MessageWrapper implements Serializable {
 
     public synchronized MessageWrapper removeCorrelationHeaders() {
         attributes.remove(MESSAGE_HEADERS);
-        attributes.remove(OUT_CHANNEL);
+        //attributes.remove(OUT_CHANNEL);
         return this;
     }
 
     public MessageWrapper toSerializable() {
-        return new MessageWrapper(tTransport).copySerializeableAttributes(this);
+        return new MessageWrapper(tTransport).copySerializeableAttributes(this.attributes);
     }
 
     public TTransport getTTransport() {

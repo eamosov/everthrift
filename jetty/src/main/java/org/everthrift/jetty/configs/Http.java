@@ -3,6 +3,7 @@ package org.everthrift.jetty.configs;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TJSONProtocol;
 import org.apache.thrift.transport.TKnockZlibTransport;
+import org.everthrift.appserver.controller.ThriftProcessor;
 import org.everthrift.jetty.JettyServer;
 import org.everthrift.jetty.monitoring.RpsServlet;
 import org.everthrift.jetty.transport.http.BinaryThriftServlet;
@@ -17,8 +18,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportResource;
 import org.springframework.messaging.SubscribableChannel;
 
-import java.util.List;
-
 @Configuration
 @ImportResource("classpath:websocket-beans.xml")
 public class Http {
@@ -29,23 +28,33 @@ public class Http {
     }
 
     @Bean
+    public ThriftProcessor httpProcessor(RpcHttpRegistry rpcHttpRegistry) {
+        return new ThriftProcessor(rpcHttpRegistry);
+    }
+
+    @Bean
     public RpcWebsocketRegistry rpcWebsocketRegistry() {
         return new RpcWebsocketRegistry();
     }
 
     @Bean
-    public JsonThriftServlet jsonThriftServlet() {
-        return new JsonThriftServlet();
+    public ThriftProcessor websocketProcessor(RpcWebsocketRegistry rpcWebsocketRegistry) {
+        return new ThriftProcessor(rpcWebsocketRegistry);
     }
 
     @Bean
-    public BinaryThriftServlet binaryThriftServlet() {
-        return new BinaryThriftServlet();
+    public JsonThriftServlet jsonThriftServlet(@Qualifier("httpProcessor") ThriftProcessor httpProcessor) {
+        return new JsonThriftServlet(httpProcessor);
     }
 
     @Bean
-    public PlainJsonThriftServlet plainJsonThriftServlet() {
-        return new PlainJsonThriftServlet();
+    public BinaryThriftServlet binaryThriftServlet(@Qualifier("httpProcessor") ThriftProcessor httpProcessor) {
+        return new BinaryThriftServlet(httpProcessor);
+    }
+
+    @Bean
+    public PlainJsonThriftServlet plainJsonThriftServlet(@Qualifier("httpProcessor") ThriftProcessor httpProcessor) {
+        return new PlainJsonThriftServlet(httpProcessor);
     }
 
     @Bean
@@ -55,22 +64,26 @@ public class Http {
 
     @Bean
     public WebsocketThriftHandler websocketThriftHandler(@Qualifier("inWebsocketChannel") SubscribableChannel inWebsocketChannel,
-                                                         @Qualifier("outWebsocketChannel") SubscribableChannel outWebsocketChannel) {
-        return new WebsocketThriftHandler(new TBinaryProtocol.Factory(), inWebsocketChannel, outWebsocketChannel);
+                                                         @Qualifier("outWebsocketChannel") SubscribableChannel outWebsocketChannel,
+                                                         @Qualifier("websocketProcessor") ThriftProcessor websocketProcessor
+    ) {
+        return new WebsocketThriftHandler(new TBinaryProtocol.Factory(), inWebsocketChannel, outWebsocketChannel, websocketProcessor);
     }
 
     @Bean
     public WebsocketThriftHandler ZlibWebsocketThriftHandler(@Qualifier("inZlibWebsocketChannel") SubscribableChannel inWebsocketChannel,
-                                                             @Qualifier("outZlibWebsocketChannel") SubscribableChannel outWebsocketChannel) {
-        final WebsocketThriftHandler h = new WebsocketThriftHandler(new TBinaryProtocol.Factory(), inWebsocketChannel, outWebsocketChannel);
+                                                             @Qualifier("outZlibWebsocketChannel") SubscribableChannel outWebsocketChannel,
+                                                             @Qualifier("websocketProcessor") ThriftProcessor websocketProcessor) {
+        final WebsocketThriftHandler h = new WebsocketThriftHandler(new TBinaryProtocol.Factory(), inWebsocketChannel, outWebsocketChannel, websocketProcessor);
         h.setTransportFactory(new TKnockZlibTransport.Factory());
         return h;
     }
 
     @Bean
     public WebsocketThriftHandler JSWebsocketThriftHandler(@Qualifier("inJSWebsocketChannel") SubscribableChannel inWebsocketChannel,
-                                                           @Qualifier("outJSWebsocketChannel") SubscribableChannel outWebsocketChannel) {
-        final WebsocketThriftHandler h = new WebsocketThriftHandler(new TJSONProtocol.Factory(), inWebsocketChannel, outWebsocketChannel);
+                                                           @Qualifier("outJSWebsocketChannel") SubscribableChannel outWebsocketChannel,
+                                                           @Qualifier("websocketProcessor") ThriftProcessor websocketProcessor) {
+        final WebsocketThriftHandler h = new WebsocketThriftHandler(new TJSONProtocol.Factory(), inWebsocketChannel, outWebsocketChannel, websocketProcessor);
         h.setContentType("TEXT");
         return h;
     }

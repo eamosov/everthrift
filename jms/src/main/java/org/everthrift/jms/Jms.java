@@ -4,6 +4,7 @@ import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.activemq.ActiveMQPrefetchPolicy;
 import org.apache.activemq.RedeliveryPolicy;
 import org.apache.activemq.pool.PooledConnectionFactory;
+import org.everthrift.appserver.controller.ThriftProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -17,7 +18,6 @@ import org.springframework.jms.listener.DefaultMessageListenerContainer;
 import org.springframework.jms.listener.SessionAwareMessageListener;
 
 import javax.jms.ConnectionFactory;
-import java.util.List;
 
 @Configuration
 public class Jms {
@@ -84,15 +84,22 @@ public class Jms {
 
     @Bean
     @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-    public JmsContainerManager jmsContainerManager(DefaultMessageListenerContainer container, String name){
+    public JmsContainerManager jmsContainerManager(DefaultMessageListenerContainer container, String name) {
         return new JmsContainerManager(container, name);
+    }
+
+    @Bean
+    public ThriftProcessor jmsThriftProcessor(RpcJmsRegistry rpcJmsRegistry) {
+        return new ThriftProcessor(rpcJmsRegistry);
     }
 
     @Bean
     public JmsThriftClientServerImpl jmsThriftClientServerImpl(@Qualifier("jmsFactory") ConnectionFactory connectionFactory,
                                                                @Value("${activemq.queue.prefix:}") String queuePrefix,
-                                                               @Value("${activemq.queue.suffix:}") String queueSuffix) {
-        final JmsThriftClientServerImpl s = new JmsThriftClientServerImpl(connectionFactory);
+                                                               @Value("${activemq.queue.suffix:}") String queueSuffix,
+                                                               RpcJmsRegistry rpcJmsRegistry,
+                                                               @Qualifier("jmsThriftProcessor") ThriftProcessor thriftProcessor) {
+        final JmsThriftClientServerImpl s = new JmsThriftClientServerImpl(connectionFactory, rpcJmsRegistry, thriftProcessor);
         s.setQueuePrefix(queuePrefix);
         s.setQueueSuffix(queueSuffix);
 

@@ -15,6 +15,7 @@ import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportException;
 import org.apache.thrift.transport.TTransportFactory;
 import org.eclipse.jetty.websocket.api.WebSocketException;
+import org.everthrift.appserver.controller.AbstractThriftController;
 import org.everthrift.appserver.controller.DefaultTProtocolSupport;
 import org.everthrift.appserver.controller.ThriftProcessor;
 import org.everthrift.appserver.utils.thrift.AbstractThriftClient;
@@ -25,11 +26,10 @@ import org.everthrift.clustering.MessageWrapper;
 import org.everthrift.clustering.MessageWrapper.WebsocketContentType;
 import org.everthrift.clustering.thrift.InvocationInfo;
 import org.everthrift.thrift.AsyncRegister;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageDeliveryException;
@@ -67,7 +67,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * @author fluder
  *
  */
-public class WebsocketThriftHandler extends AbstractWebSocketHandler implements WebSocketHandler, ThriftClientFactory, InitializingBean {
+public class WebsocketThriftHandler extends AbstractWebSocketHandler implements WebSocketHandler, ThriftClientFactory {
 
     private static final Logger log = LoggerFactory.getLogger(WebsocketThriftHandler.class);
 
@@ -97,13 +97,7 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
     @Autowired
     private ListeningScheduledExecutorService listeningScheduledExecutorService;
 
-    @Autowired
-    private ApplicationContext context;
-
-    @Autowired
-    private RpcWebsocketRegistry rpcWebsocketRegistry;
-
-    private ThriftProcessor tp;
+    private ThriftProcessor thriftProcessor;
 
     private final SubscribableChannel inWebsocketChannel;
 
@@ -113,10 +107,14 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
 
     private WebsocketContentType contentType = WebsocketContentType.BINARY;
 
-    public WebsocketThriftHandler(final TProtocolFactory protocolFactory, final SubscribableChannel inWebsocketChannel,
-                                  final SubscribableChannel outWebsocketChannel) {
+    public WebsocketThriftHandler(final TProtocolFactory protocolFactory,
+                                  final SubscribableChannel inWebsocketChannel,
+                                  final SubscribableChannel outWebsocketChannel,
+                                  final ThriftProcessor thriftProcessor) {
+
         this.protocolFactory = protocolFactory;
         this.inWebsocketChannel = inWebsocketChannel;
+        this.thriftProcessor = thriftProcessor;
 
         outWebsocketChannel.subscribe(new MessageHandler() {
 
@@ -265,7 +263,7 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
                                                               .getAttributes()
                                                               .get(MessageWrapper.HTTP_REQUEST_PARAMS));
 
-        if (tp.processOnOpen(mw, thriftClient(sessionId, sd)) == false) {
+        if (thriftProcessor.processOnOpen(mw, thriftClient(sessionId, sd)) == false) {
             try {
                 session.close(CloseStatus.POLICY_VIOLATION);
             } catch (IOException e) {
@@ -372,18 +370,13 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
         return thriftClient(sessionId, sd);
     }
 
-    @Override
-    public void afterPropertiesSet() throws Exception {
-        tp = ThriftProcessor.create(context, rpcWebsocketRegistry);
-    }
-
     private MessageWrapper handleIn(Message<MessageWrapper> m, MessageChannel outChannel) {
 
-        final MessageWrapper w = m.getPayload().setMessageHeaders(m.getHeaders()).setOutChannel(outChannel);
+        final MessageWrapper w = m.getPayload().setMessageHeaders(m.getHeaders());
 
         final String sessionId = w.getSessionId();
 
-        log.debug("handleIn: {}, adapter={}, processor={}, sessionId={}", new Object[]{m, this, tp, sessionId});
+        log.debug("handleIn: {}, adapter={}, processor={}, sessionId={}", new Object[]{m, this, thriftProcessor, sessionId});
 
         if (sessionId == null) {
             log.error("websocket sessionId is null for message: {}", m);
@@ -393,7 +386,19 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
         final ThriftClient tc = getThriftClient(sessionId);
 
         try {
-            return tp.process(new DefaultTProtocolSupport(w, protocolFactory), tc);
+            return thriftProcessor.process(new DefaultTProtocolSupport(w, protocolFactory) {
+                @Override
+                public void asyncResult(final Object o, @NotNull final AbstractThriftController controller) {
+
+                    final MessageWrapper mw = result(o, controller.getInfo());
+
+
+                    final GenericMessage<MessageWrapper> s = new GenericMessage<MessageWrapper>(mw, m.getHeaders());
+                    outChannel.send(s);
+
+                    ThriftProcessor.logEnd(ThriftProcessor.log, controller, msg.name, sessionId, o);
+                }
+            }, tc);
         } catch (Exception e) {
             log.error("Exception while execution thrift processor:", e);
             return null;
@@ -439,7 +444,7 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
 
     private void handleOut(Message<MessageWrapper> m) {
 
-        log.debug("handleOut: {}, adapter={}, processor={}", new Object[]{m, this, tp});
+        log.debug("handleOut: {}, adapter={}, processor={}", new Object[]{m, this, thriftProcessor});
 
         final String sessionId = (String) m.getPayload().getSessionId();
 

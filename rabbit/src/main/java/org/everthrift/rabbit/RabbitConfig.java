@@ -1,11 +1,13 @@
 package org.everthrift.rabbit;
 
+import org.everthrift.appserver.controller.ThriftProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Bean;
@@ -47,6 +49,11 @@ public class RabbitConfig {
     }
 
     @Bean
+    public ThriftProcessor rabbitThriftProcessor(RpcRabbitRegistry rpcRabbitRegistry) {
+        return new ThriftProcessor(rpcRabbitRegistry);
+    }
+
+    @Bean
     public RabbitThriftClientServerImpl rabbitThriftClientServerImpl(ConnectionFactory connectionFactory,
                                                                      @Value("${rabbit.queue.prefix:}")
                                                                          String queuePrefix,
@@ -55,9 +62,14 @@ public class RabbitConfig {
                                                                      @Value("${rabbit.exchange.prefix:}")
                                                                          String exchangePrefix,
                                                                      @Value("${rabbit.exchange.suffix:}")
-                                                                         String exchangeSuffix
+                                                                         String exchangeSuffix,
+
+                                                                     RpcRabbitRegistry rpcRabbitRegistry,
+                                                                     @Qualifier("rabbitThriftProcessor") ThriftProcessor rabbitThriftProcessor
     ) {
-        final RabbitThriftClientServerImpl r = new RabbitThriftClientServerImpl(connectionFactory);
+        final RabbitThriftClientServerImpl r = new RabbitThriftClientServerImpl(connectionFactory,
+                                                                                rpcRabbitRegistry,
+                                                                                rabbitThriftProcessor);
         r.setQueuePrefix(queuePrefix);
         r.setQueueSuffix(queueSuffix);
         r.setExchangePrefix(exchangePrefix);

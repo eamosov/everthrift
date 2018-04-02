@@ -46,15 +46,14 @@ public class JmsThriftClientServerImpl implements SmartLifecycle, JmsThriftClien
     private ApplicationContext context;
 
     @Autowired
-    private RpcJmsRegistry rpcJmsRegistry;
-
-    @Autowired
     @Qualifier("mbeanExporter")
     private MBeanExporter exporter;
 
     private final JmsThriftClientImpl jmsThriftClient;
 
-    private ThriftProcessor thriftProcessor;
+    private final ThriftProcessor thriftProcessor;
+
+    private final RpcJmsRegistry rpcJmsRegistry;
 
     private String queuePrefix = "";
 
@@ -155,7 +154,11 @@ public class JmsThriftClientServerImpl implements SmartLifecycle, JmsThriftClien
         }
     };
 
-    public JmsThriftClientServerImpl(ConnectionFactory jmsConnectionFactory) {
+    public JmsThriftClientServerImpl(ConnectionFactory jmsConnectionFactory,
+                                     RpcJmsRegistry rpcJmsRegistry,
+                                     ThriftProcessor thriftProcessor) {
+        this.rpcJmsRegistry = rpcJmsRegistry;
+        this.thriftProcessor = thriftProcessor;
         this.jmsConnectionFactory = jmsConnectionFactory;
         this.jmsThriftClient = new JmsThriftClientImpl(jmsConnectionFactory);
         this.jmsThriftClient.setQueuePrefix(queuePrefix);
@@ -253,7 +256,6 @@ public class JmsThriftClientServerImpl implements SmartLifecycle, JmsThriftClien
     @Override
     public void start() {
         running = true;
-        thriftProcessor = ThriftProcessor.create(context, rpcJmsRegistry);
 
         final Set<String> services = Sets.newHashSet();
         services.addAll(rpcJmsRegistry.getControllers()

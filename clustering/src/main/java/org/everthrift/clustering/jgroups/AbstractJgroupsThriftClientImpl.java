@@ -42,10 +42,16 @@ public abstract class AbstractJgroupsThriftClientImpl extends ClusterThriftClien
     @SuppressWarnings("rawtypes")
     private <T> CompletableFuture<Map<Address, Reply<T>>> _thriftCall(Collection<Address> dest, Collection<Address> exclusionList,
                                                                       boolean loopBack, int timeout, ResponseMode responseMode,
-                                                                      InvocationInfo tInfo) throws TException {
+                                                                      InvocationInfo tInfo,
+                                                                      Map<String, Object> attributes) throws TException {
 
         final Message msg = new Message();
-        msg.setObject(new MessageWrapper(tInfo.buildCall(0, binaryProtocolFactory)));
+        final MessageWrapper wrap = new MessageWrapper(tInfo.buildCall(0, binaryProtocolFactory));
+        if (attributes != null) {
+            wrap.copySerializeableAttributes(attributes);
+        }
+
+        msg.setObject(wrap);
 
         if (!loopBack) {
             msg.setTransientFlag(TransientFlag.DONT_LOOPBACK);
@@ -107,8 +113,11 @@ public abstract class AbstractJgroupsThriftClientImpl extends ClusterThriftClien
     }
 
     @Override
-    public <T> CompletableFuture<Map<Address, Reply<T>>> call(Collection<Address> dest, Collection<Address> exclusionList,
-                                                              InvocationInfo tInfo, Options... options) throws TException {
+    public <T> CompletableFuture<Map<Address, Reply<T>>> call(Collection<Address> dest,
+                                                              Collection<Address> exclusionList,
+                                                              InvocationInfo tInfo,
+                                                              Map<String, Object> attributes,
+                                                              Options... options) throws TException {
 
         Assert.notNull(tInfo, "tInfo must not be null");
 
@@ -117,7 +126,7 @@ public abstract class AbstractJgroupsThriftClientImpl extends ClusterThriftClien
         viewAccepted.whenComplete((result, t) -> {
             if (t == null) {
                 try {
-                    this.<T>_thriftCall(dest, exclusionList, isLoopback(options), getTimeout(options), getResponseMode(options), tInfo)
+                    this.<T>_thriftCall(dest, exclusionList, isLoopback(options), getTimeout(options), getResponseMode(options), tInfo, attributes)
                         .whenComplete((result2, t2) -> {
                             if (t2 != null) {
                                 ret.completeExceptionally(t2);
@@ -125,7 +134,7 @@ public abstract class AbstractJgroupsThriftClientImpl extends ClusterThriftClien
                                 ret.complete(result2);
                             }
                         });
-                } catch (TException e) {
+                } catch (Throwable e) {
                     ret.completeExceptionally(e);
                 }
             }

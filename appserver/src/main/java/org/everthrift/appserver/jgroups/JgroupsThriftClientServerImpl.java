@@ -1,6 +1,14 @@
 package org.everthrift.appserver.jgroups;
 
+import com.google.common.base.Throwables;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.commons.lang.NotImplementedException;
+import org.apache.thrift.TException;
+import org.apache.thrift.protocol.TBinaryProtocol;
+import org.apache.thrift.protocol.TProtocolFactory;
+import org.everthrift.appserver.controller.AbstractThriftController;
+import org.everthrift.appserver.controller.DefaultTProtocolSupport;
+import org.everthrift.appserver.controller.ThriftProcessor;
 import org.everthrift.clustering.MessageWrapper;
 import org.everthrift.clustering.jgroups.AbstractJgroupsThriftClientImpl;
 import org.everthrift.clustering.jgroups.ClusterThriftClientIF;
@@ -21,16 +29,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
-import org.springframework.integration.support.MessageBuilder;
-import org.springframework.messaging.MessageChannel;
-import org.springframework.messaging.MessageHeaders;
 import org.springframework.scheduling.annotation.Scheduled;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class JgroupsThriftClientServerImpl extends AbstractJgroupsThriftClientImpl
     implements AsyncRequestHandler, MembershipListener, ClusterThriftClientIF {
@@ -42,21 +48,27 @@ public class JgroupsThriftClientServerImpl extends AbstractJgroupsThriftClientIm
     @Autowired
     private ApplicationContext applicationContext;
 
-    @Autowired
-    private RpcJGroupsRegistry rpcJGroupsRegistry;
+    private final RpcJGroupsRegistry rpcJGroupsRegistry;
+
+    private final ThriftProcessor thriftProcessor;
+
+    private final TProtocolFactory protocolFactory = new TBinaryProtocol.Factory();
 
     @Nullable
     private MessageDispatcher disp;
 
     @NotNull
-    private List<MembershipListener> membershipListeners = new ArrayList<MembershipListener>();
+    private List<MembershipListener> membershipListeners = new ArrayList<>();
 
-    @Resource
-    private MessageChannel inJGroupsChannel;
+    private ExecutorService jGroupsExecutorService = Executors.newFixedThreadPool(8, new ThreadFactoryBuilder().setDaemon(true)
+                                                                                                               .setNameFormat("JGroups-%d")
+                                                                                                               .build());
 
-    public JgroupsThriftClientServerImpl(JChannel cluster) {
+    public JgroupsThriftClientServerImpl(JChannel cluster, RpcJGroupsRegistry rpcJGroupsRegistry, ThriftProcessor thriftProcessor) {
         log.info("Using {} as MulticastThriftTransport", this.getClass().getSimpleName());
         this.cluster = cluster;
+        this.rpcJGroupsRegistry = rpcJGroupsRegistry;
+        this.thriftProcessor = thriftProcessor;
     }
 
     @NotNull
@@ -68,19 +80,33 @@ public class JgroupsThriftClientServerImpl extends AbstractJgroupsThriftClientIm
 
     @Override
     public void handle(@NotNull Message request, @Nullable org.jgroups.blocks.Response response) throws Exception {
-        log.debug("handle message: {}, {}", request, response);
 
-        final MessageWrapper w = (MessageWrapper) request.getObject();
-        if (response != null) {
-            w.setAttribute(JGroupsThriftAdapter.HEADER_JRESPONSE, response);
-        }
-        w.setAttribute("src", request.getSrc());
+        jGroupsExecutorService.submit(() -> {
 
-        org.springframework.messaging.Message<MessageWrapper> m = MessageBuilder.<MessageWrapper>withPayload(w)
-            .setHeader(MessageHeaders.REPLY_CHANNEL,
-                       "outJGroupsChannel")
-            .build();
-        inJGroupsChannel.send(m);
+            log.debug("handle message: {}, {}", request, response);
+
+            final MessageWrapper in = (MessageWrapper) request.getObject();
+            in.setAttribute("src", request.getSrc());
+
+            try {
+                final MessageWrapper out = thriftProcessor.process(new DefaultTProtocolSupport(in, protocolFactory) {
+                    @Override
+                    public void asyncResult(Object o, AbstractThriftController controller) {
+                        if (response != null) {
+                            response.send(result(o, controller.getInfo()), false);
+                        }
+                        ThriftProcessor.logEnd(ThriftProcessor.log, controller, msg.name, getSessionId(), o);
+                    }
+                }, null);
+
+                if (out != null && response != null) {
+                    response.send(out, false);
+                }
+
+            } catch (TException e) {
+                throw Throwables.propagate(e);
+            }
+        });
     }
 
     @PreDestroy
@@ -178,7 +204,7 @@ public class JgroupsThriftClientServerImpl extends AbstractJgroupsThriftClientIm
         try {
             ThriftProxyFactory.on(ClusterService.Iface.class)
                               .onNodeConfiguration(rpcJGroupsRegistry.getNodeConfiguration());
-            call(InvocationInfoThreadHolder.getInvocationInfo(), ClusterThriftClientIF.Options.responseMode(ResponseMode.GET_NONE));
+            call(InvocationInfoThreadHolder.getInvocationInfo(), null, Options.loopback(true), Options.responseMode(ResponseMode.GET_NONE));
         } catch (Exception e) {
             log.error("Exception", e);
         }

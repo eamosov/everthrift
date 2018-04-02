@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 public abstract class ClusterThriftClientImpl implements ClusterThriftClientIF {
@@ -170,7 +171,7 @@ public abstract class ClusterThriftClientImpl implements ClusterThriftClientIF {
         nodeDb.retain(getCluster().getView().getMembers());
     }
 
-    private <T> void _callOne(Iterator<Address> it, CompletableFuture<T> f, InvocationInfo ii, Options[] options) {
+    private <T> void _callOne(Iterator<Address> it, CompletableFuture<T> f, InvocationInfo ii, Map<String, Object> attributes, Options[] options) {
         if (!it.hasNext()) {
             f.completeExceptionally(new TApplicationException("all nodes failed"));
             return;
@@ -180,17 +181,17 @@ public abstract class ClusterThriftClientImpl implements ClusterThriftClientIF {
         log.debug("Try call {} on {}", ii.fullMethodName, a);
 
         try {
-            this.<T>call(Collections.singletonList(a), null, ii, options).whenComplete((result, t) -> {
+            this.<T>call(Collections.singletonList(a), null, ii, attributes, options).whenComplete((result, t) -> {
 
                 if (t !=null) {
                     log.debug("Failed call {} on {}", ii.fullMethodName, a);
                     nodeDb.failed(a);
-                    _callOne(it, f, ii, options);
+                    _callOne(it, f, ii, attributes, options);
                 }else {
                     if (!result.containsKey(a)) {
                         log.debug("Failed call {} on {}", ii.fullMethodName, a);
                         nodeDb.failed(a);
-                        _callOne(it, f, ii, options);
+                        _callOne(it, f, ii, attributes, options);
                     } else {
                         log.debug("Success call {} on {}", ii.fullMethodName, a);
                         nodeDb.success(a);
@@ -205,15 +206,15 @@ public abstract class ClusterThriftClientImpl implements ClusterThriftClientIF {
         } catch (TException e) {
             log.debug("Failed call {} on {}", ii.fullMethodName, a);
             nodeDb.failed(a);
-            _callOne(it, f, ii, options);
+            _callOne(it, f, ii, attributes, options);
         }
     }
 
     @Override
     @SuppressWarnings("rawtypes")
-    public <T> CompletableFuture<T> callOne(InvocationInfo ii, Options... options) throws TException {
+    public <T> CompletableFuture<T> callOne(InvocationInfo ii, Map<String, Object> attributes, Options... options) throws TException {
         final CompletableFuture<T> f = new CompletableFuture();
-        _callOne(nodeDb.getNode(ii.fullMethodName).iterator(), f, ii, options);
+        _callOne(nodeDb.getNode(ii.fullMethodName).iterator(), f, ii, attributes, options);
         return f;
     }
 }

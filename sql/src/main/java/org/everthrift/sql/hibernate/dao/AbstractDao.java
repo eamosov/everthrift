@@ -57,15 +57,15 @@ public interface AbstractDao<K, V extends DaoEntityIF> {
     public Object uniqueResult(Criterion criterion, Projection... projections);
 
     @NotNull
-    public List<K> findPkByCriteria(Criterion criterion, Order order);
+    public List<K> findPkByCriteria(Criterion criterion);
 
-    public List<V> findByCriteria(Criterion criterion, Order order);
+    public List<V> findByCriteria(Criterion criterion);
 
     public List<V> findByCriteria(Criterion criterion, Projection proj, LockMode lockMode, List<Order> order, Integer limit,
                                   Integer offset);
 
     @NotNull
-    public CompletableFuture<List<V>> findByCriteriaAsync(Criterion criterion, Order order);
+    public CompletableFuture<List<V>> findByCriteriaAsync(Criterion criterion);
 
     @Nullable
     public V findFirstByCriteria(Criterion criterion, Order order);

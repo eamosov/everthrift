@@ -161,7 +161,7 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
 
     @Override
     public Collection<V> findByIds(@NotNull Collection<K> ids) {
-        return this.findByCriteria(Restrictions.in("id", ids), null);
+        return this.findByCriteria(Restrictions.in("id", ids));
     }
 
     @Nullable
@@ -322,7 +322,7 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
     public int deleteByCriteria(Criterion criterion) {
 
         return tx(session -> {
-            final List<V> ee = findByCriteria(criterion, null);
+            final List<V> ee = findByCriteria(criterion);
 
             if (!CollectionUtils.isEmpty(ee)) {
                 ee.forEach(this::delete);
@@ -350,14 +350,13 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
 
     @NotNull
     @Override
-    public List<K> findPkByCriteria(Criterion criterion, @Nullable Order order) {
-        return (List) findByCriteria(criterion, Projections.property("id"), null, order != null ? Collections.singletonList(order) : null,
-                                     null, null);
+    public List<K> findPkByCriteria(Criterion criterion) {
+        return (List) findByCriteria(criterion, Projections.id(), null, null, null, null);
     }
 
     @Override
-    public List<V> findByCriteria(Criterion criterion, @Nullable Order order) {
-        return findByCriteria(criterion, null, null, order != null ? Collections.singletonList(order) : null, null, null);
+    public List<V> findByCriteria(Criterion criterion) {
+        return findByCriteria(criterion, null, null, null, null, null);
     }
 
     @SuppressWarnings("unchecked")
@@ -527,14 +526,14 @@ public class AbstractDaoImpl<K extends Serializable, V extends DaoEntityIF> impl
     @Nullable
     @Override
     public V findFirstByCriteria(Criterion criterion, Order order) {
-        final List<V> ret = findByCriteria(criterion, order);
+        final List<V> ret = findByCriteria(criterion, null, null, Collections.singletonList(order), null, null);
         return ret == null || ret.isEmpty() ? null : ret.get(0);
     }
 
     @NotNull
     @Override
-    public CompletableFuture<List<V>> findByCriteriaAsync(final Criterion criterion, final Order order) {
-        return CompletableFuture.supplyAsync(() -> findByCriteria(criterion, order), executor);
+    public CompletableFuture<List<V>> findByCriteriaAsync(final Criterion criterion) {
+        return CompletableFuture.supplyAsync(() -> findByCriteria(criterion), executor);
     }
 
     @NotNull

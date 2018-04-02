@@ -1,15 +1,12 @@
 package org.everthrift.appserver.configs;
 
-import com.google.common.collect.ImmutableList;
+import org.everthrift.appserver.controller.ThriftProcessor;
 import org.everthrift.appserver.jgroups.LoopbackThriftClientServerImpl;
 import org.everthrift.appserver.jgroups.RpcJGroupsRegistry;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import java.util.List;
 
 @Configuration
 public class LoopbackJGroups {
@@ -22,7 +19,13 @@ public class LoopbackJGroups {
 
     @NotNull
     @Bean
-    public LoopbackThriftClientServerImpl loopbackThriftClientServerImpl() {
-        return new LoopbackThriftClientServerImpl();
+    public ThriftProcessor jGroupsThriftProcessor(RpcJGroupsRegistry registry) {
+        return new ThriftProcessor(registry);
+    }
+
+    @NotNull
+    @Bean
+    public LoopbackThriftClientServerImpl loopbackThriftClientServerImpl(@Qualifier("jGroupsThriftProcessor") ThriftProcessor thriftProcessor) {
+        return new LoopbackThriftClientServerImpl(thriftProcessor);
     }
 }

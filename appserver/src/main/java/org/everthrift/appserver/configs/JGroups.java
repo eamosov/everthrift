@@ -1,7 +1,6 @@
 package org.everthrift.appserver.configs;
 
-import com.google.common.collect.ImmutableList;
-import org.everthrift.appserver.jgroups.JGroupsThriftAdapter;
+import org.everthrift.appserver.controller.ThriftProcessor;
 import org.everthrift.appserver.jgroups.JgroupsThriftClientServerImpl;
 import org.everthrift.appserver.jgroups.RpcJGroupsRegistry;
 import org.jetbrains.annotations.NotNull;
@@ -10,12 +9,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.ImportResource;
-
-import java.util.List;
 
 @Configuration
-@ImportResource("classpath:jgroups-beans.xml")
 public class JGroups {
 
     @NotNull
@@ -31,19 +26,22 @@ public class JGroups {
 
     @NotNull
     @Bean
-    public JgroupsThriftClientServerImpl jgroupsThriftClientServerImpl(@Qualifier("yocluster") JChannel cluster) {
-        return new JgroupsThriftClientServerImpl(cluster);
-    }
-
-    @NotNull
-    @Bean
     public RpcJGroupsRegistry RpcJGroupsRegistry() {
         return new RpcJGroupsRegistry();
     }
 
     @NotNull
     @Bean
-    public JGroupsThriftAdapter jGroupsThriftAdapter() {
-        return new JGroupsThriftAdapter();
+    public ThriftProcessor jGroupsThriftProcessor(RpcJGroupsRegistry registry) {
+        return new ThriftProcessor(registry);
+    }
+
+    @NotNull
+    @Bean
+    public JgroupsThriftClientServerImpl jgroupsThriftClientServerImpl(@Qualifier("yocluster") JChannel cluster,
+                                                                       RpcJGroupsRegistry rpcJGroupsRegistry,
+                                                                       @Qualifier("jGroupsThriftProcessor") ThriftProcessor jGroupsThriftProcessor) {
+
+        return new JgroupsThriftClientServerImpl(cluster, rpcJGroupsRegistry, jGroupsThriftProcessor);
     }
 }
