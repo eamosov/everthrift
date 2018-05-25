@@ -3,9 +3,11 @@ package org.everthrift.appserver.controller;
 import org.apache.thrift.TBase;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TMessage;
+import org.everthrift.thrift.TFunction;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
+import java.util.function.Function;
 
 public interface ThriftProtocolSupportIF<T> {
     @Nullable
@@ -16,13 +18,13 @@ public interface ThriftProtocolSupportIF<T> {
     @Nullable
     Map<String, Object> getAttributes();
 
-    public <T extends TBase> T readArgs(ThriftControllerInfo tInfo) throws TException;
+    <T extends TBase> T readArgs(TBase args) throws TException;
 
     void skip() throws TException;
 
-    public T result(final Object o, final ThriftControllerInfo tInfo);
+    T result(final Object o, final TFunction<Object, TBase> makeResult);
 
-    public void asyncResult(final Object o, final AbstractThriftController controller);
+    void asyncResult(final Object o, final AbstractThriftController controller);
 
     boolean allowAsyncAnswer();
 }

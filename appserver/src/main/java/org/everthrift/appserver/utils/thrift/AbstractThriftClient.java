@@ -2,8 +2,8 @@ package org.everthrift.appserver.utils.thrift;
 
 import org.apache.thrift.TException;
 import org.apache.thrift.transport.TTransportException;
-import org.everthrift.clustering.thrift.InvocationInfo;
-import org.everthrift.clustering.thrift.InvocationInfoThreadHolder;
+import org.everthrift.clustering.thrift.ThriftCallFuture;
+import org.everthrift.clustering.thrift.ThriftCallFutureHolder;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.CompletableFuture;
@@ -25,7 +25,7 @@ public abstract class AbstractThriftClient<S> extends ThriftClient<S> {
     @SuppressWarnings("rawtypes")
     @Override
     public <T> CompletableFuture<T> thriftCall(int timeout, T methodCall) throws TException {
-        final InvocationInfo info = InvocationInfoThreadHolder.getInvocationInfo();
+        final ThriftCallFuture info = ThriftCallFutureHolder.getThriftCallFuture();
         if (info == null) {
             throw new TTransportException("info is NULL");
         }
@@ -35,11 +35,11 @@ public abstract class AbstractThriftClient<S> extends ThriftClient<S> {
 
     @SuppressWarnings("rawtypes")
     @Override
-    public <T> CompletableFuture<T> thriftCallByInfo(int timeout, InvocationInfo tInfo) throws TException {
+    public <T> CompletableFuture<T> thriftCallByInfo(int timeout, ThriftCallFuture tInfo) throws TException {
         return thriftCall(sessionId, timeout, tInfo);
     }
 
     @SuppressWarnings("rawtypes")
-    protected abstract <T> CompletableFuture<T> thriftCall(S sessionId, int timeout, InvocationInfo tInfo) throws TException;
+    protected abstract <T> CompletableFuture<T> thriftCall(S sessionId, int timeout, ThriftCallFuture tInfo) throws TException;
 
 }

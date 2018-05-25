@@ -5,7 +5,7 @@ import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.ListenableScheduledFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import org.apache.thrift.transport.TTransportException;
-import org.everthrift.clustering.thrift.InvocationInfo;
+import org.everthrift.clustering.thrift.ThriftCallFuture;
 
 import java.io.Serializable;
 import java.util.List;
@@ -62,7 +62,7 @@ public class AsyncRegister {
         }
     }
 
-    private final Map<Integer, Pair<InvocationInfo, ListenableScheduledFuture>> callbacks = Maps.newHashMap();
+    private final Map<Integer, Pair<ThriftCallFuture, ListenableScheduledFuture>> callbacks = Maps.newHashMap();
 
     private final AtomicInteger seqId = new AtomicInteger();
 
@@ -72,8 +72,8 @@ public class AsyncRegister {
         this.scheduller = scheduller;
     }
 
-    public synchronized InvocationInfo pop(int seqId) {
-        final Pair<InvocationInfo, ListenableScheduledFuture> p = callbacks.remove(seqId);
+    public synchronized ThriftCallFuture pop(int seqId) {
+        final Pair<ThriftCallFuture, ListenableScheduledFuture> p = callbacks.remove(seqId);
 
         if (p == null) {
             return null;
@@ -86,10 +86,10 @@ public class AsyncRegister {
         return p.first.isDone() ? null : p.first;
     }
 
-    public synchronized List<InvocationInfo> popAll() {
-        final List<InvocationInfo> ret = Lists.newArrayList();
+    public synchronized List<ThriftCallFuture> popAll() {
+        final List<ThriftCallFuture> ret = Lists.newArrayList();
 
-        for (Pair<InvocationInfo, ListenableScheduledFuture> p : callbacks.values()) {
+        for (Pair<ThriftCallFuture, ListenableScheduledFuture> p : callbacks.values()) {
 
             if (p.second != null) {
                 p.second.cancel(false);
@@ -103,13 +103,13 @@ public class AsyncRegister {
         return ret;
     }
 
-    public synchronized void put(final int seqId, InvocationInfo ii, final long tmMs) {
-        callbacks.put(seqId, new Pair<InvocationInfo, ListenableScheduledFuture>(ii, scheduller.schedule(new Runnable() {
+    public synchronized void put(final int seqId, ThriftCallFuture ii, final long tmMs) {
+        callbacks.put(seqId, new Pair<ThriftCallFuture, ListenableScheduledFuture>(ii, scheduller.schedule(new Runnable() {
 
             @Override
             public void run() {
 
-                final Pair<InvocationInfo, ListenableScheduledFuture> p;
+                final Pair<ThriftCallFuture, ListenableScheduledFuture> p;
 
                 synchronized (AsyncRegister.this) {
                     p = callbacks.remove(seqId);
@@ -121,8 +121,8 @@ public class AsyncRegister {
         }, tmMs, TimeUnit.MILLISECONDS)));
     }
 
-    public synchronized void put(int seqId, InvocationInfo ii) {
-        callbacks.put(seqId, new Pair<InvocationInfo, ListenableScheduledFuture>(ii, null));
+    public synchronized void put(int seqId, ThriftCallFuture ii) {
+        callbacks.put(seqId, new Pair<ThriftCallFuture, ListenableScheduledFuture>(ii, null));
     }
 
     public int nextSeqId() {

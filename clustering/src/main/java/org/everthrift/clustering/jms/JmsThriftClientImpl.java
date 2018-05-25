@@ -3,6 +3,7 @@ package org.everthrift.clustering.jms;
 import org.everthrift.clustering.thrift.NullResult;
 import org.everthrift.clustering.thrift.ServiceIfaceProxy;
 import org.everthrift.clustering.thrift.ThriftProxyFactory;
+import org.everthrift.utils.ThriftServicesDb;
 import org.springframework.jms.core.JmsTemplate;
 
 import javax.jms.ConnectionFactory;
@@ -20,9 +21,11 @@ public class JmsThriftClientImpl implements JmsThriftClientIF {
     private static ThriftMessageConverter thriftMessageConverter = new ThriftMessageConverter();
 
     private final ConnectionFactory jmsConnectionFactory;
+    private final ThriftServicesDb thriftServicesDb;
 
-    public JmsThriftClientImpl(final ConnectionFactory jmsConnectionFactory) {
+    public JmsThriftClientImpl(final ConnectionFactory jmsConnectionFactory, ThriftServicesDb thriftServicesDb) {
         this.jmsConnectionFactory = jmsConnectionFactory;
+        this.thriftServicesDb = thriftServicesDb;
     }
 
     @Override
@@ -30,11 +33,11 @@ public class JmsThriftClientImpl implements JmsThriftClientIF {
     public <T> T onIface(Class<T> cls) {
 
         return (T) Proxy.newProxyInstance(ThriftProxyFactory.class.getClassLoader(), new Class[]{cls},
-                                          new ServiceIfaceProxy(cls, ii -> {
+                                          new ServiceIfaceProxy(thriftServicesDb, ii -> {
                                               sendExecutor.execute(() -> {
                                                   final JmsTemplate jmsTemplate = new JmsTemplate(jmsConnectionFactory);
                                                   jmsTemplate.setMessageConverter(thriftMessageConverter);
-                                                  jmsTemplate.convertAndSend(queuePrefix + ii.serviceName + queueSuffix, ii);
+                                                  jmsTemplate.convertAndSend(queuePrefix + ii.thriftMethodEntry.serviceName + queueSuffix, ii);
                                               });
                                               throw new NullResult();
                                           }));

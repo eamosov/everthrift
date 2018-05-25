@@ -20,17 +20,16 @@ import org.apache.thrift.transport.TMemoryBuffer;
 import org.apache.thrift.transport.TMemoryInputTransport;
 import org.eclipse.jetty.server.HttpOutput;
 import org.everthrift.appserver.controller.AbstractThriftController;
-import org.everthrift.appserver.controller.ThriftControllerInfo;
 import org.everthrift.appserver.controller.ThriftProcessor;
 import org.everthrift.appserver.controller.ThriftProtocolSupportIF;
 import org.everthrift.appserver.utils.thrift.AbstractThriftClient;
 import org.everthrift.appserver.utils.thrift.SessionIF;
 import org.everthrift.clustering.MessageWrapper;
-import org.everthrift.clustering.thrift.InvocationInfo;
+import org.everthrift.clustering.thrift.ThriftCallFuture;
+import org.everthrift.thrift.TFunction;
 import org.everthrift.utils.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.InitializingBean;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
@@ -206,14 +205,13 @@ public abstract class AbstractThriftServlet extends HttpServlet {
                 }
 
                 @Override
-                public <T extends TBase> T readArgs(ThriftControllerInfo tInfo) throws TException {
+                public <T extends TBase> T readArgs(final TBase args) throws TException {
 
-                    final TBase args = tInfo.makeArgument();
                     args.read(in);
                     in.readMessageEnd();
 
                     try {
-                        final Method m = tInfo.getArgCls().getMethod("validate");
+                        final Method m = args.getClass().getMethod("validate");
                         m.invoke(args);
                     } catch (NoSuchMethodException | IllegalAccessException | IllegalArgumentException e1) {
                     } catch (InvocationTargetException e1) {
@@ -245,7 +243,7 @@ public abstract class AbstractThriftServlet extends HttpServlet {
                 }
 
                 @Override
-                public TMemoryBuffer result(final Object o, final ThriftControllerInfo tInfo) {
+                public TMemoryBuffer result(final Object o, final TFunction<Object, TBase> makeResult) {
 
                     if (o instanceof TApplicationException) {
                         return result((TApplicationException) o);
@@ -256,9 +254,11 @@ public abstract class AbstractThriftServlet extends HttpServlet {
                     } else {
                         final TBase result;
                         try {
-                            result = tInfo.makeResult(o);
+                            result = makeResult.apply(o);
                         } catch (TApplicationException e) {
                             return result(e);
+                        } catch (TException e) {
+                            throw new RuntimeException(e);
                         }
                         final TMemoryBuffer outT = new TMemoryBuffer(1024);
                         final TProtocol out = getProtocolFactory().getProtocol(outT);
@@ -278,7 +278,7 @@ public abstract class AbstractThriftServlet extends HttpServlet {
 
                 @Override
                 public void asyncResult(Object o, AbstractThriftController controller) {
-                    final TMemoryBuffer tt = result(o, controller.getInfo());
+                    final TMemoryBuffer tt = result(o, r -> controller.getInfo().thriftMethodEntry.makeResult(r));
                     try {
                         out(asyncContext, response, 200, getContentType(), tt.getArray(), tt.length());
                     } catch (IOException e) {
@@ -332,7 +332,7 @@ public abstract class AbstractThriftServlet extends HttpServlet {
                 }
 
                 @Override
-                protected <T> CompletableFuture<T> thriftCall(Object sessionId, int timeout, InvocationInfo tInfo) throws TException {
+                protected <T> CompletableFuture<T> thriftCall(Object sessionId, int timeout, ThriftCallFuture tInfo) throws TException {
                     throw new NotImplementedException();
                 }
             });

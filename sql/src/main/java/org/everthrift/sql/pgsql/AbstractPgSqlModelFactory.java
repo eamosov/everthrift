@@ -50,8 +50,7 @@ public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY 
 
     protected final Class<ENTITY> entityClass;
 
-
-    private final String ALL_KEYS = "__all__keys__";
+    private final String ALL_KEYS;
 
     @NotNull
     @Override
@@ -63,6 +62,7 @@ public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY 
         super(cache);
 
         this.entityClass = entityClass;
+        this.ALL_KEYS = "__all__keys__" + entityClass.getCanonicalName();
         dao = new AbstractDaoImpl<>(this.entityClass);
     }
 
@@ -70,6 +70,7 @@ public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY 
         super(cacheName);
 
         this.entityClass = entityClass;
+        this.ALL_KEYS = "__all__keys__" + entityClass.getCanonicalName();
         dao = new AbstractDaoImpl<>(this.entityClass);
     }
 

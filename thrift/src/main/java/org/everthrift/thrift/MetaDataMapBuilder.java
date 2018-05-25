@@ -20,7 +20,7 @@ public class MetaDataMapBuilder {
     }
 
     public void build(String basePackage) {
-
+        long start = System.currentTimeMillis();
         int i = 0;
         for (BeanDefinition b : scanner.findCandidateComponents(basePackage)) {
 
@@ -35,6 +35,6 @@ public class MetaDataMapBuilder {
             }
         }
 
-        log.info("Successfully scanned {} TBase classes at {}", i, basePackage);
+        log.info("Successfully scanned {} TBase classes at {} for {} ms", i, basePackage, System.currentTimeMillis() - start);
     }
 }

@@ -8,7 +8,7 @@ import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.protocol.TProtocolFactory;
 import org.apache.thrift.transport.TMemoryBuffer;
 import org.everthrift.clustering.jgroups.ClusterThriftClientImpl;
-import org.everthrift.clustering.thrift.InvocationInfo;
+import org.everthrift.clustering.thrift.ThriftCallFuture;
 import org.jetbrains.annotations.NotNull;
 import org.jgroups.Address;
 import org.jgroups.JChannel;
@@ -41,13 +41,13 @@ public class LoopbackThriftClientServerImpl extends ClusterThriftClientImpl {
     @NotNull
     @Override
     public <T> CompletableFuture<Map<Address, Reply<T>>> call(Collection<Address> dest, Collection<Address> exclusionList,
-                                                              @NotNull InvocationInfo tInfo, Map<String, Object> attributes, Options... options) throws TException {
+                                                              @NotNull ThriftCallFuture tInfo, Map<String, Object> attributes, Options... options) throws TException {
 
-        if (isLoopback(options) == false) {
+        if (!isLoopback(options)) {
             return CompletableFuture.completedFuture(Collections.emptyMap());
         }
 
-        final TMemoryBuffer in = tInfo.buildCall(0, binary);
+        final TMemoryBuffer in = tInfo.serializeCall(0, binary);
         final TProtocol inP = binary.getProtocol(in);
         final TMemoryBuffer out = new TMemoryBuffer(1024);
         final TProtocol outP = binary.getProtocol(out);
@@ -80,7 +80,7 @@ public class LoopbackThriftClientServerImpl extends ClusterThriftClientImpl {
             public int size() {
                 return 0;
             }
-        }, new ReplyImpl<T>(() -> (T) tInfo.setReply(out, binary))));
+        }, new ReplyImpl<T>(() -> (T) tInfo.deserializeReply(out, binary))));
     }
 
     public TProcessor getThriftProcessor() {

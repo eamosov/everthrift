@@ -12,9 +12,10 @@ import org.everthrift.appserver.controller.ThriftProcessor;
 import org.everthrift.clustering.MessageWrapper;
 import org.everthrift.clustering.jgroups.AbstractJgroupsThriftClientImpl;
 import org.everthrift.clustering.jgroups.ClusterThriftClientIF;
-import org.everthrift.clustering.thrift.InvocationInfoThreadHolder;
+import org.everthrift.clustering.thrift.ThriftCallFutureHolder;
 import org.everthrift.clustering.thrift.ThriftProxyFactory;
 import org.everthrift.services.thrift.cluster.ClusterService;
+import org.everthrift.utils.ThriftServicesDb;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jgroups.Address;
@@ -60,6 +61,9 @@ public class JgroupsThriftClientServerImpl extends AbstractJgroupsThriftClientIm
     @NotNull
     private List<MembershipListener> membershipListeners = new ArrayList<>();
 
+    @Autowired
+    private ThriftServicesDb thriftServicesDb;
+
     private ExecutorService jGroupsExecutorService = Executors.newFixedThreadPool(8, new ThreadFactoryBuilder().setDaemon(true)
                                                                                                                .setNameFormat("JGroups-%d")
                                                                                                                .build());
@@ -93,7 +97,7 @@ public class JgroupsThriftClientServerImpl extends AbstractJgroupsThriftClientIm
                     @Override
                     public void asyncResult(Object o, AbstractThriftController controller) {
                         if (response != null) {
-                            response.send(result(o, controller.getInfo()), false);
+                            response.send(result(o, r ->  controller.getInfo().thriftMethodEntry.makeResult(r)), false);
                         }
                         ThriftProcessor.logEnd(ThriftProcessor.log, controller, msg.name, getSessionId(), o);
                     }
@@ -202,9 +206,9 @@ public class JgroupsThriftClientServerImpl extends AbstractJgroupsThriftClientIm
 
     public void populateConfiguration() {
         try {
-            ThriftProxyFactory.on(ClusterService.Iface.class)
+            ThriftProxyFactory.on(thriftServicesDb, ClusterService.Iface.class)
                               .onNodeConfiguration(rpcJGroupsRegistry.getNodeConfiguration());
-            call(InvocationInfoThreadHolder.getInvocationInfo(), null, Options.loopback(true), Options.responseMode(ResponseMode.GET_NONE));
+            call(ThriftCallFutureHolder.getThriftCallFuture(), null, Options.loopback(true), Options.responseMode(ResponseMode.GET_NONE));
         } catch (Exception e) {
             log.error("Exception", e);
         }

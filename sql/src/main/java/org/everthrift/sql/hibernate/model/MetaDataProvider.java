@@ -7,7 +7,6 @@ import org.hibernate.annotations.SQLInsert;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.BeanUtils;
 import org.springframework.jdbc.support.JdbcUtils;
 import org.springframework.jdbc.support.MetaDataAccessException;
 
@@ -22,13 +21,13 @@ import java.util.stream.Collectors;
 
 import static org.springframework.beans.BeanUtils.getPropertyDescriptor;
 
-public class MetaDataProvider {
+public class MetaDataProvider implements MetaDataProviderIF {
 
     public static final String VIEW_POSTFIX = "_v";
 
     public static final String DEFAULT_PK_COLUMN = "id";
 
-    private static final Logger LOG = LoggerFactory.getLogger(MetaDataProvider.class);
+    private static final Logger log = LoggerFactory.getLogger(MetaDataProvider.class);
 
     private DataSource dataSource;
 
@@ -40,7 +39,9 @@ public class MetaDataProvider {
         this.dataSource = dataSource;
         this.tableNames = tableNames;
         tableModels = new ArrayList<>();
+        final long start = System.currentTimeMillis();
         readMetaData();
+        log.info("Built HBM for {} ms", System.currentTimeMillis() - start);
     }
 
     public List<Table> getTableModels() {
@@ -57,11 +58,11 @@ public class MetaDataProvider {
 
     private void addTable(@NotNull final String schemaTable, final String modelName) {
 
-        LOG.info("Building HBM mapping: {} <-> {}", schemaTable, modelName);
+        log.info("Building HBM mapping: {} <-> {}", schemaTable, modelName);
 
         try {
             if (schemaTable.indexOf(".") < 0) {
-                LOG.warn("Skip table {} due to can't find delimiter \".\" between schema.table", schemaTable);
+                log.warn("Skip table {} due to can't find delimiter \".\" between schema.table", schemaTable);
                 return;
             }
 
@@ -85,9 +86,9 @@ public class MetaDataProvider {
 
             tableModels.add(table);
         } catch (MetaDataAccessException e) {
-            LOG.error("Error get model metadata {}", schemaTable, e);
+            log.error("Error get model metadata {}", schemaTable, e);
         } catch (ClassNotFoundException e) {
-            LOG.error("Can't find class {}", modelName, e);
+            log.error("Can't find class {}", modelName, e);
         }
     }
 
@@ -120,12 +121,12 @@ public class MetaDataProvider {
         if (property != null) {
 
             final Type propertyType = property.getReadMethod().getGenericReturnType();
-            if (propertyType instanceof ParameterizedType){
-                column.setJavaClassParameters(((ParameterizedType)propertyType).getActualTypeArguments());
-                column.setJavaClass((Class)((ParameterizedType)propertyType).getRawType());
-            }else if (propertyType instanceof Class){
-                column.setJavaClass((Class)propertyType);
-            }else {
+            if (propertyType instanceof ParameterizedType) {
+                column.setJavaClassParameters(((ParameterizedType) propertyType).getActualTypeArguments());
+                column.setJavaClass((Class) ((ParameterizedType) propertyType).getRawType());
+            } else if (propertyType instanceof Class) {
+                column.setJavaClass((Class) propertyType);
+            } else {
                 throw new RuntimeException("Unknown type: " + propertyType.getClass().getCanonicalName());
             }
 
@@ -160,7 +161,8 @@ public class MetaDataProvider {
     }
 
     @NotNull
-    public String toHbmXml() {
+    @Override
+    public String getHbmXml() {
         final StringBuilder sb = new StringBuilder();
         sb.append("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
         // sb.append("<!DOCTYPE hibernate-mapping PUBLIC
@@ -180,6 +182,7 @@ public class MetaDataProvider {
         return sb.toString();
     }
 
+    @Override
     public String getComments() {
         return tableModels.stream().flatMap(t -> t.getComments().stream()).collect(Collectors.joining("\n"));
     }

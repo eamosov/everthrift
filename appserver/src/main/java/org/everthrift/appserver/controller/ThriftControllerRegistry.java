@@ -3,6 +3,7 @@ package org.everthrift.appserver.controller;
 import com.google.common.collect.ImmutableSet;
 import org.apache.thrift.TBase;
 import org.everthrift.appserver.BeanDefinitionHolder;
+import org.everthrift.utils.ThriftServicesDb;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -12,7 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.type.StandardMethodMetadata;
-import org.springframework.util.ClassUtils;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
@@ -35,11 +35,15 @@ public abstract class ThriftControllerRegistry implements InitializingBean {
     @Autowired
     private BeanDefinitionHolder beanDefinitionHolder;
 
+    @Autowired
+    private ThriftServicesDb thriftServicesDb;
+
     @NotNull
     private Map<String, ThriftControllerInfo> map = Collections.synchronizedMap(new HashMap<String, ThriftControllerInfo>());
 
     @NotNull
     private List<Class<ConnectionStateHandler>> stateHandlers = new CopyOnWriteArrayList<>();
+
 
     private final Class<? extends Annotation> annotationType;
 
@@ -146,39 +150,12 @@ public abstract class ThriftControllerRegistry implements InitializingBean {
 
         final String service = m.group(2);
         final String method = m.group(3);
-        final Class<?> resultWrap = ClassUtils.resolveClassName(m.group(1) + "." + m.group(2) + "." + m.group(3) + "_result",
-                                                                ClassUtils.getDefaultClassLoader());
 
-        Method findResultFieldByName = null;
-
-        for (Class i : resultWrap.getDeclaredClasses()) {
-            if (i.getCanonicalName().endsWith("_Fields")) {
-
-                try {
-                    findResultFieldByName = i.getMethod("findByName", String.class);
-                } catch (SecurityException e) {
-                    throw new IllegalArgumentException();
-                } catch (NoSuchMethodException e) {
-                    throw new IllegalArgumentException();
-                }
-
-                break;
-            }
-        }
-
-        if (findResultFieldByName == null) {
-            log.error("Coudn't find {}._Fields", resultWrap.getCanonicalName());
-            throw new IllegalArgumentException();
-        }
 
         final ThriftControllerInfo i = new ThriftControllerInfo(applicationContext,
                                                                 beanName != null ? beanName : service + ":" + method,
                                                                 (Class<? extends ThriftController>) cls,
-                                                                service,
-                                                                method,
-                                                                (Class<? extends TBase>) argument,
-                                                                (Class<? extends TBase>) resultWrap,
-                                                                findResultFieldByName);
+                                                                thriftServicesDb.getByMethod(service + ":" + method));
         return i;
     }
 

@@ -120,6 +120,7 @@ public class HibernateCache implements RegionFactory {
     }
 
     private Ehcache getCache(String name) throws CacheException {
+
         try {
 
             final CacheManager manager = AppserverApplication.INSTANCE.context.getBean(CacheManager.class);

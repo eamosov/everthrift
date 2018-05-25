@@ -27,7 +27,9 @@ import org.everthrift.appserver.utils.thrift.AbstractThriftClient;
 import org.everthrift.appserver.utils.thrift.SessionIF;
 import org.everthrift.appserver.utils.thrift.ThriftClient;
 import org.everthrift.clustering.MessageWrapper;
-import org.everthrift.clustering.thrift.InvocationInfo;
+import org.everthrift.clustering.thrift.ThriftCallFuture;
+import org.everthrift.thrift.TFunction;
+import org.everthrift.utils.ThriftServicesDb;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -62,7 +64,10 @@ public class ThriftProcessor implements TProcessor {
 
     @Autowired
     private ApplicationContext applicationContext;
-    
+
+    @Autowired
+    private ThriftServicesDb thriftServicesDb;
+
     public ThriftProcessor(ThriftControllerRegistry registry) {
         this.registry = registry;
     }
@@ -108,9 +113,11 @@ public class ThriftProcessor implements TProcessor {
             final LogEntry logEntry = new LogEntry(msg.name);
             logEntry.seqId = msg.seqid;
 
-            final ThriftControllerInfo controllerInfo = registry.getController(msg.name);
 
-            if (controllerInfo == null) {
+            final ThriftServicesDb.ThriftMethodEntry thriftMethodEntry = thriftServicesDb.getByMethod(msg.name);
+
+            if (thriftMethodEntry == null) {
+
                 tps.skip();
 
                 logNoController(thriftClient, msg.name, tps.getSessionId());
@@ -121,10 +128,21 @@ public class ThriftProcessor implements TProcessor {
 
             final TBase args;
             try {
-                args = tps.readArgs(controllerInfo);
+                args = tps.readArgs(thriftMethodEntry.makeArgs());
             } catch (Exception e) {
-                return tps.result(e, controllerInfo);
+                return tps.result(e, thriftMethodEntry::makeResult);
             }
+
+            final ThriftControllerInfo controllerInfo = registry.getController(msg.name);
+
+            if (controllerInfo == null) {
+
+                logNoController(thriftClient, msg.name, tps.getSessionId());
+                return tps.result(new TApplicationException(TApplicationException.UNKNOWN_METHOD,
+                                                            "No controllerCls for method " + msg.name),
+                                  null);
+            }
+
 
             final Logger log = LoggerFactory.getLogger(controllerInfo.getControllerCls());
             logStart(log, thriftClient, msg.name, tps.getSessionId(), args);
@@ -134,7 +152,7 @@ public class ThriftProcessor implements TProcessor {
             try {
                 final Object ret = controller.handle(args);
                 try {
-                    return tps.result(ret, controllerInfo);
+                    return tps.result(ret, thriftMethodEntry::makeResult);
                 } finally {
                     logEnd(log, controller, msg.name, tps.getSessionId(), ret);
                 }
@@ -143,7 +161,7 @@ public class ThriftProcessor implements TProcessor {
             } catch (Throwable e) {
                 log.error("Exception while handle thrift request", e);
                 try {
-                    return tps.result(e, controllerInfo);
+                    return tps.result(e, thriftMethodEntry::makeResult);
                 } finally {
                     logEnd(log, controller, msg.name, tps.getSessionId(), e);
                 }
@@ -224,7 +242,7 @@ public class ThriftProcessor implements TProcessor {
 
             @NotNull
             @Override
-            protected CompletableFuture thriftCall(Object sessionId, int timeout, InvocationInfo tInfo) throws TException {
+            protected CompletableFuture thriftCall(Object sessionId, int timeout, ThriftCallFuture tInfo) throws TException {
                 throw new NotImplementedException();
             }
 
@@ -254,8 +272,7 @@ public class ThriftProcessor implements TProcessor {
 
             @NotNull
             @Override
-            public <T extends TBase> T readArgs(@NotNull final ThriftControllerInfo tInfo) throws TException {
-                final TBase args = tInfo.makeArgument();
+            public <T extends TBase> T readArgs(@NotNull final TBase args) throws TException {
                 args.read(inp);
                 inp.readMessageEnd();
                 return (T) args;
@@ -282,7 +299,7 @@ public class ThriftProcessor implements TProcessor {
             }
 
             @Override
-            public Object result(final Object o, @NotNull final ThriftControllerInfo tInfo) {
+            public Object result(final Object o, final TFunction<Object, TBase> makeResult) {
 
                 if (o instanceof TApplicationException) {
                     return result((TApplicationException) o);
@@ -293,9 +310,11 @@ public class ThriftProcessor implements TProcessor {
                 } else {
                     final TBase result;
                     try {
-                        result = tInfo.makeResult(o);
+                        result = makeResult.apply(o);
                     } catch (TApplicationException e) {
                         return result(e);
+                    } catch (TException e) {
+                        throw new RuntimeException(e);
                     }
 
                     try {

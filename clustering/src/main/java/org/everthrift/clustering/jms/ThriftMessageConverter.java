@@ -4,7 +4,7 @@ import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocolFactory;
 import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportException;
-import org.everthrift.clustering.thrift.InvocationInfo;
+import org.everthrift.clustering.thrift.ThriftCallFuture;
 import org.springframework.jms.support.converter.MessageConversionException;
 import org.springframework.jms.support.converter.MessageConverter;
 
@@ -24,17 +24,17 @@ public class ThriftMessageConverter implements MessageConverter {
     @Override
     public Message toMessage(Object object, Session session) throws JMSException, MessageConversionException {
 
-        if (!(object instanceof InvocationInfo)) {
+        if (!(object instanceof ThriftCallFuture)) {
             throw new MessageConversionException("coudn't convert class: " + object.getClass().getSimpleName());
         }
 
         final BytesMessage bm = session.createBytesMessage();
-        final InvocationInfo ii = (InvocationInfo) object;
+        final ThriftCallFuture ii = (ThriftCallFuture) object;
 
-        bm.setStringProperty("method", ii.fullMethodName);
+        bm.setStringProperty("method", ii.getFullMethodName());
         bm.setStringProperty("args", ii.args.toString());
 
-        ii.buildCall(0, new TTransport() {
+        ii.serializeCall(0, new TTransport() {
 
             @Override
             public boolean isOpen() {

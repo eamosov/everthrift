@@ -24,7 +24,7 @@ import org.everthrift.appserver.utils.thrift.ThriftClient;
 import org.everthrift.appserver.utils.thrift.ThriftClientFactory;
 import org.everthrift.clustering.MessageWrapper;
 import org.everthrift.clustering.MessageWrapper.WebsocketContentType;
-import org.everthrift.clustering.thrift.InvocationInfo;
+import org.everthrift.clustering.thrift.ThriftCallFuture;
 import org.everthrift.thrift.AsyncRegister;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -234,14 +234,14 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
             log.error("No sessionData for session {}", sessionId);
             return;
         }
-        final InvocationInfo tf = sd.async.pop(msg.seqid);
+        final ThriftCallFuture tf = sd.async.pop(msg.seqid);
         if (tf == null) {
             log.warn("No registered thrift callback for msg:{}", msg);
             return;
         }
 
         try {
-            tf.setReply(in, protocolFactory);
+            tf.deserializeReply(in, protocolFactory);
         } catch (TException e) {
         }
 
@@ -287,13 +287,13 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
         if (sd != null) {
             sd.closeFuture.set(null);
 
-            for (InvocationInfo ii : sd.async.popAll()) {
+            for (ThriftCallFuture ii : sd.async.popAll()) {
                 ii.setException(new TTransportException(TTransportException.END_OF_FILE, "closed"));
             }
         }
     }
 
-    public <T> CompletableFuture<T> thriftCall(String sessionId, int timeout, InvocationInfo tInfo) throws TException {
+    public <T> CompletableFuture<T> thriftCall(String sessionId, int timeout, ThriftCallFuture tInfo) throws TException {
 
         final SessionData sd = sessionRegistry.get(sessionId);
         if (sd == null) {
@@ -308,7 +308,7 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
 
         sd.async.put(seqId, tInfo, timeout);
         try {
-            write(sd, this.contentType, tInfo.buildCall(seqId, protocolFactory));
+            write(sd, this.contentType, tInfo.serializeCall(seqId, protocolFactory));
         } catch (TException e) {
             sd.async.pop(seqId);
             throw e;
@@ -321,7 +321,7 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
         return new AbstractThriftClient<String>(sessionId) {
 
             @Override
-            protected <T> CompletableFuture<T> thriftCall(String sessionId, int timeout, InvocationInfo tInfo) throws TException {
+            protected <T> CompletableFuture<T> thriftCall(String sessionId, int timeout, ThriftCallFuture tInfo) throws TException {
                 return WebsocketThriftHandler.this.thriftCall(sessionId, timeout, tInfo);
             }
 
@@ -390,7 +390,7 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
                 @Override
                 public void asyncResult(final Object o, @NotNull final AbstractThriftController controller) {
 
-                    final MessageWrapper mw = result(o, controller.getInfo());
+                    final MessageWrapper mw = result(o, r -> controller.getInfo().thriftMethodEntry.makeResult(r));
 
 
                     final GenericMessage<MessageWrapper> s = new GenericMessage<MessageWrapper>(mw, m.getHeaders());

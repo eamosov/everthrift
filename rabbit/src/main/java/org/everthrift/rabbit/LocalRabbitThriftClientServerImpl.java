@@ -1,6 +1,5 @@
 package org.everthrift.rabbit;
 
-import org.apache.thrift.TException;
 import org.apache.thrift.TProcessor;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocol;
@@ -8,10 +7,9 @@ import org.apache.thrift.protocol.TProtocolFactory;
 import org.apache.thrift.transport.TMemoryBuffer;
 import org.everthrift.appserver.controller.ThriftProcessor;
 import org.everthrift.clustering.rabbit.RabbitThriftClientIF;
-import org.everthrift.clustering.thrift.InvocationCallback;
-import org.everthrift.clustering.thrift.InvocationInfo;
 import org.everthrift.clustering.thrift.NullResult;
 import org.everthrift.clustering.thrift.ServiceIfaceProxy;
+import org.everthrift.utils.ThriftServicesDb;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,12 +35,15 @@ public class LocalRabbitThriftClientServerImpl implements RabbitThriftClientIF {
 
     private final ExecutorService executor;
 
+    private final ThriftServicesDb thriftServicesDb;
+
     private boolean block = false;
 
-    public LocalRabbitThriftClientServerImpl(boolean block, ThriftProcessor thriftProcessor) {
+    public LocalRabbitThriftClientServerImpl(boolean block, ThriftProcessor thriftProcessor, ThriftServicesDb thriftServicesDb) {
 
         this.block = block;
         this.thriftProcessor = thriftProcessor;
+        this.thriftServicesDb = thriftServicesDb;
 
         final ThreadFactory tf = new ThreadFactory() {
 
@@ -72,35 +73,30 @@ public class LocalRabbitThriftClientServerImpl implements RabbitThriftClientIF {
     @Override
     public <T> T onIface(Class<T> cls) {
         return (T) Proxy.newProxyInstance(LocalRabbitThriftClientServerImpl.class.getClassLoader(), new Class[]{cls},
-                                          new ServiceIfaceProxy(cls, new InvocationCallback() {
+                                          new ServiceIfaceProxy(thriftServicesDb, ii -> {
 
-                                              @SuppressWarnings("rawtypes")
-                                              @Override
-                                              public Object call(InvocationInfo ii) throws NullResult, TException {
+                                              final TMemoryBuffer in = ii.serializeCall(0, binary);
+                                              final TProtocol inP = binary.getProtocol(in);
+                                              final TMemoryBuffer out = new TMemoryBuffer(1024);
+                                              final TProtocol outP = binary.getProtocol(out);
 
-                                                  final TMemoryBuffer in = ii.buildCall(0, binary);
-                                                  final TProtocol inP = binary.getProtocol(in);
-                                                  final TMemoryBuffer out = new TMemoryBuffer(1024);
-                                                  final TProtocol outP = binary.getProtocol(out);
-
-                                                  final Future f = executor.submit(() -> {
-                                                      try {
-                                                          thriftProcessor.process(inP, outP);
-                                                      } catch (Exception e) {
-                                                          log.error("Exception", e);
-                                                      }
-                                                  });
-
-                                                  if (block) {
-                                                      try {
-                                                          f.get();
-                                                      } catch (InterruptedException | ExecutionException e) {
-                                                          log.error("Exception", e);
-                                                      }
+                                              final Future f = executor.submit(() -> {
+                                                  try {
+                                                      thriftProcessor.process(inP, outP);
+                                                  } catch (Exception e) {
+                                                      log.error("Exception", e);
                                                   }
+                                              });
 
-                                                  throw new NullResult();
+                                              if (block) {
+                                                  try {
+                                                      f.get();
+                                                  } catch (InterruptedException | ExecutionException e) {
+                                                      log.error("Exception", e);
+                                                  }
                                               }
+
+                                              throw new NullResult();
                                           }));
     }
 

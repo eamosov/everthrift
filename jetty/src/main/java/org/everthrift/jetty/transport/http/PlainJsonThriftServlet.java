@@ -20,14 +20,14 @@ import org.apache.thrift.protocol.TProtocolException;
 import org.apache.thrift.transport.TMemoryBuffer;
 import org.apache.thrift.transport.TTransportException;
 import org.everthrift.appserver.controller.AbstractThriftController;
-import org.everthrift.appserver.controller.ThriftControllerInfo;
 import org.everthrift.appserver.controller.ThriftProcessor;
 import org.everthrift.appserver.controller.ThriftProtocolSupportIF;
 import org.everthrift.appserver.utils.thrift.AbstractThriftClient;
 import org.everthrift.appserver.utils.thrift.GsonSerializer.TBaseSerializer;
 import org.everthrift.appserver.utils.thrift.SessionIF;
 import org.everthrift.clustering.MessageWrapper;
-import org.everthrift.clustering.thrift.InvocationInfo;
+import org.everthrift.clustering.thrift.ThriftCallFuture;
+import org.everthrift.thrift.TFunction;
 import org.everthrift.utils.ClassUtils;
 import org.everthrift.utils.Pair;
 import org.slf4j.Logger;
@@ -117,7 +117,7 @@ public class PlainJsonThriftServlet extends HttpServlet {
                 }
 
                 @Override
-                public <T extends TBase> T readArgs(ThriftControllerInfo tInfo) throws TException {
+                public <T extends TBase> T readArgs(TBase args) throws TException {
                     final JsonParser jsonParser = new JsonParser();
 
                     final JsonObject _args;
@@ -143,10 +143,10 @@ public class PlainJsonThriftServlet extends HttpServlet {
 
                     log.debug("method:{}, args:{}", msgName, _args);
 
-                    final T ret = (T) gson.fromJson(_args, tInfo.getArgCls());
+                    final T ret = (T) gson.fromJson(_args, args.getClass());
 
                     try {
-                        final Method m = tInfo.getArgCls().getMethod("validate");
+                        final Method m = args.getClass().getMethod("validate");
                         m.invoke(ret);
                     } catch (NoSuchMethodException | IllegalAccessException | IllegalArgumentException e1) {
                     } catch (InvocationTargetException e1) {
@@ -176,7 +176,7 @@ public class PlainJsonThriftServlet extends HttpServlet {
                 }
 
                 @Override
-                public Pair<TMemoryBuffer, Integer> result(final Object o, final ThriftControllerInfo tInfo) {
+                public Pair<TMemoryBuffer, Integer> result(final Object o, final TFunction<Object, TBase> makeResult) {
 
                     int httpCode = 200;
 
@@ -225,7 +225,7 @@ public class PlainJsonThriftServlet extends HttpServlet {
 
                 @Override
                 public void asyncResult(Object o, AbstractThriftController controller) {
-                    final Pair<TMemoryBuffer, Integer> tt = result(o, controller.getInfo());
+                    final Pair<TMemoryBuffer, Integer> tt = result(o, r -> controller.getInfo().thriftMethodEntry.makeResult(r));
                     try {
                         out(asyncContext, response, tt.second, "application/json; charset=utf-8", tt.first
                             .getArray(), tt.first.length());
@@ -280,7 +280,7 @@ public class PlainJsonThriftServlet extends HttpServlet {
                 }
 
                 @Override
-                protected <T> CompletableFuture<T> thriftCall(Object sessionId, int timeout, InvocationInfo tInfo) throws TException {
+                protected <T> CompletableFuture<T> thriftCall(Object sessionId, int timeout, ThriftCallFuture tInfo) throws TException {
                     throw new NotImplementedException();
                 }
             });

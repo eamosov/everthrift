@@ -9,6 +9,8 @@ import org.everthrift.appserver.controller.ThriftControllerJmx;
 import org.everthrift.appserver.controller.ThriftControllerRegistry;
 import org.everthrift.appserver.controller.ThriftProcessor;
 import org.everthrift.appserver.model.LocalEventBus;
+import org.everthrift.thrift.MetaDataMapBuilder;
+import org.everthrift.utils.ThriftServicesDb;
 import org.everthrift.utils.tg.AtomicMonotonicTimestampGenerator;
 import org.everthrift.utils.tg.TimestampGenerator;
 import org.jetbrains.annotations.NotNull;
@@ -76,7 +78,7 @@ public class AppserverConfig implements SchedulingConfigurer, AsyncConfigurer {
     @NotNull
     @Bean
     public ThreadPoolTaskExecutor callerRunsBoundQueueExecutor() {
-        final ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor(){
+        final ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor() {
             @Override
             public Thread createThread(Runnable runnable) {
                 final Thread thread = super.createThread(runnable);
@@ -96,7 +98,7 @@ public class AppserverConfig implements SchedulingConfigurer, AsyncConfigurer {
     @NotNull
     @Bean
     public ThreadPoolTaskExecutor unboundQueueExecutor() {
-        final ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor(){
+        final ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor() {
             @Override
             public Thread createThread(Runnable runnable) {
                 final Thread thread = super.createThread(runnable);
@@ -114,7 +116,7 @@ public class AppserverConfig implements SchedulingConfigurer, AsyncConfigurer {
     @NotNull
     @Bean
     public ThreadPoolTaskScheduler myScheduler() {
-        final ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler(){
+        final ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler() {
             @Override
             public Thread createThread(Runnable runnable) {
                 final Thread thread = super.createThread(runnable);
@@ -173,7 +175,7 @@ public class AppserverConfig implements SchedulingConfigurer, AsyncConfigurer {
 
     @NotNull
     @Bean
-    public TimestampGenerator timestampGenerator(){
+    public TimestampGenerator timestampGenerator() {
         return new AtomicMonotonicTimestampGenerator();
     }
 
@@ -181,5 +183,17 @@ public class AppserverConfig implements SchedulingConfigurer, AsyncConfigurer {
     public Boolean testMode(@Value("${app.testMode:false}") String value) {
         log.info("Setting testMode: {}", value);
         return Boolean.parseBoolean(value);
+    }
+
+    @Bean
+    public ThriftServicesDb thriftServicesDb(@Value("${tbase.root}") String tbaseRoot) {
+
+        final MetaDataMapBuilder mdb = new MetaDataMapBuilder();
+
+        for (String root : tbaseRoot.split(",")) {
+            mdb.build(root);
+        }
+
+        return new ThriftServicesDb(tbaseRoot);
     }
 }

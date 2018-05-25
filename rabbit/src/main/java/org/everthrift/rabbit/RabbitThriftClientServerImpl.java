@@ -16,6 +16,7 @@ import org.everthrift.appserver.controller.ThriftControllerInfo;
 import org.everthrift.appserver.controller.ThriftProcessor;
 import org.everthrift.clustering.rabbit.RabbitThriftClientIF;
 import org.everthrift.clustering.rabbit.RabbitThriftClientImpl;
+import org.everthrift.utils.ThriftServicesDb;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.BindingBuilder;
@@ -44,6 +45,9 @@ public class RabbitThriftClientServerImpl implements RabbitThriftClientIF {
 
     @Autowired
     private ApplicationContext context;
+
+    @Autowired
+    private ThriftServicesDb thriftServicesDb;
 
     private List<SimpleMessageListenerContainer> listeners = Lists.newArrayList();
 
@@ -115,7 +119,7 @@ public class RabbitThriftClientServerImpl implements RabbitThriftClientIF {
                                         RpcRabbitRegistry rpcRabbitRegistry,
                                         ThriftProcessor thriftProcessor) {
         this.cf = connectionFactory;
-        this.rabbitThriftClient = new RabbitThriftClientImpl(cf);
+        this.rabbitThriftClient = new RabbitThriftClientImpl(cf, thriftServicesDb);
         this.admin = new RabbitAdmin(cf);
         this.rpcRabbitRegistry = rpcRabbitRegistry;
         this.thriftProcessor = thriftProcessor;

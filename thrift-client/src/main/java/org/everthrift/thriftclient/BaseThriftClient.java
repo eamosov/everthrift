@@ -102,8 +102,8 @@ public class BaseThriftClient implements AutoCloseable {
 
     private BaseThriftClient(String url, TProcessor processor) throws TTransportException, URISyntaxException {
         final TTransport transport = new TWsTransport(new URI(url), 5000, processor, new TBinaryProtocol.Factory(),
-                                                      new TKnockZlibTransport.Factory(), null, executor);
-        protocol = new TBinaryProtocol(new TKnockZlibTransport(transport));
+                                                      new TKnockZlibTransport.Factory(1024 * 1024 * 64), null, executor);
+        protocol = new TBinaryProtocol(new TKnockZlibTransport(transport, 1024 * 1024 * 64));
         protocol.getTransport().open();
     }
 
@@ -128,8 +128,8 @@ public class BaseThriftClient implements AutoCloseable {
         } else if (proto.equals(Transports.WEBSOCKET_ZLIB)) {
             try {
                 transport = new TWsTransport(new URI("ws://" + hostPort.addr + ":" + hostPort.port + "/thrift_zlib"), 5000, processor,
-                                             new TBinaryProtocol.Factory(), new TKnockZlibTransport.Factory(), null, executor);
-                protocol = new TBinaryProtocol(new TKnockZlibTransport(transport));
+                                             new TBinaryProtocol.Factory(), new TKnockZlibTransport.Factory(1024 * 1024 * 64), null, executor);
+                protocol = new TBinaryProtocol(new TKnockZlibTransport(transport, 1024 * 1024 * 64));
             } catch (URISyntaxException e) {
                 throw new RuntimeException(e);
             }

@@ -13,12 +13,14 @@ import org.apache.thrift.protocol.TProtocolUtil;
 import org.apache.thrift.protocol.TType;
 import org.apache.thrift.transport.TMemoryBuffer;
 import org.everthrift.clustering.MessageWrapper;
+import org.everthrift.thrift.TFunction;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.support.GenericMessage;
 
 import java.util.Map;
+import java.util.function.Function;
 
 abstract public class DefaultTProtocolSupport implements ThriftProtocolSupportIF<MessageWrapper> {
 
@@ -55,8 +57,7 @@ abstract public class DefaultTProtocolSupport implements ThriftProtocolSupportIF
 
     @NotNull
     @Override
-    public <T extends TBase> T readArgs(@NotNull final ThriftControllerInfo tInfo) throws TException {
-        final TBase args = tInfo.makeArgument();
+    public <T extends TBase> T readArgs(@NotNull final TBase args) throws TException {
         args.read(inp);
         inp.readMessageEnd();
         return (T) args;
@@ -83,7 +84,7 @@ abstract public class DefaultTProtocolSupport implements ThriftProtocolSupportIF
     }
 
     @Override
-    public MessageWrapper result(final Object o, @NotNull final ThriftControllerInfo tInfo) {
+    public MessageWrapper result(final Object o, final TFunction<Object, TBase> makeResult) {
 
         if (o instanceof TApplicationException) {
             return result((TApplicationException) o);
@@ -95,9 +96,11 @@ abstract public class DefaultTProtocolSupport implements ThriftProtocolSupportIF
 
             final TBase result;
             try {
-                result = tInfo.makeResult(o);
+                result = makeResult.apply(o);
             } catch (TApplicationException e) {
                 return result(e);
+            } catch (TException e) {
+                throw new RuntimeException(e);
             }
 
             final TMemoryBuffer outT = new TMemoryBuffer(1024);

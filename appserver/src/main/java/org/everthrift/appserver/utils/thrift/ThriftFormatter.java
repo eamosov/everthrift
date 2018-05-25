@@ -115,8 +115,8 @@ public class ThriftFormatter {
 
         for (ThriftControllerInfo i : sorted) {
             sb.append("<div class=\"method\" style=\"padding-bottom: 5px;\">\n");
-            sb.append("<div class=\"pl-c\">" + getTDocMethodComment(i.getArgCls()) + "</div>\n");
-            sb.append(formatMethod(i.getMethodName(), i.getArgCls(), i.getResultCls()));
+            sb.append("<div class=\"pl-c\">" + getTDocMethodComment(i.thriftMethodEntry.argsCls) + "</div>\n");
+            sb.append(formatMethod(i.getMethodName(), i.thriftMethodEntry.argsCls, i.thriftMethodEntry.resultCls));
             sb.append("</div>");
         }
         sb.append("</div>\n");

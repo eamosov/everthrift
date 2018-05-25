@@ -1,9 +1,10 @@
 package org.everthrift.clustering.jgroups;
 
 import org.apache.thrift.TException;
-import org.everthrift.clustering.thrift.InvocationInfo;
-import org.everthrift.clustering.thrift.InvocationInfoThreadHolder;
+import org.everthrift.clustering.thrift.ThriftCallFuture;
+import org.everthrift.clustering.thrift.ThriftCallFutureHolder;
 import org.everthrift.clustering.thrift.ThriftProxyFactory;
+import org.everthrift.utils.ThriftServicesDb;
 import org.jgroups.Address;
 import org.jgroups.blocks.ResponseMode;
 
@@ -15,7 +16,7 @@ import java.util.concurrent.CompletableFuture;
 public interface ClusterThriftClientIF {
 
     static <T> T on(Class<T> cls) {
-        return ThriftProxyFactory.on(cls);
+        return ThriftProxyFactory.on(ThriftServicesDb.INSTANCE, cls);
     }
 
     interface Reply<T> {
@@ -72,20 +73,20 @@ public interface ClusterThriftClientIF {
     }
 
     default <T> CompletableFuture<Map<Address, Reply<T>>> call(T methodCall, Map<String, Object> attributes, Options... options) throws TException {
-        return call(InvocationInfoThreadHolder.getInvocationInfo(), attributes, options);
+        return call(ThriftCallFutureHolder.getThriftCallFuture(), attributes, options);
     }
 
     @SuppressWarnings("rawtypes")
-    default <T> CompletableFuture<Map<Address, Reply<T>>> call(final InvocationInfo ii, Map<String, Object> attributes, Options... options) throws TException {
+    default <T> CompletableFuture<Map<Address, Reply<T>>> call(final ThriftCallFuture ii, Map<String, Object> attributes, Options... options) throws TException {
         return call(null, null, ii, attributes, options);
     }
 
     default <T> CompletableFuture<T> call(Address destination, T methodCall, Map<String, Object> attributes, Options... options) throws TException {
-        return call(destination, InvocationInfoThreadHolder.getInvocationInfo(), attributes, options);
+        return call(destination, ThriftCallFutureHolder.getThriftCallFuture(), attributes, options);
     }
 
     @SuppressWarnings("rawtypes")
-    default public <T> CompletableFuture<T> call(Address destination, InvocationInfo ii, Map<String, Object> attributes, Options... options) throws TException {
+    default public <T> CompletableFuture<T> call(Address destination, ThriftCallFuture ii, Map<String, Object> attributes, Options... options) throws TException {
         final CompletableFuture<Map<Address, Reply<T>>> ret = call(Collections.singleton(destination), null, ii, attributes, options);
 
         final CompletableFuture<T> s = new CompletableFuture();
@@ -107,12 +108,12 @@ public interface ClusterThriftClientIF {
 
     @SuppressWarnings("rawtypes")
     <T> CompletableFuture<Map<Address, Reply<T>>> call(Collection<Address> dest, Collection<Address> exclusionList,
-                                                       InvocationInfo tInfo, Map<String, Object> attributes, Options... options) throws TException;
+                                                       ThriftCallFuture tInfo, Map<String, Object> attributes, Options... options) throws TException;
 
     default <T> CompletableFuture<T> callOne(T methodCall, Map<String, Object> attributes, Options... options) throws TException {
-        return callOne(InvocationInfoThreadHolder.getInvocationInfo(), attributes, options);
+        return callOne(ThriftCallFutureHolder.getThriftCallFuture(), attributes, options);
     }
 
     @SuppressWarnings("rawtypes")
-    <T> CompletableFuture<T> callOne(InvocationInfo ii, Map<String, Object> attributes, Options... options) throws TException;
+    <T> CompletableFuture<T> callOne(ThriftCallFuture ii, Map<String, Object> attributes, Options... options) throws TException;
 }

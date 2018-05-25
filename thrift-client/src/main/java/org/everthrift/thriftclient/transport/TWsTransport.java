@@ -16,7 +16,7 @@ import org.apache.thrift.transport.TMemoryInputTransport;
 import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportException;
 import org.apache.thrift.transport.TTransportFactory;
-import org.everthrift.clustering.thrift.InvocationInfo;
+import org.everthrift.clustering.thrift.ThriftCallFuture;
 import org.everthrift.thrift.AsyncRegister;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.drafts.Draft_17;
@@ -256,7 +256,7 @@ public class TWsTransport extends TAsyncTransport {
 
             for (Integer i : pendingRequests) {
                 log.debug("Throw TTransportException for call seqId={}", i);
-                final InvocationInfo<?> ii = async.pop(i);
+                final ThriftCallFuture<?> ii = async.pop(i);
                 if (ii != null) {
                     ii.setException(new TTransportException(TTransportException.END_OF_FILE, "closed"));
                 }
@@ -444,7 +444,7 @@ public class TWsTransport extends TAsyncTransport {
         if (async == null) {
             queue.add(ByteBuffer.wrap(buf, offset, length));
         } else {
-            final InvocationInfo<?> ii = async.pop(msg.seqid);
+            final ThriftCallFuture<?> ii = async.pop(msg.seqid);
             if (ii == null) {
                 log.warn("Callback for seqId={} not found", msg.seqid);
             } else {
@@ -452,7 +452,7 @@ public class TWsTransport extends TAsyncTransport {
                     synchronized (this) {
                         pendingRequests.remove(msg.seqid);
                     }
-                    ii.setReply(in, protocolFactory);
+                    ii.deserializeReply(in, protocolFactory);
                 } catch (TException e) {
 
                 }

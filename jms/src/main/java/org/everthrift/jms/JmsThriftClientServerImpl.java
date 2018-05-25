@@ -13,6 +13,7 @@ import org.everthrift.appserver.controller.ThriftControllerInfo;
 import org.everthrift.appserver.controller.ThriftProcessor;
 import org.everthrift.clustering.jms.JmsThriftClientIF;
 import org.everthrift.clustering.jms.JmsThriftClientImpl;
+import org.everthrift.utils.ThriftServicesDb;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,6 +55,9 @@ public class JmsThriftClientServerImpl implements SmartLifecycle, JmsThriftClien
     private final ThriftProcessor thriftProcessor;
 
     private final RpcJmsRegistry rpcJmsRegistry;
+
+    @Autowired
+    private ThriftServicesDb thriftServicesDb;
 
     private String queuePrefix = "";
 
@@ -160,7 +164,7 @@ public class JmsThriftClientServerImpl implements SmartLifecycle, JmsThriftClien
         this.rpcJmsRegistry = rpcJmsRegistry;
         this.thriftProcessor = thriftProcessor;
         this.jmsConnectionFactory = jmsConnectionFactory;
-        this.jmsThriftClient = new JmsThriftClientImpl(jmsConnectionFactory);
+        this.jmsThriftClient = new JmsThriftClientImpl(jmsConnectionFactory, thriftServicesDb);
         this.jmsThriftClient.setQueuePrefix(queuePrefix);
         this.jmsThriftClient.setQueueSuffix(queueSuffix);
     }

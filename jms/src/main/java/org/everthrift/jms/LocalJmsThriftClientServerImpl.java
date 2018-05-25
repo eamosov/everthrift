@@ -9,6 +9,7 @@ import org.everthrift.appserver.controller.ThriftProcessor;
 import org.everthrift.clustering.jms.JmsThriftClientIF;
 import org.everthrift.clustering.thrift.NullResult;
 import org.everthrift.clustering.thrift.ServiceIfaceProxy;
+import org.everthrift.utils.ThriftServicesDb;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,10 +33,7 @@ public class LocalJmsThriftClientServerImpl implements JmsThriftClientIF {
     private static final Logger log = LoggerFactory.getLogger(LocalJmsThriftClientServerImpl.class);
 
     @Autowired
-    private ApplicationContext applicationContext;
-
-    @Autowired
-    private RpcJmsRegistry rpcJmsRegistry;
+    private ThriftServicesDb thriftServicesDb;
 
     private TProcessor thriftProcessor;
 
@@ -77,9 +75,9 @@ public class LocalJmsThriftClientServerImpl implements JmsThriftClientIF {
     @Override
     public <T> T onIface(Class<T> cls) {
         return (T) Proxy.newProxyInstance(LocalJmsThriftClientServerImpl.class.getClassLoader(), new Class[]{cls},
-                                          new ServiceIfaceProxy(cls, ii -> {
+                                          new ServiceIfaceProxy(thriftServicesDb, ii -> {
 
-                                              final TMemoryBuffer in = ii.buildCall(0, binary);
+                                              final TMemoryBuffer in = ii.serializeCall(0, binary);
                                               final TProtocol inP = binary.getProtocol(in);
                                               final TMemoryBuffer out = new TMemoryBuffer(1024);
                                               final TProtocol outP = binary.getProtocol(out);

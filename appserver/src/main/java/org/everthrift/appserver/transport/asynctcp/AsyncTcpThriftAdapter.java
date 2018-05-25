@@ -42,14 +42,12 @@ public class AsyncTcpThriftAdapter implements ChannelInterceptor {
 
         try {
             return thriftProcessor.process(new DefaultTProtocolSupport(new MessageWrapper(new TMemoryInputTransport((byte[]) m
-                                               .getPayload()))
-                                                                           .setMessageHeaders(m.getHeaders()),
-                                                                       protocolFactory) {
+                                               .getPayload())).setMessageHeaders(m.getHeaders()), protocolFactory) {
                                                @Override
                                                public void asyncResult(final Object o, @NotNull final AbstractThriftController controller) {
 
-                                                   final MessageWrapper mw = result(o, controller.getInfo());
-                                                   final GenericMessage<MessageWrapper> s = new GenericMessage<MessageWrapper>(mw, m.getHeaders());
+                                                   final MessageWrapper mw = result(o, r -> controller.getInfo().thriftMethodEntry.makeResult(r));
+                                                   final GenericMessage<MessageWrapper> s = new GenericMessage<>(mw, m.getHeaders());
                                                    outChannel.send(s);
 
                                                    ThriftProcessor.logEnd(ThriftProcessor.log, controller, msg.name, null, o);

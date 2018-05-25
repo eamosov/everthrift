@@ -11,10 +11,13 @@ import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.everthrift.sql.hibernate.LocalSessionFactoryBean;
 import org.everthrift.sql.hibernate.model.CustomTypesRegistry;
 import org.everthrift.sql.hibernate.model.MetaDataProvider;
+import org.everthrift.sql.hibernate.model.MetaDataProviderIF;
 import org.everthrift.sql.hibernate.model.types.CustomUserType;
 import org.hibernate.SessionFactory;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -31,6 +34,10 @@ import org.springframework.util.ClassUtils;
 import javax.sql.DataSource;
 import java.io.IOException;
 import java.lang.reflect.Modifier;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.Properties;
 
 /**
@@ -39,15 +46,16 @@ import java.util.Properties;
 @Configuration
 public class SqlConfig {
 
+    private final static Logger log = LoggerFactory.getLogger(SqlConfig.class);
+
     @NotNull
     @Bean
     public LocalSessionFactoryBean defaultSessionFactory(DataSource dataSource,
-                                                         MetaDataProvider metaDataProvider,
-                                                         @Value("${hibernate.dumphbm:false}") boolean dumpHbm,
+                                                         MetaDataProviderIF metaDataProvider,
                                                          @NotNull @Value("${hibernate.statichbm:}") String staticHbm,
                                                          @NotNull @Value("${hibernate.scan:}") String scan) throws IOException {
 
-        final LocalSessionFactoryBean sessionFactory = new LocalSessionFactoryBean(dumpHbm);
+        final LocalSessionFactoryBean sessionFactory = new LocalSessionFactoryBean();
         sessionFactory.setDataSource(dataSource);
         sessionFactory.setHibernateProperties(hibernateProperties());
         sessionFactory.setMetaDataProvider(metaDataProvider);
@@ -114,9 +122,7 @@ public class SqlConfig {
         return dataSource;
     }
 
-    @NotNull
-    @Bean
-    public MetaDataProvider metaDataProvider(DataSource dataSource) throws IOException {
+    public void registerCustomUserTypes() {
 
         final ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
         scanner.addIncludeFilter(new AssignableTypeFilter(CustomUserType.class));
@@ -131,9 +137,31 @@ public class SqlConfig {
                 }
             }
         }
+    }
 
+    @NotNull
+    @Bean
+    public MetaDataProviderIF metaDataProvider(DataSource dataSource, @Value("${hibernate.dumphbm:false}") boolean dumpHbm) throws IOException {
+
+        registerCustomUserTypes();
+
+        final Path path = Paths.get("_hbm_.xml");
+        
         final String config_file_location = "hiber_tables.properties";
-        return new MetaDataProvider(dataSource, PropertiesLoaderUtils.loadAllProperties(config_file_location));
+        final MetaDataProviderIF provider = new MetaDataProvider(dataSource, PropertiesLoaderUtils.loadAllProperties(config_file_location));
+
+        if (dumpHbm) {
+            try {
+                log.info("dumping hbm.xml to {}", path);
+                Files.write(path,
+                            provider.getHbmXml().getBytes(),
+                            StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        return provider;
     }
 
     @NotNull

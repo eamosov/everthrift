@@ -1,7 +1,7 @@
 package org.everthrift.sql.hibernate;
 
 import org.everthrift.sql.hibernate.dao.EntityInterceptor;
-import org.everthrift.sql.hibernate.model.MetaDataProvider;
+import org.everthrift.sql.hibernate.model.MetaDataProviderIF;
 import org.hibernate.SessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,20 +14,16 @@ public class LocalSessionFactoryBean extends org.springframework.orm.hibernate5.
 
     private static final Logger LOG = LoggerFactory.getLogger(LocalSessionFactoryBean.class);
 
-    private MetaDataProvider metaDataProvider;
-    private final boolean dumpHbm;
+    private MetaDataProviderIF metaDataProvider;
 
-    public LocalSessionFactoryBean(boolean dumpHbm) {
-        this.dumpHbm = dumpHbm;
+    public LocalSessionFactoryBean() {
+
     }
 
     @Override
     protected SessionFactory buildSessionFactory(LocalSessionFactoryBuilder sfb) {
-        final String hbmXml = metaDataProvider.toHbmXml();
+        final String hbmXml = metaDataProvider.getHbmXml();
 
-        if (dumpHbm) {
-            LOG.info("HBM:\n{}", hbmXml);
-        }
 
         sfb.addInputStream(new ByteArrayInputStream(hbmXml.getBytes(StandardCharsets.UTF_8)));
         sfb.setInterceptor(EntityInterceptor.INSTANCE);
@@ -35,7 +31,7 @@ public class LocalSessionFactoryBean extends org.springframework.orm.hibernate5.
         return ret;
     }
 
-    public void setMetaDataProvider(MetaDataProvider metaDataProvider) {
+    public void setMetaDataProvider(MetaDataProviderIF metaDataProvider) {
         this.metaDataProvider = metaDataProvider;
     }
 }
