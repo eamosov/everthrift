@@ -3,30 +3,28 @@ package org.everthrift.appserver.configs;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
-import org.everthrift.appserver.cluster.controllers.GetNodeConfigurationController;
-import org.everthrift.appserver.cluster.controllers.OnNodeConfigurationController;
+import org.apache.curator.framework.CuratorFramework;
+import org.everthrift.appserver.BeanDefinitionHolder;
+import org.everthrift.clustering.thrift.ThriftControllerDiscovery;
 import org.everthrift.appserver.controller.ThriftControllerJmx;
-import org.everthrift.appserver.controller.ThriftControllerRegistry;
-import org.everthrift.appserver.controller.ThriftProcessor;
 import org.everthrift.appserver.model.LocalEventBus;
 import org.everthrift.thrift.MetaDataMapBuilder;
-import org.everthrift.utils.ThriftServicesDb;
+import org.everthrift.thrift.ThriftServicesDiscovery;
 import org.everthrift.utils.tg.AtomicMonotonicTimestampGenerator;
 import org.everthrift.utils.tg.TimestampGenerator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jgroups.JChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.AdviceMode;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportResource;
-import org.springframework.context.annotation.Scope;
 import org.springframework.scheduling.annotation.AsyncConfigurer;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -142,13 +140,6 @@ public class AppserverConfig implements SchedulingConfigurer, AsyncConfigurer {
 
     @NotNull
     @Bean
-    @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-    public ThriftProcessor thriftProcessor(ThriftControllerRegistry registry) {
-        return new ThriftProcessor(registry);
-    }
-
-    @NotNull
-    @Bean
     public LocalEventBus LocalEventBus() {
         return new LocalEventBus();
     }
@@ -157,20 +148,6 @@ public class AppserverConfig implements SchedulingConfigurer, AsyncConfigurer {
     @Bean
     public ThriftControllerJmx ThriftControllerJmx() {
         return new ThriftControllerJmx();
-    }
-
-    @NotNull
-    @Bean
-    @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-    public GetNodeConfigurationController getNodeConfigurationController() {
-        return new GetNodeConfigurationController();
-    }
-
-    @NotNull
-    @Bean
-    @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-    public OnNodeConfigurationController getOnNodeConfigurationController() {
-        return new OnNodeConfigurationController();
     }
 
     @NotNull
@@ -186,7 +163,7 @@ public class AppserverConfig implements SchedulingConfigurer, AsyncConfigurer {
     }
 
     @Bean
-    public ThriftServicesDb thriftServicesDb(@Value("${tbase.root}") String tbaseRoot) {
+    public ThriftServicesDiscovery thriftServicesDb(@Value("${tbase.root}") String tbaseRoot) {
 
         final MetaDataMapBuilder mdb = new MetaDataMapBuilder();
 
@@ -194,6 +171,15 @@ public class AppserverConfig implements SchedulingConfigurer, AsyncConfigurer {
             mdb.build(root);
         }
 
-        return new ThriftServicesDb(tbaseRoot);
+        return new ThriftServicesDiscovery(tbaseRoot);
+    }
+
+    @Bean
+    public ThriftControllerDiscovery thriftControllerDiscovery(BeanDefinitionHolder beanDefinitionHolder,
+                                                               ThriftServicesDiscovery thriftServicesDiscovery,
+                                                               CuratorFramework client,
+                                                               @Qualifier("yocluster") JChannel yocluster) {
+
+        return new ThriftControllerDiscovery(beanDefinitionHolder, thriftServicesDiscovery, client, yocluster);
     }
 }

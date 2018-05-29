@@ -2,7 +2,6 @@ package org.everthrift.rabbit;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import com.rabbitmq.client.AMQP.Exchange.DeclareOk;
 import com.rabbitmq.client.Channel;
 import org.apache.thrift.TApplicationException;
@@ -12,11 +11,12 @@ import org.apache.thrift.protocol.TProtocolFactory;
 import org.apache.thrift.transport.TMemoryInputTransport;
 import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportException;
+import org.everthrift.clustering.thrift.ThriftControllerDiscovery;
 import org.everthrift.appserver.controller.ThriftControllerInfo;
 import org.everthrift.appserver.controller.ThriftProcessor;
 import org.everthrift.clustering.rabbit.RabbitThriftClientIF;
 import org.everthrift.clustering.rabbit.RabbitThriftClientImpl;
-import org.everthrift.utils.ThriftServicesDb;
+import org.everthrift.thrift.ThriftServicesDiscovery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.BindingBuilder;
@@ -34,7 +34,7 @@ import org.springframework.context.ApplicationContext;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.util.List;
-import java.util.Set;
+import java.util.stream.Collectors;
 
 public class RabbitThriftClientServerImpl implements RabbitThriftClientIF {
 
@@ -47,7 +47,10 @@ public class RabbitThriftClientServerImpl implements RabbitThriftClientIF {
     private ApplicationContext context;
 
     @Autowired
-    private ThriftServicesDb thriftServicesDb;
+    private ThriftServicesDiscovery thriftServicesDb;
+
+    @Autowired
+    private ThriftControllerDiscovery thriftControllerDiscovery;
 
     private List<SimpleMessageListenerContainer> listeners = Lists.newArrayList();
 
@@ -56,8 +59,6 @@ public class RabbitThriftClientServerImpl implements RabbitThriftClientIF {
     private final ThriftProcessor thriftProcessor;
 
     private final RabbitThriftClientImpl rabbitThriftClient;
-
-    private final RpcRabbitRegistry rpcRabbitRegistry;
 
     private final RabbitAdmin admin;
 
@@ -116,12 +117,10 @@ public class RabbitThriftClientServerImpl implements RabbitThriftClientIF {
     };
 
     public RabbitThriftClientServerImpl(ConnectionFactory connectionFactory,
-                                        RpcRabbitRegistry rpcRabbitRegistry,
                                         ThriftProcessor thriftProcessor) {
         this.cf = connectionFactory;
         this.rabbitThriftClient = new RabbitThriftClientImpl(cf, thriftServicesDb);
         this.admin = new RabbitAdmin(cf);
-        this.rpcRabbitRegistry = rpcRabbitRegistry;
         this.thriftProcessor = thriftProcessor;
         // this.admin.setIgnoreDeclarationExceptions(true);
 
@@ -130,14 +129,10 @@ public class RabbitThriftClientServerImpl implements RabbitThriftClientIF {
     @PostConstruct
     public void attachListeners() throws Exception {
 
-        final Set<String> services = Sets.newHashSet();
-        for (ThriftControllerInfo i : rpcRabbitRegistry.getControllers().values()) {
-            services.add(i.getServiceName());
-        }
-
-        for (String s : services) {
-            addListener(s);
-        }
+        thriftControllerDiscovery.getLocal(thriftProcessor.registryAnn.getSimpleName())
+                                 .stream()
+                                 .map(ThriftControllerInfo::getServiceName)
+                                 .collect(Collectors.toSet()).forEach(this::addListener);
     }
 
     @PreDestroy

@@ -32,11 +32,6 @@
             <artifactId>thrift</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>everthrift</groupId>
-            <artifactId>clustering</artifactId>
-        </dependency>
-
     </dependencies>
 
 </project>

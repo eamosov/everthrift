@@ -15,6 +15,7 @@ import org.apache.thrift.protocol.TType;
 import org.apache.thrift.transport.TFramedTransport;
 import org.apache.thrift.transport.TSocket;
 import org.apache.thrift.transport.TTransport;
+import org.everthrift.clustering.thrift.ThriftControllerDiscovery;
 import org.everthrift.appserver.jgroups.RpcJGroups;
 import org.everthrift.appserver.monitoring.RpsServletIF;
 import org.everthrift.appserver.monitoring.RpsServletIF.DsName;
@@ -27,9 +28,9 @@ import org.everthrift.appserver.utils.thrift.AbstractThriftClient;
 import org.everthrift.appserver.utils.thrift.SessionIF;
 import org.everthrift.appserver.utils.thrift.ThriftClient;
 import org.everthrift.clustering.MessageWrapper;
-import org.everthrift.clustering.thrift.ThriftCallFuture;
+import org.everthrift.thrift.ThriftCallFuture;
 import org.everthrift.thrift.TFunction;
-import org.everthrift.utils.ThriftServicesDb;
+import org.everthrift.thrift.ThriftServicesDiscovery;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -57,7 +58,7 @@ public class ThriftProcessor implements TProcessor {
 
     private final static Logger logControllerEnd = LoggerFactory.getLogger("controller.end");
 
-    private final ThriftControllerRegistry registry;
+    public final Class<? extends Annotation> registryAnn;
 
     @Autowired(required = false)
     private RpsServletIF rpsServlet;
@@ -66,16 +67,20 @@ public class ThriftProcessor implements TProcessor {
     private ApplicationContext applicationContext;
 
     @Autowired
-    private ThriftServicesDb thriftServicesDb;
+    private ThriftServicesDiscovery thriftServicesDb;
 
-    public ThriftProcessor(ThriftControllerRegistry registry) {
-        this.registry = registry;
+    @Autowired
+    private ThriftControllerDiscovery thriftControllerDiscovery;
+
+    public ThriftProcessor(Class<? extends Annotation> registryAnn) {
+        this.registryAnn = registryAnn;
     }
 
     public boolean processOnOpen(MessageWrapper in, ThriftClient thriftClient) {
-        for (Class<ConnectionStateHandler> cls : registry.getStateHandlers()) {
+        for (Class<? extends ConnectionStateHandler> cls : thriftControllerDiscovery.getConnectionStateHandlers(registryAnn
+                                                                                                                    .getSimpleName())) {
             final ConnectionStateHandler h = applicationContext.getBean(cls);
-            h.setup(in, thriftClient, registry.getType());
+            h.setup(in, thriftClient, registryAnn);
             if (!h.onOpen()) {
                 return false;
             }
@@ -85,18 +90,16 @@ public class ThriftProcessor implements TProcessor {
 
     private void stat() {
 
-        final Class<? extends Annotation> type = registry.getType();
-
         if (rpsServlet != null) {
-            if (type == RpcSyncTcp.class || type == RpcAsyncTcp.class) {
+            if (registryAnn == RpcSyncTcp.class || registryAnn == RpcAsyncTcp.class) {
                 rpsServlet.incThrift(DsName.THRIFT_TCP);
-            } else if (type == RpcHttp.class) {
+            } else if (registryAnn == RpcHttp.class) {
                 rpsServlet.incThrift(DsName.THRIFT_HTTP);
-            } else if (type == RpcJGroups.class) {
+            } else if (registryAnn == RpcJGroups.class) {
                 rpsServlet.incThrift(DsName.THRIFT_JGROUPS);
-            } else if (type == RpcJms.class) {
+            } else if (registryAnn == RpcJms.class) {
                 rpsServlet.incThrift(DsName.THRIFT_JMS);
-            } else if (type == RpcWebsocket.class) {
+            } else if (registryAnn == RpcWebsocket.class) {
                 rpsServlet.incThrift(DsName.THRIFT_WS);
             }
         }
@@ -114,7 +117,7 @@ public class ThriftProcessor implements TProcessor {
             logEntry.seqId = msg.seqid;
 
 
-            final ThriftServicesDb.ThriftMethodEntry thriftMethodEntry = thriftServicesDb.getByMethod(msg.name);
+            final ThriftServicesDiscovery.ThriftMethodEntry thriftMethodEntry = thriftServicesDb.getByMethod(msg.name);
 
             if (thriftMethodEntry == null) {
 
@@ -133,7 +136,7 @@ public class ThriftProcessor implements TProcessor {
                 return tps.result(e, thriftMethodEntry::makeResult);
             }
 
-            final ThriftControllerInfo controllerInfo = registry.getController(msg.name);
+            final ThriftControllerInfo controllerInfo = thriftControllerDiscovery.getLocal(registryAnn.getSimpleName(), msg.name);
 
             if (controllerInfo == null) {
 
@@ -144,10 +147,10 @@ public class ThriftProcessor implements TProcessor {
             }
 
 
-            final Logger log = LoggerFactory.getLogger(controllerInfo.getControllerCls());
+            final Logger log = LoggerFactory.getLogger(controllerInfo.beanClass);
             logStart(log, thriftClient, msg.name, tps.getSessionId(), args);
-            final ThriftController controller = controllerInfo.makeController(args, tps, logEntry, msg.seqid, thriftClient,
-                                                                              registry.getType(), tps.allowAsyncAnswer());
+            final ThriftController controller = controllerInfo.makeController(applicationContext, args, tps, logEntry, msg.seqid, thriftClient,
+                                                                              registryAnn, tps.allowAsyncAnswer());
 
             try {
                 final Object ret = controller.handle(args);

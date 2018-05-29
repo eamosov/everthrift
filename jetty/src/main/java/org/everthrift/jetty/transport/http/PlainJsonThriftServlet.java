@@ -26,7 +26,7 @@ import org.everthrift.appserver.utils.thrift.AbstractThriftClient;
 import org.everthrift.appserver.utils.thrift.GsonSerializer.TBaseSerializer;
 import org.everthrift.appserver.utils.thrift.SessionIF;
 import org.everthrift.clustering.MessageWrapper;
-import org.everthrift.clustering.thrift.ThriftCallFuture;
+import org.everthrift.thrift.ThriftCallFuture;
 import org.everthrift.thrift.TFunction;
 import org.everthrift.utils.ClassUtils;
 import org.everthrift.utils.Pair;

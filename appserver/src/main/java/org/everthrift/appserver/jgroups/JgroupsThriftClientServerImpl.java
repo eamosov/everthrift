@@ -10,12 +10,9 @@ import org.everthrift.appserver.controller.AbstractThriftController;
 import org.everthrift.appserver.controller.DefaultTProtocolSupport;
 import org.everthrift.appserver.controller.ThriftProcessor;
 import org.everthrift.clustering.MessageWrapper;
+import org.everthrift.clustering.thrift.ThriftControllerDiscovery;
 import org.everthrift.clustering.jgroups.AbstractJgroupsThriftClientImpl;
 import org.everthrift.clustering.jgroups.ClusterThriftClientIF;
-import org.everthrift.clustering.thrift.ThriftCallFutureHolder;
-import org.everthrift.clustering.thrift.ThriftProxyFactory;
-import org.everthrift.services.thrift.cluster.ClusterService;
-import org.everthrift.utils.ThriftServicesDb;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jgroups.Address;
@@ -25,7 +22,6 @@ import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.blocks.AsyncRequestHandler;
 import org.jgroups.blocks.MessageDispatcher;
-import org.jgroups.blocks.ResponseMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,8 +45,6 @@ public class JgroupsThriftClientServerImpl extends AbstractJgroupsThriftClientIm
     @Autowired
     private ApplicationContext applicationContext;
 
-    private final RpcJGroupsRegistry rpcJGroupsRegistry;
-
     private final ThriftProcessor thriftProcessor;
 
     private final TProtocolFactory protocolFactory = new TBinaryProtocol.Factory();
@@ -61,17 +55,14 @@ public class JgroupsThriftClientServerImpl extends AbstractJgroupsThriftClientIm
     @NotNull
     private List<MembershipListener> membershipListeners = new ArrayList<>();
 
-    @Autowired
-    private ThriftServicesDb thriftServicesDb;
-
     private ExecutorService jGroupsExecutorService = Executors.newFixedThreadPool(8, new ThreadFactoryBuilder().setDaemon(true)
                                                                                                                .setNameFormat("JGroups-%d")
                                                                                                                .build());
 
-    public JgroupsThriftClientServerImpl(JChannel cluster, RpcJGroupsRegistry rpcJGroupsRegistry, ThriftProcessor thriftProcessor) {
+    public JgroupsThriftClientServerImpl(ThriftControllerDiscovery thriftControllerDiscovery, JChannel cluster, ThriftProcessor thriftProcessor) {
+        super(thriftControllerDiscovery);
         log.info("Using {} as MulticastThriftTransport", this.getClass().getSimpleName());
         this.cluster = cluster;
-        this.rpcJGroupsRegistry = rpcJGroupsRegistry;
         this.thriftProcessor = thriftProcessor;
     }
 
@@ -97,7 +88,7 @@ public class JgroupsThriftClientServerImpl extends AbstractJgroupsThriftClientIm
                     @Override
                     public void asyncResult(Object o, AbstractThriftController controller) {
                         if (response != null) {
-                            response.send(result(o, r ->  controller.getInfo().thriftMethodEntry.makeResult(r)), false);
+                            response.send(result(o, r -> controller.getInfo().thriftMethodEntry.makeResult(r)), false);
                         }
                         ThriftProcessor.logEnd(ThriftProcessor.log, controller, msg.name, getSessionId(), o);
                     }
@@ -143,19 +134,11 @@ public class JgroupsThriftClientServerImpl extends AbstractJgroupsThriftClientIm
     }
 
     @Override
-    public Address getLocalAddress() {
-        return cluster.getAddress();
-    }
-
-    @Override
     public synchronized void viewAccepted(@NotNull View new_view) {
 
         if (!this.viewAccepted.isDone()) {
             this.viewAccepted.complete(null);
         }
-
-        nodeDb.retain(new_view.getMembers());
-        populateConfiguration();
 
         for (MembershipListener m : membershipListeners) {
             m.viewAccepted(new_view);
@@ -164,9 +147,6 @@ public class JgroupsThriftClientServerImpl extends AbstractJgroupsThriftClientIm
 
     @Override
     public synchronized void suspect(Address suspected_mbr) {
-
-        populateConfiguration();
-
         for (MembershipListener m : membershipListeners) {
             m.suspect(suspected_mbr);
         }
@@ -174,9 +154,6 @@ public class JgroupsThriftClientServerImpl extends AbstractJgroupsThriftClientIm
 
     @Override
     public synchronized void block() {
-
-        populateConfiguration();
-
         for (MembershipListener m : membershipListeners) {
             m.block();
         }
@@ -184,9 +161,6 @@ public class JgroupsThriftClientServerImpl extends AbstractJgroupsThriftClientIm
 
     @Override
     public synchronized void unblock() {
-
-        populateConfiguration();
-
         for (MembershipListener m : membershipListeners) {
             m.unblock();
         }
@@ -195,22 +169,10 @@ public class JgroupsThriftClientServerImpl extends AbstractJgroupsThriftClientIm
     @Scheduled(fixedRate = 5000)
     public void logClusterState() {
         log.info("cluster:{}", cluster.getView());
-
-        populateConfiguration();
     }
 
     @Override
     public JChannel getCluster() {
         return cluster;
-    }
-
-    public void populateConfiguration() {
-        try {
-            ThriftProxyFactory.on(thriftServicesDb, ClusterService.Iface.class)
-                              .onNodeConfiguration(rpcJGroupsRegistry.getNodeConfiguration());
-            call(ThriftCallFutureHolder.getThriftCallFuture(), null, Options.loopback(true), Options.responseMode(ResponseMode.GET_NONE));
-        } catch (Exception e) {
-            log.error("Exception", e);
-        }
     }
 }

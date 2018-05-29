@@ -2,7 +2,7 @@ package org.everthrift.appserver.utils.thrift;
 
 import com.google.common.util.concurrent.FutureCallback;
 import org.apache.thrift.TException;
-import org.everthrift.clustering.thrift.ThriftCallFuture;
+import org.everthrift.thrift.ThriftCallFuture;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.concurrent.CompletableFuture;

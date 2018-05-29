@@ -24,7 +24,7 @@ import org.everthrift.appserver.utils.thrift.ThriftClient;
 import org.everthrift.appserver.utils.thrift.ThriftClientFactory;
 import org.everthrift.clustering.MessageWrapper;
 import org.everthrift.clustering.MessageWrapper.WebsocketContentType;
-import org.everthrift.clustering.thrift.ThriftCallFuture;
+import org.everthrift.thrift.ThriftCallFuture;
 import org.everthrift.thrift.AsyncRegister;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;

@@ -4,13 +4,13 @@ import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TJSONProtocol;
 import org.apache.thrift.transport.TKnockZlibTransport;
 import org.everthrift.appserver.controller.ThriftProcessor;
+import org.everthrift.appserver.transport.http.RpcHttp;
+import org.everthrift.appserver.transport.websocket.RpcWebsocket;
 import org.everthrift.jetty.JettyServer;
 import org.everthrift.jetty.monitoring.RpsServlet;
 import org.everthrift.jetty.transport.http.BinaryThriftServlet;
 import org.everthrift.jetty.transport.http.JsonThriftServlet;
 import org.everthrift.jetty.transport.http.PlainJsonThriftServlet;
-import org.everthrift.jetty.transport.http.RpcHttpRegistry;
-import org.everthrift.jetty.transport.websocket.RpcWebsocketRegistry;
 import org.everthrift.jetty.transport.websocket.WebsocketThriftHandler;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
@@ -22,24 +22,15 @@ import org.springframework.messaging.SubscribableChannel;
 @ImportResource("classpath:websocket-beans.xml")
 public class Http {
 
+
     @Bean
-    public RpcHttpRegistry rpcHttpRegistry() {
-        return new RpcHttpRegistry();
+    public ThriftProcessor httpProcessor() {
+        return new ThriftProcessor(RpcHttp.class);
     }
 
     @Bean
-    public ThriftProcessor httpProcessor(RpcHttpRegistry rpcHttpRegistry) {
-        return new ThriftProcessor(rpcHttpRegistry);
-    }
-
-    @Bean
-    public RpcWebsocketRegistry rpcWebsocketRegistry() {
-        return new RpcWebsocketRegistry();
-    }
-
-    @Bean
-    public ThriftProcessor websocketProcessor(RpcWebsocketRegistry rpcWebsocketRegistry) {
-        return new ThriftProcessor(rpcWebsocketRegistry);
+    public ThriftProcessor websocketProcessor() {
+        return new ThriftProcessor(RpcWebsocket.class);
     }
 
     @Bean

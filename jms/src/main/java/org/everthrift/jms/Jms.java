@@ -5,6 +5,7 @@ import org.apache.activemq.ActiveMQPrefetchPolicy;
 import org.apache.activemq.RedeliveryPolicy;
 import org.apache.activemq.pool.PooledConnectionFactory;
 import org.everthrift.appserver.controller.ThriftProcessor;
+import org.everthrift.appserver.transport.jms.RpcJms;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -57,11 +58,6 @@ public class Jms {
     }
 
     @Bean
-    public RpcJmsRegistry RpcJmsRegistry() {
-        return new RpcJmsRegistry();
-    }
-
-    @Bean
     @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
     public DefaultMessageListenerContainer thriftJmsMessageListener(String destination,
                                                                     ConnectionFactory connectionFactory,
@@ -89,17 +85,16 @@ public class Jms {
     }
 
     @Bean
-    public ThriftProcessor jmsThriftProcessor(RpcJmsRegistry rpcJmsRegistry) {
-        return new ThriftProcessor(rpcJmsRegistry);
+    public ThriftProcessor jmsThriftProcessor() {
+        return new ThriftProcessor(RpcJms.class);
     }
 
     @Bean
     public JmsThriftClientServerImpl jmsThriftClientServerImpl(@Qualifier("jmsFactory") ConnectionFactory connectionFactory,
                                                                @Value("${activemq.queue.prefix:}") String queuePrefix,
                                                                @Value("${activemq.queue.suffix:}") String queueSuffix,
-                                                               RpcJmsRegistry rpcJmsRegistry,
                                                                @Qualifier("jmsThriftProcessor") ThriftProcessor thriftProcessor) {
-        final JmsThriftClientServerImpl s = new JmsThriftClientServerImpl(connectionFactory, rpcJmsRegistry, thriftProcessor);
+        final JmsThriftClientServerImpl s = new JmsThriftClientServerImpl(connectionFactory, thriftProcessor);
         s.setQueuePrefix(queuePrefix);
         s.setQueueSuffix(queueSuffix);
 

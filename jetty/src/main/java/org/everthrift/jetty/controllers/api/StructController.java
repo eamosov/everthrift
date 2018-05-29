@@ -1,5 +1,6 @@
 package org.everthrift.jetty.controllers.api;
 
+import org.apache.thrift.TBase;
 import org.everthrift.appserver.utils.thrift.ThriftFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
@@ -23,18 +24,16 @@ public class StructController {
     public void getStruct(@PathVariable("structClassName") String structClassName, HttpServletRequest request,
                           HttpServletResponse response) throws IOException {
 
-        final String tbaseRoot = context.getEnvironment().getProperty("tbase.root");
-
-        if (structClassName == null || !structClassName.startsWith(tbaseRoot)) {
-            response.setStatus(403);
-            response.getOutputStream()
-                    .write(("Class '" + structClassName + "' not allowed").getBytes(StandardCharsets.UTF_8));
-            response.flushBuffer();
-            return;
-        }
-
         try {
             final Class cls = Class.forName(structClassName, false, StructController.class.getClassLoader());
+
+            if (!TBase.class.isAssignableFrom(cls)) {
+                response.setStatus(403);
+                response.getOutputStream()
+                        .write(("Class '" + structClassName + "' isn't TBase").getBytes(StandardCharsets.UTF_8));
+                response.flushBuffer();
+                return;
+            }
 
             final byte[] services = new ThriftFormatter("/api/").formatClass(cls).getBytes(StandardCharsets.UTF_8);
 

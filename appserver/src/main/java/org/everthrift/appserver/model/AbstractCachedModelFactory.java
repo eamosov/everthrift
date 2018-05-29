@@ -265,7 +265,7 @@ public abstract class AbstractCachedModelFactory<PK, ENTITY, E extends Exception
         }
 
         final Element e = cache.getWithLoader(id, null, _loader);
-        if (e == null || e.getObjectValue() == null) {
+        if (e == null || e.getObjectValue() == null || !getEntityClass().isInstance(e.getObjectValue())) {
             return null;
         }
 

@@ -21,8 +21,8 @@ import org.apache.thrift.meta_data.MapMetaData;
 import org.apache.thrift.meta_data.SetMetaData;
 import org.apache.thrift.meta_data.StructMetaData;
 import org.apache.thrift.protocol.TType;
-import org.everthrift.appserver.controller.ThriftControllerInfo;
 import org.everthrift.utils.Pair;
+import org.everthrift.thrift.ThriftServicesDiscovery.ThriftMethodEntry;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.BeanUtils;
@@ -59,14 +59,14 @@ public class ThriftFormatter {
     }
 
     @NotNull
-    public String formatServices(@NotNull Collection<ThriftControllerInfo> cInfo) {
+    public String formatServices(@NotNull Collection<ThriftMethodEntry> cInfo) {
 
-        Multimap<String, ThriftControllerInfo> mm = Multimaps.index(cInfo, ThriftControllerInfo::getServiceName);
+        Multimap<String, ThriftMethodEntry> mm = Multimaps.index(cInfo, ThriftMethodEntry::getServiceName);
 
         final StringBuilder sb = new StringBuilder();
         sb.append(head());
 
-        for (Map.Entry<String, Collection<ThriftControllerInfo>> e : mm.asMap().entrySet()) {
+        for (Map.Entry<String, Collection<ThriftMethodEntry>> e : mm.asMap().entrySet()) {
             sb.append(formatService(e.getKey(), e.getValue()));
         }
         return sb.toString();
@@ -102,21 +102,21 @@ public class ThriftFormatter {
     }
 
     @NotNull
-    public String formatService(String serviceName, @NotNull Collection<ThriftControllerInfo> cInfos) {
+    public String formatService(String serviceName, @NotNull Collection<ThriftMethodEntry> cInfos) {
         final StringBuilder sb = new StringBuilder();
 
-        final List<ThriftControllerInfo> sorted = Lists.newArrayList(cInfos);
+        final List<ThriftMethodEntry> sorted = Lists.newArrayList(cInfos);
 
-        Collections.sort(sorted, Comparator.comparing(ThriftControllerInfo::getMethodName, new MethodNameComparator()));
+        Collections.sort(sorted, Comparator.comparing(ThriftMethodEntry::getMethodName, new MethodNameComparator()));
 
         sb.append("<div class=\"service\" style=\"padding-bottom:10px;\">\n");
         sb.append(String.format("<span><span class=\"pl-k\">service</span> <span class=\"pl-en\">%s</span> {</span>\n", serviceName));
         sb.append("<div class=\"methods\" style=\"padding: 5px 0px 0px 20px;\">\n");
 
-        for (ThriftControllerInfo i : sorted) {
+        for (ThriftMethodEntry i : sorted) {
             sb.append("<div class=\"method\" style=\"padding-bottom: 5px;\">\n");
-            sb.append("<div class=\"pl-c\">" + getTDocMethodComment(i.thriftMethodEntry.argsCls) + "</div>\n");
-            sb.append(formatMethod(i.getMethodName(), i.thriftMethodEntry.argsCls, i.thriftMethodEntry.resultCls));
+            sb.append("<div class=\"pl-c\">" + getTDocMethodComment(i.argsCls) + "</div>\n");
+            sb.append(formatMethod(i.getMethodName(), i.argsCls, i.resultCls));
             sb.append("</div>");
         }
         sb.append("</div>\n");

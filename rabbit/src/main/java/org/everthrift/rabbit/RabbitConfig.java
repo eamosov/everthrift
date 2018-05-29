@@ -1,6 +1,7 @@
 package org.everthrift.rabbit;
 
 import org.everthrift.appserver.controller.ThriftProcessor;
+import org.everthrift.appserver.transport.rabbit.RpcRabbit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.MessageListener;
@@ -18,11 +19,6 @@ import org.springframework.context.annotation.Scope;
 public class RabbitConfig {
 
     private final static Logger log = LoggerFactory.getLogger(RabbitConfig.class);
-
-    @Bean
-    public RpcRabbitRegistry rpcRabbitRegistry() {
-        return new RpcRabbitRegistry();
-    }
 
     @Bean
     public ConnectionFactory rabbitConnectionFactory(@Value("${rabbit.host}") String rabbitHost,
@@ -49,8 +45,8 @@ public class RabbitConfig {
     }
 
     @Bean
-    public ThriftProcessor rabbitThriftProcessor(RpcRabbitRegistry rpcRabbitRegistry) {
-        return new ThriftProcessor(rpcRabbitRegistry);
+    public ThriftProcessor rabbitThriftProcessor() {
+        return new ThriftProcessor(RpcRabbit.class);
     }
 
     @Bean
@@ -63,13 +59,9 @@ public class RabbitConfig {
                                                                          String exchangePrefix,
                                                                      @Value("${rabbit.exchange.suffix:}")
                                                                          String exchangeSuffix,
-
-                                                                     RpcRabbitRegistry rpcRabbitRegistry,
                                                                      @Qualifier("rabbitThriftProcessor") ThriftProcessor rabbitThriftProcessor
     ) {
-        final RabbitThriftClientServerImpl r = new RabbitThriftClientServerImpl(connectionFactory,
-                                                                                rpcRabbitRegistry,
-                                                                                rabbitThriftProcessor);
+        final RabbitThriftClientServerImpl r = new RabbitThriftClientServerImpl(connectionFactory, rabbitThriftProcessor);
         r.setQueuePrefix(queuePrefix);
         r.setQueueSuffix(queueSuffix);
         r.setExchangePrefix(exchangePrefix);

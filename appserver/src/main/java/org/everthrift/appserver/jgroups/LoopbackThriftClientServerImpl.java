@@ -7,8 +7,9 @@ import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.protocol.TProtocolFactory;
 import org.apache.thrift.transport.TMemoryBuffer;
+import org.everthrift.clustering.thrift.ThriftControllerDiscovery;
 import org.everthrift.clustering.jgroups.ClusterThriftClientImpl;
-import org.everthrift.clustering.thrift.ThriftCallFuture;
+import org.everthrift.thrift.ThriftCallFuture;
 import org.jetbrains.annotations.NotNull;
 import org.jgroups.Address;
 import org.jgroups.JChannel;
@@ -33,7 +34,8 @@ public class LoopbackThriftClientServerImpl extends ClusterThriftClientImpl {
 
     private final TProtocolFactory binary = new TBinaryProtocol.Factory();
 
-    public LoopbackThriftClientServerImpl(TProcessor thriftProcessor) {
+    public LoopbackThriftClientServerImpl(ThriftControllerDiscovery thriftControllerDiscovery, TProcessor thriftProcessor) {
+        super(thriftControllerDiscovery);
         this.thriftProcessor = thriftProcessor;
         log.info("Using {} as MulticastThriftTransport", this.getClass().getSimpleName());
     }

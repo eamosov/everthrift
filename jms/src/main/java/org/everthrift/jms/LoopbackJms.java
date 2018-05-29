@@ -10,11 +10,6 @@ import java.util.List;
 public class LoopbackJms {
 
     @Bean
-    public RpcJmsRegistry RpcJmsRegistry() {
-        return new RpcJmsRegistry();
-    }
-
-    @Bean
     public LocalJmsThriftClientServerImpl localJmsThriftClientServerImpl(@Qualifier("testMode") boolean testMode) {
         return new LocalJmsThriftClientServerImpl(testMode);
     }

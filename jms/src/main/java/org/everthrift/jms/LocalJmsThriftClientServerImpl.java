@@ -5,17 +5,14 @@ import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.protocol.TProtocolFactory;
 import org.apache.thrift.transport.TMemoryBuffer;
-import org.everthrift.appserver.controller.ThriftProcessor;
 import org.everthrift.clustering.jms.JmsThriftClientIF;
 import org.everthrift.clustering.thrift.NullResult;
 import org.everthrift.clustering.thrift.ServiceIfaceProxy;
-import org.everthrift.utils.ThriftServicesDb;
+import org.everthrift.thrift.ThriftServicesDiscovery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.lang.reflect.Proxy;
 import java.util.concurrent.ExecutionException;
@@ -33,7 +30,7 @@ public class LocalJmsThriftClientServerImpl implements JmsThriftClientIF {
     private static final Logger log = LoggerFactory.getLogger(LocalJmsThriftClientServerImpl.class);
 
     @Autowired
-    private ThriftServicesDb thriftServicesDb;
+    private ThriftServicesDiscovery thriftServicesDb;
 
     private TProcessor thriftProcessor;
 

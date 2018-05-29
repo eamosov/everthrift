@@ -81,7 +81,7 @@ public class StringUUIDType implements UserType, Externalizable {
 
     @NotNull
     @Override
-    public Serializable disassemble(@NotNull Object value) throws HibernateException {
+    public Serializable disassemble(Object value) throws HibernateException {
         return (Serializable) value;
     }
 

@@ -3,7 +3,7 @@ package org.everthrift.appserver.configs;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.everthrift.appserver.controller.ThriftProcessor;
 import org.everthrift.appserver.transport.asynctcp.AsyncTcpThriftAdapter;
-import org.everthrift.appserver.transport.asynctcp.RpcAsyncTcpRegistry;
+import org.everthrift.appserver.transport.asynctcp.RpcAsyncTcp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -17,15 +17,10 @@ public class AsyncTcpThrift {
 
     private static final Logger log = LoggerFactory.getLogger(AsyncTcpThrift.class);
 
-    @Bean
-    public RpcAsyncTcpRegistry rpcAsyncTcpRegistry() {
-        log.info("Starting bean: RpcAsyncTcpRegistry");
-        return new RpcAsyncTcpRegistry();
-    }
 
     @Bean
-    public ThriftProcessor asyncTcpThriftProcessor(RpcAsyncTcpRegistry rpcAsyncTcpRegistry) {
-        return new ThriftProcessor(rpcAsyncTcpRegistry);
+    public ThriftProcessor asyncTcpThriftProcessor() {
+        return new ThriftProcessor(RpcAsyncTcp.class);
     }
 
     @Bean

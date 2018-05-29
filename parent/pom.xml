@@ -403,12 +403,6 @@
 
             <dependency>
                 <groupId>everthrift</groupId>
-                <artifactId>clustering</artifactId>
-                <version>${everthrift.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>everthrift</groupId>
                 <artifactId>jms</artifactId>
                 <version>${everthrift.version}</version>
             </dependency>
@@ -446,18 +440,6 @@
             <dependency>
                 <groupId>everthrift</groupId>
                 <artifactId>rabbit</artifactId>
-                <version>${everthrift.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>everthrift</groupId>
-                <artifactId>services</artifactId>
-                <version>${everthrift.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>everthrift</groupId>
-                <artifactId>common-cli</artifactId>
                 <version>${everthrift.version}</version>
             </dependency>
 

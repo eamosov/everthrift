@@ -2,7 +2,7 @@ package org.everthrift.appserver.utils.thrift;
 
 import org.apache.thrift.TException;
 import org.apache.thrift.transport.TTransportException;
-import org.everthrift.clustering.thrift.ThriftCallFuture;
+import org.everthrift.thrift.ThriftCallFuture;
 import org.everthrift.clustering.thrift.ThriftCallFutureHolder;
 import org.jetbrains.annotations.NotNull;
 

@@ -25,7 +25,7 @@ import org.everthrift.appserver.controller.ThriftProtocolSupportIF;
 import org.everthrift.appserver.utils.thrift.AbstractThriftClient;
 import org.everthrift.appserver.utils.thrift.SessionIF;
 import org.everthrift.clustering.MessageWrapper;
-import org.everthrift.clustering.thrift.ThriftCallFuture;
+import org.everthrift.thrift.ThriftCallFuture;
 import org.everthrift.thrift.TFunction;
 import org.everthrift.utils.Pair;
 import org.slf4j.Logger;

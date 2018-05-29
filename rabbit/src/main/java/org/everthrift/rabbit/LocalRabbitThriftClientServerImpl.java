@@ -9,7 +9,7 @@ import org.everthrift.appserver.controller.ThriftProcessor;
 import org.everthrift.clustering.rabbit.RabbitThriftClientIF;
 import org.everthrift.clustering.thrift.NullResult;
 import org.everthrift.clustering.thrift.ServiceIfaceProxy;
-import org.everthrift.utils.ThriftServicesDb;
+import org.everthrift.thrift.ThriftServicesDiscovery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,11 +35,11 @@ public class LocalRabbitThriftClientServerImpl implements RabbitThriftClientIF {
 
     private final ExecutorService executor;
 
-    private final ThriftServicesDb thriftServicesDb;
+    private final ThriftServicesDiscovery thriftServicesDb;
 
     private boolean block = false;
 
-    public LocalRabbitThriftClientServerImpl(boolean block, ThriftProcessor thriftProcessor, ThriftServicesDb thriftServicesDb) {
+    public LocalRabbitThriftClientServerImpl(boolean block, ThriftProcessor thriftProcessor, ThriftServicesDiscovery thriftServicesDb) {
 
         this.block = block;
         this.thriftProcessor = thriftProcessor;

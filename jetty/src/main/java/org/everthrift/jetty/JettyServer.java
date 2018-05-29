@@ -308,7 +308,7 @@ public class JettyServer implements SmartLifecycle {
 
     @Override
     public int getPhase() {
-        return 0;
+        return 100;
     }
 
     @Override

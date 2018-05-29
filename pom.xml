@@ -227,10 +227,8 @@
 
     <modules>
         <module>parent</module>
-        <module>services</module>
-        <module>clustering</module>
-        <module>thrift</module>
         <module>utils</module>
+        <module>thrift</module>
         <module>cassandra-driver</module>
         <module>appserver</module>
         <module>jetty</module>
@@ -241,7 +239,6 @@
         <module>sql-migrator</module>
         <module>cassandra-migrator</module>
         <module>maven-migration-plugin</module>
-        <module>common-cli</module>
         <module>thrift-client</module>
         <module>elastic</module>
     </modules>

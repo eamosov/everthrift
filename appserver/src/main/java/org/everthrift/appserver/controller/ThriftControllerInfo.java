@@ -3,33 +3,23 @@ package org.everthrift.appserver.controller;
 import org.apache.thrift.TBase;
 import org.apache.thrift.TException;
 import org.everthrift.appserver.utils.thrift.ThriftClient;
-import org.everthrift.utils.ThriftServicesDb;
+import org.everthrift.thrift.ThriftServicesDiscovery;
 import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 
 import java.lang.annotation.Annotation;
 
 public class ThriftControllerInfo {
 
-    private static final Logger log = LoggerFactory.getLogger(ThriftControllerInfo.class);
-
     private final String beanName;
+    public final ThriftServicesDiscovery.ThriftMethodEntry thriftMethodEntry;
+    public final Class beanClass;
 
-    private final Class<? extends ThriftController> controllerCls;
-
-    public final ThriftServicesDb.ThriftMethodEntry thriftMethodEntry;
-
-    private final ApplicationContext context;
-
-    public ThriftControllerInfo(ApplicationContext context, String beanName, Class<? extends ThriftController> controllerCls,
-                                ThriftServicesDb.ThriftMethodEntry thriftMethodEntry) {
+    public ThriftControllerInfo(String beanName, Class beanClass, ThriftServicesDiscovery.ThriftMethodEntry thriftMethodEntry) {
         super();
         this.beanName = beanName;
-        this.controllerCls = controllerCls;
+        this.beanClass = beanClass;
         this.thriftMethodEntry = thriftMethodEntry;
-        this.context = context;
     }
 
     @NotNull
@@ -38,7 +28,7 @@ public class ThriftControllerInfo {
     }
 
 
-    public ThriftController makeController(TBase args, ThriftProtocolSupportIF tps, LogEntry logEntry, int seqId, ThriftClient thriftClient,
+    public ThriftController makeController(ApplicationContext context, TBase args, ThriftProtocolSupportIF tps, LogEntry logEntry, int seqId, ThriftClient thriftClient,
                                            Class<? extends Annotation> registryAnn, boolean allowAsyncAnswer) throws TException {
 
         final ThriftController ctrl = context.getBean(beanName, ThriftController.class);
@@ -53,10 +43,6 @@ public class ThriftControllerInfo {
 
     public String getMethodName() {
         return thriftMethodEntry.methodName;
-    }
-
-    public Class<? extends ThriftController> getControllerCls() {
-        return controllerCls;
     }
 
     public String getBeanName() {

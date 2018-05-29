@@ -1,7 +1,8 @@
 package org.everthrift.rabbit;
 
 import org.everthrift.appserver.controller.ThriftProcessor;
-import org.everthrift.utils.ThriftServicesDb;
+import org.everthrift.appserver.transport.rabbit.RpcRabbit;
+import org.everthrift.thrift.ThriftServicesDiscovery;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -10,22 +11,16 @@ import org.springframework.context.annotation.Configuration;
 public class LocalRabbitConfig {
 
     @Bean
-    public RpcRabbitRegistry rpcRabbitRegistry() {
-        return new RpcRabbitRegistry();
-    }
-
-    @Bean
-    public ThriftProcessor rabbitThriftProcessor(RpcRabbitRegistry rpcRabbitRegistry) {
-        return new ThriftProcessor(rpcRabbitRegistry);
+    public ThriftProcessor rabbitThriftProcessor() {
+        return new ThriftProcessor(RpcRabbit.class);
     }
 
     @Bean
     public LocalRabbitThriftClientServerImpl localRabbitThriftClientServerImpl(@Qualifier("testMode") boolean testMode,
                                                                                @Qualifier("rabbitThriftProcessor") ThriftProcessor rabbitThriftProcessor,
-                                                                               ThriftServicesDb thriftServicesDb) {
+                                                                               ThriftServicesDiscovery thriftServicesDb) {
 
-        final LocalRabbitThriftClientServerImpl impl = new LocalRabbitThriftClientServerImpl(testMode, rabbitThriftProcessor, thriftServicesDb);
-        return impl;
+        return new LocalRabbitThriftClientServerImpl(testMode, rabbitThriftProcessor, thriftServicesDb);
     }
 
 }

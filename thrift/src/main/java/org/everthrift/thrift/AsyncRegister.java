@@ -5,7 +5,6 @@ import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.ListenableScheduledFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import org.apache.thrift.transport.TTransportException;
-import org.everthrift.clustering.thrift.ThriftCallFuture;
 
 import java.io.Serializable;
 import java.util.List;

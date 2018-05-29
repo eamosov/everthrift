@@ -120,7 +120,7 @@ public class ThriftServer implements SmartLifecycle {
 
     @Override
     public int getPhase() {
-        return 0;
+        return 100;
     }
 
     @Override

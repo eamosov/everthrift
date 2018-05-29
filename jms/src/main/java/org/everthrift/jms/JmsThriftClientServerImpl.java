@@ -2,18 +2,18 @@ package org.everthrift.jms;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import org.apache.thrift.TApplicationException;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocolFactory;
 import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportException;
+import org.everthrift.clustering.thrift.ThriftControllerDiscovery;
 import org.everthrift.appserver.controller.ThriftControllerInfo;
 import org.everthrift.appserver.controller.ThriftProcessor;
 import org.everthrift.clustering.jms.JmsThriftClientIF;
 import org.everthrift.clustering.jms.JmsThriftClientImpl;
-import org.everthrift.utils.ThriftServicesDb;
+import org.everthrift.thrift.ThriftServicesDiscovery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,7 +34,6 @@ import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import java.util.Hashtable;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 public class JmsThriftClientServerImpl implements SmartLifecycle, JmsThriftClientIF {
@@ -54,10 +53,11 @@ public class JmsThriftClientServerImpl implements SmartLifecycle, JmsThriftClien
 
     private final ThriftProcessor thriftProcessor;
 
-    private final RpcJmsRegistry rpcJmsRegistry;
+    @Autowired
+    private ThriftServicesDiscovery thriftServicesDb;
 
     @Autowired
-    private ThriftServicesDb thriftServicesDb;
+    private ThriftControllerDiscovery thriftControllerDiscovery;
 
     private String queuePrefix = "";
 
@@ -159,9 +159,7 @@ public class JmsThriftClientServerImpl implements SmartLifecycle, JmsThriftClien
     };
 
     public JmsThriftClientServerImpl(ConnectionFactory jmsConnectionFactory,
-                                     RpcJmsRegistry rpcJmsRegistry,
                                      ThriftProcessor thriftProcessor) {
-        this.rpcJmsRegistry = rpcJmsRegistry;
         this.thriftProcessor = thriftProcessor;
         this.jmsConnectionFactory = jmsConnectionFactory;
         this.jmsThriftClient = new JmsThriftClientImpl(jmsConnectionFactory, thriftServicesDb);
@@ -261,16 +259,13 @@ public class JmsThriftClientServerImpl implements SmartLifecycle, JmsThriftClien
     public void start() {
         running = true;
 
-        final Set<String> services = Sets.newHashSet();
-        services.addAll(rpcJmsRegistry.getControllers()
-                                      .values()
-                                      .stream()
-                                      .map(ThriftControllerInfo::getServiceName)
-                                      .collect(Collectors.toList()));
-
-        for (String s : services) {
+        for (String s : thriftControllerDiscovery.getLocal(thriftProcessor.registryAnn.getSimpleName())
+                                                 .stream()
+                                                 .map(ThriftControllerInfo::getServiceName)
+                                                 .collect(Collectors.toSet())) {
             addJmsListener(getQueueName(s), s);
         }
+
     }
 
     @Override
