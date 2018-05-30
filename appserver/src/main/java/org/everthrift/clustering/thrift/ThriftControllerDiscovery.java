@@ -15,14 +15,12 @@ import org.everthrift.appserver.controller.ConnectionStateHandler;
 import org.everthrift.appserver.controller.ThriftController;
 import org.everthrift.appserver.controller.ThriftControllerInfo;
 import org.everthrift.appserver.jgroups.RpcJGroups;
-import org.everthrift.appserver.transport.asynctcp.RpcAsyncTcp;
 import org.everthrift.appserver.transport.http.RpcHttp;
-import org.everthrift.appserver.transport.jms.RpcJms;
 import org.everthrift.appserver.transport.rabbit.RpcRabbit;
 import org.everthrift.appserver.transport.tcp.RpcSyncTcp;
 import org.everthrift.appserver.transport.websocket.RpcWebsocket;
-import org.everthrift.utils.Pair;
 import org.everthrift.thrift.ThriftServicesDiscovery;
+import org.everthrift.utils.Pair;
 import org.jetbrains.annotations.NotNull;
 import org.jgroups.Address;
 import org.jgroups.JChannel;
@@ -56,7 +54,7 @@ public class ThriftControllerDiscovery implements SmartLifecycle {
         public List<String> annotations;
 
         public ServiceDetails() {
-            
+
         }
 
         public ServiceDetails(List<String> annotations) {
@@ -74,7 +72,7 @@ public class ThriftControllerDiscovery implements SmartLifecycle {
 
     private Multimap<String, Class<? extends ConnectionStateHandler>> stateHandlers = LinkedListMultimap.create();
 
-    public final Class<? extends Annotation> rpcAnnotations[] = new Class[]{RpcWebsocket.class, RpcHttp.class, RpcJGroups.class, RpcRabbit.class, RpcSyncTcp.class, RpcAsyncTcp.class, RpcJms.class};
+    public final Class<? extends Annotation> rpcAnnotations[] = new Class[]{RpcWebsocket.class, RpcHttp.class, RpcJGroups.class, RpcRabbit.class, RpcSyncTcp.class};
 
 
     public final String BASE_PATH = "/services";
@@ -146,11 +144,11 @@ public class ThriftControllerDiscovery implements SmartLifecycle {
 
     public List<Address> getCluster(String annName, String fullMethodName) {
         try {
-            final List<Address> addresses =  serviceDiscovery.queryForInstances(fullMethodName)
-                                   .stream()
-                                   .filter(i -> i.getPayload().annotations.contains(annName))
-                                   .map(i -> UUID.fromString(i.getAddress()))
-                                   .collect(Collectors.toList());
+            final List<Address> addresses = serviceDiscovery.queryForInstances(fullMethodName)
+                                                            .stream()
+                                                            .filter(i -> i.getPayload().annotations.contains(annName))
+                                                            .map(i -> UUID.fromString(i.getAddress()))
+                                                            .collect(Collectors.toList());
 
             Collections.shuffle(addresses);
             return addresses;

@@ -2,6 +2,8 @@ package org.everthrift.rabbit;
 
 import org.everthrift.appserver.controller.ThriftProcessor;
 import org.everthrift.appserver.transport.rabbit.RpcRabbit;
+import org.everthrift.clustering.thrift.ThriftControllerDiscovery;
+import org.everthrift.thrift.ThriftServicesDiscovery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.MessageListener;
@@ -11,6 +13,7 @@ import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Scope;
@@ -30,9 +33,11 @@ public class RabbitConfig {
 
     @Bean
     @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-    public SimpleMessageListenerContainer thriftRabbitMessageListener(String destination, ConnectionFactory connectionFactory,
+    public SimpleMessageListenerContainer thriftRabbitMessageListener(String destination,
+                                                                      ConnectionFactory connectionFactory,
                                                                       MessageListener listener,
                                                                       int concurrentConsumers) {
+
         final SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
 
         container.setConnectionFactory(connectionFactory);
@@ -59,9 +64,17 @@ public class RabbitConfig {
                                                                          String exchangePrefix,
                                                                      @Value("${rabbit.exchange.suffix:}")
                                                                          String exchangeSuffix,
-                                                                     @Qualifier("rabbitThriftProcessor") ThriftProcessor rabbitThriftProcessor
+                                                                     @Qualifier("rabbitThriftProcessor") ThriftProcessor rabbitThriftProcessor,
+                                                                     ApplicationContext context,
+                                                                     ThriftServicesDiscovery thriftServicesDiscovery,
+                                                                     ThriftControllerDiscovery thriftControllerDiscovery
+
     ) {
-        final RabbitThriftClientServerImpl r = new RabbitThriftClientServerImpl(connectionFactory, rabbitThriftProcessor);
+        final RabbitThriftClientServerImpl r = new RabbitThriftClientServerImpl(connectionFactory,
+                                                                                rabbitThriftProcessor,
+                                                                                context,
+                                                                                thriftServicesDiscovery,
+                                                                                thriftControllerDiscovery);
         r.setQueuePrefix(queuePrefix);
         r.setQueueSuffix(queueSuffix);
         r.setExchangePrefix(exchangePrefix);

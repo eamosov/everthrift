@@ -45,7 +45,7 @@ public abstract class HibernateSetType<T> implements UserType {
         return deepCopy(cached);
     }
 
-    @NotNull
+    @Nullable
     @Override
     public Serializable disassemble(final Object o) throws HibernateException {
         return (Serializable) deepCopy(o);

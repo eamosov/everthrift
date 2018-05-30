@@ -11,11 +11,11 @@ import org.apache.thrift.protocol.TProtocolFactory;
 import org.apache.thrift.transport.TMemoryInputTransport;
 import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportException;
-import org.everthrift.clustering.thrift.ThriftControllerDiscovery;
 import org.everthrift.appserver.controller.ThriftControllerInfo;
 import org.everthrift.appserver.controller.ThriftProcessor;
 import org.everthrift.clustering.rabbit.RabbitThriftClientIF;
 import org.everthrift.clustering.rabbit.RabbitThriftClientImpl;
+import org.everthrift.clustering.thrift.ThriftControllerDiscovery;
 import org.everthrift.thrift.ThriftServicesDiscovery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,29 +28,21 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.ChannelCallback;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.SmartLifecycle;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class RabbitThriftClientServerImpl implements RabbitThriftClientIF {
+public class RabbitThriftClientServerImpl implements RabbitThriftClientIF, SmartLifecycle {
 
     private static final Logger log = LoggerFactory.getLogger(RabbitThriftClientServerImpl.class);
 
-    @Autowired
-    private ConnectionFactory cf;
+    private final ConnectionFactory rabbitConnectionFactory;
 
-    @Autowired
-    private ApplicationContext context;
+    private final ApplicationContext context;
 
-    @Autowired
-    private ThriftServicesDiscovery thriftServicesDb;
-
-    @Autowired
-    private ThriftControllerDiscovery thriftControllerDiscovery;
+    private final ThriftControllerDiscovery thriftControllerDiscovery;
 
     private List<SimpleMessageListenerContainer> listeners = Lists.newArrayList();
 
@@ -65,6 +57,8 @@ public class RabbitThriftClientServerImpl implements RabbitThriftClientIF {
     private String queuePrefix = "";
 
     private String queueSuffix = "";
+
+    private boolean running = false;
 
     private MessageListener listener = new MessageListener() {
 
@@ -117,32 +111,19 @@ public class RabbitThriftClientServerImpl implements RabbitThriftClientIF {
     };
 
     public RabbitThriftClientServerImpl(ConnectionFactory connectionFactory,
-                                        ThriftProcessor thriftProcessor) {
-        this.cf = connectionFactory;
-        this.rabbitThriftClient = new RabbitThriftClientImpl(cf, thriftServicesDb);
-        this.admin = new RabbitAdmin(cf);
+                                        ThriftProcessor thriftProcessor,
+                                        ApplicationContext context,
+                                        ThriftServicesDiscovery thriftServicesDiscovery,
+                                        ThriftControllerDiscovery thriftControllerDiscovery) {
+
+        this.rabbitConnectionFactory = connectionFactory;
+        this.rabbitThriftClient = new RabbitThriftClientImpl(rabbitConnectionFactory, thriftServicesDiscovery);
+        this.admin = new RabbitAdmin(rabbitConnectionFactory);
         this.thriftProcessor = thriftProcessor;
+        this.context = context;
+        this.thriftControllerDiscovery = thriftControllerDiscovery;
         // this.admin.setIgnoreDeclarationExceptions(true);
 
-    }
-
-    @PostConstruct
-    public void attachListeners() throws Exception {
-
-        thriftControllerDiscovery.getLocal(thriftProcessor.registryAnn.getSimpleName())
-                                 .stream()
-                                 .map(ThriftControllerInfo::getServiceName)
-                                 .collect(Collectors.toSet()).forEach(this::addListener);
-    }
-
-    @PreDestroy
-    public synchronized void destroy() throws Exception {
-
-        for (SimpleMessageListenerContainer l : listeners) {
-            l.stop();
-            l.destroy();
-        }
-        listeners.clear();
     }
 
     private synchronized SimpleMessageListenerContainer addListener(final String serviceName) {
@@ -170,7 +151,7 @@ public class RabbitThriftClientServerImpl implements RabbitThriftClientIF {
 
 
         final SimpleMessageListenerContainer l = (SimpleMessageListenerContainer) context.getBean("thriftRabbitMessageListener",
-                                                                                                  queue.getName(), cf, listener, consumers);
+                                                                                                  queue.getName(), rabbitConnectionFactory, listener, consumers);
         listeners.add(l);
         return l;
     }
@@ -229,4 +210,49 @@ public class RabbitThriftClientServerImpl implements RabbitThriftClientIF {
         rabbitThriftClient.setExchangeSuffix(exchangeSuffix);
     }
 
+    @Override
+    public boolean isAutoStartup() {
+        return true;
+    }
+
+    @Override
+    public void stop(Runnable callback) {
+        stop();
+        if (callback != null) {
+            callback.run();
+        }
+    }
+
+    @Override
+    public void start() {
+
+        running = true;
+
+        thriftControllerDiscovery.getLocal(thriftProcessor.registryAnn.getSimpleName())
+                                 .stream()
+                                 .map(ThriftControllerInfo::getServiceName)
+                                 .collect(Collectors.toSet()).forEach(this::addListener);
+
+    }
+
+    @Override
+    public void stop() {
+        for (SimpleMessageListenerContainer l : listeners) {
+            l.stop();
+            l.destroy();
+        }
+        listeners.clear();
+
+        running = false;
+    }
+
+    @Override
+    public boolean isRunning() {
+        return running;
+    }
+
+    @Override
+    public int getPhase() {
+        return 10; // needs started after thriftControllerDiscovery have discovered all controllers
+    }
 }

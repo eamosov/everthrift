@@ -15,21 +15,20 @@ import org.apache.thrift.protocol.TType;
 import org.apache.thrift.transport.TFramedTransport;
 import org.apache.thrift.transport.TSocket;
 import org.apache.thrift.transport.TTransport;
-import org.everthrift.clustering.thrift.ThriftControllerDiscovery;
 import org.everthrift.appserver.jgroups.RpcJGroups;
 import org.everthrift.appserver.monitoring.RpsServletIF;
 import org.everthrift.appserver.monitoring.RpsServletIF.DsName;
-import org.everthrift.appserver.transport.asynctcp.RpcAsyncTcp;
 import org.everthrift.appserver.transport.http.RpcHttp;
-import org.everthrift.appserver.transport.jms.RpcJms;
+import org.everthrift.appserver.transport.rabbit.RpcRabbit;
 import org.everthrift.appserver.transport.tcp.RpcSyncTcp;
 import org.everthrift.appserver.transport.websocket.RpcWebsocket;
 import org.everthrift.appserver.utils.thrift.AbstractThriftClient;
 import org.everthrift.appserver.utils.thrift.SessionIF;
 import org.everthrift.appserver.utils.thrift.ThriftClient;
 import org.everthrift.clustering.MessageWrapper;
-import org.everthrift.thrift.ThriftCallFuture;
+import org.everthrift.clustering.thrift.ThriftControllerDiscovery;
 import org.everthrift.thrift.TFunction;
+import org.everthrift.thrift.ThriftCallFuture;
 import org.everthrift.thrift.ThriftServicesDiscovery;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -91,14 +90,14 @@ public class ThriftProcessor implements TProcessor {
     private void stat() {
 
         if (rpsServlet != null) {
-            if (registryAnn == RpcSyncTcp.class || registryAnn == RpcAsyncTcp.class) {
+            if (registryAnn == RpcSyncTcp.class) {
                 rpsServlet.incThrift(DsName.THRIFT_TCP);
             } else if (registryAnn == RpcHttp.class) {
                 rpsServlet.incThrift(DsName.THRIFT_HTTP);
             } else if (registryAnn == RpcJGroups.class) {
                 rpsServlet.incThrift(DsName.THRIFT_JGROUPS);
-            } else if (registryAnn == RpcJms.class) {
-                rpsServlet.incThrift(DsName.THRIFT_JMS);
+            } else if (registryAnn == RpcRabbit.class) {
+                rpsServlet.incThrift(DsName.THRIFT_RABBIT);
             } else if (registryAnn == RpcWebsocket.class) {
                 rpsServlet.incThrift(DsName.THRIFT_WS);
             }
@@ -262,12 +261,13 @@ public class ThriftProcessor implements TProcessor {
                 return null;
             }
 
+            @NotNull
             @Override
             public TMessage getTMessage() throws TException {
                 return msg;
             }
 
-            @Nullable
+            @NotNull
             @Override
             public Map<String, Object> getAttributes() {
                 return attributes;
@@ -301,8 +301,9 @@ public class ThriftProcessor implements TProcessor {
                 return o;
             }
 
+            @NotNull
             @Override
-            public Object result(final Object o, final TFunction<Object, TBase> makeResult) {
+            public Object result(final Object o, @NotNull final TFunction<Object, TBase> makeResult) {
 
                 if (o instanceof TApplicationException) {
                     return result((TApplicationException) o);
@@ -334,7 +335,7 @@ public class ThriftProcessor implements TProcessor {
             }
 
             @Override
-            public void asyncResult(Object o, AbstractThriftController controller) {
+            public void asyncResult(Object o, @NotNull AbstractThriftController controller) {
                 throw new NotImplementedException();
             }
 

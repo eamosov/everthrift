@@ -49,10 +49,6 @@ public class ThriftCallFuture<T> extends CompletableFuture<T> {
         }
     }
 
-    public void setException(TException e) {
-        super.completeExceptionally(e);
-    }
-
     public String getFullMethodName() {
         return thriftMethodEntry.getFullMethodName();
     }

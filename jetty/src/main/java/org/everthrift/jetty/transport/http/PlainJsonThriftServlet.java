@@ -30,6 +30,7 @@ import org.everthrift.thrift.ThriftCallFuture;
 import org.everthrift.thrift.TFunction;
 import org.everthrift.utils.ClassUtils;
 import org.everthrift.utils.Pair;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -106,16 +107,19 @@ public class PlainJsonThriftServlet extends HttpServlet {
                     return null;
                 }
 
+                @NotNull
                 @Override
                 public TMessage getTMessage() throws TException {
                     return new TMessage(msgName, TMessageType.CALL, 0);
                 }
 
+                @NotNull
                 @Override
                 public Map<String, Object> getAttributes() {
                     return attributes;
                 }
 
+                @NotNull
                 @Override
                 public <T extends TBase> T readArgs(TBase args) throws TException {
                     final JsonParser jsonParser = new JsonParser();
@@ -175,8 +179,9 @@ public class PlainJsonThriftServlet extends HttpServlet {
                     return Pair.create(outT, httpStatusCode);
                 }
 
+                @NotNull
                 @Override
-                public Pair<TMemoryBuffer, Integer> result(final Object o, final TFunction<Object, TBase> makeResult) {
+                public Pair<TMemoryBuffer, Integer> result(final Object o, @NotNull final TFunction<Object, TBase> makeResult) {
 
                     int httpCode = 200;
 
@@ -224,7 +229,7 @@ public class PlainJsonThriftServlet extends HttpServlet {
                 }
 
                 @Override
-                public void asyncResult(Object o, AbstractThriftController controller) {
+                public void asyncResult(Object o, @NotNull AbstractThriftController controller) {
                     final Pair<TMemoryBuffer, Integer> tt = result(o, r -> controller.getInfo().thriftMethodEntry.makeResult(r));
                     try {
                         out(asyncContext, response, tt.second, "application/json; charset=utf-8", tt.first

@@ -26,14 +26,14 @@ public class RabbitThriftClientImpl implements RabbitThriftClientIF {
     private static ExecutorService sendExecutor = Executors.newSingleThreadExecutor();
 
     private TProtocolFactory protocolFactory = new TBinaryProtocol.Factory();
-    private final ThriftServicesDiscovery thriftServicesDb;
+    private final ThriftServicesDiscovery thriftServicesDiscovery;
 
     private String exchangePrefix = "";
     private String exchangeSuffix = "";
 
-    public RabbitThriftClientImpl(final ConnectionFactory rabbitConnectionFactory, final ThriftServicesDiscovery thriftServicesDb) {
+    public RabbitThriftClientImpl(final ConnectionFactory rabbitConnectionFactory, final ThriftServicesDiscovery thriftServicesDiscovery) {
 
-        this.thriftServicesDb = thriftServicesDb;
+        this.thriftServicesDiscovery = thriftServicesDiscovery;
         rabbitTemplate = new RabbitTemplate(rabbitConnectionFactory);
         rabbitTemplate.setMessageConverter(new MessageConverter() {
 
@@ -68,7 +68,7 @@ public class RabbitThriftClientImpl implements RabbitThriftClientIF {
     public <T> T onIface(Class<T> cls) {
 
         return (T) Proxy.newProxyInstance(ThriftProxyFactory.class.getClassLoader(), new Class[]{cls},
-                                          new ServiceIfaceProxy(thriftServicesDb, ii -> {
+                                          new ServiceIfaceProxy(thriftServicesDiscovery, ii -> {
                                               sendExecutor.execute(() -> {
                                                   rabbitTemplate.convertAndSend(getExchangeName(ii.thriftMethodEntry.serviceName), ii.thriftMethodEntry.methodName, ii);
                                               });

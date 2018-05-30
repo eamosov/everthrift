@@ -76,7 +76,7 @@ public class LongIntervalType implements UserType {
         return false;
     }
 
-    @NotNull
+    @Nullable
     @Override
     public Serializable disassemble(@NotNull Object value) throws HibernateException {
         return (Serializable) value;

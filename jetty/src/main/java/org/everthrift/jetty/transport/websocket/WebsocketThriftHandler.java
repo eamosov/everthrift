@@ -14,7 +14,6 @@ import org.apache.thrift.transport.TMemoryInputTransport;
 import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportException;
 import org.apache.thrift.transport.TTransportFactory;
-import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.everthrift.appserver.controller.AbstractThriftController;
 import org.everthrift.appserver.controller.DefaultTProtocolSupport;
 import org.everthrift.appserver.controller.ThriftProcessor;
@@ -23,21 +22,12 @@ import org.everthrift.appserver.utils.thrift.SessionIF;
 import org.everthrift.appserver.utils.thrift.ThriftClient;
 import org.everthrift.appserver.utils.thrift.ThriftClientFactory;
 import org.everthrift.clustering.MessageWrapper;
-import org.everthrift.clustering.MessageWrapper.WebsocketContentType;
+import org.everthrift.utils.AsyncRegister;
 import org.everthrift.thrift.ThriftCallFuture;
-import org.everthrift.thrift.AsyncRegister;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.messaging.Message;
-import org.springframework.messaging.MessageChannel;
-import org.springframework.messaging.MessageDeliveryException;
-import org.springframework.messaging.MessageHandler;
-import org.springframework.messaging.MessagingException;
-import org.springframework.messaging.SubscribableChannel;
-import org.springframework.messaging.support.GenericMessage;
-import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.web.socket.BinaryMessage;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -80,7 +70,7 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
     private class SessionData {
         final WebSocketSession session;
 
-        final AsyncRegister async = new AsyncRegister(listeningScheduledExecutorService);
+        final AsyncRegister<ThriftCallFuture> async = new AsyncRegister<ThriftCallFuture>(listeningScheduledExecutorService);
 
         final SettableFuture<Void> closeFuture = SettableFuture.create();
 
@@ -99,45 +89,21 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
 
     private ThriftProcessor thriftProcessor;
 
-    private final SubscribableChannel inWebsocketChannel;
-
     private final TProtocolFactory protocolFactory;
 
-    private TTransportFactory transportFactory = new TTransportFactory();
+    private final TTransportFactory transportFactory;
 
-    private WebsocketContentType contentType = WebsocketContentType.BINARY;
+    private final boolean textOnly;
 
-    public WebsocketThriftHandler(final TProtocolFactory protocolFactory,
-                                  final SubscribableChannel inWebsocketChannel,
-                                  final SubscribableChannel outWebsocketChannel,
-                                  final ThriftProcessor thriftProcessor) {
+    public WebsocketThriftHandler(TTransportFactory transportFactory,
+                                  final TProtocolFactory protocolFactory,
+                                  final ThriftProcessor thriftProcessor,
+                                  boolean textOnly) {
 
+        this.transportFactory = transportFactory;
         this.protocolFactory = protocolFactory;
-        this.inWebsocketChannel = inWebsocketChannel;
         this.thriftProcessor = thriftProcessor;
-
-        outWebsocketChannel.subscribe(new MessageHandler() {
-
-            @SuppressWarnings({"rawtypes", "unchecked"})
-            @Override
-            public void handleMessage(Message<?> message) throws MessagingException {
-                handleOut((Message) message);
-            }
-        });
-
-        this.inWebsocketChannel.subscribe(new MessageHandler() {
-
-            @Override
-            public void handleMessage(Message<?> message) throws MessagingException {
-                final MessageWrapper payload = handleIn((Message) message, outWebsocketChannel);
-
-                if (payload != null) {
-                    final GenericMessage<MessageWrapper> s = new GenericMessage<MessageWrapper>(payload.removeCorrelationHeaders(),
-                                                                                                message.getHeaders());
-                    outWebsocketChannel.send(s);
-                }
-            }
-        });
+        this.textOnly = textOnly;
     }
 
     @Override
@@ -159,29 +125,53 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
 
             final String sessionId = getSessionId(session);
 
-            final TMemoryInputTransport copy = new TMemoryInputTransport(unwrapped.getBuffer(), 0, unwrapped.getBufferPosition()
-                + unwrapped.getBytesRemainingInBuffer());
+            final TMemoryInputTransport copy = new TMemoryInputTransport(unwrapped.getBuffer(),
+                                                                         0,
+                                                                         unwrapped.getBufferPosition() + unwrapped.getBytesRemainingInBuffer());
 
             if (msg.type == TMessageType.EXCEPTION || msg.type == TMessageType.REPLY) {
 
                 processThriftReply(session, msg, copy);
             } else {
 
-                final Message<MessageWrapper> m = MessageBuilder.withPayload(new MessageWrapper(copy).setSessionId(sessionId)
-                                                                                                     .setWebsocketContentType(WebsocketContentType.BINARY)
-                                                                                                     .setHttpRequestParams((Map) session
-                                                                                                         .getAttributes()
-                                                                                                         .get(MessageWrapper.HTTP_REQUEST_PARAMS)))
-                                                                .build();
+                final MessageWrapper in = new MessageWrapper(copy).setHttpRequestParams((Map) session.getAttributes()
+                                                                                                     .get(MessageWrapper.HTTP_REQUEST_PARAMS));
 
-                try {
-                    inWebsocketChannel.send(m);
-                } catch (MessageDeliveryException e) {
-                    log.error("Reject websocket message, sessionId=" + this.getSessionId(session), e);
-                    session.close(CloseStatus.SERVICE_OVERLOAD);
+                final MessageWrapper out = thriftProcessor.process(new DefaultTProtocolSupport(sessionId, in, protocolFactory) {
+                    @Override
+                    public void asyncResult(final Object o, @NotNull final AbstractThriftController controller) {
+                        writeBinary(session, (TMemoryBuffer) result(o, r -> controller.getInfo().thriftMethodEntry.makeResult(r))
+                            .getTTransport());
+                        ThriftProcessor.logEnd(ThriftProcessor.log, controller, msg.name, sessionId, o);
+                    }
+                }, getThriftClient(sessionId));
+
+                if (out != null) {
+                    writeBinary(session, (TMemoryBuffer) out.getTTransport());
                 }
             }
         }
+    }
+
+    private void writeBinary(WebSocketSession session, TMemoryBuffer payload) {
+
+        if (!transportFactory.getClass().equals(TTransportFactory.class)) {
+            final TMemoryBuffer wrapped = new TMemoryBuffer(payload.length());
+            try (final TTransport wrapper = transportFactory.getTransport(wrapped)) {
+                try {
+                    wrapper.write(payload.getArray(), 0, payload.length());
+                    wrapper.flush();
+                } catch (TTransportException e) {
+                    throw new RuntimeException(e);
+                }
+                payload = wrapped;
+            }
+        }
+
+        ((JettyWebSocketSession) session).getNativeSession()
+                                         .getRemote()
+                                         .sendBytesByFuture(payload.getByteBuffer());
+
 
     }
 
@@ -192,35 +182,47 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
             log.trace("handleTextMessage: size={}, content={}", message.getPayloadLength(), message.getPayload());
         }
 
+        session.getAttributes().put("TEXT", true);
+
         final byte[] payload = message.asBytes();
 
         // Для текстовых сообщение не применяем архивирование
-        final TTransport in = new TMemoryInputTransport(payload);
+        final TTransport orig = new TMemoryInputTransport(payload);
 
-        final TMessage msg = protocolFactory.getProtocol(in).readMessageBegin();
+        final TMessage msg = protocolFactory.getProtocol(orig).readMessageBegin();
 
         log.trace("thrift message: {}", msg);
 
         final String sessionId = getSessionId(session);
 
-        final TMemoryInputTransport unwrapped = new TMemoryInputTransport(in.getBuffer(), 0,
-                                                                          in.getBufferPosition() + in.getBytesRemainingInBuffer());
+        final TMemoryInputTransport unwrapped = new TMemoryInputTransport(orig.getBuffer(), 0,
+                                                                          orig.getBufferPosition() + orig.getBytesRemainingInBuffer());
 
         if (msg.type == TMessageType.EXCEPTION || msg.type == TMessageType.REPLY) {
             processThriftReply(session, msg, unwrapped);
         } else {
-            final Message<MessageWrapper> m = MessageBuilder.withPayload(new MessageWrapper(unwrapped).setSessionId(sessionId)
-                                                                                                      .setWebsocketContentType(WebsocketContentType.TEXT)
-                                                                                                      .setHttpRequestParams((Map) session
-                                                                                                          .getAttributes()
-                                                                                                          .get(MessageWrapper.HTTP_REQUEST_PARAMS)))
-                                                            .build();
+            final MessageWrapper in = new MessageWrapper(unwrapped).setHttpRequestParams((Map) session.getAttributes()
+                                                                                                      .get(MessageWrapper.HTTP_REQUEST_PARAMS));
 
-            try {
-                inWebsocketChannel.send(m);
-            } catch (MessageDeliveryException e) {
-                log.warn("Reject websocket message, sessionId={}", this.getSessionId(session));
-                session.close(CloseStatus.SERVICE_OVERLOAD);
+            final MessageWrapper out = thriftProcessor.process(new DefaultTProtocolSupport(sessionId, in, protocolFactory) {
+                @Override
+                public void asyncResult(final Object o, @NotNull final AbstractThriftController controller) {
+
+                    final TMemoryBuffer payload = (TMemoryBuffer) result(o, r -> controller.getInfo().thriftMethodEntry.makeResult(r))
+                        .getTTransport();
+
+                    ((JettyWebSocketSession) session).getNativeSession().getRemote()
+                                                     .sendStringByFuture(new String(payload.getArray(), 0, payload.length(), UTF_8));
+
+                    ThriftProcessor.logEnd(ThriftProcessor.log, controller, msg.name, sessionId, o);
+                }
+            }, getThriftClient(sessionId));
+
+            if (out != null) {
+                final TMemoryBuffer payload2 = (TMemoryBuffer) out.getTTransport();
+
+                ((JettyWebSocketSession) session).getNativeSession().getRemote()
+                                                 .sendStringByFuture(new String(payload2.getArray(), 0, payload2.length(), UTF_8));
             }
         }
     }
@@ -258,10 +260,10 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
         final SessionData sd = new SessionData(session);
         sessionRegistry.put(sessionId, sd);
 
-        final MessageWrapper mw = new MessageWrapper(null).setSessionId(sessionId)
-                                                          .setHttpRequestParams((Map) session
-                                                              .getAttributes()
-                                                              .get(MessageWrapper.HTTP_REQUEST_PARAMS));
+        final MessageWrapper mw = new MessageWrapper(null).setHttpRequestParams(
+            (Map) session
+                .getAttributes()
+                .get(MessageWrapper.HTTP_REQUEST_PARAMS));
 
         if (thriftProcessor.processOnOpen(mw, thriftClient(sessionId, sd)) == false) {
             try {
@@ -288,7 +290,7 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
             sd.closeFuture.set(null);
 
             for (ThriftCallFuture ii : sd.async.popAll()) {
-                ii.setException(new TTransportException(TTransportException.END_OF_FILE, "closed"));
+                ii.completeExceptionally(new TTransportException(TTransportException.END_OF_FILE, "closed"));
             }
         }
     }
@@ -308,8 +310,16 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
 
         sd.async.put(seqId, tInfo, timeout);
         try {
-            write(sd, this.contentType, tInfo.serializeCall(seqId, protocolFactory));
-        } catch (TException e) {
+            final TMemoryBuffer payload = tInfo.serializeCall(seqId, protocolFactory);
+
+            if (textOnly || sd.session.getAttributes().containsKey("TEXT")) {
+                ((JettyWebSocketSession) sd.session).getNativeSession().getRemote()
+                                                    .sendStringByFuture(new String(payload.getArray(), 0, payload.length(), UTF_8));
+            } else {
+                writeBinary(sd.session, payload);
+            }
+
+        } catch (Exception e) {
             sd.async.pop(seqId);
             throw e;
         }
@@ -369,116 +379,4 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
 
         return thriftClient(sessionId, sd);
     }
-
-    private MessageWrapper handleIn(Message<MessageWrapper> m, MessageChannel outChannel) {
-
-        final MessageWrapper w = m.getPayload().setMessageHeaders(m.getHeaders());
-
-        final String sessionId = w.getSessionId();
-
-        log.debug("handleIn: {}, adapter={}, processor={}, sessionId={}", new Object[]{m, this, thriftProcessor, sessionId});
-
-        if (sessionId == null) {
-            log.error("websocket sessionId is null for message: {}", m);
-            return null;
-        }
-
-        final ThriftClient tc = getThriftClient(sessionId);
-
-        try {
-            return thriftProcessor.process(new DefaultTProtocolSupport(w, protocolFactory) {
-                @Override
-                public void asyncResult(final Object o, @NotNull final AbstractThriftController controller) {
-
-                    final MessageWrapper mw = result(o, r -> controller.getInfo().thriftMethodEntry.makeResult(r));
-
-
-                    final GenericMessage<MessageWrapper> s = new GenericMessage<MessageWrapper>(mw, m.getHeaders());
-                    outChannel.send(s);
-
-                    ThriftProcessor.logEnd(ThriftProcessor.log, controller, msg.name, sessionId, o);
-                }
-            }, tc);
-        } catch (Exception e) {
-            log.error("Exception while execution thrift processor:", e);
-            return null;
-        }
-    }
-
-    private void write(SessionData sd, WebsocketContentType _contentType, TMemoryBuffer payload) throws TTransportException {
-        try {
-            if (_contentType == null) {
-                _contentType = this.contentType;
-            }
-
-            switch (_contentType) {
-                case BINARY:
-                    if (!transportFactory.getClass().equals(TTransportFactory.class)) {
-                        final TMemoryBuffer wrapped = new TMemoryBuffer(payload.length());
-                        try (final TTransport wrapper = transportFactory.getTransport(wrapped);) {
-
-                            wrapper.write(payload.getArray(), 0, payload.length());
-                            wrapper.flush();
-                            payload = wrapped;
-                        }
-                    }
-
-                    ((JettyWebSocketSession) sd.session).getNativeSession()
-                                                        .getRemote()
-                                                        .sendBytesByFuture(payload.getByteBuffer());
-                    break;
-                case TEXT:
-                    ((JettyWebSocketSession) sd.session).getNativeSession().getRemote()
-                                                        .sendStringByFuture(new String(payload.getArray(), 0, payload.length(), UTF_8));
-                    break;
-            }
-        } catch (WebSocketException e) {
-            log.debug("WebSocketException", e);
-            throw new TTransportException(e);
-        } catch (RuntimeException e) {
-            log.error("Unknown exception while send data to websocket: ", e);
-            throw e;
-        }
-
-    }
-
-    private void handleOut(Message<MessageWrapper> m) {
-
-        log.debug("handleOut: {}, adapter={}, processor={}", new Object[]{m, this, thriftProcessor});
-
-        final String sessionId = (String) m.getPayload().getSessionId();
-
-        if (sessionId == null) {
-            log.error("sessionId is NULL, message={}", m);
-            return;
-        }
-
-        final SessionData sd = sessionRegistry.get(sessionId);
-        if (sd == null) {
-            log.debug("websocket connection " + sessionId + " not found");
-            return;
-        }
-
-        try {
-            write(sd, m.getPayload().getWebsocketContentType(), (TMemoryBuffer) m.getPayload().getTTransport());
-        } catch (TTransportException e) {
-        }
-    }
-
-    public TTransportFactory getTransportFactory() {
-        return transportFactory;
-    }
-
-    public void setTransportFactory(TTransportFactory transportFactory) {
-        this.transportFactory = transportFactory;
-    }
-
-    public String getContentType() {
-        return contentType.name();
-    }
-
-    public void setContentType(String contentType) {
-        this.contentType = WebsocketContentType.valueOf(contentType);
-    }
-
 }

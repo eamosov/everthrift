@@ -51,7 +51,7 @@ public abstract class AbstractJgroupsThriftClientImpl extends ClusterThriftClien
         final Message msg = new Message();
         final MessageWrapper wrap = new MessageWrapper(tInfo.serializeCall(0, binaryProtocolFactory));
         if (attributes != null) {
-            wrap.copySerializeableAttributes(attributes);
+            wrap.putAllAttributes(attributes);
         }
 
         msg.setObject(wrap);

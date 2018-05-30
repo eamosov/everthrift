@@ -26,9 +26,9 @@ public class ServiceIfaceProxy implements InvocationHandler {
      * @param callback после вызова любого метода сервиса будет вызван
      *                 callback.set
      */
-    public ServiceIfaceProxy(ThriftServicesDiscovery thriftServicesDb, ServiceIfaceProxyCallback callback) {
+    public ServiceIfaceProxy(ThriftServicesDiscovery thriftServicesDiscovery, ServiceIfaceProxyCallback callback) {
         this.callback = callback;
-        this.thriftServicesDb = thriftServicesDb;
+        this.thriftServicesDb = thriftServicesDiscovery;
     }
 
     @Override

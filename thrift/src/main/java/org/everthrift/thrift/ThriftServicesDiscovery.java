@@ -11,6 +11,8 @@ import org.apache.thrift.protocol.TProtocolFactory;
 import org.apache.thrift.transport.TMemoryBuffer;
 import org.apache.thrift.transport.TTransport;
 import org.everthrift.utils.ClassUtils;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -96,7 +98,8 @@ public class ThriftServicesDiscovery {
             }
         }
 
-        public TBase makeResult(Object ret) throws TApplicationException {
+        @NotNull
+        public TBase makeResult(@Nullable Object ret) throws TApplicationException {
 
             try {
 

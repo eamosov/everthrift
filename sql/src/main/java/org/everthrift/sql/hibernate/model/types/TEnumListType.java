@@ -104,8 +104,9 @@ public abstract class TEnumListType<T extends TEnum> implements UserType {
         return deepCopy(cached);
     }
 
-    @NotNull
+
     @Override
+    @Nullable
     public Serializable disassemble(final Object o) throws HibernateException {
         return (Serializable) deepCopy(o);
     }

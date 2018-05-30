@@ -28,6 +28,7 @@ import org.everthrift.clustering.MessageWrapper;
 import org.everthrift.thrift.ThriftCallFuture;
 import org.everthrift.thrift.TFunction;
 import org.everthrift.utils.Pair;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -194,16 +195,19 @@ public abstract class AbstractThriftServlet extends HttpServlet {
                     return null;
                 }
 
+                @NotNull
                 @Override
                 public TMessage getTMessage() throws TException {
                     return tMessage;
                 }
 
+                @NotNull
                 @Override
                 public Map<String, Object> getAttributes() {
                     return attributes;
                 }
 
+                @NotNull
                 @Override
                 public <T extends TBase> T readArgs(final TBase args) throws TException {
 
@@ -242,8 +246,9 @@ public abstract class AbstractThriftServlet extends HttpServlet {
                     return outT;
                 }
 
+                @NotNull
                 @Override
-                public TMemoryBuffer result(final Object o, final TFunction<Object, TBase> makeResult) {
+                public TMemoryBuffer result(final Object o, @NotNull final TFunction<Object, TBase> makeResult) {
 
                     if (o instanceof TApplicationException) {
                         return result((TApplicationException) o);
@@ -277,7 +282,7 @@ public abstract class AbstractThriftServlet extends HttpServlet {
                 }
 
                 @Override
-                public void asyncResult(Object o, AbstractThriftController controller) {
+                public void asyncResult(Object o, @NotNull AbstractThriftController controller) {
                     final TMemoryBuffer tt = result(o, r -> controller.getInfo().thriftMethodEntry.makeResult(r));
                     try {
                         out(asyncContext, response, 200, getContentType(), tt.getArray(), tt.length());

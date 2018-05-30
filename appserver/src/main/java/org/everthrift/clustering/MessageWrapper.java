@@ -5,6 +5,7 @@ import com.google.common.collect.Maps;
 import org.apache.thrift.transport.TMemoryBuffer;
 import org.apache.thrift.transport.TMemoryInputTransport;
 import org.apache.thrift.transport.TTransport;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageHeaders;
 
@@ -21,15 +22,6 @@ public class MessageWrapper implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    /* attributes */
-    public static String SESSION_ID = "SESSION_ID";
-
-    public static String WS_CONTENT_TYPE = "WS_CONTENT_TYPE";
-
-    //public static String OUT_CHANNEL = "OUT_CHANNEL";
-
-    public static String MESSAGE_HEADERS = "MESSAGE_HEADERS";
-
     public static String HTTP_REQUEST_PARAMS = "HTTP_REQUEST_PARAMS";
 
     public static String HTTP_COOKIES = "HTTP_COOKIES";
@@ -42,11 +34,6 @@ public class MessageWrapper implements Serializable {
 
     private Map<String, Object> attributes;
 
-    public static enum WebsocketContentType {
-        BINARY,
-        TEXT
-    }
-
     public MessageWrapper(TTransport tTransport) {
         super();
         this.tTransport = tTransport;
@@ -58,69 +45,9 @@ public class MessageWrapper implements Serializable {
         return "MessageWrapper [tTransport=" + tTransport + ", attributes=" + attributes + "]";
     }
 
-    public synchronized MessageWrapper copySerializeableAttributes(Map<String, Object> attributes) {
-        for (Entry<String, Object> e : attributes.entrySet()) {
-            if (e.getValue() instanceof Serializable) {
-                this.attributes.put(e.getKey(), e.getValue());
-            }
-        }
-        return this;
-    }
-
-    public synchronized MessageWrapper copyAttributes(MessageWrapper old) {
-        copyAttributes(old.attributes);
-        return this;
-    }
-
-    public synchronized MessageWrapper copyAttributes(Map<String, Object> attributes) {
+    public synchronized MessageWrapper putAllAttributes(@NotNull Map<String, Object> attributes) {
         this.attributes.putAll(attributes);
         return this;
-    }
-
-    public synchronized MessageWrapper setSessionId(String sessionId) {
-        attributes.put(SESSION_ID, sessionId);
-        return this;
-    }
-
-    public synchronized String getSessionId() {
-        return (String) attributes.get(SESSION_ID);
-    }
-
-    public synchronized MessageWrapper setWebsocketContentType(WebsocketContentType websocketContentType) {
-        attributes.put(WS_CONTENT_TYPE, websocketContentType);
-        return this;
-    }
-
-    public synchronized WebsocketContentType getWebsocketContentType() {
-        return (WebsocketContentType) attributes.get(WS_CONTENT_TYPE);
-    }
-
-//    public synchronized MessageWrapper setOutChannel(MessageChannel outChannel) {
-//        attributes.put(OUT_CHANNEL, outChannel);
-//        return this;
-//    }
-//
-//    public synchronized MessageChannel getOutChannel() {
-//        return (MessageChannel) attributes.get(OUT_CHANNEL);
-//    }
-
-    public synchronized MessageWrapper setMessageHeaders(MessageHeaders messageHeaders) {
-        attributes.put(MESSAGE_HEADERS, messageHeaders);
-        return this;
-    }
-
-    public synchronized MessageHeaders getMessageHeaders() {
-        return (MessageHeaders) attributes.remove(MESSAGE_HEADERS);
-    }
-
-    public synchronized MessageWrapper removeCorrelationHeaders() {
-        attributes.remove(MESSAGE_HEADERS);
-        //attributes.remove(OUT_CHANNEL);
-        return this;
-    }
-
-    public MessageWrapper toSerializable() {
-        return new MessageWrapper(tTransport).copySerializeableAttributes(this.attributes);
     }
 
     public TTransport getTTransport() {
@@ -171,20 +98,16 @@ public class MessageWrapper implements Serializable {
         }
     }
 
-    public synchronized Object getAttribute(String name) {
+    public synchronized Object getAttribute(@NotNull String name) {
         return attributes.get(name);
     }
 
+    @NotNull
     public synchronized Map<String, Object> getAttributes() {
         return ImmutableMap.copyOf(attributes);
     }
 
-    public synchronized Object removeAttribute(String name) {
+    public synchronized Object removeAttribute(@NotNull String name) {
         return attributes.remove(name);
-    }
-
-    public synchronized MessageWrapper setAttribute(String name, Object value) {
-        attributes.put(name, value);
-        return this;
     }
 }

@@ -16,7 +16,7 @@ import org.apache.thrift.transport.TMemoryInputTransport;
 import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportException;
 import org.apache.thrift.transport.TTransportFactory;
-import org.everthrift.thrift.AsyncRegister;
+import org.everthrift.utils.AsyncRegister;
 import org.everthrift.thrift.ThriftCallFuture;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.drafts.Draft_17;
@@ -83,7 +83,7 @@ public class TWsTransport extends TAsyncTransport {
 
     private boolean closed = false;
 
-    private final AsyncRegister async;
+    private final AsyncRegister<ThriftCallFuture> async;
 
     private TransportEventsIF eventsHandler;
 
@@ -97,7 +97,7 @@ public class TWsTransport extends TAsyncTransport {
 
     /**
      * @param uri
-     * @param connectTimeout   - milliseconds
+     * @param timeout   - milliseconds
      * @param processor
      * @param protocolFactory
      * @param transportFactory
@@ -258,7 +258,7 @@ public class TWsTransport extends TAsyncTransport {
                 log.debug("Throw TTransportException for call seqId={}", i);
                 final ThriftCallFuture<?> ii = async.pop(i);
                 if (ii != null) {
-                    ii.setException(new TTransportException(TTransportException.END_OF_FILE, "closed"));
+                    ii.completeExceptionally(new TTransportException(TTransportException.END_OF_FILE, "closed"));
                 }
             }
 
@@ -435,7 +435,7 @@ public class TWsTransport extends TAsyncTransport {
 
     private void onReadReply(TMessage msg, TTransport in, byte buf[], int offset, int length) throws IOException {
 
-        final AsyncRegister async;
+        final AsyncRegister<ThriftCallFuture> async;
 
         synchronized (this) {
             async = this.async;

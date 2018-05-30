@@ -102,9 +102,9 @@ public abstract class TEnumType<T extends TEnum> implements UserType {
         return false;
     }
 
-    @NotNull
     @Override
-    public Serializable disassemble(@NotNull Object value) throws HibernateException {
+    @Nullable
+    public Serializable disassemble(Object value) throws HibernateException {
         return (Serializable) value;
     }
 

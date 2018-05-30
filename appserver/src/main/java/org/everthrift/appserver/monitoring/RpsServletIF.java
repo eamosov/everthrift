@@ -7,7 +7,7 @@ public interface RpsServletIF {
         THRIFT_TCP("th_tcp"),
         THRIFT_HTTP("th_http"),
         THRIFT_JGROUPS("th_jgroups"),
-        THRIFT_JMS("th_jms"),
+        THRIFT_RABBIT("th_rabbit"),
         THRIFT_WS("th_ws");
 
         public final String dsName;

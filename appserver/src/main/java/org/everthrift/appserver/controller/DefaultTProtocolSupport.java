@@ -15,17 +15,16 @@ import org.apache.thrift.transport.TMemoryBuffer;
 import org.everthrift.clustering.MessageWrapper;
 import org.everthrift.thrift.TFunction;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.messaging.MessageChannel;
-import org.springframework.messaging.MessageHeaders;
-import org.springframework.messaging.support.GenericMessage;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
-import java.util.function.Function;
 
 abstract public class DefaultTProtocolSupport implements ThriftProtocolSupportIF<MessageWrapper> {
 
     @NotNull
     private final MessageWrapper in;
+
+    private final String sessionId;
 
     @NotNull
     private final TProtocolFactory protocolFactory;
@@ -36,8 +35,9 @@ abstract public class DefaultTProtocolSupport implements ThriftProtocolSupportIF
 
     private Map<String, Object> attributes;
 
-    public DefaultTProtocolSupport(@NotNull MessageWrapper in, @NotNull TProtocolFactory protocolFactory) throws TException {
+    public DefaultTProtocolSupport(String sessionId, @NotNull MessageWrapper in, @NotNull TProtocolFactory protocolFactory) throws TException {
         this.in = in;
+        this.sessionId = sessionId;
         this.attributes = Maps.newHashMap(in.getAttributes());
         this.protocolFactory = protocolFactory;
 
@@ -45,14 +45,16 @@ abstract public class DefaultTProtocolSupport implements ThriftProtocolSupportIF
         msg = inp.readMessageBegin();
     }
 
-    @Override
-    public String getSessionId() {
-        return in.getSessionId();
-    }
-
+    @NotNull
     @Override
     public TMessage getTMessage() throws TException {
         return msg;
+    }
+
+    @Nullable
+    @Override
+    public String getSessionId() {
+        return sessionId;
     }
 
     @NotNull
@@ -69,6 +71,7 @@ abstract public class DefaultTProtocolSupport implements ThriftProtocolSupportIF
         inp.readMessageEnd();
     }
 
+    @NotNull
     private MessageWrapper result(@NotNull TApplicationException o) {
         final TMemoryBuffer outT = new TMemoryBuffer(1024);
         final TProtocol out = protocolFactory.getProtocol(outT);
@@ -80,11 +83,12 @@ abstract public class DefaultTProtocolSupport implements ThriftProtocolSupportIF
         } catch (TException e) {
             throw new RuntimeException(e);
         }
-        return new MessageWrapper(outT).copyAttributes(in).removeCorrelationHeaders();
+        return new MessageWrapper(outT).putAllAttributes(in.getAttributes());
     }
 
     @Override
-    public MessageWrapper result(final Object o, final TFunction<Object, TBase> makeResult) {
+    @NotNull
+    public MessageWrapper result(@Nullable final Object o, @NotNull final TFunction<Object, TBase> makeResult) {
 
         if (o instanceof TApplicationException) {
             return result((TApplicationException) o);
@@ -115,24 +119,11 @@ abstract public class DefaultTProtocolSupport implements ThriftProtocolSupportIF
                 throw new RuntimeException(e);
             }
 
-            return new MessageWrapper(outT).copyAttributes(in).removeCorrelationHeaders();
+            return new MessageWrapper(outT).putAllAttributes(in.getAttributes());
         }
     }
 
-//    @Override
-//    public void asyncResult(final Object o, @NotNull final AbstractThriftController controller) {
-//
-//        final MessageWrapper mw = result(o, controller.getInfo());
-//
-//        final MessageChannel outChannel = in.getOutChannel();
-//        final MessageHeaders inHeaders = in.getMessageHeaders();
-//
-//        final GenericMessage<MessageWrapper> s = new GenericMessage<MessageWrapper>(mw, inHeaders);
-//        outChannel.send(s);
-//
-//        ThriftProcessor.logEnd(ThriftProcessor.log, controller, msg.name, in.getSessionId(), o);
-//    }
-
+    @NotNull
     @Override
     public Map<String, Object> getAttributes() {
         return attributes;

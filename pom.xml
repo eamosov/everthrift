@@ -232,7 +232,6 @@
         <module>cassandra-driver</module>
         <module>appserver</module>
         <module>jetty</module>
-        <module>jms</module>
         <module>rabbit</module>
         <module>sql</module>
         <module>cassandra</module>

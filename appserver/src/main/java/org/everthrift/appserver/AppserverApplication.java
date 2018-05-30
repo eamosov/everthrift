@@ -23,7 +23,6 @@ import com.sun.jna.Native;
 import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.management.ManagementService;
 import org.everthrift.appserver.configs.AppserverConfig;
-import org.everthrift.appserver.configs.AsyncTcpThrift;
 import org.everthrift.appserver.configs.DistributedSchedulerConfig;
 import org.everthrift.appserver.configs.EhConfig;
 import org.everthrift.appserver.configs.JGroups;
@@ -32,7 +31,6 @@ import org.everthrift.appserver.configs.LoopbackJGroups;
 import org.everthrift.appserver.configs.TcpThrift;
 import org.everthrift.appserver.configs.ZooConfig;
 import org.everthrift.appserver.configs.ZooJmxConfig;
-import org.everthrift.thrift.MetaDataMapBuilder;
 import org.everthrift.utils.SocketUtils;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -121,20 +119,12 @@ public class AppserverApplication {
         return !env.getProperty("thrift", "false").equalsIgnoreCase("false");
     }
 
-    private boolean isAsyncThriftEnabled() {
-        return !env.getProperty("thrift.async", "false").equalsIgnoreCase("false");
-    }
-
     public static boolean isJGroupsEnabled(@NotNull Environment env) {
         return !env.getProperty("jgroups", "false").equalsIgnoreCase("false");
     }
 
     private boolean isJGroupsEnabled() {
         return isJGroupsEnabled(env);
-    }
-
-    private boolean isJmsEnabled() {
-        return !env.getProperty("jms", "false").equalsIgnoreCase("false");
     }
 
     private boolean isRabbitEnabled() {
@@ -154,7 +144,6 @@ public class AppserverApplication {
         try {
             addProperty("thrift.async", "false");
             addProperty("thrift", "false");
-            addProperty("jms", "false");
             addProperty("jetty", "false");
             addProperty("jgroups", "false");
             addProperty("rabbit", "false");
@@ -249,7 +238,7 @@ public class AppserverApplication {
         if (env.getProperty("jgroups.multicast.bind_addr") != null) {
             System.setProperty("jgroups.multicast.bind_addr", env.getProperty("jgroups.multicast.bind_addr"));
         }
-        
+
         context.register(AppserverConfig.class);
 
         if (isJmxEnabled()) {
@@ -257,10 +246,6 @@ public class AppserverApplication {
         }
 
         context.register(annotatedClasses.toArray(new Class[annotatedClasses.size()]));
-
-        if (isAsyncThriftEnabled()) {
-            context.register(AsyncTcpThrift.class);
-        }
 
         if (isThriftEnabled()) {
             context.register(TcpThrift.class);
@@ -270,20 +255,6 @@ public class AppserverApplication {
             context.register(JGroups.class);
         } else {
             context.register(LoopbackJGroups.class);
-        }
-
-        if (isJmsEnabled()) {
-            try {
-                context.register(Class.forName("org.everthrift.jms.Jms"));
-            } catch (ClassNotFoundException e) {
-                throw Throwables.propagate(e);
-            }
-        } else {
-            try {
-                context.register(Class.forName("org.everthrift.jms.LoopbackJms"));
-            } catch (ClassNotFoundException e) {
-                log.warn("Cound't find LoopbackJms. @RpcJms Service will be disabled.");
-            }
         }
 
         if (isRabbitEnabled()) {

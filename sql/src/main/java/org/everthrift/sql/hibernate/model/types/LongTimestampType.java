@@ -84,7 +84,7 @@ public class LongTimestampType implements UserType, Serializable {
         return false;
     }
 
-    @NotNull
+    @Nullable
     @Override
     public Serializable disassemble(@NotNull Object value) throws HibernateException {
         return (Serializable) value;
