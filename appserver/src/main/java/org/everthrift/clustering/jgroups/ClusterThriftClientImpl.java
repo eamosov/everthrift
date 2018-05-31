@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
@@ -97,7 +98,7 @@ public abstract class ClusterThriftClientImpl implements ClusterThriftClientIF {
 
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 
-    private int defaultTimeout = 1000;
+    private int defaultTimeout = 5000;
 
     private boolean defaultLoopback = false;
 
@@ -171,7 +172,7 @@ public abstract class ClusterThriftClientImpl implements ClusterThriftClientIF {
     public abstract JChannel getCluster();
 
 
-    private <T> void _callOne(Iterator<Address> it, CompletableFuture<T> f, ThriftCallFuture ii, Map<String, Object> attributes, Options[] options) {
+    private <T> void _callOne(Iterator<Address> it, CompletableFuture<T> f, ThriftCallFuture<T> ii, Map<String, Object> attributes, Options[] options) {
         if (!it.hasNext()) {
             f.completeExceptionally(new TApplicationException("all nodes failed"));
             return;
@@ -208,10 +209,20 @@ public abstract class ClusterThriftClientImpl implements ClusterThriftClientIF {
 
     @Override
     @SuppressWarnings("rawtypes")
-    public <T> CompletableFuture<T> callOne(ThriftCallFuture ii, Map<String, Object> attributes, Options... options) throws TException {
-        final CompletableFuture<T> f = new CompletableFuture();
-        _callOne(thriftControllerDiscovery.getCluster(RpcJGroups.class.getSimpleName(),
-                                                      ii.getFullMethodName()).iterator(), f, ii, attributes, options);
+    public <T> CompletableFuture<T> callOne(ThriftCallFuture<T> ii, Map<String, Object> attributes, Options... options) throws TException {
+        return callOne(thriftControllerDiscovery.getAny(Collections.singletonList(RpcJGroups.class.getSimpleName()),
+                                                            ii.getFullMethodName()),
+                       ii,
+                       attributes,
+                       options);
+    }
+
+    @Override
+    @SuppressWarnings("rawtypes")
+    public <T> CompletableFuture<T> callOne(List<Address> destination, ThriftCallFuture<T> ii, Map<String, Object> attributes, Options... options) throws TException {
+        final CompletableFuture<T> f = new CompletableFuture<T>();
+        _callOne(destination.iterator(), f, ii, attributes, options);
         return f;
     }
+
 }

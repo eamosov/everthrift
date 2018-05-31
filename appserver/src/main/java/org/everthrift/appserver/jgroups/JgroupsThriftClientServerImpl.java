@@ -85,11 +85,11 @@ public class JgroupsThriftClientServerImpl extends AbstractJgroupsThriftClientIm
             try {
                 final MessageWrapper out = thriftProcessor.process(new DefaultTProtocolSupport(null, in, protocolFactory) {
                     @Override
-                    public void asyncResult(Object o, @NotNull AbstractThriftController controller) {
+                    public void serializeReplyAsync(Object successOrException, @NotNull AbstractThriftController controller) {
                         if (response != null) {
-                            response.send(result(o, r -> controller.getInfo().thriftMethodEntry.makeResult(r)), false);
+                            response.send(serializeReply(successOrException, r -> controller.getThriftMethodEntry().makeResult(r)), false);
                         }
-                        ThriftProcessor.logEnd(ThriftProcessor.log, controller, msg.name, getSessionId(), o);
+                        ThriftProcessor.logEnd(ThriftProcessor.log, controller, msg.name, getSessionId(), successOrException);
                     }
                 }, null);
 

@@ -1,7 +1,6 @@
 package org.everthrift.appserver.controller;
 
 import com.google.common.base.Function;
-import com.google.common.util.concurrent.ListeningExecutorService;
 import org.apache.thrift.TApplicationException;
 import org.apache.thrift.TBase;
 import org.apache.thrift.TException;
@@ -9,18 +8,14 @@ import org.everthrift.appserver.model.lazy.LazyLoadManager;
 import org.everthrift.appserver.utils.thrift.ThriftClient;
 import org.everthrift.clustering.MessageWrapper;
 import org.everthrift.thrift.TFunction;
+import org.everthrift.thrift.ThriftServicesDiscovery;
 import org.everthrift.utils.ExecutionStats;
 import org.everthrift.utils.Pair;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.NoSuchBeanDefinitionException;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.ApplicationContext;
 
-import javax.sql.DataSource;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -31,6 +26,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 
 public abstract class AbstractThriftController<ArgsType extends TBase, ResultType> {
 
@@ -38,23 +34,15 @@ public abstract class AbstractThriftController<ArgsType extends TBase, ResultTyp
 
     protected ArgsType args;
 
-    private ThriftControllerInfo info;
-
     protected LogEntry logEntry;
 
     protected int seqId;
-
-    @Nullable
-    protected DataSource ds;
 
     protected ThriftClient thriftClient;
 
     protected boolean loadLazyRelations = true;
 
-    protected ThriftProtocolSupportIF tps;
-
-    @Autowired
-    protected ApplicationContext context;
+    protected ThriftProtocolSupportIF<ArgsType> tps;
 
     private long startNanos;
 
@@ -70,12 +58,14 @@ public abstract class AbstractThriftController<ArgsType extends TBase, ResultTyp
 
     protected String methodName;
 
+    protected ThriftServicesDiscovery.ThriftMethodEntry thriftMethodEntry;
+
     @NotNull
     protected LazyLoadManager lazyLoadManager = new LazyLoadManager();
 
-    @Autowired
-    @Qualifier("listeningCallerRunsBoundQueueExecutor")
-    private ListeningExecutorService executor;
+    //    @Autowired
+    //    @Qualifier("listeningCallerRunsBoundQueueExecutor")
+    private Executor executor;
 
     /**
      * Флаг, показывающий был лио отправлен какой-либо ответ (результат или
@@ -92,12 +82,19 @@ public abstract class AbstractThriftController<ArgsType extends TBase, ResultTyp
         return "";
     }
 
-    public void setup(ArgsType args, ThriftControllerInfo info, ThriftProtocolSupportIF tps, LogEntry logEntry, int seqId,
-                      ThriftClient thriftClient, Class<? extends Annotation> registryAnn, boolean allowAsyncAnswer,
-                      String serviceName, String methodName) {
+    public void setup(ArgsType args,
+                      ThriftProtocolSupportIF tps,
+                      LogEntry logEntry,
+                      int seqId,
+                      ThriftClient thriftClient,
+                      Class<? extends Annotation> registryAnn,
+                      boolean allowAsyncAnswer,
+                      String serviceName,
+                      String methodName,
+                      Executor executor,
+                      ThriftServicesDiscovery.ThriftMethodEntry thriftMethodEntry) {
 
         this.args = args;
-        this.info = info;
         this.logEntry = logEntry;
         this.seqId = seqId;
         this.thriftClient = thriftClient;
@@ -107,12 +104,8 @@ public abstract class AbstractThriftController<ArgsType extends TBase, ResultTyp
         this.allowAsyncAnswer = allowAsyncAnswer;
         this.serviceName = serviceName;
         this.methodName = methodName;
-
-        try {
-            this.ds = context.getBean(DataSource.class);
-        } catch (NoSuchBeanDefinitionException e) {
-            this.ds = null;
-        }
+        this.executor = executor;
+        this.thriftMethodEntry = thriftMethodEntry;
 
         rpcControllesStats.putIfAbsent(this.getClass().getSimpleName(), new ExecutionStats());
     }
@@ -134,7 +127,7 @@ public abstract class AbstractThriftController<ArgsType extends TBase, ResultTyp
             setup(args);
             final CompletableFuture<ResultType> resultFuture = loadLazyRelations(handle());
 
-            if (resultFuture.isDone() || allowAsyncAnswer == false) {
+            if (resultFuture.isDone() || !allowAsyncAnswer) {
                 ResultType result;
                 try {
                     result = filterOutput(resultFuture.get());
@@ -264,8 +257,8 @@ public abstract class AbstractThriftController<ArgsType extends TBase, ResultTyp
         }, executor);
     }
 
-    protected void sendAnswerOrException(Object answer) {
-        tps.asyncResult(answer, this);
+    private void sendAnswerOrException(Object answer) {
+        tps.serializeReplyAsync(answer, this);
     }
 
     /**
@@ -363,8 +356,7 @@ public abstract class AbstractThriftController<ArgsType extends TBase, ResultTyp
         return (Map<String, String>) tps.getAttributes().get(MessageWrapper.HTTP_HEADERS);
     }
 
-    public ThriftControllerInfo getInfo() {
-        return info;
+    public ThriftServicesDiscovery.ThriftMethodEntry getThriftMethodEntry() {
+        return thriftMethodEntry;
     }
-
 }

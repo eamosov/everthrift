@@ -139,10 +139,10 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
 
                 final MessageWrapper out = thriftProcessor.process(new DefaultTProtocolSupport(sessionId, in, protocolFactory) {
                     @Override
-                    public void asyncResult(final Object o, @NotNull final AbstractThriftController controller) {
-                        writeBinary(session, (TMemoryBuffer) result(o, r -> controller.getInfo().thriftMethodEntry.makeResult(r))
+                    public void serializeReplyAsync(final Object successOrException, @NotNull final AbstractThriftController controller) {
+                        writeBinary(session, (TMemoryBuffer) serializeReply(successOrException, r -> controller.getThriftMethodEntry().makeResult(r))
                             .getTTransport());
-                        ThriftProcessor.logEnd(ThriftProcessor.log, controller, msg.name, sessionId, o);
+                        ThriftProcessor.logEnd(ThriftProcessor.log, controller, msg.name, sessionId, successOrException);
                     }
                 }, getThriftClient(sessionId));
 
@@ -206,15 +206,15 @@ public class WebsocketThriftHandler extends AbstractWebSocketHandler implements 
 
             final MessageWrapper out = thriftProcessor.process(new DefaultTProtocolSupport(sessionId, in, protocolFactory) {
                 @Override
-                public void asyncResult(final Object o, @NotNull final AbstractThriftController controller) {
+                public void serializeReplyAsync(final Object successOrException, @NotNull final AbstractThriftController controller) {
 
-                    final TMemoryBuffer payload = (TMemoryBuffer) result(o, r -> controller.getInfo().thriftMethodEntry.makeResult(r))
+                    final TMemoryBuffer payload = (TMemoryBuffer) serializeReply(successOrException, r -> controller.getThriftMethodEntry().makeResult(r))
                         .getTTransport();
 
                     ((JettyWebSocketSession) session).getNativeSession().getRemote()
                                                      .sendStringByFuture(new String(payload.getArray(), 0, payload.length(), UTF_8));
 
-                    ThriftProcessor.logEnd(ThriftProcessor.log, controller, msg.name, sessionId, o);
+                    ThriftProcessor.logEnd(ThriftProcessor.log, controller, msg.name, sessionId, successOrException);
                 }
             }, getThriftClient(sessionId));
 

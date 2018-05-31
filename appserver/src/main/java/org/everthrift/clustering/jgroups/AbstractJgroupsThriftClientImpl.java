@@ -12,7 +12,6 @@ import org.jgroups.Message.TransientFlag;
 import org.jgroups.blocks.MessageDispatcher;
 import org.jgroups.blocks.RequestOptions;
 import org.jgroups.blocks.ResponseMode;
-import org.jgroups.util.FutureListener;
 import org.jgroups.util.NotifyingFuture;
 import org.jgroups.util.NullFuture;
 import org.jgroups.util.Rsp;
@@ -26,7 +25,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 public abstract class AbstractJgroupsThriftClientImpl extends ClusterThriftClientImpl {
 
@@ -45,7 +43,7 @@ public abstract class AbstractJgroupsThriftClientImpl extends ClusterThriftClien
     @SuppressWarnings("rawtypes")
     private <T> CompletableFuture<Map<Address, Reply<T>>> _thriftCall(Collection<Address> dest, Collection<Address> exclusionList,
                                                                       boolean loopBack, int timeout, ResponseMode responseMode,
-                                                                      ThriftCallFuture tInfo,
+                                                                      ThriftCallFuture<T> tInfo,
                                                                       Map<String, Object> attributes) throws TException {
 
         final Message msg = new Message();
@@ -56,7 +54,9 @@ public abstract class AbstractJgroupsThriftClientImpl extends ClusterThriftClien
 
         msg.setObject(wrap);
 
-        if (!loopBack) {
+        if (dest != null) {
+            loopBack = true;
+        } else if (!loopBack) {
             msg.setTransientFlag(TransientFlag.DONT_LOOPBACK);
         }
 
@@ -96,7 +96,7 @@ public abstract class AbstractJgroupsThriftClientImpl extends ClusterThriftClien
                     if (responce.getValue() != null) {
                         ret1.put(responce.getSender(),
                                  new ReplyImpl<T>(() -> (T) tInfo.deserializeReply(responce.getValue()
-                                                                                          .getTTransport(), binaryProtocolFactory)));
+                                                                                           .getTTransport(), binaryProtocolFactory)));
                     } else {
                         log.warn("null responce from {}", responce.getSender());
                     }
@@ -105,7 +105,7 @@ public abstract class AbstractJgroupsThriftClientImpl extends ClusterThriftClien
                 f.complete(ret1);
             });
 
-            if (ret instanceof NullFuture){
+            if (ret instanceof NullFuture) {
                 f.completeExceptionally(new TException("Empty destination list"));
             }
         } catch (Exception e) {
@@ -118,7 +118,7 @@ public abstract class AbstractJgroupsThriftClientImpl extends ClusterThriftClien
     @Override
     public <T> CompletableFuture<Map<Address, Reply<T>>> call(Collection<Address> dest,
                                                               Collection<Address> exclusionList,
-                                                              ThriftCallFuture tInfo,
+                                                              ThriftCallFuture<T> tInfo,
                                                               Map<String, Object> attributes,
                                                               Options... options) throws TException {
 

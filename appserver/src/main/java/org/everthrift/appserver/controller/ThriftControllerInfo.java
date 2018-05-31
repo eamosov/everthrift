@@ -8,6 +8,7 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.context.ApplicationContext;
 
 import java.lang.annotation.Annotation;
+import java.util.concurrent.Executor;
 
 public class ThriftControllerInfo {
 
@@ -25,16 +26,6 @@ public class ThriftControllerInfo {
     @NotNull
     public String getName() {
         return this.thriftMethodEntry.serviceName + ":" + this.thriftMethodEntry.methodName;
-    }
-
-
-    public ThriftController makeController(ApplicationContext context, TBase args, ThriftProtocolSupportIF tps, LogEntry logEntry, int seqId, ThriftClient thriftClient,
-                                           Class<? extends Annotation> registryAnn, boolean allowAsyncAnswer) throws TException {
-
-        final ThriftController ctrl = context.getBean(beanName, ThriftController.class);
-        ctrl.setup(args, this, tps, logEntry, seqId, thriftClient, registryAnn, allowAsyncAnswer, thriftMethodEntry.serviceName, thriftMethodEntry.methodName);
-
-        return ctrl;
     }
 
     public String getServiceName() {

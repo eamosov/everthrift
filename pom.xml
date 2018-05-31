@@ -240,5 +240,6 @@
         <module>maven-migration-plugin</module>
         <module>thrift-client</module>
         <module>elastic</module>
+	<module>services</module>
     </modules>
 </project>

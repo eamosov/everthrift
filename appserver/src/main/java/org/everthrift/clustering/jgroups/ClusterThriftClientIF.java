@@ -10,6 +10,7 @@ import org.jgroups.blocks.ResponseMode;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
@@ -77,7 +78,7 @@ public interface ClusterThriftClientIF {
     }
 
     @SuppressWarnings("rawtypes")
-    default <T> CompletableFuture<Map<Address, Reply<T>>> call(final ThriftCallFuture ii, Map<String, Object> attributes, Options... options) throws TException {
+    default <T> CompletableFuture<Map<Address, Reply<T>>> call(final ThriftCallFuture<T> ii, Map<String, Object> attributes, Options... options) throws TException {
         return call(null, null, ii, attributes, options);
     }
 
@@ -86,10 +87,10 @@ public interface ClusterThriftClientIF {
     }
 
     @SuppressWarnings("rawtypes")
-    default public <T> CompletableFuture<T> call(Address destination, ThriftCallFuture ii, Map<String, Object> attributes, Options... options) throws TException {
+    default <T> CompletableFuture<T> call(Address destination, ThriftCallFuture<T> ii, Map<String, Object> attributes, Options... options) throws TException {
         final CompletableFuture<Map<Address, Reply<T>>> ret = call(Collections.singleton(destination), null, ii, attributes, options);
 
-        final CompletableFuture<T> s = new CompletableFuture();
+        final CompletableFuture<T> s = new CompletableFuture<T>();
 
         ret.whenComplete((m, t) -> {
             if (t != null) {
@@ -106,14 +107,14 @@ public interface ClusterThriftClientIF {
         return s;
     }
 
-    @SuppressWarnings("rawtypes")
     <T> CompletableFuture<Map<Address, Reply<T>>> call(Collection<Address> dest, Collection<Address> exclusionList,
-                                                       ThriftCallFuture tInfo, Map<String, Object> attributes, Options... options) throws TException;
+                                                       ThriftCallFuture<T> tInfo, Map<String, Object> attributes, Options... options) throws TException;
 
     default <T> CompletableFuture<T> callOne(T methodCall, Map<String, Object> attributes, Options... options) throws TException {
         return callOne(ThriftCallFutureHolder.getThriftCallFuture(), attributes, options);
     }
 
-    @SuppressWarnings("rawtypes")
-    <T> CompletableFuture<T> callOne(ThriftCallFuture ii, Map<String, Object> attributes, Options... options) throws TException;
+    <T> CompletableFuture<T> callOne(ThriftCallFuture<T> ii, Map<String, Object> attributes, Options... options) throws TException;
+
+    <T> CompletableFuture<T> callOne(List<Address> destination, ThriftCallFuture<T> ii, Map<String, Object> attributes, Options... options) throws TException;
 }

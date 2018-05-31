@@ -6,8 +6,8 @@ public class ThriftCallFutureHolder {
 
     final static ThreadLocal<ThriftCallFuture<?>> thriftCallFuture = new ThreadLocal<ThriftCallFuture<?>>();
 
-    public static ThriftCallFuture<?> getThriftCallFuture() {
-        return thriftCallFuture.get();
+    public static <T> ThriftCallFuture<T> getThriftCallFuture() {
+        return (ThriftCallFuture)thriftCallFuture.get();
     }
 
 }

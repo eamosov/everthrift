@@ -121,7 +121,7 @@ public class PlainJsonThriftServlet extends HttpServlet {
 
                 @NotNull
                 @Override
-                public <T extends TBase> T readArgs(TBase args) throws TException {
+                public <T extends TBase> T deserializeArgs(TBase args) throws TException {
                     final JsonParser jsonParser = new JsonParser();
 
                     final JsonObject _args;
@@ -181,26 +181,27 @@ public class PlainJsonThriftServlet extends HttpServlet {
 
                 @NotNull
                 @Override
-                public Pair<TMemoryBuffer, Integer> result(final Object o, @NotNull final TFunction<Object, TBase> makeResult) {
+                public Pair<TMemoryBuffer, Integer> serializeReply(final Object successOrException, @NotNull final TFunction<Object, TBase> makeResult) {
 
                     int httpCode = 200;
 
-                    if (o instanceof TApplicationException) {
-                        return result(((TApplicationException) o).getType(), ((TApplicationException) o).getMessage(), 400);
+                    if (successOrException instanceof TApplicationException) {
+                        return result(((TApplicationException) successOrException).getType(), ((TApplicationException) successOrException).getMessage(), 400);
 
-                    } else if (o instanceof TProtocolException) {
-                        return result(TApplicationException.PROTOCOL_ERROR, ((Exception) o).getMessage(), 400);
+                    } else if (successOrException instanceof TProtocolException) {
+                        return result(TApplicationException.PROTOCOL_ERROR, ((Exception) successOrException).getMessage(), 400);
 
-                    } else if (o instanceof Throwable) {
+                    } else if (successOrException instanceof Throwable) {
 
-                        final Map<String, PropertyDescriptor> props = ClassUtils.getPropertyDescriptors(o.getClass());
+                        final Map<String, PropertyDescriptor> props = ClassUtils.getPropertyDescriptors(successOrException
+                                                                                                            .getClass());
 
                         httpCode = 400;
 
                         final PropertyDescriptor httpCodeDescr = props.get("httpCode");
                         if (httpCodeDescr != null) {
                             try {
-                                httpCode = ((Number) httpCodeDescr.getReadMethod().invoke(o)).intValue();
+                                httpCode = ((Number) httpCodeDescr.getReadMethod().invoke(successOrException)).intValue();
                             } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
                             }
                         }
@@ -209,19 +210,19 @@ public class PlainJsonThriftServlet extends HttpServlet {
                         final PropertyDescriptor codeDescr = props.get("code");
                         if (codeDescr != null) {
                             try {
-                                code = ((Number) codeDescr.getReadMethod().invoke(o)).intValue();
+                                code = ((Number) codeDescr.getReadMethod().invoke(successOrException)).intValue();
                             } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
                             }
                         }
 
-                        if (!(o instanceof TException)) {
-                            return result(code, ((Throwable) o).getMessage(), httpCode);
+                        if (!(successOrException instanceof TException)) {
+                            return result(code, ((Throwable) successOrException).getMessage(), httpCode);
                         }
                     }
 
                     final TMemoryBuffer outT = new TMemoryBuffer(1024);
                     try {
-                        outT.write(gson.toJson(o).getBytes(StandardCharsets.UTF_8));
+                        outT.write(gson.toJson(successOrException).getBytes(StandardCharsets.UTF_8));
                     } catch (TTransportException e) {
                         throw new RuntimeException(e);
                     }
@@ -229,8 +230,8 @@ public class PlainJsonThriftServlet extends HttpServlet {
                 }
 
                 @Override
-                public void asyncResult(Object o, @NotNull AbstractThriftController controller) {
-                    final Pair<TMemoryBuffer, Integer> tt = result(o, r -> controller.getInfo().thriftMethodEntry.makeResult(r));
+                public void serializeReplyAsync(Object successOrException, @NotNull AbstractThriftController controller) {
+                    final Pair<TMemoryBuffer, Integer> tt = serializeReply(successOrException, r -> controller.getThriftMethodEntry().makeResult(r));
                     try {
                         out(asyncContext, response, tt.second, "application/json; charset=utf-8", tt.first
                             .getArray(), tt.first.length());
@@ -238,7 +239,7 @@ public class PlainJsonThriftServlet extends HttpServlet {
                         log.error("Async Error", e);
                     }
 
-                    ThriftProcessor.logEnd(ThriftProcessor.log, controller, msgName, getSessionId(), o);
+                    ThriftProcessor.logEnd(ThriftProcessor.log, controller, msgName, getSessionId(), successOrException);
                 }
 
                 @Override

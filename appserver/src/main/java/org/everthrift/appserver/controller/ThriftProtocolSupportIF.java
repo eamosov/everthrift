@@ -21,14 +21,14 @@ public interface ThriftProtocolSupportIF<T> {
     Map<String, Object> getAttributes();
 
     @NotNull
-    <T extends TBase> T readArgs(TBase args) throws TException;
+    <T extends TBase> T deserializeArgs(TBase args) throws TException;
 
     void skip() throws TException;
 
     @NotNull
-    T result(@Nullable final Object o, @NotNull final TFunction<Object, TBase> makeResult);
+    T serializeReply(@Nullable final Object successOrException, final TFunction<Object, TBase> makeResult);
 
-    void asyncResult(@Nullable final Object o, @NotNull final AbstractThriftController controller);
+    void serializeReplyAsync(@Nullable final Object successOrException, @NotNull final AbstractThriftController controller);
 
     boolean allowAsyncAnswer();
 }

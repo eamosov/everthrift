@@ -142,11 +142,11 @@ public class ThriftControllerDiscovery implements SmartLifecycle {
         return localServicesPerAnnotation.get(new Pair<>(annName, fullMethodName));
     }
 
-    public List<Address> getCluster(String annName, String fullMethodName) {
+    public List<Address> getAny(List<String> annNames, String fullMethodName) {
         try {
             final List<Address> addresses = serviceDiscovery.queryForInstances(fullMethodName)
                                                             .stream()
-                                                            .filter(i -> i.getPayload().annotations.contains(annName))
+                                                            .filter(i -> i.getPayload().annotations.containsAll(annNames))
                                                             .map(i -> UUID.fromString(i.getAddress()))
                                                             .collect(Collectors.toList());
 
@@ -157,6 +157,22 @@ public class ThriftControllerDiscovery implements SmartLifecycle {
         }
     }
 
+    public List<Address> getRemote(List<String> annNames, String fullMethodName) {
+        try {
+            final String localAddress = yocluster.getAddressAsUUID();
+            final List<Address> addresses = serviceDiscovery.queryForInstances(fullMethodName)
+                                                            .stream()
+                                                            .filter(i -> i.getPayload().annotations.containsAll(annNames))
+                                                            .filter(i -> !i.getAddress().equals(localAddress))
+                                                            .map(i -> UUID.fromString(i.getAddress()))
+                                                            .collect(Collectors.toList());
+
+            Collections.shuffle(addresses);
+            return addresses;
+        } catch (Exception e) {
+            throw Throwables.propagate(e);
+        }
+    }
 
     public Collection<Class<? extends ConnectionStateHandler>> getConnectionStateHandlers(String annName) {
         return stateHandlers.get(annName);

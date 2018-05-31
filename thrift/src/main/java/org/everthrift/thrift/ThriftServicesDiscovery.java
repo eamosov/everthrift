@@ -99,35 +99,39 @@ public class ThriftServicesDiscovery {
         }
 
         @NotNull
-        public TBase makeResult(@Nullable Object ret) throws TApplicationException {
+        public TBase makeResult(@Nullable Object successOrException) throws TApplicationException {
 
             try {
 
                 final TBase res = resultCls.newInstance();
 
-                if (ret != null) {
-                    if (ret instanceof TException) {
+                if (successOrException != null) {
+                    if (successOrException instanceof TException) {
                         try {
-                            final Method setMethod = ClassUtils.getPropertyDescriptors(resultCls).entrySet().stream()
-                                                               .filter(e -> e.getValue().getReadMethod() != null
-                                                                   && e.getValue()
-                                                                       .getWriteMethod() != null && e.getValue()
-                                                                                                     .getReadMethod()
-                                                                                                     .getReturnType()
-                                                                                                     .isAssignableFrom(ret.getClass()))
+                            final Method setMethod = ClassUtils.getPropertyDescriptors(resultCls)
+                                                               .entrySet()
+                                                               .stream()
+                                                               .filter(e ->
+                                                                           e.getValue().getReadMethod() != null
+                                                                               && e.getValue().getWriteMethod() != null
+                                                                               && e.getValue()
+                                                                                   .getReadMethod()
+                                                                                   .getReturnType()
+                                                                                   .isAssignableFrom(successOrException.getClass()))
                                                                .findFirst().get().getValue().getWriteMethod();
-                            setMethod.invoke(res, ret);
+                            setMethod.invoke(res, successOrException);
                         } catch (NoSuchElementException e) {
                             log.error("Coudn't find Exception of type {} in {}",
-                                      ret.getClass().getCanonicalName(),
+                                      successOrException.getClass().getCanonicalName(),
                                       resultCls.getCanonicalName());
 
                             throw new TApplicationException(TApplicationException.INTERNAL_ERROR,
-                                                            ret.getClass()
-                                                               .getSimpleName() + ":" + ((TException) ret).getMessage());
+                                                            successOrException.getClass().getSimpleName()
+                                                                + ":"
+                                                                + ((TException) successOrException).getMessage());
                         }
                     } else {
-                        resultSetSuccess.invoke(res, ret);
+                        resultSetSuccess.invoke(res, successOrException);
                     }
                 }
                 return res;

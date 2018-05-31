@@ -43,7 +43,7 @@ public class LoopbackThriftClientServerImpl extends ClusterThriftClientImpl {
     @NotNull
     @Override
     public <T> CompletableFuture<Map<Address, Reply<T>>> call(Collection<Address> dest, Collection<Address> exclusionList,
-                                                              @NotNull ThriftCallFuture tInfo, Map<String, Object> attributes, Options... options) throws TException {
+                                                              @NotNull ThriftCallFuture<T> tInfo, Map<String, Object> attributes, Options... options) throws TException {
 
         if (!isLoopback(options)) {
             return CompletableFuture.completedFuture(Collections.emptyMap());

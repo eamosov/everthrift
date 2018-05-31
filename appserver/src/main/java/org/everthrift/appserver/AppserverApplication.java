@@ -142,7 +142,6 @@ public class AppserverApplication {
 
     public void disableNetAccess() {
         try {
-            addProperty("thrift.async", "false");
             addProperty("thrift", "false");
             addProperty("jetty", "false");
             addProperty("jgroups", "false");
@@ -223,10 +222,6 @@ public class AppserverApplication {
         final boolean nothrift = !env.getProperty("nothrift", "false").equalsIgnoreCase("false");
 
         try {
-            if (env.getProperty("thrift.async.port").equals("0")) {
-                addProperty("thrift.async.port", SocketUtils.findAvailableServerSocket());
-            }
-
             if (!nothrift && env.getProperty("thrift.port").equals("0")) {
                 addProperties("thrift.port", SocketUtils.findAvailableServerSocket());
             }

@@ -34,7 +34,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
 
 import java.lang.annotation.Annotation;
@@ -42,6 +44,7 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 /**
  * На каждый registry по экземпляру ThriftProcessor
@@ -70,6 +73,11 @@ public class ThriftProcessor implements TProcessor {
 
     @Autowired
     private ThriftControllerDiscovery thriftControllerDiscovery;
+
+    @Autowired
+    @Qualifier("listeningCallerRunsBoundQueueExecutor")
+    private Executor executor;
+
 
     public ThriftProcessor(Class<? extends Annotation> registryAnn) {
         this.registryAnn = registryAnn;
@@ -123,38 +131,51 @@ public class ThriftProcessor implements TProcessor {
                 tps.skip();
 
                 logNoController(thriftClient, msg.name, tps.getSessionId());
-                return tps.result(new TApplicationException(TApplicationException.UNKNOWN_METHOD,
-                                                            "No controllerCls for method " + msg.name),
-                                  null);
+                return tps.serializeReply(new TApplicationException(TApplicationException.UNKNOWN_METHOD,
+                                                                    "No controllerCls for method " + msg.name),
+                                          null);
             }
 
             final TBase args;
             try {
-                args = tps.readArgs(thriftMethodEntry.makeArgs());
+                args = tps.deserializeArgs(thriftMethodEntry.makeArgs());
             } catch (Exception e) {
-                return tps.result(e, thriftMethodEntry::makeResult);
+                return tps.serializeReply(e, thriftMethodEntry::makeResult);
             }
+
+            final Class<? extends ThriftController> beanClass;
+            final String beanName;
 
             final ThriftControllerInfo controllerInfo = thriftControllerDiscovery.getLocal(registryAnn.getSimpleName(), msg.name);
 
-            if (controllerInfo == null) {
-
-                logNoController(thriftClient, msg.name, tps.getSessionId());
-                return tps.result(new TApplicationException(TApplicationException.UNKNOWN_METHOD,
-                                                            "No controllerCls for method " + msg.name),
-                                  null);
+            if (controllerInfo != null) {
+                beanClass = controllerInfo.beanClass;
+                beanName = controllerInfo.getBeanName();
+            } else {
+                beanClass = ThriftController.class;
+                beanName = registryAnn.getSimpleName() + "DefaultController";
             }
 
+            final ThriftController controller;
 
-            final Logger log = LoggerFactory.getLogger(controllerInfo.beanClass);
+            try {
+                controller = applicationContext.getBean(beanName, beanClass);
+            } catch (NoSuchBeanDefinitionException e) {
+                logNoController(thriftClient, msg.name, tps.getSessionId());
+                return tps.serializeReply(new TApplicationException(TApplicationException.UNKNOWN_METHOD,
+                                                                    "No controllerCls for method " + msg.name),
+                                          null);
+            }
+
+            final Logger log = LoggerFactory.getLogger(beanClass);
             logStart(log, thriftClient, msg.name, tps.getSessionId(), args);
-            final ThriftController controller = controllerInfo.makeController(applicationContext, args, tps, logEntry, msg.seqid, thriftClient,
-                                                                              registryAnn, tps.allowAsyncAnswer());
+
+            controller.setup(args, tps, logEntry, msg.seqid, thriftClient, registryAnn, tps.allowAsyncAnswer(), thriftMethodEntry.serviceName, thriftMethodEntry.methodName, executor, thriftMethodEntry);
 
             try {
                 final Object ret = controller.handle(args);
                 try {
-                    return tps.result(ret, thriftMethodEntry::makeResult);
+                    return tps.serializeReply(ret, thriftMethodEntry::makeResult);
                 } finally {
                     logEnd(log, controller, msg.name, tps.getSessionId(), ret);
                 }
@@ -163,7 +184,7 @@ public class ThriftProcessor implements TProcessor {
             } catch (Throwable e) {
                 log.error("Exception while handle thrift request", e);
                 try {
-                    return tps.result(e, thriftMethodEntry::makeResult);
+                    return tps.serializeReply(e, thriftMethodEntry::makeResult);
                 } finally {
                     logEnd(log, controller, msg.name, tps.getSessionId(), e);
                 }
@@ -275,7 +296,7 @@ public class ThriftProcessor implements TProcessor {
 
             @NotNull
             @Override
-            public <T extends TBase> T readArgs(@NotNull final TBase args) throws TException {
+            public <T extends TBase> T deserializeArgs(@NotNull final TBase args) throws TException {
                 args.read(inp);
                 inp.readMessageEnd();
                 return (T) args;
@@ -303,18 +324,18 @@ public class ThriftProcessor implements TProcessor {
 
             @NotNull
             @Override
-            public Object result(final Object o, @NotNull final TFunction<Object, TBase> makeResult) {
+            public Object serializeReply(final Object successOrException, @NotNull final TFunction<Object, TBase> makeResult) {
 
-                if (o instanceof TApplicationException) {
-                    return result((TApplicationException) o);
-                } else if (o instanceof TProtocolException) {
-                    return result(new TApplicationException(TApplicationException.PROTOCOL_ERROR, ((Exception) o).getMessage()));
-                } else if (o instanceof Throwable && !(o instanceof TException)) {
-                    return result(new TApplicationException(TApplicationException.INTERNAL_ERROR, ((Throwable) o).getMessage()));
+                if (successOrException instanceof TApplicationException) {
+                    return result((TApplicationException) successOrException);
+                } else if (successOrException instanceof TProtocolException) {
+                    return result(new TApplicationException(TApplicationException.PROTOCOL_ERROR, ((Exception) successOrException).getMessage()));
+                } else if (successOrException instanceof Throwable && !(successOrException instanceof TException)) {
+                    return result(new TApplicationException(TApplicationException.INTERNAL_ERROR, ((Throwable) successOrException).getMessage()));
                 } else {
                     final TBase result;
                     try {
-                        result = makeResult.apply(o);
+                        result = makeResult.apply(successOrException);
                     } catch (TApplicationException e) {
                         return result(e);
                     } catch (TException e) {
@@ -330,12 +351,12 @@ public class ThriftProcessor implements TProcessor {
                         throw new RuntimeException(e);
                     }
 
-                    return o;
+                    return successOrException;
                 }
             }
 
             @Override
-            public void asyncResult(Object o, @NotNull AbstractThriftController controller) {
+            public void serializeReplyAsync(Object successOrException, @NotNull AbstractThriftController controller) {
                 throw new NotImplementedException();
             }
 

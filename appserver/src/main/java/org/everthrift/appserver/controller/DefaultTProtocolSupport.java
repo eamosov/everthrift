@@ -59,7 +59,7 @@ abstract public class DefaultTProtocolSupport implements ThriftProtocolSupportIF
 
     @NotNull
     @Override
-    public <T extends TBase> T readArgs(@NotNull final TBase args) throws TException {
+    public <T extends TBase> T deserializeArgs(@NotNull final TBase args) throws TException {
         args.read(inp);
         inp.readMessageEnd();
         return (T) args;
@@ -88,19 +88,19 @@ abstract public class DefaultTProtocolSupport implements ThriftProtocolSupportIF
 
     @Override
     @NotNull
-    public MessageWrapper result(@Nullable final Object o, @NotNull final TFunction<Object, TBase> makeResult) {
+    public MessageWrapper serializeReply(@Nullable final Object successOrException, final TFunction<Object, TBase> makeResult) {
 
-        if (o instanceof TApplicationException) {
-            return result((TApplicationException) o);
-        } else if (o instanceof TProtocolException) {
-            return result(new TApplicationException(TApplicationException.PROTOCOL_ERROR, ((Exception) o).getMessage()));
-        } else if (o instanceof Throwable && !(o instanceof TException)) {
-            return result(new TApplicationException(TApplicationException.INTERNAL_ERROR, ((Throwable) o).getMessage()));
+        if (successOrException instanceof TApplicationException) {
+            return result((TApplicationException) successOrException);
+        } else if (successOrException instanceof TProtocolException) {
+            return result(new TApplicationException(TApplicationException.PROTOCOL_ERROR, ((Exception) successOrException).getMessage()));
+        } else if (successOrException instanceof Throwable && !(successOrException instanceof TException)) {
+            return result(new TApplicationException(TApplicationException.INTERNAL_ERROR, ((Throwable) successOrException).getMessage()));
         } else {
 
             final TBase result;
             try {
-                result = makeResult.apply(o);
+                result = makeResult.apply(successOrException);
             } catch (TApplicationException e) {
                 return result(e);
             } catch (TException e) {

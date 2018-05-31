@@ -209,7 +209,7 @@ public abstract class AbstractThriftServlet extends HttpServlet {
 
                 @NotNull
                 @Override
-                public <T extends TBase> T readArgs(final TBase args) throws TException {
+                public <T extends TBase> T deserializeArgs(final TBase args) throws TException {
 
                     args.read(in);
                     in.readMessageEnd();
@@ -248,18 +248,18 @@ public abstract class AbstractThriftServlet extends HttpServlet {
 
                 @NotNull
                 @Override
-                public TMemoryBuffer result(final Object o, @NotNull final TFunction<Object, TBase> makeResult) {
+                public TMemoryBuffer serializeReply(final Object successOrException, @NotNull final TFunction<Object, TBase> makeResult) {
 
-                    if (o instanceof TApplicationException) {
-                        return result((TApplicationException) o);
-                    } else if (o instanceof TProtocolException) {
-                        return result(new TApplicationException(TApplicationException.PROTOCOL_ERROR, ((Exception) o).getMessage()));
-                    } else if (o instanceof Throwable && !(o instanceof TException)) {
-                        return result(new TApplicationException(TApplicationException.INTERNAL_ERROR, ((Throwable) o).getMessage()));
+                    if (successOrException instanceof TApplicationException) {
+                        return result((TApplicationException) successOrException);
+                    } else if (successOrException instanceof TProtocolException) {
+                        return result(new TApplicationException(TApplicationException.PROTOCOL_ERROR, ((Exception) successOrException).getMessage()));
+                    } else if (successOrException instanceof Throwable && !(successOrException instanceof TException)) {
+                        return result(new TApplicationException(TApplicationException.INTERNAL_ERROR, ((Throwable) successOrException).getMessage()));
                     } else {
                         final TBase result;
                         try {
-                            result = makeResult.apply(o);
+                            result = makeResult.apply(successOrException);
                         } catch (TApplicationException e) {
                             return result(e);
                         } catch (TException e) {
@@ -282,15 +282,15 @@ public abstract class AbstractThriftServlet extends HttpServlet {
                 }
 
                 @Override
-                public void asyncResult(Object o, @NotNull AbstractThriftController controller) {
-                    final TMemoryBuffer tt = result(o, r -> controller.getInfo().thriftMethodEntry.makeResult(r));
+                public void serializeReplyAsync(Object successOrException, @NotNull AbstractThriftController controller) {
+                    final TMemoryBuffer tt = serializeReply(successOrException, r -> controller.getThriftMethodEntry().makeResult(r));
                     try {
                         out(asyncContext, response, 200, getContentType(), tt.getArray(), tt.length());
                     } catch (IOException e) {
                         log.error("Async Error", e);
                     }
 
-                    ThriftProcessor.logEnd(ThriftProcessor.log, controller, tMessage.name, getSessionId(), o);
+                    ThriftProcessor.logEnd(ThriftProcessor.log, controller, tMessage.name, getSessionId(), successOrException);
                 }
 
                 @Override
