@@ -1,6 +1,5 @@
 package org.everthrift.appserver.model;
 
-import com.google.common.base.Throwables;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.thrift.TException;
 import org.everthrift.appserver.model.pgsql.OptimisticUpdateFailException;
@@ -10,6 +9,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.Serializable;
 import java.util.Random;
+import java.util.function.Consumer;
 
 public interface OptimisticLockModelFactoryIF<PK extends Serializable, ENTITY extends DaoEntityIF, E extends TException>
     extends RwModelFactoryIF<PK, ENTITY, E> {
@@ -86,6 +86,6 @@ public interface OptimisticLockModelFactoryIF<PK extends Serializable, ENTITY ex
     @Override
     @NotNull
     default void deleteEntity(@NotNull ENTITY e) throws E {
-        delete((PK)e.getPk());
+        delete((PK) e.getPk());
     }
 }
