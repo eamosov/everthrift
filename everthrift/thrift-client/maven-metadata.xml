@@ -4,8 +4,8 @@
   <artifactId>thrift-client</artifactId>
   <versioning>
     <versions>
-      <version>0.0.1-SNAPSHOT</version>
+      <version>1.0.1-SNAPSHOT</version>
     </versions>
-    <lastUpdated>20161024080233</lastUpdated>
+    <lastUpdated>20180618155543</lastUpdated>
   </versioning>
 </metadata>
