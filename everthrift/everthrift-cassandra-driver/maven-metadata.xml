@@ -4,8 +4,8 @@
   <artifactId>everthrift-cassandra-driver</artifactId>
   <versioning>
     <versions>
-      <version>0.0.1-SNAPSHOT</version>
+      <version>1.0.1-SNAPSHOT</version>
     </versions>
-    <lastUpdated>20161024075205</lastUpdated>
+    <lastUpdated>20180618154741</lastUpdated>
   </versioning>
 </metadata>
