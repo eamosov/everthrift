@@ -3,6 +3,7 @@ package org.everthrift.appserver.jgroups;
 import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.commons.lang.NotImplementedException;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocolFactory;
@@ -20,10 +21,11 @@ import org.jgroups.JChannel;
 import org.jgroups.MembershipListener;
 import org.jgroups.Message;
 import org.jgroups.View;
-import org.jgroups.blocks.AsyncRequestHandler;
 import org.jgroups.blocks.MessageDispatcher;
+import org.jgroups.blocks.RequestHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.amqp.utils.SerializationUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -36,7 +38,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class JgroupsThriftClientServerImpl extends AbstractJgroupsThriftClientImpl
-    implements AsyncRequestHandler, MembershipListener, ClusterThriftClientIF {
+    implements RequestHandler, MembershipListener, ClusterThriftClientIF {
 
     private static final Logger log = LoggerFactory.getLogger(JgroupsThriftClientServerImpl.class);
 
@@ -80,7 +82,7 @@ public class JgroupsThriftClientServerImpl extends AbstractJgroupsThriftClientIm
 
             log.debug("handle message: {}, {}", request, response);
 
-            final MessageWrapper in = (MessageWrapper) request.getObject();
+            final MessageWrapper in = (MessageWrapper) SerializationUtils.deserialize(request.getBuffer());
 
             try {
                 final MessageWrapper out = thriftProcessor.process(new DefaultTProtocolSupport(null, in, protocolFactory) {
@@ -120,8 +122,9 @@ public class JgroupsThriftClientServerImpl extends AbstractJgroupsThriftClientIm
     public void connect() throws Exception {
         log.info("Starting JgroupsMessageDispatcher");
 
-        disp = new MessageDispatcher(cluster, null, this, this);
+        disp = new MessageDispatcher(cluster, this);
         disp.asyncDispatching(true);
+        disp.setMembershipListener(this);
 
         cluster.connect(applicationContext.getEnvironment().getProperty("jgroups.cluster.name"));
     }

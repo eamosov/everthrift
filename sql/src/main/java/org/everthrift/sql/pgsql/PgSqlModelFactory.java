@@ -1,32 +1,28 @@
 package org.everthrift.sql.pgsql;
 
-import com.google.common.util.concurrent.ListeningExecutorService;
-import net.sf.ehcache.Cache;
 import org.apache.thrift.TException;
 import org.everthrift.appserver.model.DaoEntityIF;
-import org.everthrift.appserver.model.LocalEventBus;
 import org.everthrift.appserver.model.UniqueException;
 import org.everthrift.utils.Pair;
 import org.hibernate.Session;
-import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
+import org.infinispan.Cache;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.beans.factory.annotation.Qualifier;
 
 import java.io.Serializable;
 
 public class PgSqlModelFactory<PK extends Serializable, ENTITY extends DaoEntityIF, E extends TException>
     extends AbstractPgSqlModelFactory<PK, ENTITY, E> {
 
-    public PgSqlModelFactory(Cache cache, Class<ENTITY> entityClass) {
-        super(cache, entityClass);
+    public PgSqlModelFactory(Cache<PK, ENTITY> cache, Class<ENTITY> entityClass, boolean copyOnRead) {
+        super(cache, entityClass, copyOnRead);
     }
 
     @NotNull
     @Override
     public final ENTITY insertEntity(@NotNull ENTITY e) throws UniqueException {
         final ENTITY ret = getDao().save(e).first;
-        _invalidateEhCache((PK) ret.getPk(), InvalidateCause.INSERT);
+        _invalidateJCache((PK) ret.getPk(), InvalidateCause.INSERT);
 
         localEventBus.postEntityEvent(insertEntityEvent(ret));
 
@@ -52,7 +48,7 @@ public class PgSqlModelFactory<PK extends Serializable, ENTITY extends DaoEntity
             final Pair<ENTITY, Boolean> r = getDao().saveOrUpdate(e);
             tx.commit();
 
-            _invalidateEhCache((PK) r.first.getPk(), before != null ? InvalidateCause.UPDATE : InvalidateCause.INSERT);
+            _invalidateJCache((PK) r.first.getPk(), before != null ? InvalidateCause.UPDATE : InvalidateCause.INSERT);
 
             if (r.second) {
                 localEventBus.postEntityEvent(updateEntityEvent(before, r.first));
@@ -73,7 +69,7 @@ public class PgSqlModelFactory<PK extends Serializable, ENTITY extends DaoEntity
         }
 
         dao.delete(_e);
-        _invalidateEhCache(pk, InvalidateCause.DELETE);
+        _invalidateJCache(pk, InvalidateCause.DELETE);
 
         localEventBus.postEntityEvent(deleteEntityEvent(_e));
     }

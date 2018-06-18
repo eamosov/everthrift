@@ -23,6 +23,7 @@
         <spring-elasticsearch.version>2.1.0</spring-elasticsearch.version>
         <elasticsearch.version>5.2.2</elasticsearch.version>
         <netty.version>4.1.7.Final</netty.version>
+        <infinispan.version>9.2.4.Final</infinispan.version>
     </properties>
 
     <dependencyManagement>
@@ -233,7 +234,7 @@
             <dependency>
                 <groupId>org.jgroups</groupId>
                 <artifactId>jgroups</artifactId>
-                <version>3.6.4</version>
+                <version>4.0.11.Final</version>
             </dependency>
 
             <dependency>
@@ -579,6 +580,58 @@
                 <artifactId>annotations</artifactId>
                 <version>13.0</version>
                 <scope>compile</scope>
+            </dependency>
+
+            <!-- https://mvnrepository.com/artifact/org.infinispan/infinispan-core -->
+            <dependency>
+                <groupId>org.infinispan</groupId>
+                <artifactId>infinispan-core</artifactId>
+                <version>9.2.4.Final</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.jboss.logging</groupId>
+                        <artifactId>jboss-logging</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+            <!-- https://mvnrepository.com/artifact/org.infinispan/infinispan-hibernate-cache -->
+            <dependency>
+                <groupId>org.infinispan</groupId>
+                <artifactId>infinispan-hibernate-cache</artifactId>
+                <version>${infinispan.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.infinispan</groupId>
+                        <artifactId>infinispan-hibernate-cache-commons</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+            <dependency>
+                <groupId>org.infinispan</groupId>
+                <artifactId>infinispan-jcache</artifactId>
+                <version>${infinispan.version}</version>
+            </dependency>
+
+            <!-- https://mvnrepository.com/artifact/org.jboss.logging/jboss-logging -->
+            <dependency>
+                <groupId>org.jboss.logging</groupId>
+                <artifactId>jboss-logging</artifactId>
+                <version>3.3.2.Final</version>
+            </dependency>
+
+            <!-- https://mvnrepository.com/artifact/org.infinispan/infinispan-hibernate-cache-commons -->
+            <dependency>
+                <groupId>org.infinispan</groupId>
+                <artifactId>infinispan-hibernate-cache-commons</artifactId>
+                <version>${infinispan.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.hibernate</groupId>
+                        <artifactId>hibernate-core</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
 
         </dependencies>

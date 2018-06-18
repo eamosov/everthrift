@@ -2,6 +2,8 @@ package org.everthrift.appserver.model;
 
 import com.google.common.base.Predicates;
 import com.google.common.collect.Collections2;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -20,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.RandomAccess;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -30,17 +33,17 @@ public abstract class RoModelFactoryImpl<PK, ENTITY, E extends Exception> implem
 
     }
 
-    protected static interface MultiLoader<K, V> {
+    protected interface MultiLoader<K, V> {
 
         @NotNull
-        public Map<K, V> findByIds(Collection<K> ids);
+        public Map<K, V> findByIds(Set<K> ids);
     }
 
     protected final Logger log = LoggerFactory.getLogger(this.getClass());
 
     @NotNull
     @Override
-    final public Collection<ENTITY> findEntityById(@NotNull Collection<PK> ids) {
+    final public Collection<ENTITY> findEntityById(@NotNull Set<PK> ids) {
 
         if (CollectionUtils.isEmpty(ids)) {
             return Collections.emptyList();
@@ -51,14 +54,14 @@ public abstract class RoModelFactoryImpl<PK, ENTITY, E extends Exception> implem
 
     @NotNull
     @Override
-    final public List<ENTITY> findEntityByIdsInOrder(@NotNull Collection<PK> ids) {
+    final public List<ENTITY> findEntityByIdsInOrder(@NotNull List<PK> ids) {
 
         if (CollectionUtils.isEmpty(ids)) {
             return Collections.emptyList();
         }
 
         final List<ENTITY> ret = Lists.newArrayListWithExpectedSize(ids.size());
-        final Map<PK, ENTITY> loaded = findEntityByIdAsMap(ids);
+        final Map<PK, ENTITY> loaded = findEntityByIdAsMap(ImmutableSet.copyOf(ids));
         for (PK id : ids) {
             final ENTITY v = loaded.get(id);
             if (v != null) {
@@ -76,7 +79,7 @@ public abstract class RoModelFactoryImpl<PK, ENTITY, E extends Exception> implem
             return Collections.emptyMap();
         }
 
-        final List<PK> totalIds = Lists.newArrayListWithCapacity(listCollection.size() * 2);
+        final Set<PK> totalIds = new HashSet<>(listCollection.size() * 2);
         for (Collection<PK> ids : listCollection) {
             totalIds.addAll(ids);
         }

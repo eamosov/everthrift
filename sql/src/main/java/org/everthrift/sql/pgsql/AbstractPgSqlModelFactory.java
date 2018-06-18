@@ -1,8 +1,7 @@
 package org.everthrift.sql.pgsql;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
-import net.sf.ehcache.Cache;
-import net.sf.ehcache.Element;
+import org.apache.curator.shaded.com.google.common.collect.ImmutableSet;
 import org.apache.thrift.TException;
 import org.everthrift.appserver.model.AbstractCachedModelFactory;
 import org.everthrift.appserver.model.DaoEntityIF;
@@ -18,6 +17,7 @@ import org.hibernate.criterion.Criterion;
 import org.hibernate.criterion.Projections;
 import org.hibernate.criterion.Restrictions;
 import org.hibernate.query.Query;
+import org.infinispan.Cache;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,9 +26,9 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import javax.annotation.PostConstruct;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -58,16 +58,8 @@ public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY 
         return (E) new TException("Entity with PK '" + id + "' not found");
     }
 
-    protected AbstractPgSqlModelFactory(Cache cache, Class<ENTITY> entityClass) {
-        super(cache);
-
-        this.entityClass = entityClass;
-        this.ALL_KEYS = "__all__keys__" + entityClass.getCanonicalName();
-        dao = new AbstractDaoImpl<>(this.entityClass);
-    }
-
-    protected AbstractPgSqlModelFactory(String cacheName, Class<ENTITY> entityClass) {
-        super(cacheName);
+    protected AbstractPgSqlModelFactory(Cache cache, Class<ENTITY> entityClass, boolean copyOnRead) {
+        super(cache, copyOnRead);
 
         this.entityClass = entityClass;
         this.ALL_KEYS = "__all__keys__" + entityClass.getCanonicalName();
@@ -81,37 +73,37 @@ public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY 
         localEventBus.register(this);
     }
 
-    protected final void _invalidateEhCache(@NotNull PK id, @NotNull InvalidateCause invalidateCause) {
+    protected final void _invalidateJCache(@NotNull PK id, @NotNull InvalidateCause invalidateCause) {
         super.invalidate(id, invalidateCause);
         if (getCache() != null &&
             (invalidateCause == InvalidateCause.UNKNOWN ||
                 invalidateCause == InvalidateCause.DELETE ||
                 invalidateCause == InvalidateCause.INSERT)) {
-            getCache().remove(ALL_KEYS);
+            ((Cache)getCache()).remove(ALL_KEYS);
         }
     }
 
     @Override
-    public final void invalidate(PK id, InvalidateCause invalidateCause) {
-        _invalidateEhCache(id, invalidateCause);
+    public final void invalidate(@NotNull PK id, @NotNull InvalidateCause invalidateCause) {
+        _invalidateJCache(id, invalidateCause);
         getDao().evict(id);
     }
 
     @Override
-    public final void invalidateLocal(PK id, InvalidateCause invalidateCause) {
+    public final void invalidateLocal(@NotNull PK id, @NotNull InvalidateCause invalidateCause) {
         super.invalidateLocal(id, invalidateCause);
         getDao().evict(id);
     }
 
     @Nullable
     @Override
-    protected ENTITY fetchEntityById(PK id) {
+    protected ENTITY fetchEntityById(@NotNull PK id) {
         return dao.findById(id);
     }
 
     @NotNull
     @Override
-    protected Map<PK, ENTITY> fetchEntityByIdAsMap(Collection<PK> ids) {
+    protected Map<PK, ENTITY> fetchEntityByIdAsMap(Set<PK> ids) {
 
         if (getCache() == null) {
             log.warn("fetch by collection, but cache is null");
@@ -136,18 +128,18 @@ public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY 
             return getDao().findByCriteria(Restrictions.sqlRestriction("true"));
         } else {
             final Cache cache = getCache();
-            final Element cachedKeys = cache.get(ALL_KEYS);
+            final Object cachedKeys = cache.get(ALL_KEYS);
             if (cachedKeys == null) {
                 final List<ENTITY> entities = getDao().findByCriteria(Restrictions.sqlRestriction("true"));
                 final List<Serializable> keys = new ArrayList<>();
                 entities.forEach(entity -> {
                     keys.add(entity.getPk());
-                    cache.put(new Element(entity.getPk(), entity), true);
+                    cache.put(entity.getPk(), entity);
                 });
-                cache.put(new Element(ALL_KEYS, keys), true);
+                cache.put(ALL_KEYS, keys);
                 return entities;
             } else {
-                return findEntityByIdsInOrder((List) cachedKeys.getObjectValue());
+                return findEntityByIdsInOrder((List<PK>) cachedKeys);
             }
         }
     }
@@ -205,6 +197,6 @@ public abstract class AbstractPgSqlModelFactory<PK extends Serializable, ENTITY 
                                                        null,
                                                        null);
 
-        return findEntityByIdAsMap(ids).values().stream().filter(f -> f != null).collect(Collectors.toList());
+        return findEntityByIdAsMap(ImmutableSet.copyOf(ids)).values().stream().filter(f -> f != null).collect(Collectors.toList());
     }
 }

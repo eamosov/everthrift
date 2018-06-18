@@ -20,11 +20,8 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.sun.jna.Library;
 import com.sun.jna.Native;
-import net.sf.ehcache.CacheManager;
-import net.sf.ehcache.management.ManagementService;
 import org.everthrift.appserver.configs.AppserverConfig;
 import org.everthrift.appserver.configs.DistributedSchedulerConfig;
-import org.everthrift.appserver.configs.EhConfig;
 import org.everthrift.appserver.configs.JGroups;
 import org.everthrift.appserver.configs.JmxConfig;
 import org.everthrift.appserver.configs.LoopbackJGroups;
@@ -35,7 +32,6 @@ import org.everthrift.utils.SocketUtils;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.core.env.ConfigurableEnvironment;
@@ -48,9 +44,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PropertiesLoaderUtils;
 import org.springframework.core.io.support.ResourcePropertySource;
 
-import javax.management.MBeanServer;
 import java.io.IOException;
-import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
@@ -104,7 +98,6 @@ public class AppserverApplication {
     private AppserverApplication() {
 
         System.setProperty("jgroups.logging.log_factory_class", "org.everthrift.appserver.cluster.JGroupsLogFactory");
-        System.setProperty("net.sf.ehcache.sizeof.filter", "sizeof.filter");
 
         context = new AnnotationConfigApplicationContext();
         context.registerShutdownHook();
@@ -230,10 +223,6 @@ public class AppserverApplication {
             throw new RuntimeException(e1);
         }
 
-        if (env.getProperty("jgroups.multicast.bind_addr") != null) {
-            System.setProperty("jgroups.multicast.bind_addr", env.getProperty("jgroups.multicast.bind_addr"));
-        }
-
         context.register(AppserverConfig.class);
 
         if (isJmxEnabled()) {
@@ -289,10 +278,6 @@ public class AppserverApplication {
         } catch (ClassNotFoundException e) {
         }
 
-        if (context.getResource("/ehcache.xml").exists()) {
-            context.register(EhConfig.class);
-        }
-
         if (isZookeeperEnabled()) {
             context.register(ZooConfig.class);
 
@@ -312,16 +297,6 @@ public class AppserverApplication {
         log.info("Used property sources:{}", propertySources);
 
         initialized = true;
-
-        //register ehcache JMX
-        if (isJmxEnabled()) {
-            try {
-                final CacheManager manager = context.getBean(CacheManager.class);
-                final MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
-                ManagementService.registerMBeans(manager, mBeanServer, true, true, true, true);
-            } catch (NoSuchBeanDefinitionException e) {
-            }
-        }
 
         //creating pid file
         final String pidPath = env.getProperty("pid");

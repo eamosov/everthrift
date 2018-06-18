@@ -18,9 +18,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import net.sf.ehcache.Cache;
-import net.sf.ehcache.Element;
 import org.apache.commons.lang.ArrayUtils;
+import org.apache.curator.shaded.com.google.common.collect.ImmutableSet;
 import org.apache.thrift.TException;
 import org.everthrift.appserver.model.AbstractCachedModelFactory;
 import org.everthrift.appserver.model.AsyncRoModelFactoryIF;
@@ -43,8 +42,10 @@ import org.everthrift.cassandra.com.datastax.driver.mapping.Mapper.UpdateQuery;
 import org.everthrift.cassandra.com.datastax.driver.mapping.MappingManager;
 import org.everthrift.cassandra.com.datastax.driver.mapping.NotModifiedException;
 import org.everthrift.thrift.TFunction;
+import org.everthrift.utils.ClassUtils;
 import org.everthrift.utils.Pair;
 import org.everthrift.utils.tg.TimestampGenerator;
+import org.infinispan.Cache;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.CollectionUtils;
@@ -58,6 +59,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
@@ -117,8 +119,8 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
     // private volatile Map<String, PreparedStatement> preparedQueries =
     // Collections.emptyMap();
 
-    public CassandraModelFactory(Cache cache, Class<ENTITY> entityClass) {
-        super(cache);
+    public CassandraModelFactory(Cache<PK, ENTITY> cache, Class<ENTITY> entityClass, boolean copyOnRead) {
+        super(cache, copyOnRead);
         this.entityClass = entityClass;
         try {
             copyConstructor = getEntityClass().getConstructor(getEntityClass());
@@ -127,14 +129,8 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
         }
     }
 
-    public CassandraModelFactory(String cacheName, Class<ENTITY> entityClass) {
-        super(cacheName);
-        this.entityClass = entityClass;
-        try {
-            copyConstructor = getEntityClass().getConstructor(getEntityClass());
-        } catch (NoSuchMethodException | SecurityException e) {
-            throw new RuntimeException(e);
-        }
+    public CassandraModelFactory(Class<ENTITY> entityClass) {
+        this(null, entityClass, false);
     }
 
     public final void setMappingManager(MappingManager mappingManager) {
@@ -185,7 +181,7 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
     }
 
     @Override
-    final protected Map<PK, ENTITY> fetchEntityByIdAsMap(Collection<PK> _ids) {
+    final protected Map<PK, ENTITY> fetchEntityByIdAsMap(Set<PK> _ids) {
 
         try {
             return fetchEntityByIdAsMapAsync(_ids).get();
@@ -214,20 +210,20 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
     }
 
     @Override
-    final public CompletableFuture<List<ENTITY>> findEntityByIdsInOrderAsync(final Collection<PK> ids) {
+    final public CompletableFuture<List<ENTITY>> findEntityByIdsInOrderAsync(final List<PK> ids) {
 
         if (CollectionUtils.isEmpty(ids)) {
             return CompletableFuture.completedFuture(Collections.emptyList());
         }
 
-        return findEntityByIdAsMapAsync(ids).thenApply(loaded -> (ids.stream()
-                                                                     .map(id -> loaded.get(id))
-                                                                     .filter(o -> o != null)
-                                                                     .collect(Collectors.toList())));
+        return findEntityByIdAsMapAsync(ImmutableSet.copyOf(ids)).thenApply(loaded -> (ids.stream()
+                                                                                          .map(id -> loaded.get(id))
+                                                                                          .filter(o -> o != null)
+                                                                                          .collect(Collectors.toList())));
     }
 
     @Override
-    final protected ENTITY fetchEntityById(PK id) {
+    final protected ENTITY fetchEntityById(@NotNull PK id) {
         final ENTITY e = mapper.get(extractCompaundPk(id));
         if (log.isDebugEnabled()) {
             log.debug("fetchEntityById {}/{}:{}", getEntityClass().getSimpleName(), id, e);
@@ -483,7 +479,7 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
     }
 
     @Override
-    final public CompletableFuture<Map<PK, ENTITY>> findEntityByIdAsMapAsync(Collection<PK> ids) {
+    final public CompletableFuture<Map<PK, ENTITY>> findEntityByIdAsMapAsync(Set<PK> ids) {
         if (CollectionUtils.isEmpty(ids)) {
             return CompletableFuture.completedFuture(Collections.emptyMap());
         }
@@ -492,15 +488,15 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
             return fetchEntityByIdAsMapAsync(ids);
         }
 
-        final Map<Object, Element> cached = getCache().getAll(ids);
+        final Map<PK, Object> cached = getCache().getAdvancedCache().getAll(ids);
         final Map<PK, ENTITY> ret = Maps.newHashMap();
         final List<PK> keysToLoad = Lists.newArrayList();
 
-        for (Map.Entry<Object, Element> e : cached.entrySet()) {
-            if (e.getValue() != null) {
-                ret.put((PK) e.getKey(), (ENTITY) e.getValue().getObjectValue());
+        for (Map.Entry<PK, Object> e : cached.entrySet()) {
+            if (e.getValue() != NullValue.INSTANCE) {
+                ret.put(e.getKey(), (ENTITY) (copyOnRead ? ClassUtils.deepCopy(e.getValue()) : e.getValue()));
             } else {
-                keysToLoad.add((PK) e.getKey());
+                keysToLoad.add(e.getKey());
             }
         }
 
@@ -513,18 +509,8 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
             for (int i = 0; i < keysToLoad.size(); i++) {
                 final PK key = keysToLoad.get(i);
                 final ENTITY value = ee.get(i);
-                final Element toPut = new Element(key, value);
-                getCache().put(toPut);
-
-                if (getCache().getCacheConfiguration().isCopyOnWrite()) {
-                    ret.put(key, value);
-                } else if (getCache().getCacheConfiguration().isCopyOnRead()) {
-                    final Element copy = getCache().getCacheConfiguration().getCopyStrategy().copyForRead(toPut,
-                                                                                                          getClass().getClassLoader());
-                    ret.put(key, (ENTITY) copy.getObjectValue());
-                } else {
-                    ret.put(key, value);
-                }
+                getCache().put(key, value == null ? NullValue.INSTANCE : value);
+                ret.put(key, (ENTITY) (copyOnRead ? ClassUtils.deepCopy(value) : value));
             }
             return ret;
         });
@@ -537,26 +523,17 @@ public abstract class CassandraModelFactory<PK extends Serializable, ENTITY exte
             return toCompletableFuture(mapper.getAsync(extractCompaundPk(id)));
         }
 
-        final Element cached = getCache().get(id);
+        final Object cached = getCache().get(id);
 
         if (cached != null) {
-            return CompletableFuture.completedFuture((ENTITY) cached.getObjectValue());
+            return CompletableFuture.completedFuture(cached == NullValue.INSTANCE ? null : (ENTITY) cached);
         }
 
         return toCompletableFuture(mapper.getAsync(extractCompaundPk(id))).thenApply(value -> {
-            final Element toPut = new Element(id, value);
-            getCache().put(toPut);
+            getCache().put(id, value);
 
-            if (getCache().getCacheConfiguration().isCopyOnWrite()) {
-                return value;
-            } else if (getCache().getCacheConfiguration().isCopyOnRead()) {
-                final Element copy = getCache().getCacheConfiguration()
-                                               .getCopyStrategy()
-                                               .copyForRead(toPut, getClass().getClassLoader());
-                return (ENTITY) copy.getObjectValue();
-            } else {
-                return value;
-            }
+            log.warn("Implement copyForRead??");
+            return (ENTITY) (copyOnRead ? ClassUtils.deepCopy(value) : value);
         });
     }
 

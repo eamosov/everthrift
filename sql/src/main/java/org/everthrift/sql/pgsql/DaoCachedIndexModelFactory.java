@@ -1,12 +1,12 @@
 package org.everthrift.sql.pgsql;
 
-import net.sf.ehcache.Cache;
 import org.apache.thrift.TException;
 import org.everthrift.appserver.model.CachedIndexModelFactory;
 import org.everthrift.sql.hibernate.dao.AbstractDao;
 import org.hibernate.criterion.Criterion;
 import org.hibernate.criterion.Order;
 import org.hibernate.criterion.Projections;
+import org.infinispan.Cache;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
@@ -17,13 +17,8 @@ public abstract class DaoCachedIndexModelFactory<K, V> extends CachedIndexModelF
 
     private final AbstractDao dao;
 
-    public DaoCachedIndexModelFactory(String cacheName, AbstractDao dao) {
-        super(cacheName);
-        this.dao = dao;
-    }
-
-    public DaoCachedIndexModelFactory(Cache cache, AbstractDao dao) {
-        super(cache);
+    public DaoCachedIndexModelFactory(Cache<K, List<V>> cache, boolean copyOnRead, AbstractDao dao) {
+        super(cache, copyOnRead);
         this.dao = dao;
     }
 

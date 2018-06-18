@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 public interface RoModelFactoryIF<PK, ENTITY, E extends Exception> {
 
@@ -32,13 +33,13 @@ public interface RoModelFactoryIF<PK, ENTITY, E extends Exception> {
      * @return
      */
     @NotNull
-    Map<PK, ENTITY> findEntityByIdAsMap(@NotNull Collection<PK> ids);
+    Map<PK, ENTITY> findEntityByIdAsMap(@NotNull Set<PK> ids);
 
     @NotNull
-    Collection<ENTITY> findEntityById(@NotNull Collection<PK> ids);
+    Collection<ENTITY> findEntityById(@NotNull Set<PK> ids);
 
     @NotNull
-    List<ENTITY> findEntityByIdsInOrder(@NotNull Collection<PK> ids);
+    List<ENTITY> findEntityByIdsInOrder(@NotNull List<PK> ids);
 
     @NotNull
     Map<List<PK>, List<ENTITY>> findEntityByCollectionIds(@NotNull Collection<List<PK>> listCollection);

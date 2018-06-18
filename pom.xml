@@ -191,11 +191,6 @@
             <url>https://eamosov.github.io/thrift/</url>
         </repository>
 
-        <repository>
-            <id>efreet-ehcache-jgroupsreplication</id>
-            <url>https://eamosov.github.io/ehcache-jgroupsreplication/</url>
-        </repository>
-
     </repositories>
 
     <pluginRepositories>

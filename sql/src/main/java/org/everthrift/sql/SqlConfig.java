@@ -174,7 +174,8 @@ public class SqlConfig {
                 //setProperty("hibernate.dialect", "org.hibernate.dialect.PostgreSQL82Dialect");
                 setProperty("hibernate.dialect", "org.hibernate.spatial.dialect.postgis.PostgisDialect");
                 setProperty("hibernate.format_sql", "true");
-                setProperty("hibernate.cache.region.factory_class", "org.everthrift.sql.hibernate.HibernateCache");
+                setProperty("hibernate.c" +
+                                "ache.region.factory_class", "org.infinispan.hibernate.cache.main.InfinispanRegionFactory");
                 setProperty("hibernate.cache.use_second_level_cache", "true");
             }
         };

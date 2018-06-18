@@ -1,33 +1,35 @@
 package org.everthrift.appserver.model;
 
-import net.sf.ehcache.Cache;
-import net.sf.ehcache.CacheException;
-import net.sf.ehcache.CacheManager;
-import net.sf.ehcache.Ehcache;
-import net.sf.ehcache.Element;
-import net.sf.ehcache.Status;
-import net.sf.ehcache.loader.CacheLoader;
+import org.everthrift.utils.ClassUtils;
+import org.infinispan.Cache;
+import org.infinispan.configuration.cache.StorageType;
+import org.infinispan.manager.EmbeddedCacheManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.CollectionUtils;
 
 import javax.annotation.PostConstruct;
-import java.util.Collection;
+import java.io.Serializable;
 import java.util.Collections;
-import java.util.List;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public abstract class AbstractCachedModelFactory<PK, ENTITY, E extends Exception> extends RoModelFactoryImpl<PK, ENTITY, E> {
 
+    public enum NullValue implements Serializable {
+        INSTANCE
+    }
+
     @Autowired(required = false)
-    private CacheManager cm;
+    private EmbeddedCacheManager cm;
 
     @Nullable
-    private Cache cache;
+    private Cache<PK, Object> cache;
 
-    @Nullable
-    protected final String cacheName;
+    protected final boolean copyOnRead;
 
 
     public enum InvalidateCause {
@@ -37,185 +39,19 @@ public abstract class AbstractCachedModelFactory<PK, ENTITY, E extends Exception
         UNKNOWN
     }
 
-    private class CacheLoaderDecorator implements CacheLoader {
-
-        private final CacheLoader orig;
-
-        public CacheLoaderDecorator(CacheLoader orig) {
-            super();
-            this.orig = orig;
-        }
-
-        @NotNull
-        @Override
-        public CacheLoader clone(Ehcache arg0) throws CloneNotSupportedException {
-            throw new CloneNotSupportedException();
-        }
-
-        @Override
-        public void dispose() throws CacheException {
-        }
-
-        @NotNull
-        @Override
-        public String getName() {
-            return cacheName + "Loader";
-        }
-
-        @Override
-        public Status getStatus() {
-            return Status.STATUS_ALIVE;
-        }
-
-        @Override
-        public void init() {
-        }
-
-        @Override
-        public Object load(Object arg0) throws CacheException {
-            if (orig == null) {
-                throw new RuntimeException("must use load(Object arg0, Object arg1)");
-            } else {
-                return orig.load(arg0);
-            }
-        }
-
-        @Override
-        public Object load(Object arg0, @NotNull Object arg1) {
-            return ((CacheLoader) arg1).load(arg0);
-        }
-
-        @Override
-        public Map loadAll(Collection arg0) {
-            if (orig == null) {
-                throw new RuntimeException("must use loadAll(Object arg0, Object arg1)");
-            } else {
-                return orig.loadAll(arg0);
-            }
-        }
-
-        @Override
-        public Map loadAll(Collection arg0, @NotNull Object arg1) {
-            return ((CacheLoader) arg1).loadAll(arg0);
-        }
-    }
-
-    @NotNull
-    private CacheLoader _loader = new CacheLoader() {
-        @NotNull
-        @Override
-        public CacheLoader clone(Ehcache arg0) throws CloneNotSupportedException {
-            throw new CloneNotSupportedException();
-        }
-
-        @Override
-        public void dispose() throws CacheException {
-
-        }
-
-        @NotNull
-        @Override
-        public String getName() {
-            return this.getClass().getCanonicalName() + ".Loader";
-        }
-
-        @Override
-        public Status getStatus() {
-            return Status.STATUS_ALIVE;
-        }
-
-        @Override
-        public void init() {
-
-        }
-
-        @Nullable
-        @Override
-        public Object load(Object arg0, Object arg1) {
-            return load(arg0);
-        }
-
-        @Nullable
-        @Override
-        public Object load(Object arg0) throws CacheException {
-            return fetchEntityById((PK) arg0);
-        }
-
-        @NotNull
-        @Override
-        public Map loadAll(@NotNull Collection arg0, Object arg1) {
-            return loadAll(arg0);
-        }
-
-        @NotNull
-        @Override
-        public Map loadAll(@NotNull Collection keys) {
-
-            if (CollectionUtils.isEmpty(keys)) {
-                return Collections.emptyMap();
-            }
-
-            if (keys.size() == 1) {
-                final Object key = keys.iterator().next();
-                return Collections.singletonMap(key, load(key));
-            }
-
-            return fetchEntityByIdAsMap(keys);
-        }
-    };
-
     /**
      * Конструктор создания фабрики не как Spring-bean
      */
-    public AbstractCachedModelFactory(@Nullable Cache cache) {
+    public AbstractCachedModelFactory(@Nullable Cache cache, boolean copyOnRead) {
         super();
-
-        if (cache != null) {
-            this.cacheName = cache.getName();
-            this.cache = cache;
-        } else {
-            cacheName = null;
-        }
-
+        this.copyOnRead = copyOnRead;
+        this.cache = cache;
         _afterPropertiesSet();
     }
 
-    /**
-     * Spring-bean
-     *
-     * @param cacheName
-     */
-    public AbstractCachedModelFactory(@Nullable String cacheName) {
-        super();
-        this.cacheName = cacheName;
-    }
-
     private void _afterPropertiesSet() {
-        if (cacheName != null && cache == null) {
-            if (cm == null) {
-                throw new RuntimeException("CacheManager is NULL while cacheName=" + cacheName);
-            }
 
-            cache = cm.getCache(cacheName);
-            if (cache == null) {
-                throw new RuntimeException("Cache with name '" + cacheName + "' not found");
-            }
-        }
-
-        if (cache != null) {
-            final List<CacheLoader> origLoaders = cache.getRegisteredCacheLoaders();
-            if (CollectionUtils.isEmpty(origLoaders)) {
-                cache.registerCacheLoader(new CacheLoaderDecorator(null));
-            } else if (origLoaders.size() == 1 && origLoaders.get(0).getClass().equals(CacheLoaderDecorator.class)) {
-                log.debug("CacheLoaderDecorator has been allready set");
-            } else {
-                log.error("origLoaders:{}", origLoaders);
-                throw new RuntimeException("unexpected cache loader");
-            }
-            // cache.registerCacheLoader(new
-            // CacheLoaderDecorator(CollectionUtils.isEmpty(origLoaders) ? null
-            // : origLoaders.get(0)));
-        } else {
+        if (cache == null) {
             log.info("cache is disabled");
         }
     }
@@ -241,21 +77,35 @@ public abstract class AbstractCachedModelFactory<PK, ENTITY, E extends Exception
         }
     }
 
-    public void invalidate(@NotNull Collection<PK> ids, @NotNull InvalidateCause invalidateCause) {
+    public void invalidate(@NotNull Set<PK> ids, @NotNull InvalidateCause invalidateCause) {
         if (cache != null) {
             log.debug("invalidateLocal {}/{}", getEntityClass().getSimpleName(), ids);
-            cache.removeAll(ids);
+            ids.forEach(cache::remove);
         }
     }
 
     @NotNull
-    protected abstract Map<PK, ENTITY> fetchEntityByIdAsMap(@NotNull Collection<PK> ids);
+    protected abstract Map<PK, ENTITY> fetchEntityByIdAsMap(@NotNull Set<PK> ids);
 
     @Nullable
     protected abstract ENTITY fetchEntityById(@NotNull PK id);
 
+    private ENTITY copy(Object value) {
+
+        if (cache != null && cache.getAdvancedCache()
+                                  .getCacheConfiguration()
+                                  .memory()
+                                  .storageType() == StorageType.OBJECT && copyOnRead) {
+
+            return (ENTITY) ClassUtils.deepCopy(value);
+        } else {
+            return (ENTITY) (copyOnRead ? ClassUtils.deepCopy(value) : value);
+        }
+    }
+
     @Override
     final public ENTITY findEntityById(@NotNull PK id) {
+
         if (id == null) {
             return null;
         }
@@ -264,17 +114,22 @@ public abstract class AbstractCachedModelFactory<PK, ENTITY, E extends Exception
             return fetchEntityById(id);
         }
 
-        final Element e = cache.getWithLoader(id, null, _loader);
-        if (e == null || e.getObjectValue() == null || !getEntityClass().isInstance(e.getObjectValue())) {
+        Object value;
+        while ((value = cache.get(id)) == null) {
+            final ENTITY fetched = fetchEntityById(id);
+            cache.put(id, fetched == null ? NullValue.INSTANCE : fetched);
+        }
+
+        if (value == NullValue.INSTANCE) {
             return null;
         }
 
-        return (ENTITY) e.getObjectValue();
+        return copy(value);
     }
 
     @NotNull
     @Override
-    final public Map<PK, ENTITY> findEntityByIdAsMap(@NotNull Collection<PK> ids) {
+    final public Map<PK, ENTITY> findEntityByIdAsMap(@NotNull Set<PK> ids) {
         if (CollectionUtils.isEmpty(ids)) {
             return Collections.emptyMap();
         }
@@ -288,24 +143,43 @@ public abstract class AbstractCachedModelFactory<PK, ENTITY, E extends Exception
             }
         }
 
-        return (Map) cache.getAllWithLoader(ids, _loader);
-    }
+        final Set<PK> toLoad = new HashSet<>(ids.size());
+        toLoad.addAll(ids);
 
-    final public CacheManager getCm() {
-        return cm;
-    }
+        final Map<PK, ENTITY> result = new HashMap<>();
 
-    final public void setCm(CacheManager cm) {
-        this.cm = cm;
+        while (!toLoad.isEmpty()) {
+            final Map<PK, Object> cached = cache.getAdvancedCache().getAll(toLoad);
+
+
+            for (Map.Entry<PK, Object> e : cached.entrySet()) {
+                if (e.getValue() == NullValue.INSTANCE) {
+                    result.put(e.getKey(), null);
+                } else {
+                    result.put(e.getKey(), copy(e.getValue()));
+                }
+                toLoad.remove(e.getKey());
+            }
+
+            if (!toLoad.isEmpty()) {
+                final Map<PK, ENTITY> loaded = fetchEntityByIdAsMap(toLoad);
+                for (PK id : toLoad) {
+                    final ENTITY fetched = loaded.get(id);
+                    cache.put(id, fetched == null ? NullValue.INSTANCE : fetched);
+                }
+            }
+        }
+
+        return result;
     }
 
     @Nullable
-    final public Cache getCache() {
+    final public Cache<PK, Object> getCache() {
         return cache;
     }
 
-    final public void setCache(Cache cache) {
-        this.cache = cache;
+    final public void setCache(@Nullable Cache<PK, ENTITY> cache) {
+        this.cache = (Cache) cache;
         _afterPropertiesSet();
     }
 

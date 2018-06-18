@@ -38,7 +38,8 @@ public class JGroupsThriftClientImpl extends AbstractJgroupsThriftClientImpl imp
     public void connect() throws Exception {
         log.info("Starting JGroups MessageDispatcher");
 
-        disp = new MessageDispatcher(cluster, null, this);
+        disp = new MessageDispatcher(cluster);
+        disp.setMembershipListener(this);
         cluster.connect(clusterName);
     }
 

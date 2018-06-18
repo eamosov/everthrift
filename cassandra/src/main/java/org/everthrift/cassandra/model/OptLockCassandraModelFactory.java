@@ -1,6 +1,5 @@
 package org.everthrift.cassandra.model;
 
-import net.sf.ehcache.Cache;
 import org.apache.thrift.TException;
 import org.everthrift.appserver.model.DaoEntityIF;
 import org.everthrift.appserver.model.EntityFactory;
@@ -13,6 +12,7 @@ import org.everthrift.cassandra.SequenceFactory;
 import org.everthrift.cassandra.com.datastax.driver.mapping.Mapper.Option;
 import org.everthrift.cassandra.com.datastax.driver.mapping.VersionException;
 import org.everthrift.thrift.TFunction;
+import org.infinispan.Cache;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;
@@ -24,12 +24,12 @@ public abstract class OptLockCassandraModelFactory<PK extends Serializable, ENTI
 
     private SequenceFactory sequenceFactory;
 
-    public OptLockCassandraModelFactory(Cache cache, Class<ENTITY> entityClass) {
-        super(cache, entityClass);
+    public OptLockCassandraModelFactory(Cache<PK, ENTITY> cache, Class<ENTITY> entityClass, boolean copyOnRead) {
+        super(cache, entityClass, copyOnRead);
     }
 
-    public OptLockCassandraModelFactory(String cacheName, Class<ENTITY> entityClass) {
-        super(cacheName, entityClass);
+    public OptLockCassandraModelFactory(Class<ENTITY> entityClass) {
+        this(null, entityClass, false);
     }
 
     @Override

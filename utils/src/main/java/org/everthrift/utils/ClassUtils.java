@@ -1,26 +1,26 @@
 package org.everthrift.utils;
 
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import org.apache.commons.lang3.Validate;
-import org.apache.commons.lang3.reflect.TypeUtils;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
 import org.springframework.beans.BeanUtils;
 
 import java.beans.PropertyDescriptor;
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.Serializable;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.lang.reflect.GenericArrayType;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.lang.reflect.TypeVariable;
-import java.lang.reflect.WildcardType;
 import java.nio.ByteBuffer;
-import java.util.HashMap;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.RandomAccess;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 
 /**
@@ -112,6 +112,102 @@ public class ClassUtils {
             } else {
                 throw e;
             }
+        }
+    }
+
+
+    private static final AtomicReference<Map<Class, Constructor>> cache = new AtomicReference<Map<Class, Constructor>>(Maps.newIdentityHashMap());
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    public static Object deepCopy(Object value) {
+
+        if (value == Collections.EMPTY_LIST) {
+            return value;
+        } else if (value instanceof List) {
+            final List _l = (List) value;
+
+            if (_l.size() == 0) {
+                return Lists.newArrayList();
+            }
+
+            final List ret = Lists.newArrayListWithCapacity(_l.size());
+            if (_l instanceof RandomAccess) {
+                for (int i = 0; i < _l.size(); i++) {
+                    ret.add(copy(_l.get(i)));
+                }
+            } else {
+                for (Object input : _l) {
+                    ret.add(copy(input));
+                }
+            }
+            return ret;
+        } else if (value instanceof Set) {
+            final Set _s = (Set) value;
+
+            if (_s.size() == 0) {
+                return Sets.newHashSet();
+            }
+
+            final Set ret = Sets.newHashSetWithExpectedSize(_s.size());
+
+            for (Object input : _s) {
+                ret.add(copy(input));
+            }
+
+            return ret;
+        } else if (value instanceof Map) {
+            final Map _m = (Map) value;
+            if (_m.size() == 0) {
+                return Maps.newHashMap();
+            }
+
+            final Map ret = Maps.newHashMapWithExpectedSize(_m.size());
+
+            for (final Map.Entry e : (Set<Map.Entry>) (_m.entrySet())) {
+                ret.put(copy(e.getKey()), copy(e.getValue()));
+            }
+            return ret;
+        } else if (value instanceof Multimap) {
+            final Multimap _m = (Multimap) value;
+
+            if (_m.size() == 0) {
+                return ArrayListMultimap.create();
+            }
+
+            final Multimap ret = ArrayListMultimap.create(_m.keySet().size(), _m.size() / _m.keySet().size() + 1);
+            for (final Map.Entry e : (Set<Map.Entry>) (_m.entries())) {
+                ret.put(copy(e.getKey()), copy(e.getValue()));
+            }
+            return ret;
+        } else {
+            return copy(value);
+        }
+    }
+
+    private static Object copy(Object value) {
+
+        if (value == null || value instanceof Number || value instanceof String || value instanceof Boolean) {
+            return value;
+        }
+
+        final Map<Class, Constructor> _cache = cache.get();
+        Constructor c = _cache.get(value.getClass());
+        if (c == null) {
+            try {
+                c = value.getClass().getConstructor(value.getClass());
+                final Map<Class, Constructor> __cache = Maps.newIdentityHashMap();
+                __cache.putAll(_cache);
+                __cache.put(value.getClass(), c);
+                cache.set(__cache);
+            } catch (final Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        try {
+            return c.newInstance(value);
+        } catch (final Exception e) {
+            throw new RuntimeException(e);
         }
     }
 

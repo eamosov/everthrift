@@ -58,6 +58,11 @@ public class LoopbackThriftClientServerImpl extends ClusterThriftClientImpl {
         return CompletableFuture.completedFuture(Collections.singletonMap(new Address() {
 
             @Override
+            public int serializedSize() {
+                return 0;
+            }
+
+            @Override
             public void writeTo(DataOutput out) throws Exception {
             }
 
@@ -67,19 +72,6 @@ public class LoopbackThriftClientServerImpl extends ClusterThriftClientImpl {
 
             @Override
             public int compareTo(Address o) {
-                return 0;
-            }
-
-            @Override
-            public void writeExternal(ObjectOutput out) throws IOException {
-            }
-
-            @Override
-            public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            }
-
-            @Override
-            public int size() {
                 return 0;
             }
         }, new ReplyImpl<T>(() -> (T) tInfo.deserializeReply(out, binary))));

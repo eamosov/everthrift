@@ -15,6 +15,7 @@ import org.hibernate.Session;
 import org.hibernate.StaleStateException;
 import org.hibernate.Transaction;
 import org.hibernate.annotations.OptimisticLocking;
+import org.infinispan.Cache;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,8 +25,8 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import javax.persistence.OptimisticLockException;
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 
 public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable, ENTITY extends DaoEntityIF, E extends TException>
     extends AbstractPgSqlModelFactory<PK, ENTITY, E> implements OptimisticLockModelFactoryIF<PK, ENTITY, E> {
@@ -37,16 +38,25 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable, E
      * Cache need only because Hibernate does not cache rows selected by "IN"
      * statement
      *
-     * @param cacheName
+     * @param cache
      * @param entityClass
      */
-    public OptimisticLockPgSqlModelFactory(String cacheName, @NotNull Class<ENTITY> entityClass) {
-        super(cacheName, entityClass);
+    public OptimisticLockPgSqlModelFactory(@NotNull Cache cache, @NotNull Class<ENTITY> entityClass, boolean copyOnRead) {
+        super(cache, entityClass, copyOnRead);
 
         if (entityClass.getAnnotation(OptimisticLocking.class) == null) {
             throw new RuntimeException("Class " + entityClass.getCanonicalName() + " must have OptimisticLocking annotation to use with OptimisticLockPgSqlModelFactory");
         }
     }
+
+    public OptimisticLockPgSqlModelFactory(@NotNull Class<ENTITY> entityClass) {
+        super(null, entityClass, false);
+
+        if (entityClass.getAnnotation(OptimisticLocking.class) == null) {
+            throw new RuntimeException("Class " + entityClass.getCanonicalName() + " must have OptimisticLocking annotation to use with OptimisticLockPgSqlModelFactory");
+        }
+    }
+
 
     @Override
     @NotNull
@@ -126,19 +136,19 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable, E
                 }
             });
 
-            _invalidateEhCache(id, InvalidateCause.DELETE);
+            _invalidateJCache(id, InvalidateCause.DELETE);
 
             final OptResult<ENTITY> r = OptResult.create(this, null, deleted.first, true, false, deleted.second);
             localEventBus.postEntityEvent(deleteEntityEvent(deleted.first));
             return r;
         } catch (EntityNotFoundException e) {
-            _invalidateEhCache(id, InvalidateCause.DELETE);
+            _invalidateJCache(id, InvalidateCause.DELETE);
             throw createNotFoundException(id);
         } catch (TException e) {
-            _invalidateEhCache(id, InvalidateCause.DELETE);
+            _invalidateJCache(id, InvalidateCause.DELETE);
             throw Throwables.propagate(e);
         } catch (Throwable e) {
-            _invalidateEhCache(id, InvalidateCause.DELETE);
+            _invalidateJCache(id, InvalidateCause.DELETE);
             throw e;
         }
     }
@@ -151,7 +161,7 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable, E
         setCreatedAt(e, timestamp);
 
         final ENTITY inserted = getDao().save(e).first;
-        _invalidateEhCache((PK) inserted.getPk(), InvalidateCause.INSERT);
+        _invalidateJCache((PK) inserted.getPk(), InvalidateCause.INSERT);
 
         final OptResult<ENTITY> r = OptResult.create(this, inserted, null, true, true, timestamp);
         localEventBus.postEntityEvent(insertEntityEvent(inserted));
@@ -159,7 +169,7 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable, E
     }
 
     @Override
-    protected final ENTITY fetchEntityById(PK id) {
+    protected final ENTITY fetchEntityById(@NotNull PK id) {
         final Session session = getDao().getCurrentSession();
         final Transaction tx = session.beginTransaction();
 
@@ -175,7 +185,7 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable, E
 
     @NotNull
     @Override
-    protected final Map<PK, ENTITY> fetchEntityByIdAsMap(Collection<PK> ids) {
+    protected final Map<PK, ENTITY> fetchEntityByIdAsMap(Set<PK> ids) {
 
         final Session session = getDao().getCurrentSession();
         final Transaction tx = session.beginTransaction();
@@ -224,7 +234,7 @@ public abstract class OptimisticLockPgSqlModelFactory<PK extends Serializable, E
         });
 
         if (ret.isUpdated) {
-            _invalidateEhCache(id, ret.isInserted ? InvalidateCause.INSERT : InvalidateCause.UPDATE);
+            _invalidateJCache(id, ret.isInserted ? InvalidateCause.INSERT : InvalidateCause.UPDATE);
             localEventBus.postEntityEvent(updateEntityEvent(ret.beforeUpdate, ret.afterUpdate));
         }
 

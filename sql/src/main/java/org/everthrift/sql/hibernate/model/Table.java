@@ -118,7 +118,7 @@ public class Table {
             throw new RuntimeException("No PK for table " + this.tableName);
         }
 
-        sb.append("\t<cache usage=\"nonstrict-read-write\" region=\"hibernate_2nd_lvl\" />\n");
+        sb.append("\t<cache usage=\"read-write\" region=\"hibernate_2nd_lvl\" />\n");
 
         if (primaryKey.getColumnNames().size() == 1) {
             sb.append(getColumnsByName().get(primaryKey.getColumnNames().get(0))

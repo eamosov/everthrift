@@ -106,38 +106,6 @@
             <artifactId>spring-retry</artifactId>
         </dependency>
 
-
-        <dependency>
-            <groupId>net.sf.ehcache</groupId>
-            <artifactId>ehcache-jgroupsreplication</artifactId>
-            <version>1.8ea</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-api</artifactId>
-                </exclusion>
-
-                <exclusion>
-                    <groupId>net.sf.ehcache</groupId>
-                    <artifactId>ehcache</artifactId>
-                </exclusion>
-            </exclusions>
-
-        </dependency>
-
-
-        <dependency>
-            <groupId>net.sf.ehcache</groupId>
-            <artifactId>ehcache</artifactId>
-            <version>2.10.3</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-api</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
@@ -246,6 +214,28 @@
         <dependency>
             <groupId>org.jetbrains</groupId>
             <artifactId>annotations</artifactId>
+        </dependency>
+
+        <!--&lt;!&ndash; https://mvnrepository.com/artifact/javax.cache/cache-api &ndash;&gt;-->
+        <!--<dependency>-->
+            <!--<groupId>javax.cache</groupId>-->
+            <!--<artifactId>cache-api</artifactId>-->
+            <!--<version>1.1.0</version>-->
+        <!--</dependency>-->
+
+        <dependency>
+            <groupId>org.infinispan</groupId>
+            <artifactId>infinispan-core</artifactId>
+        </dependency>
+
+        <!--<dependency>-->
+            <!--<groupId>org.infinispan</groupId>-->
+            <!--<artifactId>infinispan-jcache</artifactId>-->
+        <!--</dependency>-->
+
+        <dependency>
+            <groupId>org.jboss.logging</groupId>
+            <artifactId>jboss-logging</artifactId>
         </dependency>
 
     </dependencies>

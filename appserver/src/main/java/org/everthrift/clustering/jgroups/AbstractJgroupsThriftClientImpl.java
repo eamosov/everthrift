@@ -7,24 +7,22 @@ import org.everthrift.clustering.MessageWrapper;
 import org.everthrift.clustering.thrift.ThriftControllerDiscovery;
 import org.everthrift.thrift.ThriftCallFuture;
 import org.jgroups.Address;
-import org.jgroups.Message;
 import org.jgroups.Message.TransientFlag;
 import org.jgroups.blocks.MessageDispatcher;
 import org.jgroups.blocks.RequestOptions;
 import org.jgroups.blocks.ResponseMode;
-import org.jgroups.util.NotifyingFuture;
-import org.jgroups.util.NullFuture;
+import org.jgroups.util.Buffer;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.amqp.utils.SerializationUtils;
 import org.springframework.util.Assert;
 
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
 public abstract class AbstractJgroupsThriftClientImpl extends ClusterThriftClientImpl {
 
@@ -46,73 +44,59 @@ public abstract class AbstractJgroupsThriftClientImpl extends ClusterThriftClien
                                                                       ThriftCallFuture<T> tInfo,
                                                                       Map<String, Object> attributes) throws TException {
 
-        final Message msg = new Message();
+        //final Message msg = new Message();
         final MessageWrapper wrap = new MessageWrapper(tInfo.serializeCall(0, binaryProtocolFactory));
         if (attributes != null) {
             wrap.putAllAttributes(attributes);
         }
 
-        msg.setObject(wrap);
+        final byte[] bytes = SerializationUtils.serialize(wrap);
+
+        final RequestOptions options = new RequestOptions(responseMode, timeout);
 
         if (dest != null) {
             loopBack = true;
         } else if (!loopBack) {
-            msg.setTransientFlag(TransientFlag.DONT_LOOPBACK);
+            options.transientFlags(TransientFlag.DONT_LOOPBACK);
         }
 
-        final RequestOptions options = new RequestOptions(responseMode, timeout);
-
         if (exclusionList != null) {
-            options.setExclusionList(exclusionList.toArray(new Address[exclusionList.size()]));
+            options.exclusionList(exclusionList.toArray(new Address[exclusionList.size()]));
         }
 
         if (dest != null) {
             options.setAnycasting(true);
         }
 
-        final CompletableFuture<Map<Address, Reply<T>>> f = new CompletableFuture<>();
-
         log.debug("call {}, dest={}, excl={}, loopback={}, timeout={}, respMode={}", tInfo.getFullMethodName(), dest, exclusionList, loopBack,
                   timeout, responseMode);
 
+        final CompletableFuture<RspList<MessageWrapper>> ret;
         try {
-            final NotifyingFuture<RspList<MessageWrapper>> ret = getMessageDispatcher().castMessageWithFuture(dest, msg, options, future -> {
-
-                log.debug("futureDone");
-
-                RspList<MessageWrapper> resp;
-                try {
-                    resp = future.get();
-                } catch (InterruptedException | ExecutionException e1) {
-                    f.completeExceptionally(e1);
-                    return;
-                }
-
-                log.trace("RspList:{}", resp);
-
-                final Map<Address, Reply<T>> ret1 = new HashMap<>();
-
-                for (Rsp<MessageWrapper> responce : resp) {
-                    if (responce.getValue() != null) {
-                        ret1.put(responce.getSender(),
-                                 new ReplyImpl<T>(() -> (T) tInfo.deserializeReply(responce.getValue()
-                                                                                           .getTTransport(), binaryProtocolFactory)));
-                    } else {
-                        log.warn("null responce from {}", responce.getSender());
-                    }
-                }
-
-                f.complete(ret1);
-            });
-
-            if (ret instanceof NullFuture) {
-                f.completeExceptionally(new TException("Empty destination list"));
-            }
+            ret = getMessageDispatcher().castMessageWithFuture(dest, new Buffer(bytes), options);
         } catch (Exception e) {
-            f.completeExceptionally(e);
+            throw new TException(e.getMessage(), e);
         }
 
-        return f;
+        return ret.thenApply(rspList -> {
+            log.trace("RspList:{}", rspList);
+
+            final Map<Address, Reply<T>> ret1 = new HashMap<>();
+
+            for (Map.Entry<Address, Rsp<MessageWrapper>> response : rspList.entrySet()) {
+                final Address sender = response.getKey();
+                final Rsp<MessageWrapper> rsp = response.getValue();
+
+                if (rsp.getValue() != null) {
+                    ret1.put(sender, new ReplyImpl<T>(() -> tInfo.deserializeReply(rsp.getValue()
+                                                                                      .getTTransport(), binaryProtocolFactory)));
+                } else {
+                    log.warn("null response from {}", sender);
+                }
+            }
+            return ret1;
+        });
+
     }
 
     @Override
