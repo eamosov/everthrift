@@ -4,8 +4,8 @@
   <artifactId>cassandra-migrator</artifactId>
   <versioning>
     <versions>
-      <version>0.0.1-SNAPSHOT</version>
+      <version>1.0.1-SNAPSHOT</version>
     </versions>
-    <lastUpdated>20161024075925</lastUpdated>
+    <lastUpdated>20180618155347</lastUpdated>
   </versioning>
 </metadata>
