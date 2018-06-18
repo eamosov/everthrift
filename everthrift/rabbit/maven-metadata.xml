@@ -4,8 +4,8 @@
   <artifactId>rabbit</artifactId>
   <versioning>
     <versions>
-      <version>0.0.1-SNAPSHOT</version>
+      <version>1.0.1-SNAPSHOT</version>
     </versions>
-    <lastUpdated>20161024075532</lastUpdated>
+    <lastUpdated>20180618155018</lastUpdated>
   </versioning>
 </metadata>
